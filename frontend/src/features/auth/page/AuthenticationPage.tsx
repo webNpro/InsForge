@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils/utils';
+import { useUsers } from '@/features/auth/hooks/useUsers';
 
 export default function AuthenticationPage() {
   const [selectedSection, setSelectedSection] = useState<string>('users');
@@ -16,31 +17,9 @@ export default function AuthenticationPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  // const [totalUsers, setTotalUsers] = useState(0);
-
-  const handleAddUser = async (user: {
-    email: string;
-    password?: string;
-    name?: string;
-    id?: string;
-  }) => {
-    try {
-      await authService.register(user.email, user.password || '', user.name, user.id);
-      setAddDialogOpen(false);
-      // Dispatch refresh event to reset sorting and selections
-      const event = new CustomEvent('refreshUsers');
-      window.dispatchEvent(event);
-      showToast('User created successfully', 'success');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to create user', 'error');
-    }
-  };
 
   const { showToast } = useToast();
-
-  // const handleUserDataUpdate = (_users: any[], total: number) => {
-  //   setTotalUsers(total);
-  // };
+  const { refetch } = useUsers();
 
   const handleBulkDelete = async () => {
     if (selectedRows.size === 0) {
@@ -50,10 +29,8 @@ export default function AuthenticationPage() {
     try {
       const userIds = Array.from(selectedRows);
       await authService.bulkDeleteUsers(userIds);
-      // Reset selected rows and dispatch refresh event
+      void refetch();
       setSelectedRows(new Set());
-      const event = new CustomEvent('refreshUsers');
-      window.dispatchEvent(event);
       showToast(
         `${userIds.length} user${userIds.length > 1 ? 's' : ''} deleted successfully`,
         'success'
@@ -174,7 +151,7 @@ export default function AuthenticationPage() {
         {selectedSection === 'auth-methods' && <OAuthConfiguration />}
       </div>
 
-      <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSave={handleAddUser} />
+      <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
 
       <ConfirmDialog
         open={confirmDeleteOpen}

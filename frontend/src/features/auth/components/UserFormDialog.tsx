@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { authService } from '@/features/auth/services/auth.service';
 import { Button, Input, Label, Alert, AlertDescription } from '@/components';
 import {
   Dialog,
@@ -9,6 +10,8 @@ import {
   DialogFooter,
 } from '@/components/radix/Dialog';
 import ErrorIcon from '@/assets/icons/error.svg';
+import { useToast } from '@/lib/hooks/useToast';
+import { useUsers } from '@/features/auth/hooks/useUsers';
 
 interface User {
   id?: string;
@@ -21,7 +24,6 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: User | null;
-  onSave: (user: User) => Promise<void>;
 }
 
 // Validation helpers
@@ -43,7 +45,7 @@ const validatePassword = (password: string): string => {
   return '';
 };
 
-export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,6 +55,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showValidation, setShowValidation] = useState(false);
+
+  const { showToast } = useToast();
+  const { refetch } = useUsers();
 
   const isEditing = !!user;
 
@@ -115,10 +120,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSave }: UserFormDia
         userData.id = user.id;
       }
 
-      await onSave(userData);
+      await authService.register(
+        userData.email,
+        userData.password || '',
+        userData.name,
+        userData.id
+      );
+      void refetch();
       onOpenChange(false);
+      showToast('User created successfully', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      showToast(err instanceof Error ? err.message : 'Failed to create user', 'error');
     } finally {
       setLoading(false);
     }

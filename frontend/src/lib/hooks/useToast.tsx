@@ -191,7 +191,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast, updateToast, removeToast }}>
       {children}
       {/* Regular toasts - top center */}
-      <div className="fixed top-7.5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 w-full max-w-[480px]">
+      <div className="fixed top-7.5 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col gap-3 w-full max-w-[480px]">
         {toasts
           .filter((t) => t.type !== 'upload')
           .map((toast) => (
@@ -204,7 +204,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           ))}
       </div>
       {/* Upload toasts - bottom right */}
-      <div className="fixed bottom-4 right-4 z-50 w-[276px] flex flex-col">
+      <div className="fixed bottom-4 right-4 z-[9999] w-[276px] flex flex-col">
         {toasts
           .filter((t) => t.type === 'upload')
           .map((toast) => (
