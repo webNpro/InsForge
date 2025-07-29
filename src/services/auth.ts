@@ -25,6 +25,7 @@ const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI;
 export interface TokenPayload {
   sub: string;
   email: string;
+  role: string;
   type: 'user' | 'admin';
 }
 

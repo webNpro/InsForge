@@ -63,6 +63,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const token = authService.generateToken({
       sub: userWithProfile.id,
       email: userWithProfile.email,
+      role: 'authenticated',
       type: 'user',
     });
 
@@ -123,6 +124,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const token = authService.generateToken({
       sub: userWithProfile.id,
       email: userWithProfile.email,
+      role: 'authenticated',
       type: 'user',
     });
 
@@ -169,6 +171,7 @@ router.post('/admin/login', async (req: Request, res: Response, next: NextFuncti
     const token = authService.generateToken({
       sub: superuser.id,
       email: superuser.email,
+      role: 'dashboard_user',
       type: 'admin',
     });
 
