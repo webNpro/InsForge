@@ -50,6 +50,7 @@ export interface GitHubUserInfo {
 }
 
 export class AuthService {
+  private static instance: AuthService;
   private googleClient: OAuth2Client;
   private processedCodes: Set<string>;
   private tokenCache: Map<string, { access_token: string; id_token: string }>;
@@ -57,15 +58,11 @@ export class AuthService {
   private configLoadTime: number = 0;
   private CONFIG_CACHE_TTL = 60000; // 1 minute cache
 
-  constructor() {
-    // we need to log these to the console
-    console.log('AuthService constructor - Environment variables:');
-    console.log('GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_REDIRECT_URI:', GOOGLE_REDIRECT_URI);
-    console.log('GITHUB_CLIENT_ID:', GITHUB_CLIENT_ID ? 'SET' : 'NOT SET');
-    console.log('GITHUB_CLIENT_SECRET:', GITHUB_CLIENT_SECRET ? 'SET' : 'NOT SET');
-    console.log('GITHUB_REDIRECT_URI:', GITHUB_REDIRECT_URI);
+  private constructor() {
+    // Log environment variables only once during initialization
+    console.log('AuthService initialized - OAuth configuration:');
+    console.log('- Google OAuth:', GOOGLE_CLIENT_ID ? 'Configured' : 'Not configured');
+    console.log('- GitHub OAuth:', GITHUB_CLIENT_ID ? 'Configured' : 'Not configured');
 
     this.googleClient = new OAuth2Client(
       GOOGLE_CLIENT_ID,
@@ -74,6 +71,13 @@ export class AuthService {
     );
     this.processedCodes = new Set();
     this.tokenCache = new Map();
+  }
+
+  public static getInstance(): AuthService {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+    return AuthService.instance;
   }
 
   private getDb() {

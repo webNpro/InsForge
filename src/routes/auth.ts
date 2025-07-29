@@ -11,7 +11,7 @@ import { UserWithProfile } from '../types/profile.js';
 import { OAuthConfig, ConfigRecord } from '../types/auth.js';
 
 const router = Router();
-const authService = new AuthService();
+const authService = AuthService.getInstance();
 
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
