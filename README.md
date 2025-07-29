@@ -110,7 +110,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 
 
 <div align="center">>
-  <img src="assets/archDiagram5.png" alt="Carch">
+  <img src="assets/archDiagram.png" alt="Carch">
   <br>
 </div>
 
