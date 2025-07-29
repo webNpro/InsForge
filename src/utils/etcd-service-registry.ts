@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Etcd3, Lease } from 'etcd3';
 import * as os from 'os';
 
@@ -36,7 +37,7 @@ class EtcdServiceRegistry {
     this.etcdTimeout = options.etcdTimeout || 5000;
     this.ttl = options.ttl || 10;
     this.maxRetries = options.maxRetries || 5;
-    
+
     this.currentLease = null;
     this.retryCount = 0;
     this.etcd = null;
@@ -47,11 +48,13 @@ class EtcdServiceRegistry {
   getLocalIPAddress(): string {
     const interfaces = os.networkInterfaces();
     let ipAddress = '127.0.0.1';
-    
+
     for (const devName in interfaces) {
       const iface = interfaces[devName];
-      if (!iface) continue;
-      
+      if (!iface) {
+        continue;
+      }
+
       for (let i = 0; i < iface.length; i++) {
         const alias = iface[i];
         if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
@@ -60,7 +63,7 @@ class EtcdServiceRegistry {
         }
       }
     }
-    
+
     return ipAddress;
   }
 
@@ -73,19 +76,20 @@ class EtcdServiceRegistry {
       console.warn('APP_KEY environment variable is required');
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const etcdConfig: any = {
       hosts: this.etcdHosts.split(',').map((host: string) => host.trim()),
       dialTimeout: this.etcdTimeout,
       keepaliveTime: 30000,
       keepaliveTimeout: 5000,
       retryDelay: 1000,
-      maxRetries: 3
+      maxRetries: 3,
     };
 
     if (this.etcdUsername && this.etcdPassword) {
       etcdConfig.auth = {
         username: this.etcdUsername,
-        password: this.etcdPassword
+        password: this.etcdPassword,
       };
     }
 
@@ -95,8 +99,8 @@ class EtcdServiceRegistry {
 
   async testConnection(): Promise<void> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await this.etcd!.get('__connection_test__');
-      console.log('etcd connection test successful');
     } catch (error) {
       console.warn('etcd connection test warning:', error instanceof Error ? error.message : error);
     }
@@ -107,7 +111,9 @@ class EtcdServiceRegistry {
       this.initializeEtcd();
     }
     if (!this.etcd) {
-      console.error('Failed to initialize etcd client, you can ignore this error if etcd is not used');
+      console.error(
+        'Failed to initialize etcd client, you can ignore this error if etcd is not used'
+      );
       return;
     }
 
@@ -117,46 +123,48 @@ class EtcdServiceRegistry {
 
     try {
       await this.testConnection();
-      
+
       this.currentLease = this.etcd.lease(this.ttl);
-      
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.currentLease.on('lost', (err: any) => {
         console.error('Lease lost:', err.message || err);
-        console.log('Attempting to re-register...');
         this.retryCount = 0;
         setTimeout(() => this.register(), 1000);
       });
-      
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.currentLease.on('keepaliveFailed', (err: any) => {
         console.warn('Keepalive failed:', err.message || err);
       });
-      
+
       this.currentLease.on('keepaliveEstablished', () => {
         console.log('Keepalive stream established');
       });
-      
+
       await this.currentLease.grant();
       await this.currentLease.put(this.serviceKey).value(this.serviceValue);
-      
+
       console.log(`Service registered: ${this.serviceKey} = ${this.serviceValue}`);
-      console.log('Available etcd endpoints:', this.etcdHosts?.split(',').map((h: string) => h.trim()) || []);
-      
+
       this.retryCount = 0;
-      
     } catch (error) {
       this.retryCount++;
       const delay = Math.min(5000 * Math.pow(2, this.retryCount - 1), 30000);
-      
-      console.error(`Failed to register service (attempt ${this.retryCount}/${this.maxRetries}):`, error instanceof Error ? error.message : error);
-      
+
+      console.error(
+        `Failed to register service (attempt ${this.retryCount}/${this.maxRetries}):`,
+        error instanceof Error ? error.message : error
+      );
+
       if (this.retryCount >= this.maxRetries) {
         console.error('Max retries reached. Service registration failed permanently.');
         console.error('Service registration failed after max retries');
         return;
       }
-      
+
       console.log(`Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return this.register();
     }
   }

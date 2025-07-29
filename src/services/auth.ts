@@ -19,14 +19,14 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 
 // GitHub OAuth configuration
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+// const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET; // Not used directly, loaded from config
 const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI;
 
 export interface TokenPayload {
   sub: string;
   email: string;
-  role: string;
   type: 'user' | 'admin';
+  role?: string;
 }
 
 export interface GoogleUserInfo {
@@ -527,7 +527,11 @@ export class AuthService {
     return users;
   }
 
-  async getUsersWithPagination(offset: number, limit: number, searchQuery?: string): Promise<UserWithProfile[]> {
+  async getUsersWithPagination(
+    offset: number,
+    limit: number,
+    searchQuery?: string
+  ): Promise<UserWithProfile[]> {
     const db = this.getDb();
     const users: UserWithProfile[] = [];
 

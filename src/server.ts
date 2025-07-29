@@ -128,7 +128,7 @@ const serviceRegistry = new EtcdServiceRegistry({
   etcdHosts: ETCD_HOSTS,
   etcdUsername: ETCD_USERNAME,
   etcdPassword: ETCD_PASSWORD,
-  etcdTimeout: ETCD_TIMEOUT
+  etcdTimeout: ETCD_TIMEOUT,
 });
 
 async function initializeServer() {
