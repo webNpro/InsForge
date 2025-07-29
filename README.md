@@ -133,8 +133,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ---
 
-<div align="center">
-  <a href="https://github.com/InsForge/insforge/stargazers">
-    <img src="https://img.shields.io/github/stars/InsForge/insforge?style=social&label=Star" alt="GitHub Stars">
-  </a>
-</div>
+[![Star History Chart](https://api.star-history.com/svg?repos=InsForge/insforge&type=Date)](https://www.star-history.com/#InsForge/insforge&Date)
