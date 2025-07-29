@@ -5,19 +5,13 @@
   
 </div>
 <p align="center">
-   <a href="#quickstart-tldr" style="text-decoration: underline;">Get Started</a> · 
-   <a href="https://discord.gg/MPxwj5xVvW" style="text-decoration: underline;">Discord</a>
+   <a href="#quickstart-tldr">Get Started</a> · 
+   <a href="https://discord.gg/MPxwj5xVvW">Discord</a>
 </p>
 <p align="center">
-   <a href="https://opensource.org/licenses/Apache-2.0">
-      <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
-   </a>
-   <a href="https://discord.gg/MPxwj5xVvW">
-      <img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord">
-   </a>
-   <a href="https://github.com/InsForge/insforge/stargazers">
-      <img src="https://img.shields.io/github/stars/InsForge/insforge?style=social" alt="GitHub Stars">
-   </a>
+   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
+   <a href="https://discord.gg/MPxwj5xVvW"><img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord"></a>
+   <a href="https://github.com/InsForge/insforge/stargazers"><img src="https://img.shields.io/github/stars/InsForge/insforge?style=social" alt="GitHub Stars"></a>
 </p>
 
 # InsForge
