@@ -26,17 +26,13 @@ const providers = [
 
 const NotConfirgured = () => {
   return (
-    <p className="bg-zinc-100 text-xs font-medium text-zinc-500 py-2 px-3 rounded-sm">
-      Not Configured
-    </p>
+    <p className="bg-zinc-100 text-xs font-medium text-zinc-500 py-2 px-3 rounded-sm">Disabled</p>
   );
 };
 
 const Configured = () => {
   return (
-    <p className="bg-green-100 text-xs font-medium text-green-700 py-2 px-3 rounded-sm">
-      Configured
-    </p>
+    <p className="bg-green-100 text-xs font-medium text-green-700 py-2 px-3 rounded-sm">Enabled</p>
   );
 };
 

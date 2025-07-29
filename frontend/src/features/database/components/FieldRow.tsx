@@ -11,7 +11,6 @@ interface FieldRowProps {
   index: number;
   form: UseFormReturn<TableFormData>;
   onRemove: () => void;
-  mode?: 'create' | 'edit';
   isSystemField?: boolean;
   isNewField: boolean;
   field: any;
@@ -21,7 +20,6 @@ export function FieldRow({
   index,
   form,
   onRemove,
-  mode = 'create',
   isSystemField = false,
   isNewField,
   field,
@@ -123,12 +121,12 @@ export function FieldRow({
       </div>
 
       {/* Delete */}
-      <div className="w-5">
+      <div className="w-5 h-5">
         {!isSystemField && (
           <button
             type="button"
             onClick={onRemove}
-            className="p-0.5 hover:bg-gray-100 rounded transition-colors"
+            className="hover:bg-gray-100 rounded transition-colors"
           >
             <X className="w-5 h-5 text-zinc-500" />
           </button>

@@ -493,7 +493,6 @@ export function TableForm({
                         index={originalIndex}
                         form={form}
                         onRemove={() => remove(originalIndex)}
-                        mode={mode}
                         isSystemField={field.isSystemField}
                         isNewField={!field.field_id}
                       />
