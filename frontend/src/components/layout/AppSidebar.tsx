@@ -50,7 +50,7 @@ if (import.meta.env.VITE_DEBUG_MODE) {
 const bottomNavigation = [
   {
     name: 'Documentation',
-    href: 'https://github.com/InsForge/insforge',
+    href: 'https://github.com/InsForge/InsForge',
     icon: BookOpen,
     external: true,
   },

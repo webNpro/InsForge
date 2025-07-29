@@ -70,7 +70,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
       <div className="flex items-center gap-3">
         {/* GitHub Badge */}
         <a
-          href="https://github.com/orgs/InsForge"
+          href="https://github.com/InsForge/InsForge"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-black hover:bg-[#28282F] rounded-full transition-all duration-200"
