@@ -21,6 +21,7 @@ import { DatabaseManager } from './services/database.js';
 import { StorageService } from './services/storage.js';
 import { MetadataService } from './services/metadata.js';
 import { seedAdmin } from './utils/seed.js';
+import { EtcdServiceRegistry } from './utils/etcd-service-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,10 +116,28 @@ export async function createApp() {
 // Use PORT from environment variable, fallback to 7130
 const PORT = parseInt(process.env.PORT || '7130');
 
+const APP_KEY = process.env.APP_KEY || '';
+const ETCD_HOSTS = process.env.ETCD_HOSTS || '';
+const ETCD_USERNAME = process.env.ETCD_USERNAME || '';
+const ETCD_PASSWORD = process.env.ETCD_PASSWORD || '';
+const ETCD_TIMEOUT = parseInt(process.env.ETCD_TIMEOUT || '5000');
+
+const serviceRegistry = new EtcdServiceRegistry({
+  appKey: APP_KEY,
+  port: PORT,
+  etcdHosts: ETCD_HOSTS,
+  etcdUsername: ETCD_USERNAME,
+  etcdPassword: ETCD_PASSWORD,
+  etcdTimeout: ETCD_TIMEOUT
+});
+
 async function initializeServer() {
   try {
     const app = await createApp();
-    app.listen(PORT, () => {});
+    app.listen(PORT, async () => {
+      console.log(`Backend API service listening on port ${PORT} with APP_KEY: ${APP_KEY}`);
+      await serviceRegistry.register();
+    });
   } catch (error) {
     console.error('Failed to initialize server:', error);
     process.exit(1);
@@ -126,3 +145,12 @@ async function initializeServer() {
 }
 
 void initializeServer();
+
+async function cleanup() {
+  console.log('Shutting down gracefully...');
+  await serviceRegistry.unregister();
+  process.exit(0);
+}
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);

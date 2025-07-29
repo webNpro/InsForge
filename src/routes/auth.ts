@@ -470,6 +470,7 @@ router.get('/v1/callback', async (req: Request, res: Response, next: NextFunctio
       const generatedToken = authService.generateToken({
         sub: userWithProfile.id,
         email: userWithProfile.email,
+        role: 'authenticated',
         type: 'user',
       });
 
