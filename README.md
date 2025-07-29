@@ -130,3 +130,11 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <a href="https://github.com/InsForge/insforge/stargazers">
+    <img src="https://img.shields.io/github/stars/InsForge/insforge?style=social&label=Star" alt="GitHub Stars">
+  </a>
+</div>
