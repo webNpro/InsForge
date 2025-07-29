@@ -1,23 +1,17 @@
 <div align="center">
   <a href="https://insforge.com">
-    <img src="assets/imageLogo.png" alt="Insforge Logo">
+    <img src="assets/banner.png" alt="Insforge Logo">
   </a>
   
 </div>
 <p align="center">
-   <a href="#quickstart-tldr" style="text-decoration: underline;">Get Started</a> · 
-   <a href="https://discord.gg/MPxwj5xVvW" style="text-decoration: underline;">Discord</a>
+   <a href="#quickstart-tldr">Get Started</a> · 
+   <a href="https://discord.gg/MPxwj5xVvW">Discord</a>
 </p>
 <p align="center">
-   <a href="https://opensource.org/licenses/Apache-2.0">
-      <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
-   </a>
-   <a href="https://discord.gg/MPxwj5xVvW">
-      <img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord">
-   </a>
-   <a href="https://github.com/InsForge/insforge/stargazers">
-      <img src="https://img.shields.io/github/stars/InsForge/insforge?style=social" alt="GitHub Stars">
-   </a>
+   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
+   <a href="https://discord.gg/MPxwj5xVvW"><img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord"></a>
+   <a href="https://github.com/InsForge/insforge/stargazers"><img src="https://img.shields.io/github/stars/InsForge/insforge?style=social" alt="GitHub Stars"></a>
 </p>
 
 # InsForge
@@ -110,7 +104,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 
 
 <div align="center">>
-  <img src="assets/archDiagram5.png" alt="Carch">
+  <img src="assets/archDiagram.png" alt="Carch">
   <br>
 </div>
 
