@@ -24,7 +24,7 @@
 
 **InsForge is the Agent-Native Supabase Alternative.** We are building the features of Supabase in an AI-native way, enabling AI agents to build and manage full-stack applications autonomously. 
 
-## 🚀 Key Features & Use Cases
+## Key Features & Use Cases
 
 ### Core Features:
 - **Authentication** - Complete user management system
@@ -37,7 +37,7 @@
 - **Connect AI agents to InsForge** - Enable Claude, GPT, or other AI agents to manage your backend
 - **Add backend to Lovable or Bolt-style vibe coding project projects** - Instant backend for AI-generated frontends
 
-## 📝 Prompt Examples:
+## Prompt Examples:
 
 <td align="center">
   <img src="assets/userFlow2.png" alt="userFlow">
@@ -46,7 +46,7 @@
 
 ## Quickstart TLDR;
 
-### 1. ⚡ Install and run InsForge
+### 1. Install and run InsForge
 
 **Use Docker (Recommended)**  
 Prerequisites: [Docker](https://www.docker.com/) + [Node.js](https://nodejs.org/)
@@ -106,7 +106,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 - "Build a todo app with user authentication"
 - "Create an Instagram with image upload"
 
-## 🏗️ Architecture
+## Architecture
 
 
 <div align="center">>
@@ -115,7 +115,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 </div>
 
 
-## 📚 Documentation & Support
+## Documentation & Support
 
 ### Documentation
 - **Official Docs**: **WIP** - Coming soon with comprehensive guides!
@@ -127,6 +127,6 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 ### Contact
 - **Email**: info@insforge.dev
 
-## 📄 License
+## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
