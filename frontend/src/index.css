@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+@config "../tailwind.config.js";
+
+@layer utilities {
+  /* PocketBase-inspired Design Tokens */
+  :root {
+    /* Colors */
+    --pb-primary: #1a1a24;
+    --pb-text-primary: #1a1a24;
+    --pb-text-hint: #617079;
+    --pb-text-disabled: #a0a6ac;
+
+    --pb-body: #f8f9fa;
+    --pb-base: #ffffff;
+    --pb-base-alt1: #e3e8ed;
+    --pb-base-alt2: #d7dde3;
+    --pb-base-alt3: #c9d0da;
+    --pb-base-alt4: #a5b0c0;
+
+    --pb-info: #5499e8;
+    --pb-success: #32ad84;
+    --pb-danger: #e34562;
+    --pb-warning: #ff944d;
+
+    /* Spacing */
+    --pb-spacing-xs: 15px;
+    --pb-spacing-sm: 20px;
+    --pb-spacing-base: 30px;
+    --pb-spacing-lg: 50px;
+    --pb-spacing-xl: 60px;
+
+    /* Animation */
+    --pb-animation-base: 150ms;
+    --pb-animation-active: 70ms;
+    --pb-animation-entrance: 250ms;
+  }
+}
+
+@layer base {
+  :root {
+    /* Spacing system */
+    --baseSpacing: 2rem; /* 32px = 8 * 0.25rem */
+    --smSpacing: 1.25rem; /* 20px */
+    --xsSpacing: 1rem; /* 16px */
+
+    /* Font system */
+    --baseFontSize: 0.875rem; /* 14px */
+    --smFontSize: 0.8125rem; /* 13px */
+    --xsFontSize: 0.75rem; /* 12px */
+    --lgFontSize: 1.25rem; /* 20px */
+    --xlFontSize: 1.375rem; /* 22px */
+
+    /* Font weights */
+    --fontWeightNormal: 400;
+    --fontWeightMedium: 500;
+    --fontWeightSemibold: 600;
+
+    /* Font families */
+    --fontFamilyBase:
+      'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --fontFamilyMono: 'Ubuntu Mono', ui-monospace, monospace;
+  }
+
+  /* Apply base font settings */
+  body {
+    font-family: var(--fontFamilyBase);
+    font-size: var(--baseFontSize);
+    font-weight: var(--fontWeightNormal);
+  }
+
+  /* Typography scale */
+  h1 {
+    font-size: var(--xlFontSize);
+    font-weight: var(--fontWeightSemibold);
+    line-height: 1.3;
+  }
+
+  h2 {
+    font-size: var(--lgFontSize);
+    font-weight: var(--fontWeightSemibold);
+    line-height: 1.3;
+  }
+
+  .text-xs {
+    font-size: var(--xsFontSize);
+  }
+
+  .text-sm {
+    font-size: var(--smFontSize);
+  }
+
+  .font-mono {
+    font-family: var(--fontFamilyMono);
+  }
+}
+
+@layer components {
+  /* Checkbox styling */
+  input[type='checkbox'] {
+    @apply cursor-pointer;
+    accent-color: #000000;
+  }
+
+  input[type='checkbox']:checked {
+    background-color: #000000 !important;
+    border-color: #000000 !important;
+    accent-color: #000000;
+  }
+
+  input[type='checkbox']:checked:hover {
+    background-color: #1a1a1a !important;
+    border-color: #1a1a1a !important;
+  }
+
+  input[type='checkbox']:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  input[type='checkbox']:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  input:focus {
+    outline: none !important;
+  }
+
+  button:focus {
+    outline: none !important;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+  }
+}
+
+@layer base {
+  body {
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+  }
+}
+
+@theme {
+  --color-border-gray: #e4e4e7;
+  --color-chart-blue-dark: #2c7fff;
+}
+
+/* Allow natural scrolling behavior */
+
+/* Removed forced scrollbar to fix layout issues */
+
+/* Fix for Radix UI dropdowns to prevent scroll lock */
+[data-radix-popper-content-wrapper] {
+  position: fixed !important;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}

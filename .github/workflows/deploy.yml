@@ -1,0 +1,95 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Install required dependencies if not present
+            if ! command -v git &> /dev/null; then
+              echo "Installing git..."
+              sudo yum update -y
+              sudo yum install -y git
+            fi
+
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              sudo yum update -y
+              sudo yum install -y docker
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker ec2-user
+              
+              # Install docker-compose plugin
+              sudo mkdir -p /usr/local/lib/docker/cli-plugins
+              sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+              
+              # Also install standalone docker-compose for compatibility
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Navigate to application directory
+            mkdir -p ~/insforge
+            cd ~/insforge
+
+            # Pull latest code or fresh clone
+            if [ -d ".git" ]; then
+              # Make sure we're on a branch, not detached HEAD
+              git checkout master || git checkout main
+              git pull origin master || git pull origin main
+            else
+              # Remove existing non-git directory if it exists
+              if [ -d ~/insforge ] && [ ! -d ~/insforge/.git ]; then
+                rm -rf ~/insforge/*
+                rm -rf ~/insforge/.*
+              fi
+              # Clone using SSH (since we set up SSH key)
+              git clone git@github.com:InsForge/insforge.git ~/insforge
+              cd ~/insforge
+              # Stay on default branch instead of detached HEAD
+              # git checkout ${{ github.sha }}  # Commented out to avoid detached HEAD
+            fi
+
+            # Create .env file from secrets
+            cat > .env << EOF
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ADMIN_EMAIL=admin@example.com
+            ADMIN_PASSWORD=change-this-password
+            PORT=3000
+            DATABASE_DIR=./data
+            API_BASE_URL=http://localhost:7130
+            EOF
+
+            # Ensure we're in the right directory with docker-compose.yml
+            cd ~/insforge
+            
+            # Build and run with docker-compose (production mode)
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down || true
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
+
+            # Clean up old images
+            sudo docker image prune -af
+
+            # Check deployment status
+            sleep 10
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml ps
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml logs --tail=50

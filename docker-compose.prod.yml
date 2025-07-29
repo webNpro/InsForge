@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15.13
+    container_name: insforge-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker-init/db-init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - insforge-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.12
+    container_name: insforge-postgrest
+    restart: unless-stopped
+    environment:
+      #POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      #POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      #POSTGRES_DB: ${POSTGRES_DB:-insforge}
+      PGRST_DB_URI: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-insforge}
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "5430:3000"
+    depends_on:
+      - postgres
+    networks:
+      - insforge-network
+
+  insforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: insforge
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "7130:7130"
+      - "7131:7131"
+    environment:
+      - PORT=7130
+      - API_BASE_URL=http://localhost:7130
+      - VITE_API_BASE_URL=http://localhost:7130
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-this-password}
+      # PostgreSQL connection
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGREST_BASE_URL=http://postgrest:3000
+      # OAuth Configuration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:7130/api/auth/v1/callback}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-http://localhost:7130/api/auth/v1/callback}
+    restart: unless-stopped
+    networks:
+      - insforge-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  insforge-network:
+    driver: bridge
