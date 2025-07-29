@@ -459,11 +459,7 @@ export default function DatabasePage() {
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
-                                <img
-                                  src={RefreshIcon}
-                                  alt="Refresh Icon"
-                                  className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
-                                />
+                                <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -555,7 +551,8 @@ export default function DatabasePage() {
                     data={tableData?.records || []}
                     schema={tableData?.schema}
                     loading={isLoadingTable && !tableData} // Only show loading when no data exists
-                    isSorting={isSorting} // Pass sorting state
+                    isSorting={isSorting}
+                    isRefreshing={isRefreshing}
                     selectedRows={selectedRows}
                     onSelectedRowsChange={setSelectedRows}
                     sortColumns={sortColumns}

@@ -93,15 +93,15 @@
 
 /* Remove cell focus outline and use custom styling */
 .rdg-cell[aria-selected='true'] {
-  outline: none;
+  outline: 2px solid #2C7FFF;
 }
 
 .rdg-cell:focus {
-  outline: none;
+  outline: 2px solid #2C7FFF;
 }
 
 .rdg-cell:focus-within {
-  outline: none;
+  outline: 2px solid #2C7FFF;
 }
 
 /* Editor cell styling */

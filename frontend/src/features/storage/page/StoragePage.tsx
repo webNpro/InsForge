@@ -343,11 +343,7 @@ export default function StoragePage() {
                               onClick={() => void handleRefresh()}
                               disabled={isRefreshing}
                             >
-                              <img
-                                src={RefreshIcon}
-                                alt="Refresh Icon"
-                                className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`}
-                              />
+                              <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom" align="center">
@@ -438,6 +434,7 @@ export default function StoragePage() {
                 searchQuery={searchQuery}
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
+                isRefreshing={isRefreshing}
               />
             </div>
           </>
