@@ -138,7 +138,7 @@ export class MetadataService {
           type = 'float';
         } else if (type === 'BOOLEAN') {
           type = 'boolean';
-        } else if (type === 'TIMESTAMP' || type.startsWith('TIMESTAMP')) {
+        } else if (type === 'TIMESTAMPTZ' || type.startsWith('TIMESTAMPTZ')) {
           type = 'datetime';
         } else if (type === 'UUID') {
           type = 'uuid';

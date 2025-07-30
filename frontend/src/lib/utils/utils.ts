@@ -18,7 +18,7 @@ export const mapDatabaseTypeToFieldType = (dbType: string): FieldType => {
   if (type.includes('text') || type.includes('varchar') || type.includes('character')) {
     return FieldType.STRING;
   }
-  if (type.includes('timestamp') || type.includes('datetime') || type.includes('date')) {
+  if (type.includes('timestamptz') || type.includes('datetime') || type.includes('date')) {
     return FieldType.DATETIME;
   }
   if (type.includes('int') && !type.includes('point')) {

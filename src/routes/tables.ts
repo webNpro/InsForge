@@ -283,8 +283,8 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
     const tableDefinition = [
       'id UUID PRIMARY KEY DEFAULT gen_random_uuid()',
       columnDefs,
-      'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-      'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+      'created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
+      'updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
       foreignKeyConstraints,
     ]
       .filter(Boolean)

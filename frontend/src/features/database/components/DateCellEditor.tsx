@@ -73,14 +73,14 @@ export function DateCellEditor({
     if (value && value !== 'null' && type === 'datetime') {
       return new Date(value).getHours();
     }
-    return 0;
+    return new Date().getHours();
   });
 
   const [selectedMinute, setSelectedMinute] = useState(() => {
     if (value && value !== 'null' && type === 'datetime') {
       return new Date(value).getMinutes();
     }
-    return 0;
+    return new Date().getMinutes();
   });
 
   const [displayMonth, setDisplayMonth] = useState(selectedDate.getMonth());

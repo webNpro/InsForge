@@ -214,7 +214,6 @@ export function TableForm({
       const columns = data.fields.map((field) => {
         // Find foreign key for this field if it exists
         const foreignKey = foreignKeys.find((fk) => fk.field === field.name);
-        console.log(foreignKeys, foreignKey);
 
         return {
           name: field.name,

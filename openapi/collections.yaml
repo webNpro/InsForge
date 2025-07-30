@@ -38,7 +38,7 @@ paths:
                   sqlType: BOOLEAN
                   defaultValue: "false"
                 datetime:
-                  sqlType: TIMESTAMP
+                  sqlType: TIMESTAMPTZ
                   defaultValue: "CURRENT_TIMESTAMP"
                 json:
                   sqlType: JSONB

@@ -225,8 +225,8 @@ export class DatabaseManager {
       CREATE TABLE IF NOT EXISTS _config (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Auth table (authentication only - simplified)
@@ -234,8 +234,8 @@ export class DatabaseManager {
         id UUID PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Profiles table (user profile data)
@@ -246,8 +246,8 @@ export class DatabaseManager {
         avatar_url TEXT,
         bio TEXT,
         metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Superuser auth table (admin authentication)
@@ -255,8 +255,8 @@ export class DatabaseManager {
         id UUID PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Superuser profiles table (admin profiles)
@@ -264,16 +264,16 @@ export class DatabaseManager {
         id TEXT PRIMARY KEY,
         auth_id UUID UNIQUE NOT NULL REFERENCES _superuser_auth(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- App metadata
       CREATE TABLE IF NOT EXISTS _metadata (
         key TEXT PRIMARY KEY,
         value TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Logs table for activity tracking
@@ -283,7 +283,7 @@ export class DatabaseManager {
         table_name TEXT NOT NULL,
         record_id TEXT,
         details TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
       -- Storage table with bucket-based approach
@@ -291,8 +291,8 @@ export class DatabaseManager {
       CREATE TABLE IF NOT EXISTS _storage_buckets (
         name TEXT PRIMARY KEY,
         public BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS _storage (
@@ -300,7 +300,7 @@ export class DatabaseManager {
         key TEXT NOT NULL,
         size INTEGER NOT NULL,
         mime_type TEXT,
-        uploaded_at TIMESTAMP DEFAULT NOW(),
+        uploaded_at TIMESTAMPTZ DEFAULT NOW(),
         PRIMARY KEY (bucket, key),
         FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
       );
@@ -312,9 +312,9 @@ export class DatabaseManager {
         provider_id TEXT NOT NULL,
         identity_data JSONB DEFAULT '{}',
         email TEXT NULL,
-        last_login_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login_at TIMESTAMPTZ NULL,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (auth_id, provider, provider_id)
       );
 
