@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { UserPlus, Users, Key, X } from 'lucide-react';
-import { Button, SearchInput } from '@/components';
+import { UserPlus, Users, Key } from 'lucide-react';
+import { Button, SearchInput, SelectionClearButton } from '@/components';
 import { UsersManagement } from '@/features/auth/components/UsersManagement';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/components/radix/Tooltip';
 import { UserFormDialog } from '@/features/auth/components/UserFormDialog';
@@ -84,15 +84,11 @@ export default function AuthenticationPage() {
             <div className="flex items-center justify-between">
               {selectedRows.size > 0 ? (
                 <div className="flex items-center gap-3">
-                  <button
-                    className="flex items-center gap-1.5 h-10 px-3 rounded-[6px] bg-white border border-border-gray hover:bg-gray-50 transition-colors"
-                    onClick={() => setSelectedRows(new Set())}
-                  >
-                    <p className="text-zinc-950 text-sm">
-                      {selectedRows.size} {selectedRows.size === 1 ? 'user' : 'users'} selected
-                    </p>
-                    <X className="h-4 w-4 text-gray-500" />
-                  </button>
+                  <SelectionClearButton
+                    selectedCount={selectedRows.size}
+                    itemType="user"
+                    onClear={() => setSelectedRows(new Set())}
+                  />
                   <Button
                     variant="outline"
                     className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0"

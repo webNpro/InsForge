@@ -20,7 +20,7 @@ import {
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
-import { SearchInput } from '@/components';
+import { SearchInput, SelectionClearButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
 
 interface BucketFormState {
@@ -361,16 +361,11 @@ export default function StoragePage() {
                   <div className="flex items-center justify-between">
                     {selectedFiles.size > 0 ? (
                       <div className="flex items-center gap-3">
-                        <button
-                          className="flex items-center gap-1.5 h-10 px-3 rounded-[6px] bg-white border border-border-gray hover:bg-gray-50 transition-colors"
-                          onClick={() => setSelectedFiles(new Set())}
-                        >
-                          <p className="text-zinc-950 text-sm">
-                            {selectedFiles.size} {selectedFiles.size === 1 ? 'file' : 'files'}{' '}
-                            selected
-                          </p>
-                          <X className="h-4 w-4 text-gray-500" />
-                        </button>
+                        <SelectionClearButton
+                          selectedCount={selectedFiles.size}
+                          itemType="file"
+                          onClear={() => setSelectedFiles(new Set())}
+                        />
                         <Button
                           variant="outline"
                           className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0"

@@ -30,6 +30,7 @@ export { ErrorState } from './ErrorState';
 export { JsonHighlight } from './JsonHighlight';
 export { SearchInput } from './SearchInput';
 export { PaginationControls } from './PaginationControls';
+export { SelectionClearButton } from './SelectionClearButton';
 
 // Data Grid Components
 export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGrid';
