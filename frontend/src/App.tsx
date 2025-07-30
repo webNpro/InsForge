@@ -49,11 +49,11 @@ function AppRoutes() {
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/authentication" element={<AuthenticationPage />} />
-                <Route path="/database" element={<DatabasePage />} />
-                <Route path="/storage" element={<StoragePage />} />
-                <Route path="/logs" element={<LogsPage />} />
-                <Route path="/metadata" element={<MetadataPage />} />
+                <Route path="/dashboard/authentication" element={<AuthenticationPage />} />
+                <Route path="/dashboard/database" element={<DatabasePage />} />
+                <Route path="/dashboard/storage" element={<StoragePage />} />
+                <Route path="/dashboard/logs" element={<LogsPage />} />
+                <Route path="/dashboard/metadata" element={<MetadataPage />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Layout>
