@@ -3,7 +3,7 @@ import { AuthService } from '../services/auth.js';
 import { DatabaseManager } from '../services/database.js';
 
 export async function seedAdmin() {
-  const authService = new AuthService();
+  const authService = AuthService.getInstance();
   const dbManager = DatabaseManager.getInstance();
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';

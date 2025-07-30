@@ -41,7 +41,7 @@ router.get(
   verifyUserOrAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const authService = new AuthService();
+      const authService = AuthService.getInstance();
       const apiKey = await authService.initializeApiKey();
 
       successResponse(res, { api_key: apiKey });

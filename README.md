@@ -34,7 +34,7 @@
 ## Prompt Examples:
 
 <td align="center">
-  <img src="assets/userFlow2.png" alt="userFlow">
+  <img src="assets/userflow.png" alt="userFlow">
   <br>
 </td>
 
@@ -103,7 +103,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 ## Architecture
 
 
-<div align="center">>
+<div align="center">
   <img src="assets/archDiagram.png" alt="Carch">
   <br>
 </div>
