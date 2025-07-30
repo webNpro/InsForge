@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import { AuthRequest, verifyUserOrAdmin } from '../middleware/auth.js';
+import { AuthRequest, verifyAdmin } from '../middleware/auth.js';
 import { DatabaseManager } from '../services/database.js';
 import { DatabaseError } from 'pg';
 
@@ -31,7 +31,7 @@ const functionUpdateSchema = z.object({
  * GET /api/functions
  * List all edge functions
  */
-router.get('/', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
+router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const functions = await db
       .prepare(
@@ -54,7 +54,7 @@ router.get('/', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
  * GET /api/functions/:slug
  * Get specific function details including code
  */
-router.get('/:slug', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
+router.get('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { slug } = req.params;
 
@@ -85,7 +85,7 @@ router.get('/:slug', verifyUserOrAdmin, async (req: AuthRequest, res: Response) 
  * POST /api/functions
  * Create a new function
  */
-router.post('/', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
+router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const validation = functionUploadSchema.safeParse(req.body);
     if (!validation.success) {
@@ -181,7 +181,7 @@ router.post('/', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
  * PUT /api/functions/:slug
  * Update an existing function
  */
-router.put('/:slug', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
+router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { slug } = req.params;
     const validation = functionUpdateSchema.safeParse(req.body);
@@ -266,7 +266,7 @@ router.put('/:slug', verifyUserOrAdmin, async (req: AuthRequest, res: Response) 
  * DELETE /api/functions/:slug
  * Delete a function
  */
-router.delete('/:slug', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
+router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { slug } = req.params;
 

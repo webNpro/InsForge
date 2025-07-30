@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Test script for InsForge Serverless Functions (Database-based)
-# This tests the complete flow: upload to DB → Deno reads from DB → executes
+# Fixed Test Script for InsForge Serverless Functions
 
 echo "🧪 InsForge Serverless Functions Test Suite"
-echo "=========================================="
-echo "Using database-based function storage"
+echo "========================================"
 echo ""
 
 # Configuration
@@ -17,7 +15,6 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-change-this-password}"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Test counters
@@ -37,209 +34,206 @@ function test_fail() {
 }
 
 function section() {
-    echo ""
-    echo -e "${BLUE}▶ $1${NC}"
+    echo -e "\n${BLUE}▶ $1${NC}"
     echo "----------------------------------------"
 }
 
 # Start tests
 section "1. Authentication"
 
-AUTH_RESPONSE=$(curl -s -X POST "$API_BASE/api/auth/admin/login" \
+AUTH_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/auth/admin/login" \
   -H "Content-Type: application/json" \
-  -H "x-api-key: dev-api-key-1" \
   -d "{\"email\": \"$ADMIN_EMAIL\", \"password\": \"$ADMIN_PASSWORD\"}")
 
-TOKEN=$(echo $AUTH_RESPONSE | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+HTTP_CODE=$(echo "$AUTH_RESPONSE" | tail -n1)
+BODY=$(echo "$AUTH_RESPONSE" | sed '$d')
+TOKEN=$(echo $BODY | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 
-if [ -n "$TOKEN" ]; then
-    test_pass "Admin authentication successful"
+if [ "$HTTP_CODE" = "200" ] && [ -n "$TOKEN" ]; then
+    test_pass "Admin login"
 else
-    test_fail "Admin authentication failed" "$AUTH_RESPONSE"
-    echo "Cannot continue without authentication"
+    test_fail "Admin login" "Status: $HTTP_CODE"
     exit 1
 fi
 
-section "2. Create Basic Function"
+section "2. Function CRUD Operations"
 
-# Create a simple echo function
-CREATE_RESPONSE=$(curl -s -X POST "$API_BASE/api/functions" \
+# Use unique names with timestamp
+TIMESTAMP=$(date +%s)
+FUNC_NAME="test-func-$TIMESTAMP"
+FUNC_SLUG="test-func-$TIMESTAMP"  # slug matches name
+
+# Create function
+CREATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "echo-test",
-    "slug": "echo-test",
-    "code": "module.exports = async function(req) {\n  const url = new URL(req.url);\n  const message = url.searchParams.get(\"message\") || \"No message\";\n  return new Response(JSON.stringify({ echo: message }), { headers: { \"Content-Type\": \"application/json\" } });\n}",
-    "description": "Echo test function",
-    "status": "active"
-  }')
+  -d "{
+    \"name\": \"$FUNC_NAME\",
+    \"slug\": \"$FUNC_SLUG\",
+    \"code\": \"module.exports = async function(req) { return new Response('Hello World'); }\",
+    \"status\": \"active\"
+  }")
 
-if echo "$CREATE_RESPONSE" | grep -q '"success":true'; then
-    test_pass "Created echo-test function"
+HTTP_CODE=$(echo "$CREATE_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" = "201" ]; then
+    test_pass "Create function"
 else
-    test_fail "Failed to create echo-test function" "$CREATE_RESPONSE"
+    test_fail "Create function" "Status: $HTTP_CODE"
+    BODY=$(echo "$CREATE_RESPONSE" | sed '$d')
+    echo "  Response: $BODY"
 fi
 
-section "3. Test Function Execution"
+# Get function
+GET_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "$API_BASE/api/functions/$FUNC_SLUG" \
+  -H "Authorization: Bearer $TOKEN")
 
-# Test GET request
-EXEC_RESPONSE=$(curl -s "$API_BASE/functions/echo-test?message=Hello%20World")
-if echo "$EXEC_RESPONSE" | grep -q '"echo":"Hello World"'; then
-    test_pass "GET request execution successful"
+HTTP_CODE=$(echo "$GET_RESPONSE" | tail -n1)
+BODY=$(echo "$GET_RESPONSE" | sed '$d')
+if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q '"code"'; then
+    test_pass "Get function"
 else
-    test_fail "GET request execution failed" "$EXEC_RESPONSE"
+    test_fail "Get function" "Status: $HTTP_CODE"
 fi
 
-section "4. Create POST Function"
-
-# Create a function that handles POST data
-POST_FUNC=$(curl -s -X POST "$API_BASE/api/functions" \
+# Update function
+UPDATE_RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT "$API_BASE/api/functions/$FUNC_SLUG" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "data-processor",
-    "slug": "data-processor",
-    "code": "module.exports = async function(req) {\n  if (req.method !== \"POST\") {\n    return new Response(JSON.stringify({ error: \"Only POST allowed\" }), { status: 405, headers: { \"Content-Type\": \"application/json\" } });\n  }\n  try {\n    const data = await req.json();\n    const processed = { ...data, processed: true, timestamp: new Date().toISOString() };\n    return new Response(JSON.stringify(processed), { headers: { \"Content-Type\": \"application/json\" } });\n  } catch (e) {\n    return new Response(JSON.stringify({ error: \"Invalid JSON\" }), { status: 400, headers: { \"Content-Type\": \"application/json\" } });\n  }\n}",
-    "description": "POST data processor",
-    "status": "active"
-  }')
+  -d '{"code": "module.exports = async function(req) { return new Response(\"Updated!\"); }"}')
 
-if echo "$POST_FUNC" | grep -q '"success":true'; then
-    test_pass "Created data-processor function"
+HTTP_CODE=$(echo "$UPDATE_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" = "200" ]; then
+    test_pass "Update function"
 else
-    test_fail "Failed to create data-processor function" "$POST_FUNC"
+    test_fail "Update function" "Status: $HTTP_CODE"
+fi
+
+# List functions
+LIST_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "$API_BASE/api/functions" \
+  -H "Authorization: Bearer $TOKEN")
+
+HTTP_CODE=$(echo "$LIST_RESPONSE" | tail -n1)
+BODY=$(echo "$LIST_RESPONSE" | sed '$d')
+if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q "$FUNC_SLUG"; then
+    test_pass "List functions"
+else
+    test_fail "List functions" "Status: $HTTP_CODE or missing function"
+fi
+
+section "3. Function Execution"
+
+# Execute updated function
+EXEC_RESPONSE=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$FUNC_SLUG")
+HTTP_CODE=$(echo "$EXEC_RESPONSE" | tail -n1)
+BODY=$(echo "$EXEC_RESPONSE" | sed '$d')
+if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q "Updated!"; then
+    test_pass "Execute function"
+else
+    test_fail "Execute function" "Status: $HTTP_CODE, Body: $BODY"
+fi
+
+# Create POST function
+POST_FUNC="post-func-$TIMESTAMP"
+POST_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{
+    \"name\": \"$POST_FUNC\",
+    \"slug\": \"$POST_FUNC\",
+    \"code\": \"module.exports = async function(req) { if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 }); const data = await req.json(); return new Response(JSON.stringify({ result: data.value * 2 }), { headers: { 'Content-Type': 'application/json' } }); }\",
+    \"status\": \"active\"
+  }")
+
+HTTP_CODE=$(echo "$POST_CREATE" | tail -n1)
+if [ "$HTTP_CODE" = "201" ]; then
+    test_pass "Create POST function"
+else
+    test_fail "Create POST function" "Status: $HTTP_CODE"
 fi
 
 # Test POST execution
-POST_EXEC=$(curl -s -X POST "$API_BASE/functions/data-processor" \
+POST_EXEC=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/functions/$POST_FUNC" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Test", "value": 123}')
+  -d '{"value": 21}')
 
-if echo "$POST_EXEC" | grep -q '"processed":true'; then
-    test_pass "POST request execution successful"
+HTTP_CODE=$(echo "$POST_EXEC" | tail -n1)
+BODY=$(echo "$POST_EXEC" | sed '$d')
+if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q '"result":42'; then
+    test_pass "POST execution"
 else
-    test_fail "POST request execution failed" "$POST_EXEC"
+    test_fail "POST execution" "Status: $HTTP_CODE, Body: $BODY"
 fi
 
-section "5. Test Function Update"
+section "4. Error Handling"
 
-# Update the echo function
-UPDATE_RESPONSE=$(curl -s -X PUT "$API_BASE/api/functions/echo-test" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "code": "module.exports = async function(req) {\n  const url = new URL(req.url);\n  const message = url.searchParams.get(\"message\") || \"No message\";\n  return new Response(JSON.stringify({ echo: message, version: \"2.0\" }), { headers: { \"Content-Type\": \"application/json\" } });\n}"
-  }')
-
-if echo "$UPDATE_RESPONSE" | grep -q '"success":true'; then
-    test_pass "Function update successful"
-else
-    test_fail "Function update failed" "$UPDATE_RESPONSE"
-fi
-
-# Test updated function
-sleep 1  # Give Deno time to clear cache
-UPDATED_EXEC=$(curl -s "$API_BASE/functions/echo-test?message=Updated")
-if echo "$UPDATED_EXEC" | grep -q '"version":"2.0"'; then
-    test_pass "Updated function execution successful"
-else
-    test_fail "Updated function execution failed" "$UPDATED_EXEC"
-fi
-
-section "6. Test Error Handling"
-
-# Create a function with runtime error
-ERROR_FUNC=$(curl -s -X POST "$API_BASE/api/functions" \
+# Duplicate function
+DUP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "error-test",
-    "slug": "error-test",
-    "code": "module.exports = async function(req) {\n  throw new Error(\"Intentional error for testing\");\n}",
-    "description": "Error test function",
-    "status": "active"
-  }')
+  -d "{
+    \"name\": \"$FUNC_NAME\",
+    \"slug\": \"$FUNC_SLUG\",
+    \"code\": \"module.exports = async function(req) { return new Response('Dup'); }\"
+  }")
 
-# Execute and expect error
-ERROR_EXEC=$(curl -s "$API_BASE/functions/error-test")
-if echo "$ERROR_EXEC" | grep -q "error"; then
-    test_pass "Error handling works correctly"
+HTTP_CODE=$(echo "$DUP_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" = "409" ]; then
+    test_pass "Duplicate rejection"
 else
-    test_fail "Error handling failed" "$ERROR_EXEC"
+    test_fail "Duplicate rejection" "Expected 409, got $HTTP_CODE"
 fi
 
-section "7. Performance Test"
-
-# Create a function that returns timing info
-PERF_FUNC=$(curl -s -X POST "$API_BASE/api/functions" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "performance-test",
-    "slug": "performance-test",
-    "code": "module.exports = async function(req) {\n  const start = Date.now();\n  // Simulate some work\n  let sum = 0;\n  for (let i = 0; i < 1000000; i++) sum += i;\n  const duration = Date.now() - start;\n  return new Response(JSON.stringify({ duration, sum }), { headers: { \"Content-Type\": \"application/json\" } });\n}",
-    "description": "Performance test",
-    "status": "active"
-  }')
-
-# Execute multiple times to test caching
-echo "Testing performance (3 executions)..."
-for i in 1 2 3; do
-    START_TIME=$(date +%s%N)
-    PERF_RESULT=$(curl -s "$API_BASE/functions/performance-test")
-    END_TIME=$(date +%s%N)
-    TOTAL_TIME=$((($END_TIME - $START_TIME) / 1000000))
-    echo "  Execution $i: ${TOTAL_TIME}ms"
-done
-
-test_pass "Performance test completed"
-
-section "8. List Functions"
-
-LIST_RESPONSE=$(curl -s "$API_BASE/api/functions" \
-  -H "Authorization: Bearer $TOKEN")
-
-FUNCTION_COUNT=$(echo "$LIST_RESPONSE" | grep -o '"slug"' | wc -l)
-if [ "$FUNCTION_COUNT" -gt 0 ]; then
-    test_pass "Listed $FUNCTION_COUNT functions"
+# No auth
+NO_AUTH=$(curl -s -w "\n%{http_code}" -X GET "$API_BASE/api/functions")
+HTTP_CODE=$(echo "$NO_AUTH" | tail -n1)
+if [ "$HTTP_CODE" = "401" ]; then
+    test_pass "Auth required"
 else
-    test_fail "Function listing failed" "$LIST_RESPONSE"
+    test_fail "Auth required" "Expected 401, got $HTTP_CODE"
 fi
 
-section "9. Cleanup"
+# Non-existent function
+NOT_FOUND=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/does-not-exist-$TIMESTAMP")
+HTTP_CODE=$(echo "$NOT_FOUND" | tail -n1)
+if [ "$HTTP_CODE" = "404" ]; then
+    test_pass "Function not found"
+else
+    test_fail "Function not found" "Expected 404, got $HTTP_CODE"
+fi
 
-# Delete test functions
-for slug in echo-test data-processor error-test performance-test; do
-    DELETE_RESPONSE=$(curl -s -X DELETE "$API_BASE/api/functions/$slug" \
+section "5. Cleanup"
+
+# Delete functions
+for slug in "$FUNC_SLUG" "$POST_FUNC"; do
+    DELETE_RESPONSE=$(curl -s -w "\n%{http_code}" -X DELETE "$API_BASE/api/functions/$slug" \
       -H "Authorization: Bearer $TOKEN")
     
-    if echo "$DELETE_RESPONSE" | grep -q '"success":true'; then
+    HTTP_CODE=$(echo "$DELETE_RESPONSE" | tail -n1)
+    if [ "$HTTP_CODE" = "200" ]; then
         echo "  Deleted: $slug"
     fi
 done
 
-test_pass "Cleanup completed"
+# Verify cleanup
+VERIFY=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$FUNC_SLUG")
+HTTP_CODE=$(echo "$VERIFY" | tail -n1)
+if [ "$HTTP_CODE" = "404" ]; then
+    test_pass "Cleanup verified"
+else
+    test_fail "Cleanup verification" "Expected 404, got $HTTP_CODE"
+fi
 
 # Summary
-echo ""
-echo "========================================"
+echo -e "\n========================================"
 echo -e "${BLUE}Test Summary${NC}"
 echo "========================================"
 echo -e "Tests Passed: ${GREEN}$TESTS_PASSED${NC}"
 echo -e "Tests Failed: ${RED}$TESTS_FAILED${NC}"
-echo ""
 
 if [ $TESTS_FAILED -eq 0 ]; then
-    echo -e "${GREEN}✅ All tests passed!${NC}"
-    echo ""
-    echo "Key findings:"
-    echo "• Functions are stored in PostgreSQL database"
-    echo "• Deno reads and executes from database on each request"
-    echo "• No caching - functions are always fresh from database"
-    echo "• Error handling works correctly"
-    echo "• Both GET and POST methods are supported"
+    echo -e "\n${GREEN}✅ All tests passed!${NC}"
     exit 0
 else
-    echo -e "${RED}❌ Some tests failed${NC}"
+    echo -e "\n${RED}❌ Some tests failed${NC}"
     exit 1
 fi
