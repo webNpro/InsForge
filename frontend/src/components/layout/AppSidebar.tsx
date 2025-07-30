@@ -35,11 +35,11 @@ interface AppSidebarProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Authentications', href: '/authentication', icon: UserRoundCog },
-  { name: 'Database', href: '/database', icon: Database },
-  { name: 'Storage', href: '/storage', icon: HardDrive },
-  { name: 'Logs', href: '/logs', icon: Logs },
-  { name: 'Metadata', href: '/metadata', icon: Info },
+  { name: 'Authentications', href: '/dashboard/authentication', icon: UserRoundCog },
+  { name: 'Database', href: '/dashboard/database', icon: Database },
+  { name: 'Storage', href: '/dashboard/storage', icon: HardDrive },
+  { name: 'Logs', href: '/dashboard/logs', icon: Logs },
+  { name: 'Metadata', href: '/dashboard/metadata', icon: Info },
 ];
 
 // Add debug link only when debug mode is enabled
