@@ -13,7 +13,7 @@ export interface AuthRequest extends Request {
   apiKey?: string;
 }
 
-const authService = new AuthService();
+const authService = AuthService.getInstance();
 
 // Helper function to extract Bearer token
 function extractBearerToken(authHeader: string | undefined): string | null {

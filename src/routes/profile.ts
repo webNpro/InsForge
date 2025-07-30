@@ -9,7 +9,7 @@ import { ERROR_CODES } from '../types/error-constants.js';
 
 const router = Router();
 const profileService = new ProfileService();
-const authService = new AuthService();
+const authService = AuthService.getInstance();
 
 // Get current user's profile
 router.get('/me', verifyUser, async (req: AuthRequest, res: Response, next: NextFunction) => {

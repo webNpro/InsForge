@@ -11,7 +11,7 @@ import { UserWithProfile } from '../types/profile.js';
 import { OAuthConfig, ConfigRecord } from '../types/auth.js';
 
 const router = Router();
-const authService = new AuthService();
+const authService = AuthService.getInstance();
 
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -63,6 +63,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const token = authService.generateToken({
       sub: userWithProfile.id,
       email: userWithProfile.email,
+      // role: 'authenticated',
       type: 'user',
     });
 
@@ -123,6 +124,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const token = authService.generateToken({
       sub: userWithProfile.id,
       email: userWithProfile.email,
+      // role: 'authenticated',
       type: 'user',
     });
 
@@ -169,6 +171,7 @@ router.post('/admin/login', async (req: Request, res: Response, next: NextFuncti
     const token = authService.generateToken({
       sub: superuser.id,
       email: superuser.email,
+      // role: 'dashboard_user',
       type: 'admin',
     });
 
@@ -467,6 +470,7 @@ router.get('/v1/callback', async (req: Request, res: Response, next: NextFunctio
       const generatedToken = authService.generateToken({
         sub: userWithProfile.id,
         email: userWithProfile.email,
+        // role: 'authenticated',
         type: 'user',
       });
 
