@@ -178,7 +178,7 @@ export function convertSchemaToColumns(
         'integer',
         'double precision',
         'boolean',
-        'timestamp without time zone',
+        'timestamp with time zone',
         'jsonb',
       ].includes(col.type);
     const isSortable = !['jsonb', 'json'].includes(col.type?.toLowerCase());
@@ -203,7 +203,7 @@ export function convertSchemaToColumns(
       column.renderEditCell = (props: any) => (
         <CustomBooleanCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (col.type === 'timestamp without time zone') {
+    } else if (col.type === 'timestamp with time zone') {
       column.renderCell = DefaultCellRenderers.date;
       column.renderEditCell = (props: any) => (
         <CustomDateCellEditor {...props} onCellEdit={onCellEdit} />

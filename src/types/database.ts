@@ -75,7 +75,7 @@ export const FIELD_TYPES: Record<FieldType, FieldTypeInfo> = {
   },
   [FieldType.DATETIME]: {
     type: FieldType.DATETIME,
-    sqlType: 'TIMESTAMP',
+    sqlType: 'TIMESTAMPTZ',
     defaultValue: 'CURRENT_TIMESTAMP',
     description: 'Date and time with timezone',
     icon: 'calendar',
