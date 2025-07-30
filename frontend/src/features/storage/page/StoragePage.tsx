@@ -34,6 +34,7 @@ export default function StoragePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   // Bucket form state
   const [bucketFormOpen, setBucketFormOpen] = useState(false);
   const [bucketFormState, setBucketFormState] = useState<BucketFormState>({
@@ -137,9 +138,16 @@ export default function StoragePage() {
     }
   }, [buckets, selectedBucket]);
 
-  const handleRefresh = () => {
-    void refetchBuckets();
-    void queryClient.invalidateQueries({ queryKey: ['storage'] });
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchBuckets(),
+        queryClient.invalidateQueries({ queryKey: ['storage'] }),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Handle bulk delete files
@@ -332,13 +340,14 @@ export default function StoragePage() {
                               variant="ghost"
                               size="icon"
                               className="h-5 w-5"
-                              onClick={handleRefresh}
+                              onClick={() => void handleRefresh()}
+                              disabled={isRefreshing}
                             >
                               <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom" align="center">
-                            <p>Refresh</p>
+                            <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -425,6 +434,7 @@ export default function StoragePage() {
                 searchQuery={searchQuery}
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
+                isRefreshing={isRefreshing}
               />
             </div>
           </>

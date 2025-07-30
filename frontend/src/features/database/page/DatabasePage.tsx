@@ -41,6 +41,7 @@ export default function DatabasePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [isSorting, setIsSorting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { confirm, ConfirmDialogProps } = useConfirm();
   const { showToast } = useToast();
@@ -199,16 +200,22 @@ export default function DatabasePage() {
     }
   }, [metadata, selectedTable]);
 
-  const handleRefresh = () => {
-    // Reset all state
-    setSelectedRows(new Set());
-    setSortColumns([]);
-    setSearchQuery('');
-    setIsSorting(false);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Reset all state
+      setSelectedRows(new Set());
+      setSortColumns([]);
+      setSearchQuery('');
+      setIsSorting(false);
 
-    // Refresh current table data (if table is selected)
-    if (selectedTable) {
-      void refetchTableData();
+      // Refresh current table data (if table is selected)
+      if (selectedTable) {
+        await refetchTableData();
+      }
+      await refetchMetadata();
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -449,13 +456,14 @@ export default function DatabasePage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-5 w-5 text-zinc-500 hover:text-black"
-                                onClick={handleRefresh}
+                                onClick={() => void handleRefresh()}
+                                disabled={isRefreshing}
                               >
                                 <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
-                              <p>Refresh</p>
+                              <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -543,7 +551,8 @@ export default function DatabasePage() {
                     data={tableData?.records || []}
                     schema={tableData?.schema}
                     loading={isLoadingTable && !tableData} // Only show loading when no data exists
-                    isSorting={isSorting} // Pass sorting state
+                    isSorting={isSorting}
+                    isRefreshing={isRefreshing}
                     selectedRows={selectedRows}
                     onSelectedRowsChange={setSelectedRows}
                     sortColumns={sortColumns}

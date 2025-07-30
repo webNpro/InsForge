@@ -92,20 +92,13 @@
 }
 
 /* Remove cell focus outline and use custom styling */
-.rdg-cell:focus {
-  outline: none;
-  box-shadow: inset 0 0 0 2px #3b82f6;
-}
-
-.rdg-cell:focus-within {
-  outline: none;
-  box-shadow: inset 0 0 0 2px #3b82f6;
+.rdg-cell[aria-selected='true'] {
+  outline: 2px solid #2C7FFF;
 }
 
 /* Editor cell styling */
 .rdg-cell.rdg-cell-editing {
   background-color: #ffffff;
-  box-shadow: inset 0 0 0 2px #3b82f6;
 }
 
 /* Custom scrollbar for react-data-grid */

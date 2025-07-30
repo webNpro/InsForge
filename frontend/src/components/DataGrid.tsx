@@ -34,6 +34,7 @@ export interface DataGridProps {
   columns: DataGridColumn[];
   loading?: boolean;
   isSorting?: boolean;
+  isRefreshing?: boolean;
   selectedRows?: Set<string>;
   onSelectedRowsChange?: (selectedRows: Set<string>) => void;
   sortColumns?: SortColumn[];
@@ -282,6 +283,7 @@ export function DataGrid({
   columns,
   loading = false,
   isSorting = false,
+  isRefreshing = false,
   selectedRows,
   onSelectedRowsChange,
   sortColumns,
@@ -445,6 +447,16 @@ export function DataGrid({
             ),
           }}
         />
+
+        {/* Loading mask overlay */}
+        {isRefreshing && (
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-50 mt-13">
+            <div className="flex items-center gap-1">
+              <div className="w-5 h-5 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-zinc-500">Loading</span>
+            </div>
+          </div>
+        )}
       </div>
       {showPagination && onPageChange && (
         <PaginationControls
