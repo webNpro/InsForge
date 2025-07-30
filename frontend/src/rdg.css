@@ -96,14 +96,6 @@
   outline: 2px solid #2C7FFF;
 }
 
-.rdg-cell:focus {
-  outline: 2px solid #2C7FFF;
-}
-
-.rdg-cell:focus-within {
-  outline: 2px solid #2C7FFF;
-}
-
 /* Editor cell styling */
 .rdg-cell.rdg-cell-editing {
   background-color: #ffffff;
