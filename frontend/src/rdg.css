@@ -203,15 +203,6 @@
   display: none !important;
 }
 
-/* Sortable column header cursor */
-.rdg-header-row .rdg-cell[aria-sort] {
-  cursor: pointer;
-}
-
-.rdg-header-row .rdg-cell[aria-sort]:hover {
-  background-color: #e5e7eb;
-}
-
 /* Custom header renderer styling */
 .rdg-header-row .rdg-cell .sortable-header {
   display: flex;

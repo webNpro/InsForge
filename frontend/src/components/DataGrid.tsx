@@ -8,9 +8,11 @@ import ReactDataGrid, {
 } from 'react-data-grid';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
-import { Copy, Check, MoveUp, MoveDown } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
+import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
+import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
 
 // Types
 export interface DataGridColumn {
@@ -22,6 +24,7 @@ export interface DataGridColumn {
   maxWidth?: number;
   resizable?: boolean;
   sortable?: boolean;
+  sortDescendingFirst?: boolean;
   editable?: boolean;
   primary_key?: boolean;
   renderCell?: (props: any) => React.ReactNode;
@@ -244,7 +247,6 @@ export function SortableHeaderRenderer({
   };
 
   const nextDirection = getNextSortDirection();
-  const ArrowIcon = nextDirection === 'DESC' ? MoveDown : MoveUp;
 
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
@@ -262,15 +264,38 @@ export function SortableHeaderRenderer({
           </span>
         )}
 
-        {/* Show sort arrow only on hover if column is sortable */}
+        {/* Show sort arrow with hover effect */}
         {column.sortable && (
-          <ArrowIcon
-            className={`ml-0.5 h-4 w-4 text-zinc-500 transition-opacity ${
-              sortDirection
-                ? 'opacity-100' // Always show if currently sorted
-                : 'opacity-0 group-hover:opacity-100' // Show on hover if not sorted
-            }`}
-          />
+          <div className="relative ml-0.5 w-5 h-5">
+            {/* Current sort direction arrow */}
+            {sortDirection === 'DESC' && (
+              <div className="bg-transparent p-0.5 rounded">
+                <img
+                  src={ArrowDownIcon}
+                  alt="Sorted descending"
+                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0"
+                />
+              </div>
+            )}
+            {sortDirection === 'ASC' && (
+              <div className="bg-transparent p-0.5 rounded">
+                <img
+                  src={ArrowUpIcon}
+                  alt="Sorted ascending"
+                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0"
+                />
+              </div>
+            )}
+
+            {/* Next sort direction arrow on hover */}
+            <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 p-0.5 rounded w-5 h-5">
+              <img
+                src={nextDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
+                alt={`Sort ${nextDirection.toLowerCase()}`}
+                className="h-4 w-4 text-zinc-500"
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -376,6 +401,7 @@ export function DataGrid({
         maxWidth: col.maxWidth,
         resizable: col.resizable !== false,
         sortable: col.sortable !== false,
+        sortDescendingFirst: true,
         editable: col.editable && !col.primary_key,
         renderCell: col.renderCell || DefaultCellRenderers.text,
         renderEditCell: col.renderEditCell,
