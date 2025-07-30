@@ -87,12 +87,49 @@ services:
     networks:
       - insforge-network
 
+  deno:
+    image: denoland/deno:alpine-1.46.3
+    container_name: insforge-deno
+    working_dir: /app
+    depends_on:
+      - postgres
+      - postgrest
+    ports:
+      - "8000:8000"
+    environment:
+      - DENO_ENV=${DENO_ENV:-development}
+      - DENO_DIR=/deno-dir
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      # PostgreSQL connection
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-insforge}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGREST_BASE_URL=http://postgrest:3000
+    volumes:
+      - ./functions:/app/functions
+      - deno_cache:/deno-dir
+    command: >
+      sh -c "
+        echo 'Downloading Deno dependencies...' &&
+        deno cache functions/server.ts &&
+        echo 'Starting Deno server...' &&
+        # Minimal permissions: net (server), env (config), read (worker template only)
+        deno run --allow-net --allow-env --allow-read=./functions/worker-template.js --watch functions/server.ts
+      "
+    restart: unless-stopped
+    networks:
+      - insforge-network
+
 volumes:
   postgres-data:
     driver: local
   node_modules:
     driver: local
   frontend_node_modules:
+    driver: local
+  deno_cache:
     driver: local
 
 networks:
