@@ -35,20 +35,15 @@ router.get('/', verifyUserOrAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const functions = await db
       .prepare(
-        `
-      SELECT 
-        id, slug, name, description, status, 
-        created_at, updated_at, deployed_at, created_by
-      FROM _edge_functions
-      ORDER BY created_at DESC
-    `
+        `SELECT 
+          id, slug, name, description, status, 
+          created_at, updated_at, deployed_at, created_by
+        FROM _edge_functions
+        ORDER BY created_at DESC`
       )
       .all();
 
-    res.json({
-      functions,
-      total: functions.length,
-    });
+    res.json(functions);
   } catch (error) {
     console.error('Failed to list functions:', error);
     res.status(500).json({ error: 'Failed to list functions' });

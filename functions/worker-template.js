@@ -1,11 +1,11 @@
-/* eslint-env worker */
-/* global self, Request */
 /**
  * Worker Template for Serverless Functions
  * 
  * This code runs inside a Web Worker environment created by Deno.
  * Each worker is created fresh for a single request, executes once, and terminates.
  */
+/* eslint-env worker */
+/* global self, Request */
 
 // Handle the single message with both code and request data
 self.onmessage = async (e) => {
