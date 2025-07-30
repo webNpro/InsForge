@@ -34,7 +34,7 @@
 ## Prompt Examples:
 
 <td align="center">
-  <img src="assets/userFlow.png" alt="userFlow">
+  <img src="assets/userflow.png" alt="userFlow">
   <br>
 </td>
 
