@@ -16,7 +16,9 @@ import { metadataRouter } from './routes/metadata.js';
 import { logsRouter } from './routes/logs.js';
 import { configRouter } from './routes/config.js';
 import { docsRouter } from './routes/docs.js';
+import functionsRouter from './routes/functions.js';
 import { errorMiddleware } from './middleware/error.js';
+import fetch from 'node-fetch';
 import { DatabaseManager } from './services/database.js';
 import { StorageService } from './services/storage.js';
 import { MetadataService } from './services/metadata.js';
@@ -80,9 +82,45 @@ export async function createApp() {
   apiRouter.use('/logs', logsRouter);
   apiRouter.use('/config', configRouter);
   apiRouter.use('/docs', docsRouter);
+  apiRouter.use('/functions', functionsRouter);
 
   // Mount all API routes under /api prefix
   app.use('/api', apiRouter);
+
+  // Proxy function execution to Deno runtime
+  app.all('/functions/:slug', async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
+      const queryString = new URL(req.url, `http://localhost`).search;
+
+      // Convert headers to fetch-compatible format
+      const headers: Record<string, string> = {};
+      Object.entries(req.headers).forEach(([key, value]) => {
+        if (value) {
+          headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
+        }
+      });
+      headers['X-Forwarded-For'] = req.ip || req.socket.remoteAddress || '';
+      headers['X-Original-Host'] = req.hostname;
+
+      const response = await fetch(`${denoUrl}/${slug}${queryString}`, {
+        method: req.method,
+        headers,
+        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+      });
+
+      // Copy response headers
+      for (const [key, value] of response.headers.entries()) {
+        res.setHeader(key, value);
+      }
+
+      res.status(response.status).send(await response.text());
+    } catch (error) {
+      console.error('Failed to execute function:', error);
+      res.status(502).json({ error: 'Failed to execute function' });
+    }
+  });
 
   // Always try to serve frontend if it exists
   const frontendPath = path.join(__dirname, 'frontend');

@@ -318,6 +318,20 @@ export class DatabaseManager {
         PRIMARY KEY (auth_id, provider, provider_id)
       );
 
+      -- Edge functions
+      CREATE TABLE IF NOT EXISTS _edge_functions (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        code TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'draft',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        deployed_at TIMESTAMP,
+        created_by UUID REFERENCES _auth(id)
+      );
+
     `);
 
       // Create update timestamp function
@@ -340,6 +354,7 @@ export class DatabaseManager {
         '_superuser_profiles',
         '_metadata',
         '_identifies',
+        '_edge_functions',
       ];
       for (const table of tables) {
         await client.query(`
@@ -356,6 +371,8 @@ export class DatabaseManager {
         CREATE INDEX IF NOT EXISTS idx_superuser_auth_email ON _superuser_auth(email);
         CREATE INDEX IF NOT EXISTS idx_superuser_profiles_auth_id ON _superuser_profiles(auth_id);
         CREATE UNIQUE INDEX IF NOT EXISTS idx_identify_provider_id ON _identifies(provider, provider_id);
+        CREATE INDEX IF NOT EXISTS idx_edge_functions_slug ON _edge_functions(slug);
+        CREATE INDEX IF NOT EXISTS idx_edge_functions_status ON _edge_functions(status);
       `);
 
       // Insert initial metadata
