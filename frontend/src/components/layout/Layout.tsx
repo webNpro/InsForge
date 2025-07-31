@@ -14,7 +14,7 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 flex">
       <AppHeader currentUser={user} onLogout={logout} />
 
       <AppSidebar
