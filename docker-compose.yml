@@ -95,11 +95,10 @@ services:
       - postgres
       - postgrest
     ports:
-      - "8000:8000"
+      - "7133:7133"
     environment:
       - DENO_ENV=${DENO_ENV:-development}
       - DENO_DIR=/deno-dir
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
       # PostgreSQL connection
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432

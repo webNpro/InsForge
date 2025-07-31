@@ -47,9 +47,22 @@ self.onmessage = async (e) => {
     
     self.postMessage({ success: true, response: responseData });
   } catch (error) {
-    self.postMessage({ 
-      success: false, 
-      error: error.message || 'Unknown error' 
-    });
+    // Check if the error is actually a Response object (thrown by the function)
+    if (error instanceof Response) {
+      const responseData = {
+        status: error.status,
+        statusText: error.statusText,
+        headers: Object.fromEntries(error.headers),
+        body: await error.text(),
+      };
+      self.postMessage({ success: true, response: responseData });
+    } else {
+      // For actual errors, include status if available
+      self.postMessage({ 
+        success: false, 
+        error: error.message || 'Unknown error',
+        status: error.status || 500
+      });
+    }
   }
 };
