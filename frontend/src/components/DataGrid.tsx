@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
-import CheckedIcon from '@/assets/icons/checkbox_checked.svg';
-import UndeterminedIcon from '@/assets/icons/checkbox_undetermined.svg';
+import Checkbox from './Checkbox';
 
 // Types
 export interface DataGridColumn {
@@ -166,7 +165,6 @@ export const DefaultCellRenderers = {
     );
   },
 };
-
 // Separate IdCell component to use hooks properly
 function IdCell({ value }: { value: any }) {
   const [copied, setCopied] = useState(false);
@@ -340,31 +338,19 @@ export function DataGrid({
         maxWidth: 45,
         resizable: false,
         renderCell: ({ row, tabIndex }) => (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="relative grid justify-center items-center">
-              <input
-                type="checkbox"
-                className="w-4 h-4 bg-white rounded row-start-1 col-start-1 appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)]"
-                checked={selectedRows.has(row.id)}
-                onChange={(e) => {
-                  const newSelectedRows = new Set(selectedRows);
-                  if (e.target.checked) {
-                    newSelectedRows.add(row.id);
-                  } else {
-                    newSelectedRows.delete(row.id);
-                  }
-                  onSelectedRowsChange(newSelectedRows);
-                }}
-                tabIndex={tabIndex}
-              />
-              {selectedRows.has(row.id) && (
-                <img
-                  className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
-                  src={CheckedIcon}
-                />
-              )}
-            </div>
-          </div>
+          <Checkbox
+            checked={selectedRows.has(row.id)}
+            onChange={(checked) => {
+              const newSelectedRows = new Set(selectedRows);
+              if (checked) {
+                newSelectedRows.add(row.id);
+              } else {
+                newSelectedRows.delete(row.id);
+              }
+              onSelectedRowsChange(newSelectedRows);
+            }}
+            tabIndex={tabIndex}
+          />
         ),
         renderHeaderCell: () => {
           const selectedCount = data.filter((row) => selectedRows.has(row.id)).length;
@@ -373,40 +359,21 @@ export function DataGrid({
           const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
           return (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="relative grid justify-center items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 bg-white rounded row-start-1 col-start-1 appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)]"
-                  checked={isAllSelected}
-                  onChange={() => {
-                    const newSelectedRows = new Set(selectedRows);
-                    if (isAllSelected) {
-                      // If all selected, unselect all
-                      data.forEach((row) => newSelectedRows.delete(row.id));
-                    } else {
-                      // If none or partially selected, select all
-                      data.forEach((row) => newSelectedRows.add(row.id));
-                    }
-                    onSelectedRowsChange(newSelectedRows);
-                  }}
-                />
-                {/* Checkmark for fully selected state */}
-                {isAllSelected && (
-                  <img
-                    className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
-                    src={CheckedIcon}
-                  />
-                )}
-                {/* Dash for partially selected state */}
-                {isPartiallySelected && (
-                  <img
-                    className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
-                    src={UndeterminedIcon}
-                  />
-                )}
-              </div>
-            </div>
+            <Checkbox
+              checked={isAllSelected}
+              indeterminate={isPartiallySelected}
+              onChange={(checked) => {
+                const newSelectedRows = new Set(selectedRows);
+                if (checked) {
+                  // Select all
+                  data.forEach((row) => newSelectedRows.add(row.id));
+                } else {
+                  // Unselect all
+                  data.forEach((row) => newSelectedRows.delete(row.id));
+                }
+                onSelectedRowsChange(newSelectedRows);
+              }}
+            />
           );
         },
       });
@@ -425,7 +392,7 @@ export function DataGrid({
         maxWidth: col.maxWidth,
         resizable: col.resizable !== false,
         sortable: col.sortable !== false,
-        sortDescendingFirst: true,
+        sortDescendingFirst: col.sortDescendingFirst ?? true,
         editable: col.editable && !col.primary_key,
         renderCell: col.renderCell || DefaultCellRenderers.text,
         renderEditCell: col.renderEditCell,
