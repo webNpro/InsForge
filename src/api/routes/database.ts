@@ -1,12 +1,12 @@
 import { Router, Response } from 'express';
 import { verifyUserOrApiKey, AuthRequest } from '../middleware/auth.js';
-import { errorResponse, successResponse } from '../utils/response.js';
-import { ERROR_CODES } from '../types/error-constants.js';
+import { errorResponse, successResponse } from '../../utils/response.js';
+import { ERROR_CODES } from '../../types/error-constants.js';
 import axios from 'axios';
-import { DatabaseManager } from '../services/database.js';
-import { validateTableName } from '../utils/validations.js';
+import { DatabaseManager } from '../../core/database/database.js';
+import { validateTableName } from '../../utils/validations.js';
 import { AppError } from '../middleware/error.js';
-import { DatabaseRecord } from '../types/database.js';
+import { DatabaseRecord } from '../../types/database.js';
 
 const router = Router();
 

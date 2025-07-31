@@ -1,10 +1,10 @@
 import { Router, Response, NextFunction } from 'express';
-import { DatabaseManager } from '../services/database.js';
-import { MetadataService } from '../services/metadata.js';
+import { DatabaseManager } from '../../core/database/database.js';
+import { MetadataService } from '../../core/metadata/metadata.js';
 import { verifyUserOrApiKey, AuthRequest } from '../middleware/auth.js';
 import { AppError } from '../middleware/error.js';
-import { successResponse } from '../utils/response.js';
-import { ERROR_CODES } from '../types/error-constants.js';
+import { successResponse } from '../../utils/response.js';
+import { ERROR_CODES } from '../../types/error-constants.js';
 import {
   FIELD_TYPES,
   CreateTableRequest,
@@ -14,8 +14,8 @@ import {
   ForeignKeyRow,
   ColumnInfo,
   PrimaryKeyInfo,
-} from '../types/database.js';
-import { validateIdentifier } from '../utils/validations.js';
+} from '../../types/database.js';
+import { validateIdentifier } from '../../utils/validations.js';
 
 // Helper function to quote identifiers for SQL
 function quoteIdentifier(identifier: string): string {

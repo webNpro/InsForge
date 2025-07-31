@@ -1,4 +1,4 @@
-import { AppError } from '../middleware/error.js';
+import { AppError } from '../api/middleware/error.js';
 import { ERROR_CODES } from '../types/error-constants.js';
 
 export function validateEmail(email: string) {
