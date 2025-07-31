@@ -91,7 +91,7 @@ export async function createApp() {
   app.all('/functions/:slug', async (req: Request, res: Response) => {
     try {
       const { slug } = req.params;
-      const denoUrl = process.env.DENO_RUNTIME_URL || 'http://deno:8000';
+      const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
       const queryString = new URL(req.url, `http://localhost`).search;
 
       // Convert headers to fetch-compatible format

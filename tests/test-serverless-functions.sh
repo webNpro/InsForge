@@ -8,7 +8,6 @@ echo ""
 
 # Configuration
 API_BASE="${API_BASE:-http://localhost:7130}"
-DENO_BASE="${DENO_BASE:-http://localhost:7133}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-change-this-password}"
 
@@ -124,7 +123,7 @@ fi
 section "3. Function Execution"
 
 # Execute updated function
-EXEC_RESPONSE=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$FUNC_SLUG")
+EXEC_RESPONSE=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$FUNC_SLUG")
 HTTP_CODE=$(echo "$EXEC_RESPONSE" | tail -n1)
 BODY=$(echo "$EXEC_RESPONSE" | sed '$d')
 if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q "Updated!"; then
@@ -153,7 +152,7 @@ else
 fi
 
 # Test POST execution
-POST_EXEC=$(curl -s -w "\n%{http_code}" -X POST "$DENO_BASE/$POST_FUNC" \
+POST_EXEC=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/functions/$POST_FUNC" \
   -H "Content-Type: application/json" \
   -d '{"value": 21}')
 
@@ -182,7 +181,7 @@ FORBIDDEN_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions"
 HTTP_CODE=$(echo "$FORBIDDEN_CREATE" | tail -n1)
 if [ "$HTTP_CODE" = "201" ]; then
     # Test execution returns 403
-    EXEC_403=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$FORBIDDEN_FUNC")
+    EXEC_403=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$FORBIDDEN_FUNC")
     HTTP_CODE=$(echo "$EXEC_403" | tail -n1)
     BODY=$(echo "$EXEC_403" | sed '$d')
     if [ "$HTTP_CODE" = "403" ] && echo "$BODY" | grep -q "Access Forbidden"; then
@@ -209,7 +208,7 @@ UNAUTH_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions" \
 HTTP_CODE=$(echo "$UNAUTH_CREATE" | tail -n1)
 if [ "$HTTP_CODE" = "201" ]; then
     # Test execution returns 401
-    EXEC_401=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$UNAUTH_FUNC")
+    EXEC_401=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$UNAUTH_FUNC")
     HTTP_CODE=$(echo "$EXEC_401" | tail -n1)
     BODY=$(echo "$EXEC_401" | sed '$d')
     if [ "$HTTP_CODE" = "401" ] && echo "$BODY" | grep -q "Unauthorized"; then
@@ -236,7 +235,7 @@ VALIDATION_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions
 HTTP_CODE=$(echo "$VALIDATION_CREATE" | tail -n1)
 if [ "$HTTP_CODE" = "201" ]; then
     # Test execution without param returns 400
-    EXEC_400=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$VALIDATION_FUNC")
+    EXEC_400=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$VALIDATION_FUNC")
     HTTP_CODE=$(echo "$EXEC_400" | tail -n1)
     BODY=$(echo "$EXEC_400" | sed '$d')
     if [ "$HTTP_CODE" = "400" ] && echo "$BODY" | grep -q "Name parameter required"; then
@@ -246,7 +245,7 @@ if [ "$HTTP_CODE" = "201" ]; then
     fi
     
     # Test with valid param returns 200
-    EXEC_200=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$VALIDATION_FUNC?name=World")
+    EXEC_200=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$VALIDATION_FUNC?name=World")
     HTTP_CODE=$(echo "$EXEC_200" | tail -n1)
     BODY=$(echo "$EXEC_200" | sed '$d')
     if [ "$HTTP_CODE" = "200" ] && echo "$BODY" | grep -q "Hello World"; then
@@ -273,7 +272,7 @@ ERROR_CREATE=$(curl -s -w "\n%{http_code}" -X POST "$API_BASE/api/functions" \
 HTTP_CODE=$(echo "$ERROR_CREATE" | tail -n1)
 if [ "$HTTP_CODE" = "201" ]; then
     # Test execution returns 500
-    EXEC_500=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$ERROR_FUNC")
+    EXEC_500=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$ERROR_FUNC")
     HTTP_CODE=$(echo "$EXEC_500" | tail -n1)
     BODY=$(echo "$EXEC_500" | sed '$d')
     if [ "$HTTP_CODE" = "500" ] && echo "$BODY" | grep -q "Something went wrong"; then
@@ -314,7 +313,7 @@ else
 fi
 
 # Non-existent function
-NOT_FOUND=$(curl -s -w "\n%{http_code}" "$DENO_BASE/does-not-exist-$TIMESTAMP")
+NOT_FOUND=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/does-not-exist-$TIMESTAMP")
 HTTP_CODE=$(echo "$NOT_FOUND" | tail -n1)
 if [ "$HTTP_CODE" = "404" ]; then
     test_pass "Function not found"
@@ -336,7 +335,7 @@ for slug in "$FUNC_SLUG" "$POST_FUNC" "$FORBIDDEN_FUNC" "$UNAUTH_FUNC" "$VALIDAT
 done
 
 # Verify cleanup
-VERIFY=$(curl -s -w "\n%{http_code}" "$DENO_BASE/$FUNC_SLUG")
+VERIFY=$(curl -s -w "\n%{http_code}" "$API_BASE/functions/$FUNC_SLUG")
 HTTP_CODE=$(echo "$VERIFY" | tail -n1)
 if [ "$HTTP_CODE" = "404" ]; then
     test_pass "Cleanup verified"
