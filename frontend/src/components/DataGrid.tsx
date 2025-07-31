@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
+import CheckedIcon from '@/assets/icons/checkbox_checked.svg';
+import UndeterminedIcon from '@/assets/icons/checkbox_undetermined.svg';
 
 // Types
 export interface DataGridColumn {
@@ -267,27 +269,16 @@ export function SortableHeaderRenderer({
         {/* Show sort arrow with hover effect */}
         {column.sortable && (
           <div className="relative ml-0.5 w-5 h-5">
-            {/* Current sort direction arrow */}
-            {sortDirection === 'DESC' && (
+            {sortDirection && (
               <div className="bg-transparent p-0.5 rounded">
                 <img
-                  src={ArrowDownIcon}
-                  alt="Sorted descending"
-                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0"
-                />
-              </div>
-            )}
-            {sortDirection === 'ASC' && (
-              <div className="bg-transparent p-0.5 rounded">
-                <img
-                  src={ArrowUpIcon}
-                  alt="Sorted ascending"
+                  src={sortDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
+                  alt={`Sorted ${sortDirection.toLowerCase()}`}
                   className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0"
                 />
               </div>
             )}
 
-            {/* Next sort direction arrow on hover */}
             <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 p-0.5 rounded w-5 h-5">
               <img
                 src={nextDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
@@ -350,41 +341,74 @@ export function DataGrid({
         resizable: false,
         renderCell: ({ row, tabIndex }) => (
           <div className="w-full h-full flex items-center justify-center">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              checked={selectedRows.has(row.id)}
-              onChange={(e) => {
-                const newSelectedRows = new Set(selectedRows);
-                if (e.target.checked) {
-                  newSelectedRows.add(row.id);
-                } else {
-                  newSelectedRows.delete(row.id);
-                }
-                onSelectedRowsChange(newSelectedRows);
-              }}
-              tabIndex={tabIndex}
-            />
+            <div className="relative grid justify-center items-center">
+              <input
+                type="checkbox"
+                className="w-4 h-4 bg-white rounded row-start-1 col-start-1 appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)]"
+                checked={selectedRows.has(row.id)}
+                onChange={(e) => {
+                  const newSelectedRows = new Set(selectedRows);
+                  if (e.target.checked) {
+                    newSelectedRows.add(row.id);
+                  } else {
+                    newSelectedRows.delete(row.id);
+                  }
+                  onSelectedRowsChange(newSelectedRows);
+                }}
+                tabIndex={tabIndex}
+              />
+              {selectedRows.has(row.id) && (
+                <img
+                  className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
+                  src={CheckedIcon}
+                />
+              )}
+            </div>
           </div>
         ),
-        renderHeaderCell: () => (
-          <div className="w-full h-full flex items-center justify-center">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              checked={data.length > 0 && data.every((row) => selectedRows.has(row.id))}
-              onChange={(e) => {
-                const newSelectedRows = new Set(selectedRows);
-                if (e.target.checked) {
-                  data.forEach((row) => newSelectedRows.add(row.id));
-                } else {
-                  data.forEach((row) => newSelectedRows.delete(row.id));
-                }
-                onSelectedRowsChange(newSelectedRows);
-              }}
-            />
-          </div>
-        ),
+        renderHeaderCell: () => {
+          const selectedCount = data.filter((row) => selectedRows.has(row.id)).length;
+          const totalCount = data.length;
+          const isAllSelected = totalCount > 0 && selectedCount === totalCount;
+          const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+
+          return (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="relative grid justify-center items-center">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 bg-white rounded row-start-1 col-start-1 appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)]"
+                  checked={isAllSelected}
+                  onChange={() => {
+                    const newSelectedRows = new Set(selectedRows);
+                    if (isAllSelected) {
+                      // If all selected, unselect all
+                      data.forEach((row) => newSelectedRows.delete(row.id));
+                    } else {
+                      // If none or partially selected, select all
+                      data.forEach((row) => newSelectedRows.add(row.id));
+                    }
+                    onSelectedRowsChange(newSelectedRows);
+                  }}
+                />
+                {/* Checkmark for fully selected state */}
+                {isAllSelected && (
+                  <img
+                    className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
+                    src={CheckedIcon}
+                  />
+                )}
+                {/* Dash for partially selected state */}
+                {isPartiallySelected && (
+                  <img
+                    className="pointer-events-none row-start-1 col-start-1 mx-auto w-4 h-4 bg-white"
+                    src={UndeterminedIcon}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        },
       });
     }
 
@@ -421,7 +445,15 @@ export function DataGrid({
     });
 
     return cols;
-  }, [columns, selectedRows, onSelectedRowsChange, data, sortColumns, showSelection]);
+  }, [
+    columns,
+    selectedRows,
+    onSelectedRowsChange,
+    data,
+    sortColumns,
+    showSelection,
+    showTypeBadge,
+  ]);
 
   // Default row key getter
   const defaultRowKeyGetter = useCallback(
