@@ -97,7 +97,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <button className="w-50 flex items-center gap-3 hover:bg-zinc-100 rounded-[8px] pr-3 transition-all duration-200 group">
-              <Avatar className="h-12 w-12 ring-2 ring-white shadow-sm">
+              <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm">
                 <AvatarImage src={currentUser?.avatar} />
                 <AvatarFallback
                   className={cn(
