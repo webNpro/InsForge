@@ -103,6 +103,7 @@ export default function AuthenticationPage() {
                   onChange={setSearchQuery}
                   placeholder="Search Users by Name or Email"
                   className="flex-1 max-w-80"
+                  debounceTime={300}
                 />
               )}
               <div className="flex items-center gap-2">

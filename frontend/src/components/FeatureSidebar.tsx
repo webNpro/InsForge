@@ -83,6 +83,7 @@ export function FeatureSidebar<T extends FeatureItem>({
           onChange={setSearchTerm}
           placeholder={searchPlaceholder}
           className="w-full"
+          debounceTime={200}
         />
       </div>
 

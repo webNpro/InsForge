@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import { storageService } from '@/features/storage/services/storage.service';
@@ -380,6 +380,7 @@ export default function StoragePage() {
                         onChange={setSearchQuery}
                         placeholder="Search Files by Name"
                         className="flex-1 max-w-80"
+                        debounceTime={300}
                       />
                     )}
                     <div className="flex items-center gap-2 ml-4">

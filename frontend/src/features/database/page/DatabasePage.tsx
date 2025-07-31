@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
@@ -498,6 +498,7 @@ export default function DatabasePage() {
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
                           className="flex-1 max-w-80"
+                          debounceTime={300}
                         />
                       )}
                       <div className="flex items-center gap-2 ml-4">
