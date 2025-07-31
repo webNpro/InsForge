@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/radix/ScrollArea';
 import { Button } from '@/components/radix/Button';
 import { SearchInput } from '@/components/SearchInput';
 import { FeatureSidebarItem } from '@/components/FeatureSidebarItem';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface FeatureItem {
   [key: string]: any;
@@ -48,12 +49,15 @@ export function FeatureSidebar<T extends FeatureItem>({
 }: FeatureSidebarProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Debounce search term to avoid excessive filtering operations
+  const debouncedSearchTerm = useDebounce(searchTerm, 200);
+
   let itemNames = Object.keys(items);
   if (filterItems) {
     itemNames = filterItems(itemNames);
   }
 
-  const normalizedSearch = searchTerm.toLowerCase().replace(/\s+/g, '');
+  const normalizedSearch = debouncedSearchTerm.toLowerCase().replace(/\s+/g, '');
   const filteredItems = itemNames.filter((name) =>
     name.toLowerCase().replace(/\s+/g, '').includes(normalizedSearch)
   );
@@ -91,7 +95,7 @@ export function FeatureSidebar<T extends FeatureItem>({
         {loading ? (
           renderSkeleton()
         ) : filteredItems.length === 0 ? (
-          renderEmptyState(searchTerm)
+          renderEmptyState(debouncedSearchTerm)
         ) : (
           <div className="space-y-1">
             {filteredItems.map((itemName) => (

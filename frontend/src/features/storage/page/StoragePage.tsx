@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import { storageService } from '@/features/storage/services/storage.service';
@@ -22,6 +22,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
 import { SearchInput, SelectionClearButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -35,6 +36,9 @@ export default function StoragePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Debounce search query to avoid excessive filtering
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   // Bucket form state
   const [bucketFormOpen, setBucketFormOpen] = useState(false);
   const [bucketFormState, setBucketFormState] = useState<BucketFormState>({
@@ -422,7 +426,7 @@ export default function StoragePage() {
               <StorageManager
                 bucketName={selectedBucket}
                 fileCount={bucketStats?.[selectedBucket]?.file_count || 0}
-                searchQuery={searchQuery}
+                searchQuery={debouncedSearchQuery}
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
                 isRefreshing={isRefreshing}

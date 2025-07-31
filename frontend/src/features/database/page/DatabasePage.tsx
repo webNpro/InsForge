@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
@@ -26,6 +26,7 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -43,6 +44,9 @@ export default function DatabasePage() {
   const [isSorting, setIsSorting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Debounce search query to avoid excessive API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const { confirm, ConfirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -59,7 +63,7 @@ export default function DatabasePage() {
   // Reset page when search query or selected table changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedTable]);
+  }, [debouncedSearchQuery, selectedTable]);
 
   // Clear selected rows when table changes
   useEffect(() => {
@@ -114,7 +118,7 @@ export default function DatabasePage() {
       selectedTable,
       currentPage,
       pageSize,
-      searchQuery,
+      debouncedSearchQuery,
       JSON.stringify(sortColumns),
     ],
     queryFn: async () => {
@@ -131,7 +135,7 @@ export default function DatabasePage() {
             selectedTable,
             pageSize,
             offset,
-            searchQuery,
+            debouncedSearchQuery,
             sortColumns
           ),
         ]);
@@ -149,7 +153,13 @@ export default function DatabasePage() {
 
           const [schema, records] = await Promise.all([
             databaseService.getTableSchema(selectedTable),
-            databaseService.getTableRecords(selectedTable, pageSize, offset, searchQuery, []),
+            databaseService.getTableRecords(
+              selectedTable,
+              pageSize,
+              offset,
+              debouncedSearchQuery,
+              []
+            ),
           ]);
 
           showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
