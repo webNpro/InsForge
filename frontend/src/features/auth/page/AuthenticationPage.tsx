@@ -10,7 +10,6 @@ import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
-import { useDebounce } from '@/lib/hooks/useDebounce';
 
 export default function AuthenticationPage() {
   const [selectedSection, setSelectedSection] = useState<string>('users');
@@ -18,9 +17,6 @@ export default function AuthenticationPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-
-  // Debounce search query to avoid excessive filtering
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const { showToast } = useToast();
   const { refetch } = useUsers();
@@ -107,6 +103,7 @@ export default function AuthenticationPage() {
                   onChange={setSearchQuery}
                   placeholder="Search Users by Name or Email"
                   className="flex-1 max-w-80"
+                  debounceMs={300}
                 />
               )}
               <div className="flex items-center gap-2">
@@ -137,7 +134,7 @@ export default function AuthenticationPage() {
 
         {selectedSection === 'users' && (
           <UsersManagement
-            searchQuery={debouncedSearchQuery}
+            searchQuery={searchQuery}
             selectedRows={selectedRows}
             onSelectedRowsChange={setSelectedRows}
             onAddUser={() => setAddDialogOpen(true)}

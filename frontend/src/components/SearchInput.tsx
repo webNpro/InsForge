@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/radix/Input';
 import { Button } from '@/components/radix/Button';
@@ -7,6 +8,10 @@ interface SearchInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** Debounce delay in milliseconds. Set to 0 to disable debouncing. Default: 500ms */
+  debounceMs?: number;
+  /** Callback fired immediately when input changes (before debounce) */
+  onImmediateChange?: (value: string) => void;
 }
 
 export function SearchInput({
@@ -14,22 +19,65 @@ export function SearchInput({
   onChange,
   placeholder = 'Search...',
   className,
+  debounceMs = 500,
+  onImmediateChange,
 }: SearchInputProps) {
+  const [internalValue, setInternalValue] = useState(value);
+
+  // Sync internal value with external value prop
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
+
+  // Handle debounced onChange
+  useEffect(() => {
+    if (debounceMs === 0) {
+      // No debouncing, call onChange immediately
+      onChange(internalValue);
+      return;
+    }
+
+    // Set up debounce timer
+    const handler = setTimeout(() => {
+      onChange(internalValue);
+    }, debounceMs);
+
+    // Cleanup timer on value change
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [internalValue, debounceMs, onChange]);
+
+  const handleInputChange = (newValue: string) => {
+    setInternalValue(newValue);
+    // Call immediate change callback if provided
+    onImmediateChange?.(newValue);
+  };
+
+  const handleClear = () => {
+    setInternalValue('');
+    onImmediateChange?.('');
+    // If no debouncing, clear immediately
+    if (debounceMs === 0) {
+      onChange('');
+    }
+  };
+
   return (
     <div className={`relative bg-white ${className || ''}`}>
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
         placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={internalValue}
+        onChange={(e) => handleInputChange(e.target.value)}
         className="pl-9 pr-9 h-10"
       />
-      {value && (
+      {internalValue && (
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onChange('')}
+          onClick={handleClear}
           className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
         >
           <X className="h-3 w-3" />

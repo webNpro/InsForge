@@ -26,7 +26,6 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
-import { useDebounce } from '@/lib/hooks/useDebounce';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -44,9 +43,6 @@ export default function DatabasePage() {
   const [isSorting, setIsSorting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Debounce search query to avoid excessive API calls
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
   const { confirm, ConfirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -63,7 +59,7 @@ export default function DatabasePage() {
   // Reset page when search query or selected table changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, selectedTable]);
+  }, [searchQuery, selectedTable]);
 
   // Clear selected rows when table changes
   useEffect(() => {
@@ -118,7 +114,7 @@ export default function DatabasePage() {
       selectedTable,
       currentPage,
       pageSize,
-      debouncedSearchQuery,
+      searchQuery,
       JSON.stringify(sortColumns),
     ],
     queryFn: async () => {
@@ -135,7 +131,7 @@ export default function DatabasePage() {
             selectedTable,
             pageSize,
             offset,
-            debouncedSearchQuery,
+            searchQuery,
             sortColumns
           ),
         ]);
@@ -153,13 +149,7 @@ export default function DatabasePage() {
 
           const [schema, records] = await Promise.all([
             databaseService.getTableSchema(selectedTable),
-            databaseService.getTableRecords(
-              selectedTable,
-              pageSize,
-              offset,
-              debouncedSearchQuery,
-              []
-            ),
+            databaseService.getTableRecords(selectedTable, pageSize, offset, searchQuery, []),
           ]);
 
           showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
@@ -508,6 +498,7 @@ export default function DatabasePage() {
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
                           className="flex-1 max-w-80"
+                          debounceMs={300}
                         />
                       )}
                       <div className="flex items-center gap-2 ml-4">

@@ -22,7 +22,6 @@ import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
 import { SearchInput, SelectionClearButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
-import { useDebounce } from '@/lib/hooks/useDebounce';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -36,9 +35,6 @@ export default function StoragePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Debounce search query to avoid excessive filtering
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   // Bucket form state
   const [bucketFormOpen, setBucketFormOpen] = useState(false);
   const [bucketFormState, setBucketFormState] = useState<BucketFormState>({
@@ -384,6 +380,7 @@ export default function StoragePage() {
                         onChange={setSearchQuery}
                         placeholder="Search Files by Name"
                         className="flex-1 max-w-80"
+                        debounceMs={300}
                       />
                     )}
                     <div className="flex items-center gap-2 ml-4">
@@ -426,7 +423,7 @@ export default function StoragePage() {
               <StorageManager
                 bucketName={selectedBucket}
                 fileCount={bucketStats?.[selectedBucket]?.file_count || 0}
-                searchQuery={debouncedSearchQuery}
+                searchQuery={searchQuery}
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
                 isRefreshing={isRefreshing}
