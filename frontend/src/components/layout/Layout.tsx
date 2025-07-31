@@ -14,7 +14,7 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <AppHeader currentUser={user} onLogout={logout} />
 
       <AppSidebar
@@ -29,11 +29,9 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div
         className={cn(
-          'transition-all duration-300 ease-in-out',
-          // Desktop margin adjustments based on sidebar state
+          'flex-1 transition-all duration-300 ease-in-out overflow-y-auto',
           sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[240px]',
-          // Top padding for the fixed banner
-          'pt-16'
+          'mt-16'
         )}
       >
         {children}
