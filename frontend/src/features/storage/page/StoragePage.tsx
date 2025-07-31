@@ -380,7 +380,7 @@ export default function StoragePage() {
                         onChange={setSearchQuery}
                         placeholder="Search Files by Name"
                         className="flex-1 max-w-80"
-                        debounceMs={300}
+                        debounceTime={300}
                       />
                     )}
                     <div className="flex items-center gap-2 ml-4">

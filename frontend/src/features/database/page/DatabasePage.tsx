@@ -498,7 +498,7 @@ export default function DatabasePage() {
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
                           className="flex-1 max-w-80"
-                          debounceMs={300}
+                          debounceTime={300}
                         />
                       )}
                       <div className="flex items-center gap-2 ml-4">

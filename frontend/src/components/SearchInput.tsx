@@ -9,7 +9,7 @@ interface SearchInputProps {
   placeholder?: string;
   className?: string;
   /** Debounce delay in milliseconds. Set to 0 to disable debouncing. Default: 500ms */
-  debounceMs?: number;
+  debounceTime?: number;
   /** Callback fired immediately when input changes (before debounce) */
   onImmediateChange?: (value: string) => void;
 }
@@ -19,7 +19,7 @@ export function SearchInput({
   onChange,
   placeholder = 'Search...',
   className,
-  debounceMs = 500,
+  debounceTime = 500,
   onImmediateChange,
 }: SearchInputProps) {
   const [internalValue, setInternalValue] = useState(value);
@@ -31,7 +31,7 @@ export function SearchInput({
 
   // Handle debounced onChange
   useEffect(() => {
-    if (debounceMs === 0) {
+    if (debounceTime === 0) {
       // No debouncing, call onChange immediately
       onChange(internalValue);
       return;
@@ -40,13 +40,13 @@ export function SearchInput({
     // Set up debounce timer
     const handler = setTimeout(() => {
       onChange(internalValue);
-    }, debounceMs);
+    }, debounceTime);
 
     // Cleanup timer on value change
     return () => {
       clearTimeout(handler);
     };
-  }, [internalValue, debounceMs, onChange]);
+  }, [internalValue, debounceTime, onChange]);
 
   const handleInputChange = (newValue: string) => {
     setInternalValue(newValue);
@@ -58,7 +58,7 @@ export function SearchInput({
     setInternalValue('');
     onImmediateChange?.('');
     // If no debouncing, clear immediately
-    if (debounceMs === 0) {
+    if (debounceTime === 0) {
       onChange('');
     }
   };
