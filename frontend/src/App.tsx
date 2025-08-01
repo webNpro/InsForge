@@ -40,7 +40,7 @@ function App() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/dashboard/login" element={<LoginPage />} />
       <Route
         path="/*"
         element={
