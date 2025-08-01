@@ -38,6 +38,12 @@ if [ -z "$INSFORGE_API_KEY" ]; then
     echo ""
 fi
 
+# Check if running cloud tests
+if [ -z "$AWS_S3_BUCKET" ]; then
+    echo -e "${YELLOW}Note: AWS_S3_BUCKET not set. Cloud/S3 tests will be skipped.${NC}"
+    echo ""
+fi
+
 # Export admin credentials for tests
 export TEST_ADMIN_EMAIL="$ADMIN_EMAIL"
 export TEST_ADMIN_PASSWORD="$ADMIN_PASSWORD"
@@ -77,13 +83,27 @@ run_test() {
     return $exit_code
 }
 
-# Run each test script
-for test_script in "$SCRIPT_DIR"/test-*.sh; do
+# Run local tests
+echo -e "${YELLOW}=== Running Local Tests ===${NC}"
+for test_script in "$SCRIPT_DIR"/local/test-*.sh; do
     if [ -f "$test_script" ] && [ -x "$test_script" ]; then
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         run_test "$test_script"
     fi
 done
+
+# Run cloud tests if AWS is configured
+if [ -n "$AWS_S3_BUCKET" ] && [ -n "$APP_KEY" ]; then
+    echo -e "${YELLOW}=== Running Cloud Tests ===${NC}"
+    for test_script in "$SCRIPT_DIR"/cloud/test-*.sh; do
+        if [ -f "$test_script" ] && [ -x "$test_script" ]; then
+            TOTAL_TESTS=$((TOTAL_TESTS + 1))
+            run_test "$test_script"
+        fi
+    done
+else
+    echo -e "${YELLOW}Skipping cloud tests (AWS_S3_BUCKET or APP_KEY not configured)${NC}"
+fi
 
 # Summary
 echo "=========================================="
