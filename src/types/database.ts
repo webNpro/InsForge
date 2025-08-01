@@ -42,13 +42,13 @@ export interface DatabaseMetadata {
 }
 
 export enum FieldType {
-  STRING = 'string',
-  DATETIME = 'datetime',
-  INTEGER = 'integer',
-  FLOAT = 'float',
-  BOOLEAN = 'boolean',
-  UUID = 'uuid',
-  JSON = 'json',
+  STRING = 'STRING',
+  DATETIME = 'DATETIME',
+  INTEGER = 'INTEGER',
+  FLOAT = 'FLOAT',
+  BOOLEAN = 'BOOLEAN',
+  UUID = 'UUID',
+  JSON = 'JSON',
 }
 
 export interface FieldTypeInfo {
@@ -148,8 +148,8 @@ export interface CreateTableRequest {
 // Type definition for foreign key information
 export interface ForeignKeyInfo {
   constraint_name: string;
-  table: string;
-  column: string;
+  reference_table: string;
+  reference_column: string;
   on_delete: string;
   on_update: string;
 }

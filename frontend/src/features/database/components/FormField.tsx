@@ -5,7 +5,7 @@ import { Label } from '@/components/radix/Label';
 import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { Button } from '@/components/radix/Button';
 import { Calendar } from 'lucide-react';
-import { ColumnSchema } from '@/features/database/schema';
+import { TableFormColumnSchema } from '@/features/database/schema';
 import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
@@ -182,7 +182,7 @@ function FormJsonEditor({ value, nullable, onChange }: FormJsonEditorProps) {
 }
 
 interface FormFieldProps {
-  field: ColumnSchema;
+  field: TableFormColumnSchema;
   form: UseFormReturn<any>;
   tableName: string;
 }
@@ -193,7 +193,7 @@ function FieldLabel({
   tableName,
   children,
 }: {
-  field: ColumnSchema;
+  field: TableFormColumnSchema;
   tableName: string;
   children?: React.ReactNode;
 }) {

@@ -362,7 +362,7 @@ export default function DatabasePage() {
     queryKey: ['table-schema', editingTable],
     queryFn: async () => {
       if (!editingTable) {
-        return null;
+        return undefined;
       }
       const editingTableSchema = await databaseService.getTableSchema(editingTable);
       return editingTableSchema;
@@ -399,14 +399,7 @@ export default function DatabasePage() {
               }
             }}
             mode={editingTable ? 'edit' : 'create'}
-            editTable={
-              editingTable && editingTableSchema
-                ? {
-                    name: editingTable,
-                    columns: editingTableSchema.columns,
-                  }
-                : undefined
-            }
+            editTable={editingTable ? editingTableSchema : undefined}
             onSuccess={() => {
               void refetchMetadata();
               void refetchTableData();

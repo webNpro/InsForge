@@ -1,35 +1,27 @@
 import { Type, Calendar, Hash, Percent, ToggleLeft, Fingerprint, Code } from 'lucide-react';
-import { FieldType } from '@/lib/types/schema';
+import { ColumnTypeSchema } from '@schemas/database.schema';
 
 // Icon mapping for field types
-export const fieldIcons: Record<FieldType, React.ComponentType<{ className?: string }>> = {
-  [FieldType.STRING]: Type,
-  [FieldType.DATETIME]: Calendar,
-  [FieldType.INTEGER]: Hash,
-  [FieldType.FLOAT]: Percent,
-  [FieldType.BOOLEAN]: ToggleLeft,
-  [FieldType.UUID]: Fingerprint,
-  [FieldType.JSON]: Code,
-  // [FieldType.FILE]: FileText,
-};
-
-// Default field values
-export const defaultField = {
-  name: '',
-  type: FieldType.STRING,
-  nullable: true,
-  unique: false,
-  default_value: '',
+export const columnTypeIcons: Record<
+  ColumnTypeSchema,
+  React.ComponentType<{ className?: string }>
+> = {
+  STRING: Type,
+  DATETIME: Calendar,
+  INTEGER: Hash,
+  FLOAT: Percent,
+  BOOLEAN: ToggleLeft,
+  UUID: Fingerprint,
+  JSON: Code,
 };
 
 // Field type descriptions
-export const fieldTypeDescriptions: Record<FieldType, string> = {
-  [FieldType.STRING]: 'Text values of any length',
-  [FieldType.INTEGER]: 'Whole numbers without decimals',
-  [FieldType.FLOAT]: 'Numbers with decimal places',
-  [FieldType.BOOLEAN]: 'True or false values',
-  [FieldType.DATETIME]: 'Date and time values',
-  [FieldType.UUID]: 'Unique identifiers (auto-generated)',
-  [FieldType.JSON]: 'Complex structured data',
-  // [FieldType.FILE]: 'File attachments with metadata',
+export const columnTypeDescriptions: Record<ColumnTypeSchema, string> = {
+  STRING: 'Text values of any length',
+  INTEGER: 'Whole numbers without decimals',
+  FLOAT: 'Numbers with decimal places',
+  BOOLEAN: 'True or false values',
+  DATETIME: 'Date and time values',
+  UUID: 'Unique identifiers (auto-generated)',
+  JSON: 'Complex structured data',
 };

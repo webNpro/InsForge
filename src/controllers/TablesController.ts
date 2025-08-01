@@ -146,7 +146,7 @@ export class TablesController {
           defaultClause = `DEFAULT '${col.default_value}'`;
         } else if (fieldType.defaultValue && !col.nullable) {
           // Type-specific default for non-nullable fields
-          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'uuid') {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'UUID') {
             // PostgreSQL UUID generation
             defaultClause = `DEFAULT gen_random_uuid()`;
           } else if (fieldType.defaultValue === 'CURRENT_TIMESTAMP') {

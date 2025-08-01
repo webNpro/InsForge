@@ -1,4 +1,4 @@
-import { FieldType } from '@/lib/types/schema';
+import { ColumnTypeSchema } from '@schemas/database.schema';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,18 +11,18 @@ export const validateEmail = (email: string) => {
 };
 
 // Map database types to frontend FieldType
-export const mapDatabaseTypeToFieldType = (dbType: string): FieldType => {
+export const mapDatabaseTypeToFieldType = (dbType: string): ColumnTypeSchema => {
   const type = dbType.toLowerCase();
 
   // Handle various database type representations
   if (type.includes('text') || type.includes('varchar') || type.includes('character')) {
-    return FieldType.STRING;
+    return 'STRING';
   }
   if (type.includes('timestamptz') || type.includes('datetime') || type.includes('date')) {
-    return FieldType.DATETIME;
+    return 'DATETIME';
   }
   if (type.includes('int') && !type.includes('point')) {
-    return FieldType.INTEGER;
+    return 'INTEGER';
   }
   if (
     type.includes('real') ||
@@ -31,18 +31,18 @@ export const mapDatabaseTypeToFieldType = (dbType: string): FieldType => {
     type.includes('decimal') ||
     type.includes('numeric')
   ) {
-    return FieldType.FLOAT;
+    return 'FLOAT';
   }
   if (type.includes('bool')) {
-    return FieldType.BOOLEAN;
+    return 'BOOLEAN';
   }
   if (type.includes('uuid')) {
-    return FieldType.UUID;
+    return 'UUID';
   }
   if (type.includes('json')) {
-    return FieldType.JSON;
+    return 'JSON';
   }
 
   // Default to string for unknown types
-  return FieldType.STRING;
+  return 'STRING';
 };

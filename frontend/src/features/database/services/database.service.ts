@@ -1,24 +1,5 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface TableColumn {
-  name: string;
-  type: string;
-  nullable: boolean;
-  primary_key: boolean;
-  unique?: boolean;
-  default_value: string | null;
-  foreign_key?: {
-    table: string;
-    column: string;
-    on_delete?: string;
-    on_update?: string;
-  };
-}
-
-export interface TableInfo {
-  columns: TableColumn[];
-  record_count: number;
-}
+import { TableSchema, ColumnSchema } from '@schemas/database.schema';
 
 export class DatabaseService {
   // Table operations
@@ -30,7 +11,7 @@ export class DatabaseService {
     return Array.isArray(data) ? data : [];
   }
 
-  async getTableSchema(tableName: string) {
+  async getTableSchema(tableName: string): Promise<TableSchema> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       headers: apiClient.withApiKey(),
     });
@@ -86,11 +67,11 @@ export class DatabaseService {
       // Get table schema to identify text columns
       const schema = await this.getTableSchema(tableName);
       const textColumns = schema.columns
-        .filter((col: TableColumn) => {
+        .filter((col: ColumnSchema) => {
           const type = col.type.toLowerCase();
           return type === 'text' || type === 'varchar' || type.includes('character varying');
         })
-        .map((col: TableColumn) => col.name);
+        .map((col: ColumnSchema) => col.name);
 
       if (textColumns.length > 0) {
         // Create PostgREST OR filter for text columns
