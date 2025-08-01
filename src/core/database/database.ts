@@ -328,7 +328,7 @@ export class DatabaseManager {
         status VARCHAR(50) DEFAULT 'draft',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
-        deployed_at TIMESTAMP,
+        deployed_at TIMESTAMP
       );
 
     `);
