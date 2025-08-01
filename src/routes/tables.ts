@@ -453,7 +453,7 @@ router.get('/:table/schema', async (req: AuthRequest, res: Response, next: NextF
         type: col.data_type,
         nullable: col.is_nullable === 'YES',
         primary_key: pkSet.has(col.column_name),
-        unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
+        is_unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
         default_value: col.column_default,
         ...(foreignKeyMap.has(col.column_name) && {
           foreign_key: foreignKeyMap.get(col.column_name),

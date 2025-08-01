@@ -1,26 +1,23 @@
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { memo } from 'react';
+import { Controller, Control } from 'react-hook-form';
 import { X, Key } from 'lucide-react';
 import { Input } from '@/components/radix/Input';
 import { Checkbox } from '@/components/radix/Checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
-import { columnTypeIcons } from '../constants';
 import { TableFormColumnSchema, TableFormSchema } from '../schema';
-import { columnTypeSchema } from '@schemas/database.schema';
-
-const COLUMN_TYPES_ARRAY = columnTypeSchema.options;
+import { ColumnTypeSelect } from './ColumnTypeSelect';
 
 interface TableFormColumnProps {
   index: number;
-  form: UseFormReturn<TableFormSchema>;
+  control: Control<TableFormSchema>;
   onRemove: () => void;
   isSystemColumn: boolean;
   isNewColumn: boolean;
   column: TableFormColumnSchema;
 }
 
-export function TableFormColumn({
+export const TableFormColumn = memo(function TableFormColumn({
   index,
-  form,
+  control,
   onRemove,
   isSystemColumn,
   isNewColumn,
@@ -37,13 +34,19 @@ export function TableFormColumn({
       {/* Name */}
       <div className="w-[280px]">
         <div className="relative flex items-center">
-          <Input
-            {...form.register(`columns.${index}.name`)}
-            placeholder="Enter column name"
-            className={`h-10 rounded-md border-zinc-200 text-sm font-normal ${
-              isSystemColumn ? 'bg-zinc-100 text-zinc-950' : 'bg-white text-zinc-950 shadow-sm'
-            }`}
-            disabled={isSystemColumn}
+          <Controller
+            control={control}
+            name={`columns.${index}.name`}
+            render={({ field }) => (
+              <Input
+                {...field}
+                placeholder="Enter column name"
+                className={`h-10 rounded-md border-zinc-200 text-sm font-normal ${
+                  isSystemColumn ? 'bg-zinc-100 text-zinc-950' : 'bg-white text-zinc-950 shadow-sm'
+                }`}
+                disabled={isSystemColumn}
+              />
+            )}
           />
           {/* Show key icon only for the first preset field in create mode (which is the system id) */}
           {isSystemColumn && column.name === 'id' && (
@@ -54,71 +57,63 @@ export function TableFormColumn({
 
       {/* Type */}
       <div className="w-[200px]">
-        <Controller
-          control={form.control}
+        <ColumnTypeSelect
+          control={control}
           name={`columns.${index}.type`}
-          render={({ field }) => {
-            const Icon = columnTypeIcons[field.value];
-            return (
-              <Select disabled={!isNewColumn} value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger
-                  className={`h-10 rounded-md border-zinc-200 text-sm font-normal ${
-                    isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {Icon && <Icon className="h-4 w-4 text-zinc-500" />}
-                    <span>{field.value.toLocaleLowerCase()}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {COLUMN_TYPES_ARRAY.map((type) => {
-                    const TypeIcon = columnTypeIcons[type];
-                    return (
-                      <SelectItem key={type} value={type}>
-                        <div className="flex items-center gap-2">
-                          <TypeIcon className="h-4 w-4" />
-                          <span>{type.toLocaleLowerCase()}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            );
-          }}
+          disabled={!isNewColumn}
+          className={`h-10 rounded-md border-zinc-200 text-sm font-normal ${
+            isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
+          }`}
         />
       </div>
 
       {/* Default Value */}
       <div className="w-[200px]">
-        <Input
-          {...form.register(`columns.${index}.default_value`)}
-          placeholder="Enter default value"
-          className={`h-10 rounded-md border-zinc-200 text-sm font-normal placeholder:text-zinc-500 ${
-            isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
-          }`}
-          disabled={isSystemColumn}
+        <Controller
+          control={control}
+          name={`columns.${index}.default_value`}
+          render={({ field }) => (
+            <Input
+              {...field}
+              placeholder="Enter default value"
+              className={`h-10 rounded-md border-zinc-200 text-sm font-normal placeholder:text-zinc-500 ${
+                isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
+              }`}
+              disabled={isSystemColumn}
+            />
+          )}
         />
       </div>
 
       {/* Nullable */}
       <div className="flex-1 flex justify-center">
-        <Checkbox
-          checked={form.watch(`columns.${index}.nullable`)}
-          onCheckedChange={(checked) => form.setValue(`columns.${index}.nullable`, !!checked)}
-          disabled={isSystemColumn}
-          className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+        <Controller
+          control={control}
+          name={`columns.${index}.nullable`}
+          render={({ field }) => (
+            <Checkbox
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              disabled={isSystemColumn}
+              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+            />
+          )}
         />
       </div>
 
       {/* Unique */}
       <div className="flex-1 flex justify-center">
-        <Checkbox
-          checked={form.watch(`columns.${index}.is_unique`)}
-          onCheckedChange={(checked) => form.setValue(`columns.${index}.is_unique`, !!checked)}
-          disabled={isSystemColumn}
-          className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+        <Controller
+          control={control}
+          name={`columns.${index}.is_unique`}
+          render={({ field }) => (
+            <Checkbox
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              disabled={isSystemColumn}
+              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+            />
+          )}
         />
       </div>
 
@@ -136,4 +131,4 @@ export function TableFormColumn({
       </div>
     </div>
   );
-}
+});
