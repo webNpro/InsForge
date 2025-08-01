@@ -54,10 +54,6 @@ export function TableForm({
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    console.log(editTable);
-  }, [editTable]);
-
   const form = useForm({
     resolver: zodResolver(tableFormSchema),
     defaultValues: {
@@ -99,10 +95,6 @@ export function TableForm({
           : [{ ...newColumn }],
     },
   });
-
-  useEffect(() => {
-    console.log(form);
-  }, [form]);
 
   // Reset form when switching between modes or when editTable changes
   useEffect(() => {
@@ -367,7 +359,7 @@ export function TableForm({
     },
   });
 
-  const handleSubmit = void form.handleSubmit((data) => {
+  const handleSubmit = form.handleSubmit((data) => {
     if (mode === 'edit') {
       updateTableMutation.mutate(data);
     } else {
@@ -426,7 +418,7 @@ export function TableForm({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <form onSubmit={() => void handleSubmit()} className="flex flex-col gap-6">
             {/* Table Name */}
             <div className="bg-white rounded-xl border border-zinc-200 p-6">
               <div className="flex flex-col gap-3">
@@ -471,7 +463,7 @@ export function TableForm({
                         key={field.id}
                         column={field}
                         index={originalIndex}
-                        form={form}
+                        control={form.control}
                         onRemove={() => remove(originalIndex)}
                         isSystemColumn={field.isSystemColumn}
                         isNewColumn={field.isNewColumn}
@@ -618,7 +610,7 @@ export function TableForm({
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={
               !form.formState.isValid ||
               createTableMutation.isPending ||
