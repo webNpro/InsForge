@@ -13,6 +13,15 @@ NC='\033[0m' # No Color
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Load environment from .env file if it exists
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    echo "Loading environment from .env file..."
+    set -a  # automatically export all variables
+    source "$PROJECT_ROOT/.env"
+    set +a  # turn off automatic export
+fi
 
 echo "=========================================="
 echo "Running all Insforge backend tests"

@@ -5,6 +5,15 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+
+# Load .env file if AWS variables not already set
+if [ -z "$AWS_S3_BUCKET" ] && [ -f "$PROJECT_ROOT/.env" ]; then
+    echo "Loading environment from .env file..."
+    set -a  # automatically export all variables
+    source "$PROJECT_ROOT/.env"
+    set +a  # turn off automatic export
+fi
 
 # Source test configuration
 source "$SCRIPT_DIR/../test-config.sh"
