@@ -12,37 +12,22 @@ export const validateEmail = (email: string) => {
 
 // Map database types to frontend FieldType
 export const mapDatabaseTypeToFieldType = (dbType: string): ColumnTypeSchema => {
-  const type = dbType.toLowerCase();
-
-  // Handle various database type representations
-  if (type.includes('text') || type.includes('varchar') || type.includes('character')) {
-    return 'STRING';
+  switch (dbType.toLocaleLowerCase()) {
+    case 'uuid':
+      return 'UUID';
+    case 'text':
+      return 'STRING';
+    case 'timestamp with time zone':
+      return 'DATETIME';
+    case 'integer':
+      return 'INTEGER';
+    case 'double precision':
+      return 'FLOAT';
+    case 'boolean':
+      return 'BOOLEAN';
+    case 'jsonb':
+      return 'JSON';
+    default:
+      return 'STRING';
   }
-  if (type.includes('timestamptz') || type.includes('datetime') || type.includes('date')) {
-    return 'DATETIME';
-  }
-  if (type.includes('int') && !type.includes('point')) {
-    return 'INTEGER';
-  }
-  if (
-    type.includes('real') ||
-    type.includes('float') ||
-    type.includes('double') ||
-    type.includes('decimal') ||
-    type.includes('numeric')
-  ) {
-    return 'FLOAT';
-  }
-  if (type.includes('bool')) {
-    return 'BOOLEAN';
-  }
-  if (type.includes('uuid')) {
-    return 'UUID';
-  }
-  if (type.includes('json')) {
-    return 'JSON';
-  }
-
-  // Default to string for unknown types
-  return 'STRING';
 };
