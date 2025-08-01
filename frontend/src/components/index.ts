@@ -17,7 +17,6 @@ export * from './radix/Select';
 export * from './radix/Sheet';
 export * from './radix/Switch';
 export * from './radix/Tooltip';
-export * from './radix/Checkbox';
 export * from './radix/AlertDialog';
 export * from './radix/Avatar';
 export * from './ConfirmDialog';
@@ -31,6 +30,7 @@ export { JsonHighlight } from './JsonHighlight';
 export { SearchInput } from './SearchInput';
 export { PaginationControls } from './PaginationControls';
 export { SelectionClearButton } from './SelectionClearButton';
+export { Checkbox } from './Checkbox';
 
 // Data Grid Components
 export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGrid';

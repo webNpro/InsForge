@@ -5,10 +5,11 @@ import { Label } from '@/components/radix/Label';
 import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { Button } from '@/components/radix/Button';
 import { Calendar } from 'lucide-react';
-import { TableFormColumnSchema } from '@/features/database/schema';
 import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
+import { ColumnSchema } from '@schemas/database.schema';
+import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 
 // Form adapters for edit cell components
 interface FormBooleanEditorProps {
@@ -182,7 +183,7 @@ function FormJsonEditor({ value, nullable, onChange }: FormJsonEditorProps) {
 }
 
 interface FormFieldProps {
-  field: TableFormColumnSchema;
+  field: ColumnSchema;
   form: UseFormReturn<any>;
   tableName: string;
 }
@@ -193,7 +194,7 @@ function FieldLabel({
   tableName,
   children,
 }: {
-  field: TableFormColumnSchema;
+  field: ColumnSchema;
   tableName: string;
   children?: React.ReactNode;
 }) {
@@ -219,41 +220,10 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
   // TODO: This is a mess, we need to clean it up. To fix in future.
   const renderField = () => {
     // Infer frontend type from field name and SQLite type
-    let fieldType = field.type.toLowerCase();
-
-    if (field.type.includes('time')) {
-      fieldType = 'datetime';
-    }
-
-    if (field.type.includes('json')) {
-      fieldType = 'json';
-    }
-
-    if (field.type.includes('uuid')) {
-      fieldType = 'uuid';
-    }
+    const fieldType = mapDatabaseTypeToFieldType(field.type);
 
     switch (fieldType) {
-      case 'date':
-        return (
-          <>
-            <FieldLabel field={field} tableName={tableName} />
-            <Controller
-              control={control}
-              name={field.name}
-              render={({ field: formField }) => (
-                <FormDateEditor
-                  value={formField.value}
-                  type="date"
-                  nullable={field.nullable}
-                  onChange={formField.onChange}
-                />
-              )}
-            />
-          </>
-        );
-
-      case 'boolean':
+      case 'BOOLEAN':
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -271,9 +241,8 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'integer':
-      case 'real':
-      case 'float':
+      case 'INTEGER':
+      case 'FLOAT':
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -284,7 +253,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                 <Input
                   id={`${tableName}-${field.name}`}
                   type="number"
-                  step={fieldType === 'real' || fieldType === 'float' ? '0.01' : '1'}
+                  step={fieldType === 'FLOAT' ? '0.01' : '1'}
                   value={formField.value ?? ''}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -293,7 +262,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                       formField.onChange(field.nullable ? null : 0);
                     } else {
                       const numValue =
-                        fieldType === 'integer' ? parseInt(value, 10) : parseFloat(value);
+                        fieldType === 'INTEGER' ? parseInt(value, 10) : parseFloat(value);
                       formField.onChange(isNaN(numValue) ? (field.nullable ? null : 0) : numValue);
                     }
                   }}
@@ -304,7 +273,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'datetime':
+      case 'DATETIME':
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -323,7 +292,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'json':
+      case 'JSON':
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -341,7 +310,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'uuid':
+      case 'UUID':
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -354,8 +323,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'text':
-      case 'string':
+      case 'STRING':
       default:
         return (
           <>

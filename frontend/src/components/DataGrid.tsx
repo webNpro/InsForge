@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
-import Checkbox from './Checkbox';
+import { Checkbox } from './Checkbox';
 
 // Types
 export interface DataGridColumn {

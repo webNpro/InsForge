@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Controller, Control } from 'react-hook-form';
 import { X, Key } from 'lucide-react';
 import { Input } from '@/components/radix/Input';
-import { Checkbox } from '@/components/radix/Checkbox';
+import { Checkbox } from '@/components';
 import { TableFormColumnSchema, TableFormSchema } from '../schema';
 import { ColumnTypeSelect } from './ColumnTypeSelect';
 
@@ -23,8 +23,6 @@ export const TableFormColumn = memo(function TableFormColumn({
   isNewColumn,
   column,
 }: TableFormColumnProps) {
-  // System fields are the first 3 preset fields in create mode
-
   return (
     <div
       className={`flex items-center gap-6 px-4 py-2 border-t border-zinc-200 ${

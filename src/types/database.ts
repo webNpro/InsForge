@@ -129,7 +129,7 @@ export interface ColumnDefinition {
   name: string;
   type: FieldType;
   nullable: boolean;
-  unique?: boolean;
+  is_unique?: boolean;
   default_value?: string;
   foreign_key?: {
     table: string;
@@ -207,7 +207,7 @@ export interface GetTableSchemaResponse {
     type: string;
     nullable: boolean;
     primary_key: boolean;
-    unique: boolean;
+    is_unique: boolean;
     default_value: string | null;
     foreign_key?: ForeignKeyInfo;
   }>;
