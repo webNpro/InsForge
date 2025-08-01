@@ -10,3 +10,4 @@ coverage/
 *.db-wal
 CLAUDE.md
 .claude/
+deno.lock
