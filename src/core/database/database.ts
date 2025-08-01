@@ -326,9 +326,9 @@ export class DatabaseManager {
         description TEXT,
         code TEXT NOT NULL,
         status VARCHAR(50) DEFAULT 'draft',
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        deployed_at TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        deployed_at TIMESTAMPTZ
       );
 
     `);

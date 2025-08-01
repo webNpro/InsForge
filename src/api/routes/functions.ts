@@ -37,7 +37,7 @@ router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       .prepare(
         `SELECT 
           id, slug, name, description, status, 
-          created_at, updated_at, deployed_at, created_by
+          created_at, updated_at, deployed_at
         FROM _edge_functions
         ORDER BY created_at DESC`
       )
@@ -63,7 +63,7 @@ router.get('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
         `
       SELECT 
         id, slug, name, description, code, status,
-        created_at, updated_at, deployed_at, created_by
+        created_at, updated_at, deployed_at
       FROM _edge_functions
       WHERE slug = ?
     `
@@ -124,11 +124,11 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
     await db
       .prepare(
         `
-      INSERT INTO _edge_functions (id, slug, name, description, code, status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO _edge_functions (id, slug, name, description, code, status)
+      VALUES (?, ?, ?, ?, ?, ?)
     `
       )
-      .run(id, slug, name, description || null, code, status, req.user?.id || null);
+      .run(id, slug, name, description || null, code, status);
 
     // If status is active, update deployed_at
     if (status === 'active') {
