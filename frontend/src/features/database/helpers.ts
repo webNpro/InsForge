@@ -75,7 +75,7 @@ export function buildDynamicSchema(columns: ColumnSchema[]) {
       case 'boolean':
         fieldSchema = z.boolean();
         if (column.nullable) {
-          fieldSchema = fieldSchema.optional();
+          fieldSchema = fieldSchema.nullable().optional();
         }
         break;
       case 'datetime':
@@ -122,7 +122,7 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
     // Set default values based on type
     switch (column.type) {
       case 'boolean':
-        values[column.name] = false;
+        values[column.name] = column.nullable ? null : false;
         break;
       case 'INTEGER':
       case 'integer':
