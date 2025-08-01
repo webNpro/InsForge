@@ -173,7 +173,6 @@ export function convertSchemaToColumns(
 
   return schema.columns.map((col: ColumnSchema) => {
     const colType = mapDatabaseTypeToFieldType(col.type);
-
     const isEditable =
       !col.primary_key &&
       [
