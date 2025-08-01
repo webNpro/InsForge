@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:15.13
     container_name: insforge-postgres
-    #command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
@@ -14,7 +14,7 @@ services:
       - ./docker-init/db/db-init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./docker-init/db/jwt.sql:/docker-entrypoint-initdb.d/02-jwt.sql
       - ./docker-init/db/logs.sql:/docker-entrypoint-initdb.d/03-logs.sql
-    #  - ./docker-init/db/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./docker-init/db/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"
     networks:
@@ -129,7 +129,7 @@ services:
 
   analytics:
     container_name: insforge-analytics
-    image: supabase/logflare:1.14.2
+    image: ghcr.io/insforge/logflare:v1.18.1
     restart: unless-stopped
     ports:
       - 4000:4000
@@ -157,6 +157,7 @@ services:
     environment:
       # Basic Logflare configuration
       LOGFLARE_NODE_HOST: 127.0.0.1
+      PHX_HTTP_PORT: 4000
       
       # Database connection  
       DB_USERNAME: ${POSTGRES_USER:-postgres}
@@ -205,6 +206,9 @@ services:
       timeout: 5s
       interval: 5s
       retries: 3
+    depends_on:
+      analytics:
+        condition: service_healthy
     environment:
       LOGFLARE_PUBLIC_ACCESS_TOKEN: ${LOGFLARE_PUBLIC_ACCESS_TOKEN}
     command:
