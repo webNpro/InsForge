@@ -329,7 +329,6 @@ export class DatabaseManager {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
         deployed_at TIMESTAMP,
-        created_by UUID REFERENCES _superuser_auth(id)
       );
 
     `);
