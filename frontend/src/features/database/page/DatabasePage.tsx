@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
@@ -362,7 +362,7 @@ export default function DatabasePage() {
     queryKey: ['table-schema', editingTable],
     queryFn: async () => {
       if (!editingTable) {
-        return null;
+        return undefined;
       }
       const editingTableSchema = await databaseService.getTableSchema(editingTable);
       return editingTableSchema;
@@ -399,14 +399,7 @@ export default function DatabasePage() {
               }
             }}
             mode={editingTable ? 'edit' : 'create'}
-            editTable={
-              editingTable && editingTableSchema
-                ? {
-                    name: editingTable,
-                    columns: editingTableSchema.columns,
-                  }
-                : undefined
-            }
+            editTable={editingTable ? editingTableSchema : undefined}
             onSuccess={() => {
               void refetchMetadata();
               void refetchTableData();

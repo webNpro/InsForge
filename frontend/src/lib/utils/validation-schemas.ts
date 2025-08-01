@@ -18,7 +18,7 @@ export const dateSchema = z
   .or(z.date())
   .transform((val) => new Date(val));
 
-export const uuidSchema = z.string().uuid('Invalid UUID format');
+export const uuidSchema = z.uuid('Invalid UUID format');
 
 // Common form schemas
 export const loginFormSchema = z.object({
@@ -33,34 +33,6 @@ export const userFormSchema = z.object({
   role: z.enum(['admin', 'user']).default('user'),
 });
 
-export const tableFieldSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Field name is required')
-    .regex(
-      /^[a-zA-Z][a-zA-Z0-9_]*$/,
-      'Field name must start with a letter and contain only letters, numbers, and underscores'
-    ),
-  // type: z.enum(['string', 'integer', 'float', 'boolean', 'datetime', 'json', 'file']),
-  type: z.enum(['string', 'integer', 'float', 'boolean', 'datetime', 'json']),
-  nullable: z.boolean().default(true),
-  unique: z.boolean().default(false),
-  default_value: z.any().optional(),
-});
-
-export const tableFormSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'table name is required')
-    .regex(
-      /^[a-zA-Z][a-zA-Z0-9_]*$/,
-      'table name must start with a letter and contain only letters, numbers, and underscores'
-    ),
-  fields: z.array(tableFieldSchema).min(1, 'At least one field is required'),
-});
-
 // Type exports
 export type LoginFormData = z.infer<typeof loginFormSchema>;
 export type UserFormData = z.infer<typeof userFormSchema>;
-export type tableFieldData = z.infer<typeof tableFieldSchema>;
-export type tableFormData = z.infer<typeof tableFormSchema>;

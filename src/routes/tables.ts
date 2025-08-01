@@ -25,9 +25,9 @@ function quoteIdentifier(identifier: string): string {
 // Helper function to validate and filter reserved fields
 function validateReservedFields(columns: ColumnDefinition[]): ColumnDefinition[] {
   const reservedFields = {
-    id: 'uuid',
-    created_at: 'datetime',
-    updated_at: 'datetime',
+    id: 'UUID',
+    created_at: 'DATETIME',
+    updated_at: 'DATETIME',
   };
   return columns.filter((col: ColumnDefinition) => {
     const reservedType = reservedFields[col.name.toLowerCase() as keyof typeof reservedFields];
@@ -136,8 +136,8 @@ async function getFkeyConstraints(table: string): Promise<Map<string, ForeignKey
   foreignKeys.forEach((fk: ForeignKeyRow) => {
     foreignKeyMap.set(fk.from_column, {
       constraint_name: fk.constraint_name,
-      table: fk.foreign_table,
-      column: fk.foreign_column,
+      reference_table: fk.foreign_table,
+      reference_column: fk.foreign_column,
       on_delete: fk.on_delete,
       on_update: fk.on_update,
     });
@@ -256,7 +256,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
           defaultClause = `DEFAULT '${col.default_value}'`;
         } else if (fieldType.defaultValue && !col.nullable) {
           // Type-specific default for non-nullable fields
-          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'uuid') {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'UUID') {
             // PostgreSQL UUID generation
             defaultClause = `DEFAULT gen_random_uuid()`;
           } else if (fieldType.defaultValue === 'CURRENT_TIMESTAMP') {
@@ -691,7 +691,7 @@ router.patch('/:table', async (req: AuthRequest, res: Response, next: NextFuncti
       for (const col of columnsToAdd) {
         const fieldType = FIELD_TYPES[col.type as FieldType];
         let sqlType = fieldType.sqlType;
-        if (col.type === 'uuid') {
+        if (col.type === 'UUID') {
           sqlType = 'UUID';
         }
 
@@ -701,7 +701,7 @@ router.patch('/:table', async (req: AuthRequest, res: Response, next: NextFuncti
         if (col.default_value !== undefined) {
           defaultClause = `DEFAULT ${col.default_value}`;
         } else if (col.nullable === false && fieldType.defaultValue) {
-          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'uuid') {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'UUID') {
             defaultClause = 'DEFAULT gen_random_uuid()';
           } else {
             defaultClause = `DEFAULT ${fieldType.defaultValue}`;
