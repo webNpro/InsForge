@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { verifyUserOrApiKey } from '../middleware/auth.js';
-import { DatabaseController } from '../../controllers/DatabaseController.js';
+import { verifyUserOrApiKey } from '@/api/middleware/auth.js';
+import { DatabaseController } from '@/controllers/DatabaseController.js';
 
 const router = Router();
 const databaseController = new DatabaseController();

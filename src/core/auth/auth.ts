@@ -10,9 +10,9 @@ import {
   SuperUserAuth,
   SuperUserProfile,
   Identifies,
-} from '../database/database.js';
-import { ProfileRecord, UserWithProfile } from '../../types/profile.js';
-import { OAuthConfig, ConfigRecord } from '../../types/auth.js';
+} from '@/core/database/database.js';
+import { ProfileRecord, UserWithProfile } from '@/types/profile.js';
+import { OAuthConfig, ConfigRecord } from '@/types/auth.js';
 import bcrypt from 'bcrypt';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';

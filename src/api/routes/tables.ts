@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { verifyUserOrApiKey } from '../middleware/auth.js';
-import { TablesController } from '../../controllers/TablesController.js';
+import { verifyUserOrApiKey } from '@/api/middleware/auth.js';
+import { TablesController } from '@/controllers/TablesController.js';
 
 const router = Router();
 const tablesController = new TablesController();

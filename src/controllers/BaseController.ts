@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { successResponse } from '../utils/response.js';
+import { successResponse } from '@/utils/response.js';
 
 export abstract class BaseController {
   /**

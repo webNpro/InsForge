@@ -1,10 +1,10 @@
 import { Response, NextFunction } from 'express';
-import { BaseController } from './BaseController.js';
-import { AuthRequest } from '../api/middleware/auth.js';
-import { DatabaseManager } from '../core/database/database.js';
-import { MetadataService } from '../core/metadata/metadata.js';
-import { AppError } from '../api/middleware/error.js';
-import { ERROR_CODES } from '../types/error-constants.js';
+import { BaseController } from '@/controllers/BaseController.js';
+import { AuthRequest } from '@/api/middleware/auth.js';
+import { DatabaseManager } from '@/core/database/database.js';
+import { MetadataService } from '@/core/metadata/metadata.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
 import {
   FIELD_TYPES,
   CreateTableRequest,
@@ -14,8 +14,8 @@ import {
   ForeignKeyRow,
   ColumnInfo,
   PrimaryKeyInfo,
-} from '../types/database.js';
-import { validateIdentifier } from '../utils/validations.js';
+} from '@/types/database.js';
+import { validateIdentifier } from '@/utils/validations.js';
 
 export class TablesController extends BaseController {
   private dbManager: DatabaseManager;

@@ -1,12 +1,12 @@
 import { Response, NextFunction } from 'express';
 import axios from 'axios';
-import { BaseController } from './BaseController.js';
-import { AuthRequest } from '../api/middleware/auth.js';
-import { DatabaseManager } from '../core/database/database.js';
-import { AppError } from '../api/middleware/error.js';
-import { ERROR_CODES } from '../types/error-constants.js';
-import { validateTableName } from '../utils/validations.js';
-import { DatabaseRecord } from '../types/database.js';
+import { BaseController } from '@/controllers/BaseController.js';
+import { AuthRequest } from '@/api/middleware/auth.js';
+import { DatabaseManager } from '@/core/database/database.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
+import { validateTableName } from '@/utils/validations.js';
+import { DatabaseRecord } from '@/types/database.js';
 
 export class DatabaseController extends BaseController {
   private dbManager: DatabaseManager;
