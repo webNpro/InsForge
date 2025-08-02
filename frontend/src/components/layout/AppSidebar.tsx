@@ -5,7 +5,6 @@ import {
   UserRoundCog,
   Logs,
   HardDrive,
-  Bug,
   Info,
   PanelLeftOpen,
   PanelRightOpen,
@@ -29,7 +28,14 @@ interface AppSidebarProps {
   onToggleCollapse: () => void;
 }
 
-const navigation = [
+interface NavigationProps {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  external?: boolean;
+}
+
+const navigation: NavigationProps[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Authentications', href: '/dashboard/authentication', icon: UserRoundCog },
   { name: 'Database', href: '/dashboard/database', icon: Database },
@@ -37,11 +43,6 @@ const navigation = [
   { name: 'Logs', href: '/dashboard/logs', icon: Logs },
   { name: 'Metadata', href: '/dashboard/metadata', icon: Info },
 ];
-
-// Add debug link only when debug mode is enabled
-if (import.meta.env.VITE_DEBUG_MODE) {
-  navigation.push({ name: 'Debug', href: '/debug', icon: Bug });
-}
 
 const bottomNavigation = [
   {
@@ -60,7 +61,7 @@ export default function AppSidebar({
 }: AppSidebarProps) {
   const location = useLocation();
 
-  const NavItem = ({ item, onClick }: { item: any; onClick?: () => void }) => {
+  const NavItem = ({ item, onClick }: { item: NavigationProps; onClick?: () => void }) => {
     const isActive = location.pathname === item.href;
 
     const buttonContent = (
