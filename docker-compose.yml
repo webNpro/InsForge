@@ -85,6 +85,7 @@ services:
       - ./package-lock.json:/app/package-lock.json
       - ./src:/app/src
       - ./frontend:/app/frontend
+      - ./schemas:/app/schemas
       - ./docs:/app/docs
       - ./tsconfig.json:/app/tsconfig.json
       - ./vitest.config.ts:/app/vitest.config.ts
