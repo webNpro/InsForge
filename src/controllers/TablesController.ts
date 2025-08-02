@@ -185,16 +185,7 @@ export class TablesController {
         `
           CREATE TABLE ${this.quoteIdentifier(table_name)} (
             ${tableDefinition}
-          )
-        `
-      )
-      .exec();
-
-    // enable postgrest to query this table
-    await db
-      .prepare(
-        `
-          GRANT SELECT,INSERT,UPDATE,DELETE ON ${this.quoteIdentifier(table_name)} TO web_anon;
+          );
           NOTIFY pgrst, 'reload schema';
         `
       )
@@ -206,16 +197,6 @@ export class TablesController {
         .prepare(
           `
             ALTER TABLE ${this.quoteIdentifier(table_name)} ENABLE ROW LEVEL SECURITY;
-          `
-        )
-        .exec();
-
-      // Create a policy to allow all users to select
-      await db
-        .prepare(
-          `
-            CREATE POLICY "web_anon_policy" ON ${this.quoteIdentifier(table_name)}
-              FOR ALL TO web_anon USING (true) WITH CHECK (true);
           `
         )
         .exec();
