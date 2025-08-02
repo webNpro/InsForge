@@ -9,7 +9,7 @@ import ReactDataGrid, {
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
 import { Copy, Check } from 'lucide-react';
-import { cn } from '@/lib/utils/utils';
+import { cn, mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
@@ -182,7 +182,7 @@ function IdCell({ value }: { value: any }) {
 
   return (
     <div className="w-full h-full flex items-center justify-between group">
-      <span className="font-mono text-sm text-gray-500 truncate" title={String(value)}>
+      <span className="font-mono text-sm truncate" title={String(value)}>
         {value}
       </span>
       <Button
@@ -217,26 +217,7 @@ export function SortableHeaderRenderer({
   columnType?: string;
   showTypeBadge?: boolean;
 }) {
-  const getTypeDisplayName = (type: string) => {
-    const typeMap: { [key: string]: string } = {
-      text: 'text',
-      varchar: 'text',
-      'character varying': 'text',
-      integer: 'number',
-      bigint: 'number',
-      'double precision': 'number',
-      boolean: 'boolean',
-      'timestamp with time zone': 'date',
-      timestamptz: 'date',
-      jsonb: 'json',
-      json: 'json',
-      uuid: 'uuid',
-    };
-    return typeMap[type?.toLowerCase()] || 'text';
-  };
-
-  const typeDisplay = columnType ? getTypeDisplayName(columnType) : '';
-  const isIdColumn = column.key === 'id';
+  const typeDisplay = columnType ? mapDatabaseTypeToFieldType(columnType) : '';
 
   // Determine which arrow to show on hover based on current sort state
   const getNextSortDirection = () => {
@@ -253,14 +234,9 @@ export function SortableHeaderRenderer({
       <div className="flex flex-row gap-1 items-center">
         <span className="truncate text-sm font-medium text-zinc-950">{column.name}</span>
 
-        {columnType && !isIdColumn && showTypeBadge && (
+        {columnType && showTypeBadge && (
           <span className="bg-white px-1.5 py-0.5 border border-border-gray rounded-[6px] text-xs text-zinc-500 font-normal">
             {typeDisplay}
-          </span>
-        )}
-        {isIdColumn && showTypeBadge && (
-          <span className="bg-white px-1.5 py-0.5 border border-border-gray rounded-[6px] text-xs text-zinc-500 font-normal">
-            UUID
           </span>
         )}
 
