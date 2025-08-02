@@ -122,6 +122,8 @@ create_status=$(echo "$create_response" | tail -n 1)
 
 if [ "$create_status" -ge 200 ] && [ "$create_status" -lt 300 ]; then
     print_success "Test table created successfully ($create_status)"
+    # Wait for the table to be created and synced
+    sleep 1
 else
     print_fail "Test table creation failed ($create_status)"
     echo "Error: $create_body"
