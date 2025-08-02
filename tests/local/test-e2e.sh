@@ -6,7 +6,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the test configuration
-source "$SCRIPT_DIR/test-config.sh"
+source "$SCRIPT_DIR/../test-config.sh"
 
 # Test variables
 TEST_EMAIL="${TEST_USER_EMAIL_PREFIX}e2e_$(date +%s)@example.com"

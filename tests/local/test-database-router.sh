@@ -6,7 +6,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Source the test configuration
-source "$SCRIPT_DIR/test-config.sh"
+source "$SCRIPT_DIR/../test-config.sh"
 
 echo "🧪 Testing database router..."
 
