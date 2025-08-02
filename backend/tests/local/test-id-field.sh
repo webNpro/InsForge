@@ -33,7 +33,7 @@ response1=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/auth/register" \
     \"name\": \"Test User 1\"
   }")
 
-body1=$(echo "$response1" | head -n -1)
+body1=$(echo "$response1" | sed '$d')
 status1=$(echo "$response1" | tail -n 1)
 
 if [ "$status1" -ge 200 ] && [ "$status1" -lt 300 ]; then
@@ -47,7 +47,8 @@ fi
 
 # Test 2: Create user with custom ID
 print_info "2. Creating user with custom ID:"
-CUSTOM_ID="custom-user-id-$(date +%s)"
+# Generate a valid UUID v4
+CUSTOM_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 response2=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/auth/register" \
   -H "Content-Type: application/json" \
   -d "{
@@ -57,7 +58,7 @@ response2=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/auth/register" \
     \"name\": \"Test User 2\"
   }")
 
-body2=$(echo "$response2" | head -n -1)
+body2=$(echo "$response2" | sed '$d')
 status2=$(echo "$response2" | tail -n 1)
 
 if [ "$status2" -ge 200 ] && [ "$status2" -lt 300 ]; then
@@ -80,7 +81,7 @@ response3=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/auth/register" \
     \"name\": \"Test User 3\"
   }")
 
-body3=$(echo "$response3" | head -n -1)
+body3=$(echo "$response3" | sed '$d')
 status3=$(echo "$response3" | tail -n 1)
 
 if [ "$status3" -ge 400 ] && [ "$status3" -lt 500 ]; then
@@ -116,11 +117,13 @@ create_response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/database/tables"
     ]
   }")
 
-create_body=$(echo "$create_response" | head -n -1)
+create_body=$(echo "$create_response" | sed '$d')
 create_status=$(echo "$create_response" | tail -n 1)
 
 if [ "$create_status" -ge 200 ] && [ "$create_status" -lt 300 ]; then
     print_success "Test table created successfully ($create_status)"
+    # Wait for the table to be created and synced
+    sleep 1
 else
     print_fail "Test table creation failed ($create_status)"
     echo "Error: $create_body"
@@ -137,7 +140,7 @@ record1_response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/database/record
     "status": "active"
   }]')
 
-record1_body=$(echo "$record1_response" | head -n -1)
+record1_body=$(echo "$record1_response" | sed '$d')
 record1_status=$(echo "$record1_response" | tail -n 1)
 
 if [ "$record1_status" -ge 200 ] && [ "$record1_status" -lt 300 ]; then
@@ -151,7 +154,8 @@ fi
 
 # Test 6: Create record with custom ID
 print_info "6. Creating record with custom ID:"
-CUSTOM_RECORD_ID="custom-record-id-$(date +%s)"
+# Generate a valid UUID v4
+CUSTOM_RECORD_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 record2_response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/database/records/$TEST_TABLE" \
   -H "Authorization: Bearer $admin_token" \
   -H "Content-Type: application/json" \
@@ -162,7 +166,7 @@ record2_response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/database/record
     \"status\": \"active\"
   }]")
 
-record2_body=$(echo "$record2_response" | head -n -1)
+record2_body=$(echo "$record2_response" | sed '$d')
 record2_status=$(echo "$record2_response" | tail -n 1)
 
 if [ "$record2_status" -ge 200 ] && [ "$record2_status" -lt 300 ]; then
@@ -179,7 +183,7 @@ print_info "7. Querying all records to verify IDs:"
 query_response=$(curl -s -w "\n%{http_code}" -X GET "$API_URL/database/records/$TEST_TABLE" \
   -H "Authorization: Bearer $admin_token")
 
-query_body=$(echo "$query_response" | head -n -1)
+query_body=$(echo "$query_response" | sed '$d')
 query_status=$(echo "$query_response" | tail -n 1)
 
 if [ "$query_status" -ge 200 ] && [ "$query_status" -lt 300 ]; then
