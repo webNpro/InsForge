@@ -129,7 +129,7 @@ services:
 
   analytics:
     container_name: insforge-analytics
-    image: ghcr.io/insforge/logflare:v1.18.1
+    image: supabase/logflare:1.14.2
     restart: unless-stopped
     ports:
       - 4000:4000
