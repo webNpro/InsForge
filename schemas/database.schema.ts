@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export enum ColumnType {
+  STRING = 'string',
+  DATETIME = 'datetime',
+  INTEGER = 'integer',
+  FLOAT = 'float',
+  BOOLEAN = 'boolean',
+  UUID = 'uuid',
+  JSON = 'json',
+}
+
 export const onUpdateActionSchema = z.enum(['CASCADE', 'RESTRICT', 'NO ACTION']);
 export const onDeleteActionSchema = z.enum([
   'CASCADE',
@@ -9,15 +19,7 @@ export const onDeleteActionSchema = z.enum([
   'NO ACTION',
 ]);
 
-export const columnTypeSchema = z.enum([
-  'UUID',
-  'STRING',
-  'DATETIME',
-  'INTEGER',
-  'FLOAT',
-  'BOOLEAN',
-  'JSON',
-]);
+export const columnTypeSchema = z.enum(ColumnType);
 
 export const foreignKeySchema = z.object({
   reference_table: z.string(),
@@ -47,6 +49,5 @@ export const tableSchema = z.object({
 export type TableSchema = z.infer<typeof tableSchema>;
 export type ColumnSchema = z.infer<typeof columnSchema>;
 export type ForeignKeySchema = z.infer<typeof foreignKeySchema>;
-export type ColumnTypeSchema = z.infer<typeof columnTypeSchema>;
 export type OnUpdateActionSchema = z.infer<typeof onUpdateActionSchema>;
 export type OnDeleteActionSchema = z.infer<typeof onDeleteActionSchema>;

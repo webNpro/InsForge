@@ -166,7 +166,7 @@ export function ForeignKeyPopover({
                     .filter((col) => col.name)
                     .map((col, index) => (
                       <SelectItem key={col.name || index} value={col.name}>
-                        {col.name} ({col.type.toLocaleLowerCase()})
+                        {col.name} ({col.type})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -230,8 +230,8 @@ export function ForeignKeyPopover({
 
                           return (
                             <SelectItem key={col.name} value={col.name} disabled={isDisabled}>
-                              {col.name} ({mapDatabaseTypeToFieldType(col.type).toLocaleLowerCase()}
-                              ) {col.is_unique && ' (unique)'}
+                              {col.name} ({mapDatabaseTypeToFieldType(col.type)}){' '}
+                              {col.is_unique && ' (unique)'}
                             </SelectItem>
                           );
                         });

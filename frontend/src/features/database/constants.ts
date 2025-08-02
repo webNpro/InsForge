@@ -1,27 +1,24 @@
 import { Type, Calendar, Hash, Percent, ToggleLeft, Fingerprint, Code } from 'lucide-react';
-import { ColumnTypeSchema } from '@schemas/database.schema';
+import { ColumnType } from '@schemas/database.schema';
 
 // Icon mapping for field types
-export const columnTypeIcons: Record<
-  ColumnTypeSchema,
-  React.ComponentType<{ className?: string }>
-> = {
-  STRING: Type,
-  DATETIME: Calendar,
-  INTEGER: Hash,
-  FLOAT: Percent,
-  BOOLEAN: ToggleLeft,
-  UUID: Fingerprint,
-  JSON: Code,
+export const columnTypeIcons: Record<ColumnType, React.ComponentType<{ className?: string }>> = {
+  [ColumnType.STRING]: Type,
+  [ColumnType.DATETIME]: Calendar,
+  [ColumnType.INTEGER]: Hash,
+  [ColumnType.FLOAT]: Percent,
+  [ColumnType.BOOLEAN]: ToggleLeft,
+  [ColumnType.UUID]: Fingerprint,
+  [ColumnType.JSON]: Code,
 };
 
 // Field type descriptions
-export const columnTypeDescriptions: Record<ColumnTypeSchema, string> = {
-  STRING: 'Text values of any length',
-  INTEGER: 'Whole numbers without decimals',
-  FLOAT: 'Numbers with decimal places',
-  BOOLEAN: 'True or false values',
-  DATETIME: 'Date and time values',
-  UUID: 'Unique identifiers (auto-generated)',
-  JSON: 'Complex structured data',
+export const columnTypeDescriptions: Record<ColumnType, string> = {
+  [ColumnType.STRING]: 'Text values of any length',
+  [ColumnType.INTEGER]: 'Whole numbers without decimals',
+  [ColumnType.FLOAT]: 'Numbers with decimal places',
+  [ColumnType.BOOLEAN]: 'True or false values',
+  [ColumnType.DATETIME]: 'Date and time values',
+  [ColumnType.UUID]: 'Unique identifiers (auto-generated)',
+  [ColumnType.JSON]: 'Complex structured data',
 };

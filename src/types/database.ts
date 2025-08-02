@@ -1,5 +1,15 @@
 // Type definitions for database schema management
 
+export enum ColumnType {
+  STRING = 'string',
+  DATETIME = 'datetime',
+  INTEGER = 'integer',
+  FLOAT = 'float',
+  BOOLEAN = 'boolean',
+  UUID = 'uuid',
+  JSON = 'json',
+}
+
 // Column schema information from database
 export interface ColumnSchema {
   name: string;
@@ -41,18 +51,8 @@ export interface DatabaseMetadata {
   >;
 }
 
-export enum FieldType {
-  STRING = 'STRING',
-  DATETIME = 'DATETIME',
-  INTEGER = 'INTEGER',
-  FLOAT = 'FLOAT',
-  BOOLEAN = 'BOOLEAN',
-  UUID = 'UUID',
-  JSON = 'JSON',
-}
-
-export interface FieldTypeInfo {
-  type: FieldType;
+export interface ColumnTypeInfo {
+  type: ColumnType;
   sqlType: string;
   defaultValue: string | null;
   description: string;
@@ -65,51 +65,51 @@ export interface FieldTypeInfo {
 }
 
 // Map frontend types to PostgreSQL types with metadata
-export const FIELD_TYPES: Record<FieldType, FieldTypeInfo> = {
-  [FieldType.STRING]: {
-    type: FieldType.STRING,
+export const COLUMN_TYPES: Record<ColumnType, ColumnTypeInfo> = {
+  [ColumnType.STRING]: {
+    type: ColumnType.STRING,
     sqlType: 'TEXT',
     defaultValue: null,
     description: 'Text up to 255 characters',
     icon: 'text',
   },
-  [FieldType.DATETIME]: {
-    type: FieldType.DATETIME,
+  [ColumnType.DATETIME]: {
+    type: ColumnType.DATETIME,
     sqlType: 'TIMESTAMPTZ',
     defaultValue: 'CURRENT_TIMESTAMP',
     description: 'Date and time with timezone',
     icon: 'calendar',
   },
-  [FieldType.INTEGER]: {
-    type: FieldType.INTEGER,
+  [ColumnType.INTEGER]: {
+    type: ColumnType.INTEGER,
     sqlType: 'INTEGER',
     defaultValue: null,
     description: 'Whole numbers',
     icon: 'hash',
   },
-  [FieldType.FLOAT]: {
-    type: FieldType.FLOAT,
+  [ColumnType.FLOAT]: {
+    type: ColumnType.FLOAT,
     sqlType: 'DOUBLE PRECISION',
     defaultValue: null,
     description: 'Decimal numbers with double precision',
     icon: 'percent',
   },
-  [FieldType.BOOLEAN]: {
-    type: FieldType.BOOLEAN,
+  [ColumnType.BOOLEAN]: {
+    type: ColumnType.BOOLEAN,
     sqlType: 'BOOLEAN',
     defaultValue: 'false',
     description: 'True/false values',
     icon: 'toggle',
   },
-  [FieldType.UUID]: {
-    type: FieldType.UUID,
+  [ColumnType.UUID]: {
+    type: ColumnType.UUID,
     sqlType: 'UUID',
     defaultValue: 'gen_random_uuid()',
     description: 'Unique identifier (auto-generated)',
     icon: 'fingerprint',
   },
-  [FieldType.JSON]: {
-    type: FieldType.JSON,
+  [ColumnType.JSON]: {
+    type: ColumnType.JSON,
     sqlType: 'JSONB',
     defaultValue: null,
     description: 'Structured JSON data with indexing support',
@@ -127,7 +127,7 @@ export interface ForeignKeyDefinition {
 
 export interface ColumnDefinition {
   name: string;
-  type: FieldType;
+  type: ColumnType;
   nullable: boolean;
   is_unique?: boolean;
   default_value?: string;

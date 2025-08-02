@@ -1,4 +1,4 @@
-import { ColumnTypeSchema } from '@schemas/database.schema';
+import { ColumnType } from '@schemas/database.schema';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,23 +11,22 @@ export const validateEmail = (email: string) => {
 };
 
 // Map database types to frontend FieldType
-export const mapDatabaseTypeToFieldType = (dbType: string): ColumnTypeSchema => {
+export const mapDatabaseTypeToFieldType = (dbType: string): ColumnType => {
   switch (dbType.toLocaleLowerCase()) {
     case 'uuid':
-      return 'UUID';
-    case 'text':
-      return 'STRING';
+      return ColumnType.UUID;
     case 'timestamp with time zone':
-      return 'DATETIME';
+      return ColumnType.DATETIME;
     case 'integer':
-      return 'INTEGER';
+      return ColumnType.INTEGER;
     case 'double precision':
-      return 'FLOAT';
+      return ColumnType.FLOAT;
     case 'boolean':
-      return 'BOOLEAN';
+      return ColumnType.BOOLEAN;
     case 'jsonb':
-      return 'JSON';
+      return ColumnType.JSON;
+    case 'text':
     default:
-      return 'STRING';
+      return ColumnType.STRING;
   }
 };

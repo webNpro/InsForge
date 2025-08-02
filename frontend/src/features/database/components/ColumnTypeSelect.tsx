@@ -14,7 +14,7 @@ const SELECT_OPTIONS = COLUMN_TYPES_ARRAY.map((type) => {
     <SelectItem key={type} value={type}>
       <div className="flex items-center gap-2">
         <TypeIcon className="h-4 w-4" />
-        <span>{type.toLocaleLowerCase()}</span>
+        <span>{type}</span>
       </div>
     </SelectItem>
   );
@@ -44,7 +44,7 @@ export const ColumnTypeSelect = memo(function TableFormSelect({
             <SelectTrigger className={className}>
               <div className="flex items-center gap-2">
                 {Icon && <Icon className="h-4 w-4 text-zinc-500" />}
-                <span>{field.value.toLocaleLowerCase()}</span>
+                <span>{field.value}</span>
               </div>
             </SelectTrigger>
             <SelectContent>{SELECT_OPTIONS}</SelectContent>

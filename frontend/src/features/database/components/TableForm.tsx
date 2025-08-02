@@ -17,14 +17,14 @@ import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
-import { ColumnTypeSchema, TableSchema } from '@schemas/database.schema';
+import { ColumnType, TableSchema } from '@schemas/database.schema';
 
 // System fields that cannot be modified
 const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
 
 const newColumn: TableFormColumnSchema = {
   name: '',
-  type: 'STRING',
+  type: ColumnType.STRING,
   nullable: true,
   is_unique: false,
   default_value: '',
@@ -63,7 +63,7 @@ export function TableForm({
           ? [
               {
                 name: 'id',
-                type: 'UUID' as ColumnTypeSchema,
+                type: ColumnType.UUID,
                 default_value: 'gen_random_uuid()',
                 nullable: false,
                 is_unique: true,
@@ -72,7 +72,7 @@ export function TableForm({
               },
               {
                 name: 'created_at',
-                type: 'DATETIME' as ColumnTypeSchema,
+                type: ColumnType.DATETIME,
                 default_value: 'CURRENT_TIMESTAMP',
                 nullable: true,
                 is_unique: false,
@@ -81,7 +81,7 @@ export function TableForm({
               },
               {
                 name: 'updated_at',
-                type: 'DATETIME' as ColumnTypeSchema,
+                type: ColumnType.DATETIME,
                 default_value: 'CURRENT_TIMESTAMP',
                 nullable: true,
                 is_unique: false,
@@ -133,7 +133,7 @@ export function TableForm({
         columns: [
           {
             name: 'id',
-            type: 'UUID',
+            type: ColumnType.UUID,
             default_value: 'gen_random_uuid()',
             nullable: false,
             is_unique: true,
@@ -142,7 +142,7 @@ export function TableForm({
           },
           {
             name: 'created_at',
-            type: 'DATETIME',
+            type: ColumnType.DATETIME,
             default_value: 'CURRENT_TIMESTAMP',
             nullable: true,
             is_unique: false,
@@ -151,7 +151,7 @@ export function TableForm({
           },
           {
             name: 'updated_at',
-            type: 'DATETIME',
+            type: ColumnType.DATETIME,
             default_value: 'CURRENT_TIMESTAMP',
             nullable: true,
             is_unique: false,
@@ -514,15 +514,15 @@ export function TableForm({
                       </div>
                       <div className="flex items-center gap-2 flex-1">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
-                          On Delete:
-                        </span>
-                        <span className="text-sm text-zinc-500">{fk.on_delete}</span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Update:
                         </span>
                         <span className="text-sm text-zinc-500">{fk.on_update}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
+                          On Delete:
+                        </span>
+                        <span className="text-sm text-zinc-500">{fk.on_delete}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <Button

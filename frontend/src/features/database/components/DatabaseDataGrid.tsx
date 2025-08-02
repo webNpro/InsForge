@@ -8,7 +8,7 @@ import {
 import { BooleanCellEditor } from '@/features/database/components/BooleanCellEditor';
 import { DateCellEditor } from '@/features/database/components/DateCellEditor';
 import { JsonCellEditor } from '@/features/database/components/JsonCellEditor';
-import { ColumnSchema, TableSchema } from '@schemas/database.schema';
+import { ColumnSchema, ColumnType, TableSchema } from '@schemas/database.schema';
 import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 
 // Custom cell editors for database fields
@@ -201,17 +201,17 @@ export function convertSchemaToColumns(
     if (col.name === 'id') {
       column.renderCell = DefaultCellRenderers.id;
       column.editable = false;
-    } else if (colType === 'BOOLEAN') {
+    } else if (colType === ColumnType.BOOLEAN) {
       column.renderCell = DefaultCellRenderers.boolean;
       column.renderEditCell = (props: any) => (
         <CustomBooleanCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (colType === 'DATETIME') {
+    } else if (colType === ColumnType.DATETIME) {
       column.renderCell = DefaultCellRenderers.date;
       column.renderEditCell = (props: any) => (
         <CustomDateCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (colType === 'JSON') {
+    } else if (colType === ColumnType.JSON) {
       column.renderCell = DefaultCellRenderers.json;
       column.renderEditCell = (props: any) => (
         <CustomJsonCellEditor {...props} onCellEdit={onCellEdit} />

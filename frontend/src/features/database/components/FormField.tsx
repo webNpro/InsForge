@@ -8,7 +8,7 @@ import { Calendar } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
-import { ColumnSchema } from '@schemas/database.schema';
+import { ColumnSchema, ColumnType } from '@schemas/database.schema';
 import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 
 // Form adapters for edit cell components
@@ -223,7 +223,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
     const fieldType = mapDatabaseTypeToFieldType(field.type);
 
     switch (fieldType) {
-      case 'BOOLEAN':
+      case ColumnType.BOOLEAN:
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -241,8 +241,8 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'INTEGER':
-      case 'FLOAT':
+      case ColumnType.INTEGER:
+      case ColumnType.FLOAT:
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -273,7 +273,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'DATETIME':
+      case ColumnType.DATETIME:
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -292,7 +292,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'JSON':
+      case ColumnType.JSON:
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -310,7 +310,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'UUID':
+      case ColumnType.UUID:
         return (
           <>
             <FieldLabel field={field} tableName={tableName} />
@@ -323,7 +323,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </>
         );
 
-      case 'STRING':
+      case ColumnType.STRING:
       default:
         return (
           <>
