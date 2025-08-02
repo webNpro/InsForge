@@ -127,12 +127,11 @@ export async function createApp() {
 
   // Check if frontend build exists
   if (fs.existsSync(frontendPath)) {
-    app.use(express.static(frontendPath));
-
     // Catch all handler for SPA routes
-    app.get('*', (_req: Request, res: Response) => {
+    app.get('/dashboard*', (_req: Request, res: Response) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
+    app.use(express.static(frontendPath));
   } else {
     // Catch-all for 404 errors - Traditional REST format
     app.use('*', (req: Request, res: Response) => {

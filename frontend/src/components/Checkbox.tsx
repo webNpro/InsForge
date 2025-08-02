@@ -12,7 +12,7 @@ interface CheckboxProps {
   tabIndex?: number;
 }
 
-export default function Checkbox({
+export function Checkbox({
   checked,
   indeterminate = false,
   onChange,

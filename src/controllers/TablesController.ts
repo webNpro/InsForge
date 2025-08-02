@@ -3,9 +3,9 @@ import { MetadataService } from '@/core/metadata/metadata.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import {
-  FIELD_TYPES,
+  COLUMN_TYPES,
   ColumnDefinition,
-  FieldType,
+  ColumnType,
   ForeignKeyInfo,
   ForeignKeyRow,
   ColumnInfo,
@@ -88,13 +88,13 @@ export class TablesController {
       }
 
       // Validate column type
-      if (!col.type || !(col.type in FIELD_TYPES)) {
+      if (!col.type || !(col.type in COLUMN_TYPES)) {
         throw new AppError(
-          `Invalid type at index ${index}: ${col.type}. Allowed types: ${Object.keys(FIELD_TYPES).join(', ')}`,
+          `Invalid type at index ${index}: ${col.type}. Allowed types: ${Object.keys(COLUMN_TYPES).join(', ')}`,
           400,
           ERROR_CODES.DATABASE_VALIDATION_ERROR,
           'Please check the column type, it must be one of the allowed types: ' +
-            Object.keys(FIELD_TYPES).join(', ')
+            Object.keys(COLUMN_TYPES).join(', ')
         );
       }
 
@@ -136,7 +136,7 @@ export class TablesController {
     // Map columns to SQL with proper type conversion
     const columnDefs = validatedColumns
       .map((col: ColumnDefinition) => {
-        const fieldType = FIELD_TYPES[col.type];
+        const fieldType = COLUMN_TYPES[col.type];
         const sqlType = fieldType.sqlType;
 
         // Handle default values
@@ -146,7 +146,7 @@ export class TablesController {
           defaultClause = `DEFAULT '${col.default_value}'`;
         } else if (fieldType.defaultValue && !col.nullable) {
           // Type-specific default for non-nullable fields
-          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'uuid') {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
             // PostgreSQL UUID generation
             defaultClause = `DEFAULT gen_random_uuid()`;
           } else if (fieldType.defaultValue === 'CURRENT_TIMESTAMP') {
@@ -157,7 +157,7 @@ export class TablesController {
         }
 
         const nullable = col.nullable ? '' : 'NOT NULL';
-        const unique = col.unique ? 'UNIQUE' : '';
+        const unique = col.is_unique ? 'UNIQUE' : '';
 
         return `${this.quoteIdentifier(col.name)} ${sqlType} ${nullable} ${unique} ${defaultClause}`.trim();
       })
@@ -226,7 +226,7 @@ export class TablesController {
       table_name,
       columns: validatedColumns.map((col) => ({
         ...col,
-        sql_type: FIELD_TYPES[col.type].sqlType,
+        sql_type: COLUMN_TYPES[col.type].sqlType,
       })),
       auto_fields: ['id', 'created_at', 'updated_at'],
       nextAction: 'you can now use the table with the POST /api/database/tables/{table} endpoint',
@@ -315,7 +315,7 @@ export class TablesController {
         type: col.data_type,
         nullable: col.is_nullable === 'YES',
         primary_key: pkSet.has(col.column_name),
-        unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
+        is_unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
         default_value: col.column_default,
         ...(foreignKeyMap.has(col.column_name) && {
           foreign_key: foreignKeyMap.get(col.column_name),
@@ -433,9 +433,9 @@ export class TablesController {
       const columnsToAdd = this.validateReservedFields(add_columns);
 
       for (const col of columnsToAdd) {
-        const fieldType = FIELD_TYPES[col.type as FieldType];
+        const fieldType = COLUMN_TYPES[col.type as ColumnType];
         let sqlType = fieldType.sqlType;
-        if (col.type === 'uuid') {
+        if (col.type === ColumnType.UUID) {
           sqlType = 'UUID';
         }
 
@@ -445,7 +445,7 @@ export class TablesController {
         if (col.default_value !== undefined) {
           defaultClause = `DEFAULT ${col.default_value}`;
         } else if (col.nullable === false && fieldType.defaultValue) {
-          if (fieldType.defaultValue === 'gen_random_uuid()' && col.type === 'uuid') {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
             defaultClause = 'DEFAULT gen_random_uuid()';
           } else {
             defaultClause = `DEFAULT ${fieldType.defaultValue}`;
@@ -587,12 +587,12 @@ export class TablesController {
 
   private validateReservedFields(columns: ColumnDefinition[]): ColumnDefinition[] {
     const reservedFields = {
-      id: 'uuid',
-      created_at: 'datetime',
-      updated_at: 'datetime',
+      id: ColumnType.UUID,
+      created_at: ColumnType.DATETIME,
+      updated_at: ColumnType.DATETIME,
     };
     return columns.filter((col: ColumnDefinition) => {
-      const reservedType = reservedFields[col.name.toLowerCase() as keyof typeof reservedFields];
+      const reservedType = reservedFields[col.name as keyof typeof reservedFields];
       if (reservedType) {
         // If it's a reserved field name
         if (col.type === reservedType) {
@@ -665,8 +665,8 @@ export class TablesController {
     foreignKeys.forEach((fk: ForeignKeyRow) => {
       foreignKeyMap.set(fk.from_column, {
         constraint_name: fk.constraint_name,
-        table: fk.foreign_table,
-        column: fk.foreign_column,
+        reference_table: fk.foreign_table,
+        reference_column: fk.foreign_column,
         on_delete: fk.on_delete,
         on_update: fk.on_update,
       });
@@ -768,14 +768,14 @@ export class TablesController {
           throw new AppError('Column name and type are required', 400, ERROR_CODES.MISSING_FIELD);
         }
 
-        const fieldType = FIELD_TYPES[col.type as FieldType];
+        const fieldType = COLUMN_TYPES[col.type as ColumnType];
         if (!fieldType) {
           throw new AppError(
             `Invalid column type: ${col.type}`,
             400,
             ERROR_CODES.DATABASE_VALIDATION_ERROR,
             'Please check the column type, it must be one of the allowed types: ' +
-              Object.keys(FIELD_TYPES).join(', ')
+              Object.keys(COLUMN_TYPES).join(', ')
           );
         }
 

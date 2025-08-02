@@ -1,15 +1,3 @@
-// API endpoints
-export const API_ENDPOINTS = {
-  AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    ME: '/auth/me',
-  },
-  PROJECTS: '/projects',
-  COLLECTIONS: '/tables',
-  METADATA: '/metadata',
-} as const;
-
 // UI constants
 export const BREAKPOINTS = {
   xs: 475,

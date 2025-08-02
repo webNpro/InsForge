@@ -78,11 +78,18 @@ services:
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
       - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-http://localhost:7130/api/auth/v1/callback}
+      # Storage Configuration
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      - AWS_REGION=${AWS_REGION:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - APP_KEY=${APP_KEY:-}
     volumes:
       - ./package.json:/app/package.json
       - ./package-lock.json:/app/package-lock.json
       - ./src:/app/src
       - ./frontend:/app/frontend
+      - ./schemas:/app/schemas
       - ./docs:/app/docs
       - ./tsconfig.json:/app/tsconfig.json
       - ./vitest.config.ts:/app/vitest.config.ts

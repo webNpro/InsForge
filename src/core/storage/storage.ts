@@ -4,16 +4,216 @@ import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import { StorageRecord, StoredFile, BucketRecord } from '@/types/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Storage backend interface
+interface StorageBackend {
+  initialize(): void | Promise<void>;
+  putObject(bucket: string, key: string, file: Express.Multer.File): Promise<void>;
+  getObject(bucket: string, key: string): Promise<Buffer | null>;
+  deleteObject(bucket: string, key: string): Promise<void>;
+  createBucket(bucket: string): Promise<void>;
+  deleteBucket(bucket: string): Promise<void>;
+}
+
+// Local filesystem storage implementation
+class LocalStorageBackend implements StorageBackend {
+  constructor(private baseDir: string) {}
+
+  async initialize(): Promise<void> {
+    await fs.mkdir(this.baseDir, { recursive: true });
+  }
+
+  private getFilePath(bucket: string, key: string): string {
+    return path.join(this.baseDir, bucket, key);
+  }
+
+  async putObject(bucket: string, key: string, file: Express.Multer.File): Promise<void> {
+    const filePath = this.getFilePath(bucket, key);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, file.buffer);
+  }
+
+  async getObject(bucket: string, key: string): Promise<Buffer | null> {
+    try {
+      const filePath = this.getFilePath(bucket, key);
+      return await fs.readFile(filePath);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteObject(bucket: string, key: string): Promise<void> {
+    try {
+      const filePath = this.getFilePath(bucket, key);
+      await fs.unlink(filePath);
+    } catch {
+      // File might not exist, continue
+    }
+  }
+
+  async createBucket(bucket: string): Promise<void> {
+    const bucketPath = path.join(this.baseDir, bucket);
+    await fs.mkdir(bucketPath, { recursive: true });
+  }
+
+  async deleteBucket(bucket: string): Promise<void> {
+    try {
+      await fs.rmdir(path.join(this.baseDir, bucket), { recursive: true });
+    } catch {
+      // Directory might not exist
+    }
+  }
+}
+
+// S3 storage implementation
+class S3StorageBackend implements StorageBackend {
+  private s3Client: S3Client | null = null;
+
+  constructor(
+    private s3Bucket: string,
+    private appKey: string,
+    private region: string = 'us-east-2'
+  ) {}
+
+  initialize(): void {
+    this.s3Client = new S3Client({
+      region: this.region,
+      credentials:
+        process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+          ? {
+              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            }
+          : undefined,
+    });
+  }
+
+  private getS3Key(bucket: string, key: string): string {
+    return `${this.appKey}/${bucket}/${key}`;
+  }
+
+  async putObject(bucket: string, key: string, file: Express.Multer.File): Promise<void> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+    const s3Key = this.getS3Key(bucket, key);
+
+    const command = new PutObjectCommand({
+      Bucket: this.s3Bucket,
+      Key: s3Key,
+      Body: file.buffer,
+      ContentType: file.mimetype || 'application/octet-stream',
+    });
+
+    try {
+      await this.s3Client.send(command);
+    } catch (error) {
+      console.error('S3 Upload error:', error);
+      throw error;
+    }
+  }
+
+  async getObject(bucket: string, key: string): Promise<Buffer | null> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: this.getS3Key(bucket, key),
+      });
+      const response = await this.s3Client.send(command);
+      const chunks: Uint8Array[] = [];
+      // Type assertion for readable stream
+      const body = response.Body as AsyncIterable<Uint8Array>;
+      for await (const chunk of body) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteObject(bucket: string, key: string): Promise<void> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+    const command = new DeleteObjectCommand({
+      Bucket: this.s3Bucket,
+      Key: this.getS3Key(bucket, key),
+    });
+    await this.s3Client.send(command);
+  }
+
+  async createBucket(_bucket: string): Promise<void> {
+    // In S3 with multi-tenant, we don't create actual buckets
+    // We just use folders under the app key
+  }
+
+  async deleteBucket(bucket: string): Promise<void> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+    // List and delete all objects in the "bucket" (folder)
+    const prefix = `${this.appKey}/${bucket}/`;
+
+    let continuationToken: string | undefined;
+    do {
+      const listCommand = new ListObjectsV2Command({
+        Bucket: this.s3Bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
+      const listResponse = await this.s3Client.send(listCommand);
+
+      if (listResponse.Contents && listResponse.Contents.length > 0) {
+        const deleteCommand = new DeleteObjectsCommand({
+          Bucket: this.s3Bucket,
+          Delete: {
+            Objects: listResponse.Contents.filter((obj) => obj.Key !== undefined).map((obj) => ({
+              Key: obj.Key as string,
+            })),
+          },
+        });
+        await this.s3Client.send(deleteCommand);
+      }
+
+      continuationToken = listResponse.NextContinuationToken;
+    } while (continuationToken);
+  }
+}
+
 export class StorageService {
   private static instance: StorageService;
-  private readonly baseDir: string;
+  private backend: StorageBackend;
 
   private constructor() {
-    this.baseDir = process.env.STORAGE_DIR || path.join(__dirname, '../../data/storage');
+    const s3Bucket = process.env.AWS_S3_BUCKET;
+    const appKey = process.env.APP_KEY;
+
+    if (s3Bucket) {
+      // Use S3 backend
+      if (!appKey) {
+        throw new Error('APP_KEY is required when using S3 storage');
+      }
+      this.backend = new S3StorageBackend(s3Bucket, appKey, process.env.AWS_REGION || 'us-east-2');
+    } else {
+      // Use local filesystem backend
+      const baseDir = process.env.STORAGE_DIR || path.join(__dirname, '../../data/storage');
+      this.backend = new LocalStorageBackend(baseDir);
+    }
   }
 
   static getInstance(): StorageService {
@@ -24,12 +224,7 @@ export class StorageService {
   }
 
   async initialize(): Promise<void> {
-    await fs.mkdir(this.baseDir, { recursive: true });
-  }
-
-  private getFilePath(bucket: string, key: string): string {
-    // Simple file path: storage/bucket/key
-    return path.join(this.baseDir, bucket, key);
+    await this.backend.initialize();
   }
 
   private validateBucketName(bucket: string): void {
@@ -61,13 +256,8 @@ export class StorageService {
       throw new Error(`File "${key}" already exists in bucket "${bucket}"`);
     }
 
-    const filePath = this.getFilePath(bucket, key);
-
-    // Create bucket directory if needed
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-
-    // Save file
-    await fs.writeFile(filePath, file.buffer);
+    // Save file using backend
+    await this.backend.putObject(bucket, key, file);
 
     // Save metadata to database
     await db
@@ -118,20 +308,18 @@ export class StorageService {
       return null;
     }
 
-    try {
-      const filePath = this.getFilePath(bucket, key);
-      const file = await fs.readFile(filePath);
-
-      return {
-        file,
-        metadata: {
-          ...metadata,
-          url: `/api/storage/${bucket}/${encodeURIComponent(key)}`,
-        },
-      };
-    } catch {
+    const file = await this.backend.getObject(bucket, key);
+    if (!file) {
       return null;
     }
+
+    return {
+      file,
+      metadata: {
+        ...metadata,
+        url: `/api/storage/${bucket}/${encodeURIComponent(key)}`,
+      },
+    };
   }
 
   async deleteObject(bucket: string, key: string): Promise<boolean> {
@@ -140,13 +328,8 @@ export class StorageService {
 
     const db = DatabaseManager.getInstance().getDb();
 
-    try {
-      // Delete file
-      const filePath = this.getFilePath(bucket, key);
-      await fs.unlink(filePath);
-    } catch {
-      // File might not exist, continue
-    }
+    // Delete file using backend
+    await this.backend.deleteObject(bucket, key);
 
     // Get file info before deletion for logging
     const fileInfo = (await db
@@ -282,9 +465,8 @@ export class StorageService {
       .prepare('INSERT INTO _storage_buckets (name, public) VALUES (?, ?)')
       .run(bucket, isPublic);
 
-    // Create bucket directory
-    const bucketPath = path.join(this.baseDir, bucket);
-    await fs.mkdir(bucketPath, { recursive: true });
+    // Create bucket using backend
+    await this.backend.createBucket(bucket);
 
     // Log bucket creation
     const dbManager = DatabaseManager.getInstance();
@@ -313,22 +495,8 @@ export class StorageService {
       .prepare('SELECT key FROM _storage WHERE bucket = ?')
       .all(bucket)) as Pick<StorageRecord, 'key'>[];
 
-    // Delete all files
-    for (const obj of objects) {
-      try {
-        const filePath = this.getFilePath(bucket, obj.key);
-        await fs.unlink(filePath);
-      } catch {
-        // Continue on error
-      }
-    }
-
-    // Remove bucket directory
-    try {
-      await fs.rmdir(path.join(this.baseDir, bucket), { recursive: true });
-    } catch {
-      // Directory might not exist
-    }
+    // Delete bucket using backend (handles all files)
+    await this.backend.deleteBucket(bucket);
 
     // Delete from storage table (cascade will handle _storage entries)
     await db.prepare('DELETE FROM _storage_buckets WHERE name = ?').run(bucket);

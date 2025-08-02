@@ -20,24 +20,54 @@ export INSFORGE_API_KEY="your_api_key_here"
 export ADMIN_EMAIL="admin@example.com"
 export ADMIN_PASSWORD="change-this-password"
 export TEST_API_BASE="http://localhost:7130/api"
+
+# Required for cloud/S3 tests
+export AWS_S3_BUCKET="your-s3-bucket"
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export APP_KEY="app12345"  # 7-9 character tenant identifier
 ```
+
+## Test Organization
+
+Tests are organized into two categories:
+
+### Local Tests (`./local/`)
+Tests for local Docker deployment with local file storage:
+- `test-auth-router.sh` - Authentication and JWT tests
+- `test-database-router.sh` - Database CRUD operations
+- `test-e2e.sh` - End-to-end workflows
+- `test-public-bucket.sh` - Local storage bucket tests
+- `test-config.sh` - Configuration management
+- `test-oauth-config.sh` - OAuth configuration
+- `comprehensive-curl-tests.sh` - Comprehensive API tests
+
+### Cloud Tests (`./cloud/`)
+Tests for cloud deployment with S3 multi-tenant storage:
+- `test-s3-multitenant.sh` - S3 storage with APP_KEY folder structure
 
 ## Running Tests
 
 ### Run all tests
 ```bash
-./tests/run-all-tests.sh
+./run-all-tests.sh
 ```
 
-### Run individual tests
+### Run local tests only
 ```bash
-./tests/test-auth-router.sh
-./tests/test-database-router.sh
-./tests/test-modify-columns.sh           # NEW: Comprehensive column tests
-./tests/test-e2e.sh
-./tests/test-id-field.sh
-./tests/test-oauth-config.sh
-./tests/test-public-bucket.sh
+cd local && for test in test-*.sh; do ./$test; done
+```
+
+### Run cloud tests only
+```bash
+cd cloud && for test in test-*.sh; do ./$test; done
+```
+
+### Run individual test
+```bash
+./local/test-auth-router.sh
+./cloud/test-s3-multitenant.sh
 ```
 
 ## Test Data Cleanup
