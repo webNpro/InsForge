@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { APIError } from 'better-call';
 import { createAuthEndpoint, createAuthMiddleware } from 'better-auth/api';
 import type { BetterAuthPlugin } from 'better-auth/types/plugins';
-import { BetterAuthService } from '@/core/auth/better-auth-service.js';
+import { BetterAuthAdminService } from '@/core/auth/better-auth-admin-service.js';
 
 // Middleware to verify project admin role from JWT
 const requireProjectAdmin = createAuthMiddleware(async (ctx) => {
-  const authService = BetterAuthService.getInstance();
+  const authService = BetterAuthAdminService.getInstance();
 
   const authHeader = ctx.request?.headers.get('authorization') || ctx.headers?.get('authorization');
 
@@ -18,7 +18,7 @@ const requireProjectAdmin = createAuthMiddleware(async (ctx) => {
 
   const token = authHeader.replace('Bearer ', '');
 
-  // Use BetterAuthService to verify admin token
+  // Use BetterAuthAdminService to verify admin token
   const adminInfo = await authService.verifyAdminToken(token);
 
   return {
@@ -43,7 +43,7 @@ export const customAdminPlugin: BetterAuthPlugin = {
         }),
       },
       async (ctx) => {
-        const authService = BetterAuthService.getInstance();
+        const authService = BetterAuthAdminService.getInstance();
         return ctx.json(await authService.registerAdmin(ctx.body));
       }
     ),
@@ -59,7 +59,7 @@ export const customAdminPlugin: BetterAuthPlugin = {
         }),
       },
       async (ctx) => {
-        const authService = BetterAuthService.getInstance();
+        const authService = BetterAuthAdminService.getInstance();
         return ctx.json(await authService.signInAdmin(ctx.body));
       }
     ),
@@ -76,7 +76,7 @@ export const customAdminPlugin: BetterAuthPlugin = {
         use: [requireProjectAdmin],
       },
       async (ctx) => {
-        const authService = BetterAuthService.getInstance();
+        const authService = BetterAuthAdminService.getInstance();
         const { limit, offset } = ctx.query;
         return ctx.json(await authService.listUsers(limit, offset));
       }

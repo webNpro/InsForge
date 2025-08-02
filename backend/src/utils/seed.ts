@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
-import { BetterAuthService } from '@/core/auth/better-auth-service.js';
+import { BetterAuthAdminService } from '@/core/auth/better-auth-admin-service.js';
 
 /**
  * Ensures the first admin exists in Better Auth
  * Creates admin user if not exists, skips if already exists
  */
 async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Promise<void> {
-  const betterAuthService = BetterAuthService.getInstance();
+  const betterAuthService = BetterAuthAdminService.getInstance();
 
   try {
     // Try to register the admin - this will check if user exists

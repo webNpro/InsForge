@@ -23,8 +23,8 @@ export interface AdminCredentials {
   password: string;
 }
 
-export class BetterAuthService {
-  private static instance: BetterAuthService;
+export class BetterAuthAdminService {
+  private static instance: BetterAuthAdminService;
   private readonly jwtSecret: string;
   private readonly adminEmail: string;
   private readonly adminPassword: string;
@@ -39,11 +39,11 @@ export class BetterAuthService {
     }
   }
 
-  public static getInstance(): BetterAuthService {
-    if (!BetterAuthService.instance) {
-      BetterAuthService.instance = new BetterAuthService();
+  public static getInstance(): BetterAuthAdminService {
+    if (!BetterAuthAdminService.instance) {
+      BetterAuthAdminService.instance = new BetterAuthAdminService();
     }
-    return BetterAuthService.instance;
+    return BetterAuthAdminService.instance;
   }
 
   private getDb() {
