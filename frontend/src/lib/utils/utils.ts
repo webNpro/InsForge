@@ -1,4 +1,4 @@
-import { FieldType } from '@/lib/types/schema';
+import { ColumnType } from '@schemas/database.schema';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,38 +11,22 @@ export const validateEmail = (email: string) => {
 };
 
 // Map database types to frontend FieldType
-export const mapDatabaseTypeToFieldType = (dbType: string): FieldType => {
-  const type = dbType.toLowerCase();
-
-  // Handle various database type representations
-  if (type.includes('text') || type.includes('varchar') || type.includes('character')) {
-    return FieldType.STRING;
+export const mapDatabaseTypeToFieldType = (dbType: string): ColumnType => {
+  switch (dbType.toLocaleLowerCase()) {
+    case 'uuid':
+      return ColumnType.UUID;
+    case 'timestamp with time zone':
+      return ColumnType.DATETIME;
+    case 'integer':
+      return ColumnType.INTEGER;
+    case 'double precision':
+      return ColumnType.FLOAT;
+    case 'boolean':
+      return ColumnType.BOOLEAN;
+    case 'jsonb':
+      return ColumnType.JSON;
+    case 'text':
+    default:
+      return ColumnType.STRING;
   }
-  if (type.includes('timestamptz') || type.includes('datetime') || type.includes('date')) {
-    return FieldType.DATETIME;
-  }
-  if (type.includes('int') && !type.includes('point')) {
-    return FieldType.INTEGER;
-  }
-  if (
-    type.includes('real') ||
-    type.includes('float') ||
-    type.includes('double') ||
-    type.includes('decimal') ||
-    type.includes('numeric')
-  ) {
-    return FieldType.FLOAT;
-  }
-  if (type.includes('bool')) {
-    return FieldType.BOOLEAN;
-  }
-  if (type.includes('uuid')) {
-    return FieldType.UUID;
-  }
-  if (type.includes('json')) {
-    return FieldType.JSON;
-  }
-
-  // Default to string for unknown types
-  return FieldType.STRING;
 };

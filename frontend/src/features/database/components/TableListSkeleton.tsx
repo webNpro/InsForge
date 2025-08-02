@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function TableListSkeleton() {
   return (
     <div className="space-y-2">

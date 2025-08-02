@@ -7,39 +7,37 @@ import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { databaseService } from '@/features/database/services/database.service';
-import { tableFormSchema, TableFormData } from '../schema';
-import { defaultField } from '../constants';
+import {
+  TableFormColumnSchema,
+  TableFormForeignKeySchema,
+  tableFormSchema,
+  TableFormSchema,
+} from '@/features/database/schema';
 import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 import { useToast } from '@/lib/hooks/useToast';
-import { FieldRow } from './FieldRow';
+import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
-import { FieldType } from '@/lib/types/schema';
-import { generateUUID } from '@/lib/utils/uuid';
+import { ColumnType, TableSchema } from '@schemas/database.schema';
 
 // System fields that cannot be modified
 const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
+
+const newColumn: TableFormColumnSchema = {
+  name: '',
+  type: ColumnType.STRING,
+  nullable: true,
+  is_unique: false,
+  default_value: '',
+  isSystemColumn: false,
+  isNewColumn: true,
+};
 
 interface TableFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   mode?: 'create' | 'edit';
-  editTable?: {
-    name: string;
-    columns: Array<{
-      name: string;
-      type: string;
-      nullable: boolean;
-      unique?: boolean;
-      default_value?: string | null;
-      foreign_key?: {
-        table: string;
-        column: string;
-        on_delete?: string;
-        on_update?: string;
-      };
-    }>;
-  };
+  editTable?: TableSchema;
 }
 
 export function TableForm({
@@ -51,57 +49,50 @@ export function TableForm({
 }: TableFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [showForeignKeyDialog, setShowForeignKeyDialog] = useState(false);
-  const [editingForeignKey, setEditingForeignKey] = useState<string | null>(null);
-  const [foreignKeys, setForeignKeys] = useState<
-    Array<{
-      id: string;
-      field: string;
-      references_table: string;
-      references_column: string;
-      on_delete: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
-      on_update: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
-    }>
-  >([]);
+  const [editingForeignKey, setEditingForeignKey] = useState<string>();
+  const [foreignKeys, setForeignKeys] = useState<TableFormForeignKeySchema[]>([]);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  const form = useForm<TableFormData>({
+  const form = useForm({
     resolver: zodResolver(tableFormSchema),
     defaultValues: {
       name: '',
-      fields:
+      columns:
         mode === 'create'
           ? [
               {
-                ...defaultField,
                 name: 'id',
-                type: FieldType.UUID,
+                type: ColumnType.UUID,
                 default_value: 'gen_random_uuid()',
                 nullable: false,
-                unique: true,
-                isSystemField: true,
+                is_unique: true,
+                isSystemColumn: true,
+                isNewColumn: false,
               },
               {
-                ...defaultField,
                 name: 'created_at',
-                type: FieldType.DATETIME,
+                type: ColumnType.DATETIME,
                 default_value: 'CURRENT_TIMESTAMP',
-                nullable: false,
-                unique: false,
-                isSystemField: true,
+                nullable: true,
+                is_unique: false,
+                isSystemColumn: true,
+                isNewColumn: false,
               },
               {
-                ...defaultField,
                 name: 'updated_at',
-                type: FieldType.DATETIME,
+                type: ColumnType.DATETIME,
                 default_value: 'CURRENT_TIMESTAMP',
-                nullable: false,
-                unique: false,
-                isSystemField: true,
+                nullable: true,
+                is_unique: false,
+                isSystemColumn: true,
+                isNewColumn: false,
               },
-              { ...defaultField, name: '', type: FieldType.STRING, nullable: true, unique: false },
+              {
+                ...newColumn,
+              },
             ]
-          : [{ ...defaultField }],
+          : [{ ...newColumn }],
     },
   });
 
@@ -112,16 +103,16 @@ export function TableForm({
 
     if (open && mode === 'edit' && editTable) {
       form.reset({
-        name: editTable.name,
-        fields: editTable.columns.map((col) => ({
+        name: editTable.table_name,
+        columns: editTable.columns.map((col) => ({
           name: col.name,
           type: mapDatabaseTypeToFieldType(col.type),
           nullable: col.nullable,
-          unique: col.unique || false,
+          is_unique: col.is_unique || false,
           default_value: col.default_value || '',
-          field_id: generateUUID(),
           originalName: col.name, // Track original name for rename detection
-          isSystemField: SYSTEM_FIELDS.includes(col.name),
+          isSystemColumn: SYSTEM_FIELDS.includes(col.name),
+          isNewColumn: false,
         })),
       });
 
@@ -129,54 +120,45 @@ export function TableForm({
       const existingForeignKeys = editTable.columns
         .filter((col) => !SYSTEM_FIELDS.includes(col.name) && col.foreign_key)
         .map((col) => ({
-          id: generateUUID(),
-          field: col.name,
-          references_table: col.foreign_key?.table ?? '',
-          references_column: col.foreign_key?.column ?? '',
-          on_delete: (col.foreign_key?.on_delete || 'NO ACTION') as
-            | 'CASCADE'
-            | 'SET NULL'
-            | 'RESTRICT'
-            | 'NO ACTION',
-          on_update: (col.foreign_key?.on_update || 'NO ACTION') as
-            | 'CASCADE'
-            | 'SET NULL'
-            | 'RESTRICT'
-            | 'NO ACTION',
+          columnName: col.name,
+          reference_table: col.foreign_key?.reference_table ?? '',
+          reference_column: col.foreign_key?.reference_column ?? '',
+          on_delete: col.foreign_key?.on_delete || 'NO ACTION',
+          on_update: col.foreign_key?.on_update || 'NO ACTION',
         }));
       setForeignKeys(existingForeignKeys);
     } else {
       form.reset({
         name: '',
-        fields: [
+        columns: [
           {
-            ...defaultField,
             name: 'id',
-            type: FieldType.UUID,
+            type: ColumnType.UUID,
             default_value: 'gen_random_uuid()',
             nullable: false,
-            unique: true,
-            isSystemField: true,
+            is_unique: true,
+            isSystemColumn: true,
+            isNewColumn: false,
           },
           {
-            ...defaultField,
             name: 'created_at',
-            type: FieldType.DATETIME,
+            type: ColumnType.DATETIME,
             default_value: 'CURRENT_TIMESTAMP',
-            nullable: false,
-            unique: false,
-            isSystemField: true,
+            nullable: true,
+            is_unique: false,
+            isSystemColumn: true,
+            isNewColumn: false,
           },
           {
-            ...defaultField,
             name: 'updated_at',
-            type: FieldType.DATETIME,
+            type: ColumnType.DATETIME,
             default_value: 'CURRENT_TIMESTAMP',
-            nullable: false,
-            unique: false,
-            isSystemField: true,
+            nullable: true,
+            is_unique: false,
+            isSystemColumn: true,
+            isNewColumn: false,
           },
-          { ...defaultField, name: '', type: FieldType.STRING, nullable: true, unique: false },
+          { ...newColumn },
         ],
       });
       setForeignKeys([]);
@@ -185,23 +167,22 @@ export function TableForm({
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'fields',
+    name: 'columns',
   });
 
   const sortedFields = useMemo(() => {
     return [...fields].sort((a, b) => {
       // System fields come first
-      if (a.isSystemField && !b.isSystemField) {
+      if (a.isSystemColumn && !b.isSystemColumn) {
         return -1;
       }
-      if (!a.isSystemField && b.isSystemField) {
+      if (!a.isSystemColumn && b.isSystemColumn) {
         return 1;
       }
 
       // Within system fields, maintain the order: id, created_at, updated_at
-      if (a.isSystemField && b.isSystemField) {
-        const systemFieldOrder = ['id', 'created_at', 'updated_at'];
-        return systemFieldOrder.indexOf(a.name) - systemFieldOrder.indexOf(b.name);
+      if (a.isSystemColumn && b.isSystemColumn) {
+        return SYSTEM_FIELDS.indexOf(a.name) - SYSTEM_FIELDS.indexOf(b.name);
       }
 
       // Keep original order for non-system fields
@@ -210,22 +191,22 @@ export function TableForm({
   }, [fields]);
 
   const createTableMutation = useMutation({
-    mutationFn: async (data: TableFormData) => {
-      const columns = data.fields.map((field) => {
+    mutationFn: async (data: TableFormSchema) => {
+      const columns = data.columns.map((col) => {
         // Find foreign key for this field if it exists
-        const foreignKey = foreignKeys.find((fk) => fk.field === field.name);
+        const foreignKey = foreignKeys.find((fk) => fk.columnName === col.name);
 
         return {
-          name: field.name,
-          type: field.type,
-          nullable: field.nullable,
-          unique: field.unique,
-          default_value: field.default_value || null,
+          name: col.name,
+          type: col.type,
+          nullable: col.nullable,
+          is_unique: col.is_unique,
+          default_value: col.default_value || null,
           // Embed foreign key information directly in the column
           ...(foreignKey && {
             foreign_key: {
-              table: foreignKey.references_table,
-              column: foreignKey.references_column,
+              table: foreignKey.reference_table,
+              column: foreignKey.reference_column,
               on_delete: foreignKey.on_delete,
               on_update: foreignKey.on_update,
             },
@@ -255,7 +236,7 @@ export function TableForm({
   });
 
   const updateTableMutation = useMutation({
-    mutationFn: async (data: TableFormData) => {
+    mutationFn: async (data: TableFormSchema) => {
       if (!editTable) {
         return;
       }
@@ -281,18 +262,18 @@ export function TableForm({
       const processedOriginalColumns = new Set<string>();
 
       // Process each field
-      data.fields.forEach((field: any) => {
-        if (field.originalName) {
+      data.columns.forEach((col) => {
+        if (col.originalName) {
           // This field existed before
-          processedOriginalColumns.add(field.originalName);
+          processedOriginalColumns.add(col.originalName);
 
           // Check if it was renamed
-          if (field.originalName !== field.name) {
-            operations['rename_columns'][field.originalName] = field.name;
+          if (col.originalName !== col.name) {
+            operations['rename_columns'][col.originalName] = col.name;
           }
         } else {
           // This is a new field (added via Add Field button)
-          const { originalName, ...fieldData } = field;
+          const { ...fieldData } = col;
           operations['add_columns'].push({
             ...fieldData,
             default_value: fieldData.default_value || null,
@@ -314,21 +295,21 @@ export function TableForm({
       const existingForeignKeys = existingUserColumns
         .filter((col) => col.foreign_key)
         .map((col) => ({
-          field: col.name,
+          columnName: col.name,
           ...col.foreign_key,
         }));
 
       // Compare with new foreign keys
       foreignKeys.forEach((fk) => {
-        const existingFK = existingForeignKeys.find((efk) => efk.field === fk.field);
+        const existingFK = existingForeignKeys.find((efk) => efk.columnName === fk.columnName);
 
         if (!existingFK) {
           // This is a new foreign key
           operations['add_fkey_columns'].push({
-            name: fk.field,
+            name: fk.columnName,
             foreign_key: {
-              table: fk.references_table,
-              column: fk.references_column,
+              table: fk.reference_table,
+              column: fk.reference_column,
               on_delete: fk.on_delete,
               on_update: fk.on_update,
             },
@@ -338,11 +319,11 @@ export function TableForm({
 
       // Check for dropped foreign keys
       existingForeignKeys.forEach((efk) => {
-        const stillExists = foreignKeys.find((fk) => fk.field === efk.field);
+        const stillExists = foreignKeys.find((fk) => fk.columnName === efk.columnName);
         if (!stillExists) {
           // This foreign key was removed
           operations['drop_fkey_columns'].push({
-            name: efk.field,
+            name: efk.columnName,
           });
         }
       });
@@ -354,10 +335,10 @@ export function TableForm({
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
 
       // Invalidate all table data queries for this table (with all parameter combinations)
-      void queryClient.invalidateQueries({ queryKey: ['table', editTable?.name] });
+      void queryClient.invalidateQueries({ queryKey: ['table', editTable?.table_name] });
 
       // Invalidate the separate table schema query used by AddRecordSheet
-      void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.name] });
+      void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.table_name] });
 
       showToast(`Table "${data.name}" updated successfully!`, 'success');
 
@@ -369,8 +350,8 @@ export function TableForm({
     },
     onError: (err: any) => {
       // Invalidate queries to ensure we have fresh data after failed request
-      void queryClient.invalidateQueries({ queryKey: ['table', editTable?.name] });
-      void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.name] });
+      void queryClient.invalidateQueries({ queryKey: ['table', editTable?.table_name] });
+      void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.table_name] });
 
       const errorMessage = err.message || 'Failed to update table';
       setError(errorMessage);
@@ -387,39 +368,31 @@ export function TableForm({
   });
 
   const addField = () => {
-    append({
-      ...defaultField,
-      name: '',
-      type: FieldType.STRING,
-      nullable: true,
-      unique: false,
-      isSystemField: false,
-    });
+    append({ ...newColumn });
   };
 
-  const handleAddForeignKey = (fk: Omit<(typeof foreignKeys)[0], 'id'>) => {
+  const handleAddForeignKey = (fk: TableFormForeignKeySchema) => {
     if (editingForeignKey) {
       // Update existing foreign key
       setForeignKeys(
         foreignKeys.map((existingFk) =>
-          existingFk.id === editingForeignKey ? { ...existingFk, ...fk } : existingFk
+          existingFk.columnName === editingForeignKey ? { ...fk } : existingFk
         )
       );
-      setEditingForeignKey(null);
+      setEditingForeignKey(undefined);
     } else {
       // Add new foreign key
       setForeignKeys([
         ...foreignKeys,
         {
-          id: generateUUID(),
           ...fk,
         },
       ]);
     }
   };
 
-  const handleRemoveForeignKey = (id: string) => {
-    setForeignKeys(foreignKeys.filter((fk) => fk.id !== id));
+  const handleRemoveForeignKey = (columnName?: string) => {
+    setForeignKeys(foreignKeys.filter((fk) => fk.columnName !== columnName));
   };
 
   if (!open) {
@@ -445,7 +418,7 @@ export function TableForm({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <form onSubmit={() => void handleSubmit()} className="flex flex-col gap-6">
             {/* Table Name */}
             <div className="bg-white rounded-xl border border-zinc-200 p-6">
               <div className="flex flex-col gap-3">
@@ -481,19 +454,19 @@ export function TableForm({
                   <div className="w-5" />
                 </div>
 
-                {/* Field Rows */}
+                {/* Columns */}
                 <div className="px-3 border-b border-zinc-200">
                   {sortedFields.map((field) => {
                     const originalIndex = fields.findIndex((f) => f.id === field.id);
                     return (
-                      <FieldRow
+                      <TableFormColumn
                         key={field.id}
-                        field={field}
+                        column={field}
                         index={originalIndex}
-                        form={form}
+                        control={form.control}
                         onRemove={() => remove(originalIndex)}
-                        isSystemField={field.isSystemField}
-                        isNewField={!field.field_id}
+                        isSystemColumn={field.isSystemColumn}
+                        isNewColumn={field.isNewColumn}
                       />
                     );
                   })}
@@ -528,28 +501,28 @@ export function TableForm({
                 <div className="px-6 pb-6 space-y-3">
                   {foreignKeys.map((fk) => (
                     <div
-                      key={fk.id}
+                      key={fk.columnName}
                       className="group flex flex-wrap items-center gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150"
                     >
                       <div className="flex items-center gap-2 flex-1">
                         <Link className="w-5 h-5 text-zinc-500" />
-                        <span className="font-medium text-sm text-zinc-950">{fk.field}</span>
+                        <span className="font-medium text-sm text-zinc-950">{fk.columnName}</span>
                         <MoveRight className="w-5 h-5 text-zinc-950" />
                         <span className="font-medium text-sm text-zinc-950">
-                          {fk.references_table}.{fk.references_column}
+                          {fk.reference_table}.{fk.reference_column}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
-                          On Delete:
-                        </span>
-                        <span className="text-sm text-zinc-500">{fk.on_delete}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-1">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Update:
                         </span>
                         <span className="text-sm text-zinc-500">{fk.on_update}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
+                          On Delete:
+                        </span>
+                        <span className="text-sm text-zinc-500">{fk.on_delete}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <Button
@@ -558,7 +531,7 @@ export function TableForm({
                           size="sm"
                           className="h-10 px-3 gap-1.5 text-zinc-950 hover:bg-zinc-200 transition-colors rounded-md"
                           onClick={() => {
-                            setEditingForeignKey(fk.id);
+                            setEditingForeignKey(fk.columnName);
                             setShowForeignKeyDialog(true);
                           }}
                         >
@@ -569,7 +542,7 @@ export function TableForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveForeignKey(fk.id)}
+                          onClick={() => handleRemoveForeignKey(fk.columnName)}
                           className="h-10 px-3 gap-1.5 text-zinc-950 hover:bg-zinc-200 transition-colors rounded-md"
                         >
                           <X className="w-4 h-4" />
@@ -598,18 +571,18 @@ export function TableForm({
               <ForeignKeyPopover
                 form={form}
                 mode={mode}
-                editTableName={editTable?.name}
+                editTableName={editTable?.table_name}
                 open={showForeignKeyDialog}
                 onOpenChange={(open) => {
                   setShowForeignKeyDialog(open);
                   if (!open) {
-                    setEditingForeignKey(null);
+                    setEditingForeignKey(undefined);
                   }
                 }}
                 onAddForeignKey={handleAddForeignKey}
                 initialValue={
                   editingForeignKey
-                    ? foreignKeys.find((fk) => fk.id === editingForeignKey)
+                    ? foreignKeys.find((fk) => fk.columnName === editingForeignKey)
                     : undefined
                 }
               />
@@ -637,7 +610,7 @@ export function TableForm({
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={
               !form.formState.isValid ||
               createTableMutation.isPending ||

@@ -8,6 +8,8 @@ import {
 import { BooleanCellEditor } from '@/features/database/components/BooleanCellEditor';
 import { DateCellEditor } from '@/features/database/components/DateCellEditor';
 import { JsonCellEditor } from '@/features/database/components/JsonCellEditor';
+import { ColumnSchema, ColumnType, TableSchema } from '@schemas/database.schema';
+import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 
 // Custom cell editors for database fields
 function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) {
@@ -162,14 +164,15 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
 
 // Convert database schema to DataGrid columns
 export function convertSchemaToColumns(
-  schema: any,
+  schema?: TableSchema,
   onCellEdit?: (rowId: string, columnKey: string, newValue: any) => Promise<void>
 ): DataGridColumn[] {
   if (!schema?.columns) {
     return [];
   }
 
-  return schema.columns.map((col: any) => {
+  return schema.columns.map((col: ColumnSchema) => {
+    const colType = mapDatabaseTypeToFieldType(col.type);
     const isEditable =
       !col.primary_key &&
       [
@@ -198,17 +201,17 @@ export function convertSchemaToColumns(
     if (col.name === 'id') {
       column.renderCell = DefaultCellRenderers.id;
       column.editable = false;
-    } else if (col.type === 'boolean') {
+    } else if (colType === ColumnType.BOOLEAN) {
       column.renderCell = DefaultCellRenderers.boolean;
       column.renderEditCell = (props: any) => (
         <CustomBooleanCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (col.type === 'timestamp with time zone') {
+    } else if (colType === ColumnType.DATETIME) {
       column.renderCell = DefaultCellRenderers.date;
       column.renderEditCell = (props: any) => (
         <CustomDateCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (col.type === 'jsonb' || col.type === 'json') {
+    } else if (colType === ColumnType.JSON) {
       column.renderCell = DefaultCellRenderers.json;
       column.renderEditCell = (props: any) => (
         <CustomJsonCellEditor {...props} onCellEdit={onCellEdit} />
@@ -224,7 +227,7 @@ export function convertSchemaToColumns(
 
 // Database-specific DataGrid props
 export interface DatabaseDataGridProps extends Omit<DataGridProps, 'columns'> {
-  schema: any;
+  schema?: TableSchema;
 }
 
 // Specialized DataGrid for database tables

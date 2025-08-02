@@ -1,35 +1,24 @@
 import { Type, Calendar, Hash, Percent, ToggleLeft, Fingerprint, Code } from 'lucide-react';
-import { FieldType } from '@/lib/types/schema';
+import { ColumnType } from '@schemas/database.schema';
 
 // Icon mapping for field types
-export const fieldIcons: Record<FieldType, React.ComponentType<{ className?: string }>> = {
-  [FieldType.STRING]: Type,
-  [FieldType.DATETIME]: Calendar,
-  [FieldType.INTEGER]: Hash,
-  [FieldType.FLOAT]: Percent,
-  [FieldType.BOOLEAN]: ToggleLeft,
-  [FieldType.UUID]: Fingerprint,
-  [FieldType.JSON]: Code,
-  // [FieldType.FILE]: FileText,
-};
-
-// Default field values
-export const defaultField = {
-  name: '',
-  type: FieldType.STRING,
-  nullable: true,
-  unique: false,
-  default_value: '',
+export const columnTypeIcons: Record<ColumnType, React.ComponentType<{ className?: string }>> = {
+  [ColumnType.STRING]: Type,
+  [ColumnType.DATETIME]: Calendar,
+  [ColumnType.INTEGER]: Hash,
+  [ColumnType.FLOAT]: Percent,
+  [ColumnType.BOOLEAN]: ToggleLeft,
+  [ColumnType.UUID]: Fingerprint,
+  [ColumnType.JSON]: Code,
 };
 
 // Field type descriptions
-export const fieldTypeDescriptions: Record<FieldType, string> = {
-  [FieldType.STRING]: 'Text values of any length',
-  [FieldType.INTEGER]: 'Whole numbers without decimals',
-  [FieldType.FLOAT]: 'Numbers with decimal places',
-  [FieldType.BOOLEAN]: 'True or false values',
-  [FieldType.DATETIME]: 'Date and time values',
-  [FieldType.UUID]: 'Unique identifiers (auto-generated)',
-  [FieldType.JSON]: 'Complex structured data',
-  // [FieldType.FILE]: 'File attachments with metadata',
+export const columnTypeDescriptions: Record<ColumnType, string> = {
+  [ColumnType.STRING]: 'Text values of any length',
+  [ColumnType.INTEGER]: 'Whole numbers without decimals',
+  [ColumnType.FLOAT]: 'Numbers with decimal places',
+  [ColumnType.BOOLEAN]: 'True or false values',
+  [ColumnType.DATETIME]: 'Date and time values',
+  [ColumnType.UUID]: 'Unique identifiers (auto-generated)',
+  [ColumnType.JSON]: 'Complex structured data',
 };
