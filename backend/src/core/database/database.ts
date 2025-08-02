@@ -339,7 +339,6 @@ export class DatabaseManager {
         "emailVerified" BOOLEAN DEFAULT false,
         "name" TEXT,
         "image" TEXT,
-        "role" TEXT DEFAULT 'authenticated',
         "createdAt" TIMESTAMPTZ DEFAULT NOW(),
         "updatedAt" TIMESTAMPTZ DEFAULT NOW()
       );
@@ -436,7 +435,6 @@ export class DatabaseManager {
         
         -- Better Auth indexes
         CREATE INDEX IF NOT EXISTS idx_user_email ON "user"("email");
-        CREATE INDEX IF NOT EXISTS idx_user_role ON "user"("role");
         CREATE INDEX IF NOT EXISTS idx_session_userId ON "session"("userId");
         CREATE INDEX IF NOT EXISTS idx_session_token ON "session"("token");
         CREATE INDEX IF NOT EXISTS idx_account_userId ON "account"("userId");

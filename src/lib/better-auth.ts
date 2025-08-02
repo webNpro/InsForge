@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { jwt } from 'better-auth/plugins/jwt';
 import { bearer } from 'better-auth/plugins/bearer';
 import { Pool } from 'pg';
+import { customAdminPlugin } from './custom-admin-plugin';
 
 // Create PostgreSQL pool
 const pool = new Pool({
@@ -21,29 +22,20 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  user: {
-    additionalFields: {
-      role: {
-        type: 'string',
-        defaultValue: 'authenticated',
-        input: false, // Prevent users from setting their own role during signup
-      },
-    },
-  },
   plugins: [
     bearer(),
+    customAdminPlugin,
     jwt({
       jwt: {
         expirationTime: '7d', // 7 days like current implementation
-        // Custom JWT payload as per requirements
+        // Standard JWT payload - no role logic here
         definePayload: ({ user }) => {
           return {
             sub: user.id,
             email: user.email,
-            // type is for backward compatibility with existing middleware
-            type: user.role === 'dashboard_user' ? 'admin' : 'user',
-            // role is the PostgreSQL role for PostgREST and RLS
-            role: user.role || 'authenticated',
+            // Default values for all users, admin login will be handled by custom admin plugin
+            type: 'user',
+            role: 'authenticated',
           };
         },
       },

@@ -1,42 +1,41 @@
 /* eslint-disable no-console */
 import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
+import { BetterAuthService } from '@/core/auth/better-auth-service.js';
 
 /**
- * Ensures exactly one admin exists in Better Auth
- * - If no admin exists, creates/promotes the specified user
- * - If admin already exists, does nothing
+ * Ensures the first admin exists in Better Auth
+ * Creates admin user if not exists, skips if already exists
  */
 async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Promise<void> {
-  const dbManager = DatabaseManager.getInstance();
-  const db = dbManager.getDb();
+  const betterAuthService = BetterAuthService.getInstance();
 
-  // Check if any admin already exists
-  const existingAdmin = (await db
-    .prepare('SELECT email FROM "user" WHERE role = \'dashboard_user\' LIMIT 1')
-    .get()) as { email: string };
+  try {
+    // Try to register the admin - this will check if user exists
+    const result = await betterAuthService.registerAdmin({
+      email: adminEmail,
+      password: adminPassword,
+      name: 'Administrator',
+    });
 
-  if (existingAdmin) {
-    console.log(`✅ Admin already exists: ${existingAdmin.email}`);
-    return;
-  }
+    if (result?.token) {
+      console.log(`✅ First admin created: ${adminEmail}`);
+    }
+  } catch (error) {
+    // Check if it's just an "already exists" error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as { code?: string })?.code;
 
-  // No admin exists, create/promote one
-  const { auth } = await import('@/lib/better-auth.js');
-  // Try to create new user
-  const result = await auth.api.signUpEmail({
-    body: { email: adminEmail, password: adminPassword, name: 'Admin' },
-  });
-
-  if (result?.user?.id) {
-    await db
-      .prepare('UPDATE "user" SET role = ? WHERE id = ?')
-      .run('dashboard_user', result.user.id);
-    console.log(`✅ First admin created: ${adminEmail}`);
+    if (errorCode === 'CONFLICT' || errorMessage.includes('already exists')) {
+      console.log(`✅ Admin already exists: ${adminEmail}`);
+    } else {
+      // Non-critical error - admin can be created manually if needed
+      console.warn('Could not verify/create admin user:', errorMessage);
+    }
   }
 }
 
-export async function seedAdmin() {
+export async function seedAdmin(): Promise<void> {
   const authService = AuthService.getInstance();
   const dbManager = DatabaseManager.getInstance();
 
@@ -51,32 +50,41 @@ export async function seedAdmin() {
       await ensureFirstAdmin(adminEmail, adminPassword);
     } else {
       // Legacy auth flow
-      let superUser = await authService.getSuperUserByEmail(adminEmail);
+      const superUser = await authService.getSuperUserByEmail(adminEmail);
       if (!superUser) {
-        superUser = await authService.createSuperUser(adminEmail, adminPassword, 'Admin');
+        await authService.createSuperUser(adminEmail, adminPassword, 'Admin');
         console.log(`✅ Admin account created: ${adminEmail}`);
       } else {
         console.log(`✅ Admin account exists: ${adminEmail}`);
       }
     }
 
-    // Initialize or get the single API key
+    // Initialize API key
     const apiKey = await authService.initializeApiKey();
 
     // Get database stats
     const tableCount = await dbManager.getUserTableCount();
 
-    console.log(
-      `✅ Database connected to PostgreSQL: ${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.POSTGRES_DB || 'insforge'}`
-    );
+    // Database connection info
+    const dbHost = process.env.POSTGRES_HOST || 'localhost';
+    const dbPort = process.env.POSTGRES_PORT || '5432';
+    const dbName = process.env.POSTGRES_DB || 'insforge';
+    console.log(`✅ Database connected to PostgreSQL: ${dbHost}:${dbPort}/${dbName}`);
+
     if (tableCount > 0) {
       console.log(`✅ Found ${tableCount} user tables`);
     }
+
     console.log(`\n🔑 YOUR API KEY: ${apiKey}`);
     console.log(`\n💡 Save this API key for your apps!`);
 
-    console.log(`🎨 Self hosting Dashboard: http://localhost:7131`);
-    console.log(`📡 Backend API: http://localhost:7130/api`);
+    // Display URLs using configured base URLs
+    const apiBaseUrl =
+      process.env.VITE_API_BASE_URL || `http://localhost:${process.env.PORT || 7130}`;
+    const dashboardPort = process.env.DASHBOARD_PORT || 7131;
+
+    console.log(`🎨 Self hosting Dashboard: http://localhost:${dashboardPort}`);
+    console.log(`📡 Backend API: ${apiBaseUrl}/api`);
   } catch (error) {
     console.error('Error during setup:', error);
   }
