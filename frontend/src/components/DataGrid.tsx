@@ -9,11 +9,12 @@ import ReactDataGrid, {
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
 import { Copy, Check } from 'lucide-react';
-import { cn, mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
+import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
 import { Checkbox } from './Checkbox';
+import { TypeBadge } from '@/features/database/components/TypeBadge';
 
 // Types
 export interface DataGridColumn {
@@ -217,8 +218,6 @@ export function SortableHeaderRenderer({
   columnType?: string;
   showTypeBadge?: boolean;
 }) {
-  const typeDisplay = columnType ? mapDatabaseTypeToFieldType(columnType) : '';
-
   // Determine which arrow to show on hover based on current sort state
   const getNextSortDirection = () => {
     if (!sortDirection) {
@@ -234,11 +233,7 @@ export function SortableHeaderRenderer({
       <div className="flex flex-row gap-1 items-center">
         <span className="truncate text-sm font-medium text-zinc-950">{column.name}</span>
 
-        {columnType && showTypeBadge && (
-          <span className="bg-white px-1.5 py-0.5 border border-border-gray rounded-[6px] text-xs text-zinc-500 font-normal">
-            {typeDisplay}
-          </span>
-        )}
+        {columnType && showTypeBadge && <TypeBadge type={columnType} />}
 
         {/* Show sort arrow with hover effect */}
         {column.sortable && (
