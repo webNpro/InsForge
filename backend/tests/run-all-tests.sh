@@ -3,7 +3,8 @@
 # Universal test runner for Insforge backend tests
 # This script runs all test files in the tests directory
 
-set -e  # Exit on error
+# Don't exit on error - we want to run all tests even if some fail
+# set -e  # Exit on error
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -13,7 +14,9 @@ NC='\033[0m' # No Color
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+# PROJECT_ROOT is the repository root, not just the backend directory
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+BACKEND_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load environment from .env file if it exists
 if [ -f "$PROJECT_ROOT/.env" ]; then
@@ -89,7 +92,8 @@ run_test() {
     fi
     
     echo ""
-    return $exit_code
+    # Don't return the exit code - we want to continue running other tests
+    return 0
 }
 
 # Run local tests

@@ -10,7 +10,7 @@
 # - jq must be installed for JSON formatting
 #
 # Usage:
-#   ./tests/test-oauth-config.sh
+#   ./tests/local/test-oauth-config.sh
 #
 # Tests covered:
 # - Admin authentication

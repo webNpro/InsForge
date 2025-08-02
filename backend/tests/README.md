@@ -82,7 +82,7 @@ All tests automatically clean up after themselves by:
 To remove ALL test data from the system:
 
 ```bash
-./tests/cleanup-all-test-data.sh
+./cleanup-all-test-data.sh
 ```
 
 This will prompt for confirmation and then delete:
@@ -101,7 +101,7 @@ All tests source `test-config.sh` which provides:
 
 ## Writing New Tests
 
-1. Create a new shell script in the `tests/` directory
+1. Create a new shell script in the appropriate subdirectory (`local/` or `cloud/`)
 2. Source the test configuration:
    ```bash
    source "$SCRIPT_DIR/test-config.sh"
