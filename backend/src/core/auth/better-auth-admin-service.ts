@@ -201,6 +201,40 @@ export class BetterAuthAdminService {
   }
 
   /**
+   * Get a single user by ID
+   */
+  public async getUser(userId: string): Promise<UserRecord> {
+    if (!userId) {
+      throw new APIError('BAD_REQUEST', {
+        message: 'User ID is required',
+      });
+    }
+
+    const db = this.getDb();
+
+    const user = (await db
+      .prepare(
+        'SELECT id, email, name, "emailVerified", "createdAt", "updatedAt" FROM "user" WHERE id = ? LIMIT 1'
+      )
+      .get(userId)) as UserRecord | null;
+
+    if (!user) {
+      throw new APIError('NOT_FOUND', {
+        message: 'User not found',
+      });
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || null,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  /**
    * Lists all users (excluding admin)
    */
   public async listUsers(

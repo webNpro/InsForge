@@ -14,7 +14,7 @@ export interface User {
 
 export class AuthService {
   async login(email: string, password: string) {
-    const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/admin/sign-in' : '/auth/admin/login';
+    const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/sign-in/email' : '/auth/admin/login';
 
     const data = await apiClient.request(endpoint, {
       method: 'POST',
@@ -33,8 +33,8 @@ export class AuthService {
         access_token: data.token,
         user: {
           ...data.user,
-          created_at: data.user.created_at,
-          updated_at: data.user.updated_at,
+          created_at: data.user.createdAt || data.user.created_at,
+          updated_at: data.user.updatedAt || data.user.updated_at,
         },
       };
     }
@@ -42,30 +42,11 @@ export class AuthService {
     return data;
   }
 
-  getCurrentUser() {
-    // Get token from apiClient
-    const token = apiClient.getToken();
-    if (!token) {
-      throw new Error('Not authenticated');
-    }
-
-    // Decode JWT token to get user info
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-
-      // Return user info from JWT payload
-      return {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name || payload.email, // Use email as fallback for name
-        role: payload.role || 'authenticated',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Failed to decode token:', error);
-      throw new Error('Invalid token');
-    }
+  async getCurrentUser() {
+    // Both Better Auth and legacy use /me endpoint
+    const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/me' : '/auth/me';
+    const response = await apiClient.request(endpoint);
+    return response.user;
   }
 
   logout() {
@@ -96,14 +77,19 @@ export class AuthService {
   }
 
   async getUser(id: string) {
-    // Both auth systems don't support individual user fetching
-    // Need to fetch all users and filter
-    const allUsers = await this.getUsers();
-    const user = allUsers.records.find((u: User) => u.id === id);
-    if (!user) {
-      throw new Error('User not found');
+    if (ENABLE_BETTER_AUTH) {
+      // Better Auth now supports fetching individual users
+      return await apiClient.request(`/auth/v2/admin/users/${id}`);
+    } else {
+      // Legacy auth doesn't support individual user fetching
+      // Need to fetch all users and filter
+      const allUsers = await this.getUsers();
+      const user = allUsers.records.find((u: User) => u.id === id);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      return user;
     }
-    return user;
   }
 
   async register(email: string, password: string, name?: string, id?: string) {

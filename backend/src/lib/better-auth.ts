@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth';
 import { jwt } from 'better-auth/plugins/jwt';
 import { bearer } from 'better-auth/plugins/bearer';
 import { Pool } from 'pg';
-import { customAdminPlugin } from './custom-admin-plugin';
+import { customAuthPlugin } from './custom-auth-plugin';
 
 // Create PostgreSQL pool
 const pool = new Pool({
@@ -28,11 +28,10 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
-    customAdminPlugin,
+    customAuthPlugin,
     jwt({
       jwt: {
         expirationTime: '7d', // 7 days like current implementation
-        // Standard JWT payload - no role logic here
         definePayload: ({ user }) => {
           return {
             sub: user.id,

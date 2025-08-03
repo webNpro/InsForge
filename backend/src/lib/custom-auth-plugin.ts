@@ -28,8 +28,8 @@ const requireProjectAdmin = createAuthMiddleware(async (ctx) => {
   };
 });
 
-export const customAdminPlugin: BetterAuthPlugin = {
-  id: 'custom-admin',
+export const customAuthPlugin: BetterAuthPlugin = {
+  id: 'custom-auth',
   endpoints: {
     // Admin register - creates admin user in DB
     registerAdmin: createAuthEndpoint(
@@ -79,6 +79,88 @@ export const customAdminPlugin: BetterAuthPlugin = {
         const authService = BetterAuthAdminService.getInstance();
         const { limit, offset } = ctx.query;
         return ctx.json(await authService.listUsers(limit, offset));
+      }
+    ),
+
+    // Get single user by ID
+    getUser: createAuthEndpoint(
+      '/admin/users/:id',
+      {
+        method: 'GET',
+        use: [requireProjectAdmin],
+      },
+      async (ctx) => {
+        const authService = BetterAuthAdminService.getInstance();
+        const userId = ctx.params?.id as string;
+        return ctx.json(await authService.getUser(userId));
+      }
+    ),
+
+    // Universal /me endpoint that works for both session tokens and JWT tokens
+    me: createAuthEndpoint(
+      '/me',
+      {
+        method: 'GET',
+      },
+      async (ctx) => {
+        const authHeader = ctx.request?.headers.get('authorization') || ctx.headers?.get('authorization');
+        
+        if (!authHeader) {
+          throw new APIError('UNAUTHORIZED', {
+            message: 'Missing authorization header',
+          });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        
+        // First, try as admin JWT token
+        try {
+          const authService = BetterAuthAdminService.getInstance();
+          const decoded = await authService.verifyToken(token);
+          
+          // It's a valid JWT token (admin)
+          return ctx.json({
+            user: {
+              id: decoded.sub || 'admin',
+              email: decoded.email || '',
+              type: decoded.type || 'admin',
+              role: decoded.role || 'project_admin',
+            }
+          });
+        } catch {
+          // Not a JWT, might be a session token
+        }
+
+        // Try as Better Auth session token
+        try {
+          // Call Better Auth's get-session endpoint
+          const response = await fetch(`${ctx.request.url.origin}/api/auth/v2/get-session`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'x-api-key': ctx.request.headers.get('x-api-key') || '',
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.user) {
+              return ctx.json({
+                user: {
+                  id: data.user.id,
+                  email: data.user.email,
+                  type: 'user',
+                  role: 'authenticated',
+                }
+              });
+            }
+          }
+        } catch {
+          // Failed to get session
+        }
+
+        throw new APIError('UNAUTHORIZED', {
+          message: 'Invalid token',
+        });
       }
     ),
 
