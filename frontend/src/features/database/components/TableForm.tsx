@@ -13,7 +13,6 @@ import {
   tableFormSchema,
   TableFormSchema,
 } from '@/features/database/schema';
-import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
@@ -106,7 +105,7 @@ export function TableForm({
         name: editTable.table_name,
         columns: editTable.columns.map((col) => ({
           name: col.name,
-          type: mapDatabaseTypeToFieldType(col.type),
+          type: col.type,
           nullable: col.nullable,
           is_unique: col.is_unique || false,
           default_value: col.default_value || '',
@@ -308,8 +307,8 @@ export function TableForm({
           operations['add_fkey_columns'].push({
             name: fk.columnName,
             foreign_key: {
-              table: fk.reference_table,
-              column: fk.reference_column,
+              reference_table: fk.reference_table,
+              reference_column: fk.reference_column,
               on_delete: fk.on_delete,
               on_update: fk.on_update,
             },

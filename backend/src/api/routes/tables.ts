@@ -4,7 +4,7 @@ import { TablesController } from '@/controllers/TablesController.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
-import { CreateTableRequest, UpdateTableSchemaRequest } from '@/types/database.js';
+import { UpdateTableSchemaRequest, CreateTableRequest } from '@insforge/shared-schemas';
 
 const router = Router();
 const tablesController = new TablesController();
@@ -26,7 +26,7 @@ router.get('/', async (_req: AuthRequest, res: Response, next: NextFunction) => 
 router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const requestData: CreateTableRequest = req.body;
-    const { table_name, columns, rls_decl } = requestData;
+    const { table_name, columns, rls_enabled } = requestData;
 
     // Validate required fields
     if (!table_name || !columns || !Array.isArray(columns)) {
@@ -38,7 +38,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
       );
     }
 
-    const use_RLS = rls_decl !== undefined ? rls_decl : true;
+    const use_RLS = rls_enabled !== undefined ? rls_enabled : true;
     const result = await tablesController.createTable(table_name, columns, use_RLS);
     successResponse(res, result, 201);
   } catch (error) {

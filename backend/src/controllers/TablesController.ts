@@ -4,19 +4,24 @@ import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import {
   COLUMN_TYPES,
-  ColumnDefinition,
-  ForeignKeyInfo,
   ForeignKeyRow,
   ColumnInfo,
   PrimaryKeyInfo,
+  ForeignKeyInfo,
+} from '@/types/database.js';
+import {
+  ColumnSchema,
+  ColumnType,
   CreateTableResponse,
   GetTableSchemaResponse,
   UpdateTableSchemaRequest,
   UpdateTableSchemaResponse,
   DeleteTableResponse,
-} from '@/types/database.js';
-import { ColumnType } from '@insforge/shared-schemas';
+  OnDeleteActionSchema,
+  OnUpdateActionSchema,
+} from '@insforge/shared-schemas';
 import { validateIdentifier } from '@/utils/validations.js';
+import { converSqlTypeToColumnType } from '@/utils/helpers';
 
 export class TablesController {
   private dbManager: DatabaseManager;
@@ -52,7 +57,7 @@ export class TablesController {
    */
   async createTable(
     table_name: string,
-    columns: ColumnDefinition[],
+    columns: ColumnSchema[],
     use_RLS = true
   ): Promise<CreateTableResponse> {
     // Validate table name
@@ -71,7 +76,7 @@ export class TablesController {
     const validatedColumns = this.validateReservedFields(columns);
 
     // Validate remaining columns
-    validatedColumns.forEach((col: ColumnDefinition, index: number) => {
+    validatedColumns.forEach((col: ColumnSchema, index: number) => {
       // Validate column name
       try {
         validateIdentifier(col.name, 'column');
@@ -135,7 +140,7 @@ export class TablesController {
 
     // Map columns to SQL with proper type conversion
     const columnDefs = validatedColumns
-      .map((col: ColumnDefinition) => {
+      .map((col: ColumnSchema) => {
         const fieldType = COLUMN_TYPES[col.type];
         const sqlType = fieldType.sqlType;
 
@@ -312,11 +317,11 @@ export class TablesController {
       table_name: table,
       columns: columns.map((col: ColumnInfo) => ({
         name: col.column_name,
-        type: col.data_type,
+        type: converSqlTypeToColumnType(col.data_type),
         nullable: col.is_nullable === 'YES',
         primary_key: pkSet.has(col.column_name),
         is_unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
-        default_value: col.column_default,
+        default_value: col.column_default ?? undefined,
         ...(foreignKeyMap.has(col.column_name) && {
           foreign_key: foreignKeyMap.get(col.column_name),
         }),
@@ -585,13 +590,13 @@ export class TablesController {
     return `"${identifier.replace(/"/g, '""')}"`;
   }
 
-  private validateReservedFields(columns: ColumnDefinition[]): ColumnDefinition[] {
+  private validateReservedFields(columns: ColumnSchema[]): ColumnSchema[] {
     const reservedFields = {
       id: ColumnType.UUID,
       created_at: ColumnType.DATETIME,
       updated_at: ColumnType.DATETIME,
     };
-    return columns.filter((col: ColumnDefinition) => {
+    return columns.filter((col: ColumnSchema) => {
       const reservedType = reservedFields[col.name as keyof typeof reservedFields];
       if (reservedType) {
         // If it's a reserved field name
@@ -613,7 +618,7 @@ export class TablesController {
   }
 
   private generateFkeyConstraintStatement(
-    col: ColumnDefinition,
+    col: ColumnSchema,
     include_source_column: boolean = true
   ) {
     if (!col.foreign_key) {
@@ -621,14 +626,14 @@ export class TablesController {
     }
     // Store foreign_key in a const to avoid repeated non-null assertions
     const fk = col.foreign_key;
-    const constraintName = `fk_${col.name}_${fk.table}_${fk.column}`;
+    const constraintName = `fk_${col.name}_${fk.reference_table}_${fk.reference_column}`;
     const onDelete = fk.on_delete || 'RESTRICT';
     const onUpdate = fk.on_update || 'RESTRICT';
 
     if (include_source_column) {
-      return `CONSTRAINT ${this.quoteIdentifier(constraintName)} FOREIGN KEY (${this.quoteIdentifier(col.name)}) REFERENCES ${this.quoteIdentifier(fk.table)}(${this.quoteIdentifier(fk.column)}) ON DELETE ${onDelete} ON UPDATE ${onUpdate}`;
+      return `CONSTRAINT ${this.quoteIdentifier(constraintName)} FOREIGN KEY (${this.quoteIdentifier(col.name)}) REFERENCES ${this.quoteIdentifier(fk.reference_table)}(${this.quoteIdentifier(fk.reference_column)}) ON DELETE ${onDelete} ON UPDATE ${onUpdate}`;
     } else {
-      return `CONSTRAINT ${this.quoteIdentifier(constraintName)} REFERENCES ${this.quoteIdentifier(fk.table)}(${this.quoteIdentifier(fk.column)}) ON DELETE ${onDelete} ON UPDATE ${onUpdate}`;
+      return `CONSTRAINT ${this.quoteIdentifier(constraintName)} REFERENCES ${this.quoteIdentifier(fk.reference_table)}(${this.quoteIdentifier(fk.reference_column)}) ON DELETE ${onDelete} ON UPDATE ${onUpdate}`;
     }
   }
 
@@ -667,8 +672,8 @@ export class TablesController {
         constraint_name: fk.constraint_name,
         reference_table: fk.foreign_table,
         reference_column: fk.foreign_column,
-        on_delete: fk.on_delete,
-        on_update: fk.on_update,
+        on_delete: fk.on_delete as OnDeleteActionSchema,
+        on_update: fk.on_update as OnUpdateActionSchema,
       });
     });
     return foreignKeyMap;
@@ -700,7 +705,11 @@ export class TablesController {
             'Please check the request body, column name are required'
           );
         }
-        if (!col.foreign_key || !col.foreign_key.table || !col.foreign_key.column) {
+        if (
+          !col.foreign_key ||
+          !col.foreign_key.reference_table ||
+          !col.foreign_key.reference_column
+        ) {
           throw new AppError(
             'Target table/column are required',
             400,
