@@ -20,10 +20,9 @@ const pool = new Pool({
 export const auth = betterAuth({
   database: pool,
   basePath: '/api/auth/v2',
-  advanced: {
-    // disable Cross-Site Request Forgery, if we need to enable it we must add trustedOrigins for domains
-    disableCSRFCheck: true,
-  },
+  // Trust all origins for OAuth callbacks. This is a temporary solution to allow OAuth callbacks from any origin.
+  // in the future we should allow users to specify the allowed origins in the config
+  trustedOrigins: ['*'],
   emailAndPassword: {
     enabled: true,
   },

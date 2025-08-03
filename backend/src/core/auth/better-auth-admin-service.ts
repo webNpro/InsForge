@@ -78,7 +78,8 @@ export class BetterAuthAdminService {
   /**
    * Generates admin JWT token
    */
-  public generateAdminJWT(userId: string, email: string): string {
+  public;
+  generateAdminJWT(userId: string, email: string): string {
     return jwt.sign(
       {
         sub: userId,
@@ -258,16 +259,45 @@ export class BetterAuthAdminService {
       (user) => user.email.toLowerCase() !== this.adminEmail.toLowerCase()
     );
 
+    // Query account table to get OAuth provider info for each user
+    const userIds = regularUsers.map((user) => user.id);
+    const accounts: Array<{ userId: string; providerId: string }> =
+      userIds.length > 0
+        ? ((await db
+            .prepare(
+              `SELECT "userId", "providerId" FROM account WHERE "userId" IN (${userIds
+                .map(() => '?')
+                .join(', ')})`
+            )
+            .all(...userIds)) as Array<{ userId: string; providerId: string }>)
+        : [];
+
+    // Create a map of userId to their OAuth providers
+    const userProviders = new Map<string, string[]>();
+    accounts.forEach((account) => {
+      if (!userProviders.has(account.userId)) {
+        userProviders.set(account.userId, []);
+      }
+      userProviders.get(account.userId)?.push(account.providerId);
+    });
+
     return {
-      users: regularUsers.map((user) => ({
-        id: user.id,
-        email: user.email,
-        name: user.name || null,
-        identities: [], // TODO: Query account table for OAuth providers when implemented
-        provider_type: 'Email', // TODO: Set to 'Social' if user has OAuth identities
-        created_at: user.createdAt,
-        updated_at: user.updatedAt,
-      })),
+      users: regularUsers.map((user) => {
+        const providers = userProviders.get(user.id) || [];
+        // Filter out 'credential' provider as it's not OAuth
+        const oauthProviders = providers.filter((p) => p !== 'credential');
+        const hasOAuth = oauthProviders.length > 0;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name || null,
+          identities: oauthProviders.map((p) => ({ provider: p })),
+          provider_type: hasOAuth ? 'Social' : 'Email',
+          created_at: user.createdAt,
+          updated_at: user.updatedAt,
+        };
+      }),
       total: regularUsers.length,
     };
   }
