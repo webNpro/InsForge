@@ -174,7 +174,7 @@ export class AuthService {
 
           // Validate parsed value is an object
           if (typeof value !== 'object' || !value) {
-            logger.error('Invalid config value: expected object', { key: row.key });
+            logger.error(`Invalid config value for ${row.key}: expected object`);
             continue;
           }
 

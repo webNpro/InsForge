@@ -573,7 +573,7 @@ router.get(
 
           // Validate parsed value is an object
           if (typeof value !== 'object' || !value) {
-            logger.error('Invalid config value: expected object', { key: config.key });
+            logger.error(`Invalid config value for ${config.key}: expected object`);
             return;
           }
 

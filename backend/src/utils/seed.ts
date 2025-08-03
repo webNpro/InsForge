@@ -53,9 +53,9 @@ export async function seedAdmin(): Promise<void> {
       const superUser = await authService.getSuperUserByEmail(adminEmail);
       if (!superUser) {
         await authService.createSuperUser(adminEmail, adminPassword, 'Admin');
-        logger.info(`✅ Admin account created: ${adminEmail}`, {});
+        logger.info(`✅ Admin account created: ${adminEmail}`);
       } else {
-        logger.info(`✅ Admin account exists: ${adminEmail}`, {});
+        logger.info(`✅ Admin account exists: ${adminEmail}`);
       }
     }
 
@@ -65,7 +65,7 @@ export async function seedAdmin(): Promise<void> {
     // Get database stats
     const tableCount = await dbManager.getUserTableCount();
 
-    logger.info('Database connected to PostgreSQL', {
+    logger.info(`✅ Database connected to PostgreSQL`, {
       host: process.env.POSTGRES_HOST || 'localhost',
       port: process.env.POSTGRES_PORT || '5432',
       database: process.env.POSTGRES_DB || 'insforge',
@@ -73,7 +73,7 @@ export async function seedAdmin(): Promise<void> {
     // Database connection info is already logged above
 
     if (tableCount > 0) {
-      logger.info('Found user tables', { count: tableCount });
+      logger.info(`✅ Found ${tableCount} user tables`);
     }
     logger.info(`API key generated: ${apiKey}`);
     logger.info(`Setup complete:

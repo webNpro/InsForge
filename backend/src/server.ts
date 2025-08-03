@@ -211,7 +211,7 @@ async function initializeServer() {
   try {
     const app = await createApp();
     app.listen(PORT, () => {
-      logger.info('Backend API service started', { port: PORT });
+      logger.info(`Backend API service listening on port ${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to initialize server', {

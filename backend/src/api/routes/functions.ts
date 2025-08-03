@@ -160,7 +160,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       .get(id);
 
     // Log function creation for audit purposes, this is required before finishing serverless function completely
-    logger.info('Function created', { name, slug, user: req.user?.email });
+    logger.info(`Function ${name} (${slug}) created by ${req.user?.email}`);
 
     res.status(201).json({
       success: true,
@@ -259,7 +259,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
       .get(slug);
 
     // Log function update for audit purposes, this is required before finishing serverless function completely
-    logger.info('Function updated', { slug, user: req.user?.email });
+    logger.info(`Function ${slug} updated by ${req.user?.email}`);
 
     res.json({
       success: true,
@@ -290,7 +290,7 @@ router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => 
     }
 
     // Log function deletion for audit purposes, this is required before finishing serverless function completely
-    logger.info('Function deleted', { slug, user: req.user?.email });
+    logger.info(`Function ${slug} deleted by ${req.user?.email}`);
 
     res.json({
       success: true,
