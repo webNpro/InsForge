@@ -1,6 +1,6 @@
 import { ColumnType } from '@insforge/shared-schemas';
 
-export const converSqlTypeToColumnType = (sqlType: string) => {
+export const convertSqlTypeToColumnType = (sqlType: string) => {
   switch (sqlType.toLowerCase()) {
     case 'uuid':
       return ColumnType.UUID;

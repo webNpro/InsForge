@@ -31,7 +31,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
         validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
         400,
         ERROR_CODES.INVALID_INPUT,
-        'Please check the request bdoy, it must conform with the CreateTableRequest schema.'
+        'Please check the request body, it must conform with the CreateTableRequest schema.'
       );
     }
 
@@ -65,7 +65,7 @@ router.patch('/:table', async (req: AuthRequest, res: Response, next: NextFuncti
         validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
         400,
         ERROR_CODES.INVALID_INPUT,
-        'Please check the request bdoy, it must conform with the UpdateTableRequest schema.'
+        'Please check the request body, it must conform with the UpdateTableRequest schema.'
       );
     }
 

@@ -22,7 +22,7 @@ import {
   ForeignKeySchema,
 } from '@insforge/shared-schemas';
 import { validateIdentifier } from '@/utils/validations.js';
-import { converSqlTypeToColumnType } from '@/utils/helpers';
+import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 export class TablesController {
   private dbManager: DatabaseManager;
@@ -300,7 +300,7 @@ export class TablesController {
       table_name: table,
       columns: columns.map((col: ColumnInfo) => ({
         name: col.column_name,
-        type: converSqlTypeToColumnType(col.data_type),
+        type: convertSqlTypeToColumnType(col.data_type),
         nullable: col.is_nullable === 'YES',
         primary_key: pkSet.has(col.column_name),
         is_unique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
