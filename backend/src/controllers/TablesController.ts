@@ -19,6 +19,7 @@ import {
   DeleteTableResponse,
   OnDeleteActionSchema,
   OnUpdateActionSchema,
+  ForeignKeySchema,
 } from '@insforge/shared-schemas';
 import { validateIdentifier } from '@/utils/validations.js';
 import { converSqlTypeToColumnType } from '@/utils/helpers';
@@ -292,6 +293,9 @@ export class TablesController {
 
     const uniqueSet = new Set(uniqueColumns.map((u: { column_name: string }) => u.column_name));
 
+    // Get row count
+    const { row_count } = await db.prepare(`SELECT COUNT(*) as row_count FROM ${table}`).get();
+
     return {
       table_name: table,
       columns: columns.map((col: ColumnInfo) => ({
@@ -305,6 +309,7 @@ export class TablesController {
           foreign_key: foreignKeyMap.get(col.column_name),
         }),
       })),
+      record_count: row_count,
     };
   }
 
@@ -582,7 +587,7 @@ export class TablesController {
   }
 
   private generateFkeyConstraintStatement(
-    col: ColumnSchema,
+    col: { name: string; foreign_key?: ForeignKeySchema },
     include_source_column: boolean = true
   ) {
     if (!col.foreign_key) {

@@ -18,10 +18,7 @@ export const createTableResponseSchema = tableSchema
     nextAction: z.string(),
   });
 
-export const getTableSchemaResponseSchema = tableSchema.pick({
-  table_name: true,
-  columns: true,
-});
+export const getTableSchemaResponseSchema = tableSchema;
 
 export const updateTableSchemaRequest = z
   .object({

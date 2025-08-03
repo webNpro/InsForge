@@ -1,5 +1,11 @@
 import { apiClient } from '@/lib/api/client';
-import { TableSchema, ColumnSchema } from '@insforge/shared-schemas';
+import {
+  ColumnSchema,
+  GetTableSchemaResponse,
+  CreateTableRequest,
+  UpdateTableSchemaResponse,
+  UpdateTableSchemaRequest,
+} from '@insforge/shared-schemas';
 
 export class DatabaseService {
   // Table operations
@@ -11,14 +17,14 @@ export class DatabaseService {
     return Array.isArray(data) ? data : [];
   }
 
-  getTableSchema(tableName: string): Promise<TableSchema> {
+  getTableSchema(tableName: string): Promise<GetTableSchemaResponse> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       headers: apiClient.withApiKey(),
     });
   }
 
   createTable(tableName: string, columns: ColumnSchema[]) {
-    const body = { table_name: tableName, columns };
+    const body: CreateTableRequest = { table_name: tableName, columns, rls_enabled: true };
     return apiClient.request('/database/tables', {
       method: 'POST',
       headers: apiClient.withApiKey({
@@ -35,7 +41,10 @@ export class DatabaseService {
     });
   }
 
-  modifyTable(tableName: string, operations: any) {
+  modifyTable(
+    tableName: string,
+    operations: UpdateTableSchemaRequest
+  ): Promise<UpdateTableSchemaResponse | void> {
     return apiClient.request(`/database/tables/${tableName}`, {
       method: 'PATCH',
       headers: apiClient.withApiKey({

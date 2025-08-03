@@ -275,7 +275,7 @@ export function TableForm({
           const { ...fieldData } = col;
           operations['add_columns'].push({
             ...fieldData,
-            default_value: fieldData.default_value || null,
+            default_value: fieldData.default_value || undefined,
           });
         }
       });

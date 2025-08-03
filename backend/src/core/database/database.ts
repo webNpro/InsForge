@@ -10,6 +10,7 @@ import {
   SuperUserProfileRecord,
 } from '@/types/auth.js';
 import { ProfileRecord } from '@/types/profile.js';
+import { converSqlTypeToColumnType } from '@/utils/helpers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -616,9 +617,10 @@ export class DatabaseManager {
         );
 
         metadata.tables[table.table_name] = {
+          //TO FIX: how to get is_unique here?
           columns: columnsResult.rows.map((col: ColumnInfo) => ({
             name: col.column_name,
-            type: col.data_type.toUpperCase(),
+            type: converSqlTypeToColumnType(col.data_type.toLowerCase()),
             nullable: col.is_nullable === 'YES',
             primary_key: primaryKeys.includes(col.column_name),
             default_value: col.column_default || undefined,
