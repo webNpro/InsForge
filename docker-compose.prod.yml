@@ -142,6 +142,7 @@ services:
       # Basic Logflare configuration
       LOGFLARE_NODE_HOST: 127.0.0.1
       PHX_HTTP_PORT: 4000
+      LOGFLARE_LOG_LEVEL: warn
       # Database connection
       DB_USERNAME: ${POSTGRES_USER:-postgres}
       DB_DATABASE: _insforge
