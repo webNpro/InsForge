@@ -17,20 +17,6 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-// Debug OAuth configuration
-console.log('[Better Auth] OAuth Provider Configuration:', {
-  google: {
-    hasClientId: !!process.env.GOOGLE_CLIENT_ID,
-    hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-    enabled: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
-  },
-  github: {
-    hasClientId: !!process.env.GITHUB_CLIENT_ID,
-    hasClientSecret: !!process.env.GITHUB_CLIENT_SECRET,
-    enabled: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
-  },
-});
-
 export const auth = betterAuth({
   database: pool,
   basePath: '/api/auth/v2',
