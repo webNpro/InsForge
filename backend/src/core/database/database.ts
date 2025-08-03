@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { DatabaseMetadata, ColumnInfo, PrimaryKeyInfo } from '@/types/database.js';
+import { BETTER_AUTH_SYSTEM_TABLES } from '@/utils/constants.js';
 import {
   AuthRecord,
   IdentifiesRecord,
@@ -560,12 +561,14 @@ export class DatabaseManager {
 
     try {
       // Get all user tables (excluding system tables except _auth)
+      // Also exclude Better Auth system tables
       const tablesResult = await client.query(`
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
+        AND table_name NOT IN (${BETTER_AUTH_SYSTEM_TABLES.map((t) => `'${t}'`).join(', ')})
       `);
 
       const metadata: DatabaseMetadata = {
