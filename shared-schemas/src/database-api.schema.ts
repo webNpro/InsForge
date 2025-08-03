@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { columnSchema, tableSchema } from "./database.schema";
+import { columnSchema, foreignKeySchema, tableSchema } from "./database.schema";
 
 export const createTableRequestSchema = z.object({
   table_name: z.string().min(1, "table_name cannot be empty"),
@@ -39,7 +39,16 @@ export const updateTableSchemaRequest = z
         z.string().min(1, "New column name cannot be empty")
       )
       .optional(),
-    add_fkey_columns: z.array(columnSchema).optional(),
+    add_fkey_columns: z
+      .array(
+        z.object({
+          name: z
+            .string()
+            .min(1, "Column name is required for adding foreign key"),
+          foreign_key: foreignKeySchema,
+        })
+      )
+      .optional(),
     drop_fkey_columns: z
       .array(
         z.object({

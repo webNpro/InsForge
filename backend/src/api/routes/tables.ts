@@ -28,10 +28,10 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
     const validation = createTableRequestSchema.safeParse(req.body);
     if (!validation.success) {
       throw new AppError(
-        'Invalid request data',
+        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
         400,
         ERROR_CODES.INVALID_INPUT,
-        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        'Please check the request bdoy, it must conform with the CreateTableRequest schema.'
       );
     }
 
@@ -61,21 +61,12 @@ router.patch('/:table', async (req: AuthRequest, res: Response, next: NextFuncti
 
     const validation = updateTableSchemaRequest.safeParse(req.body);
     if (!validation.success) {
-      const errorMessage = validation.error.issues
-        .map((e) => {
-          const path = e.path.join('.');
-          const message = e.message;
-
-          // The refine error will have an empty path
-          if (path === '' && message.includes('At least one operation')) {
-            return message;
-          }
-
-          return path ? `${path}: ${message}` : message;
-        })
-        .join(', ');
-
-      throw new AppError('Invalid request data', 400, ERROR_CODES.INVALID_INPUT, errorMessage);
+      throw new AppError(
+        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        400,
+        ERROR_CODES.INVALID_INPUT,
+        'Please check the request bdoy, it must conform with the UpdateTableRequest schema.'
+      );
     }
 
     const operations = validation.data;
