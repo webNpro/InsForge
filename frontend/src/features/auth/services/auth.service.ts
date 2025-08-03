@@ -129,9 +129,11 @@ export class AuthService {
     });
   }
 
-  isAuthenticated() {
-    return !!apiClient.getToken();
-  }
-}
+
+  // These operations are not implemented in the backend yet
+  // The backend would need to add:
+  // - PATCH /api/auth/users/:id for updating user email
+  // - DELETE /api/auth/users/:id for deleting users
+  // Profile updates go through /api/profile/me or /api/profile/:id
 
 export const authService = new AuthService();
