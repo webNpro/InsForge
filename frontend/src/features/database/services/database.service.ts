@@ -11,17 +11,14 @@ export class DatabaseService {
     return Array.isArray(data) ? data : [];
   }
 
-  async getTableSchema(tableName: string): Promise<TableSchema> {
+  getTableSchema(tableName: string): Promise<TableSchema> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       headers: apiClient.withApiKey(),
     });
   }
 
-  async createTable(tableName: string, columns: any[], foreignKeys?: any[]) {
-    const body: any = { table_name: tableName, columns };
-    if (foreignKeys && foreignKeys.length > 0) {
-      body.foreign_keys = foreignKeys;
-    }
+  createTable(tableName: string, columns: ColumnSchema[]) {
+    const body = { table_name: tableName, columns };
     return apiClient.request('/database/tables', {
       method: 'POST',
       headers: apiClient.withApiKey({
@@ -31,14 +28,14 @@ export class DatabaseService {
     });
   }
 
-  async deleteTable(tableName: string) {
+  deleteTable(tableName: string) {
     return apiClient.request(`/database/tables/${tableName}`, {
       method: 'DELETE',
       headers: apiClient.withApiKey(),
     });
   }
 
-  async modifyTable(tableName: string, operations: any) {
+  modifyTable(tableName: string, operations: any) {
     return apiClient.request(`/database/tables/${tableName}`, {
       method: 'PATCH',
       headers: apiClient.withApiKey({
@@ -141,13 +138,13 @@ export class DatabaseService {
     };
   }
 
-  async getRecord(table: string, id: string) {
+  getRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       headers: apiClient.withApiKey(),
     });
   }
 
-  async createRecords(table: string, records: any[]) {
+  createRecords(table: string, records: any[]) {
     // if data is json and data[id] == "" then remove id from data, because can't assign '' to uuid
     records = records.map((record) => {
       if (typeof record === 'object' && record.id === '') {
@@ -164,7 +161,7 @@ export class DatabaseService {
     });
   }
 
-  async createRecord(table: string, data: any) {
+  createRecord(table: string, data: any) {
     if (typeof data === 'object' && data.id === '') {
       // can't assign '' to uuid, so we need to remove it
       delete data.id;
@@ -172,7 +169,7 @@ export class DatabaseService {
     return this.createRecords(table, [data]);
   }
 
-  async updateRecord(table: string, id: string, data: any) {
+  updateRecord(table: string, id: string, data: any) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'PATCH',
       headers: apiClient.withApiKey({
@@ -182,7 +179,7 @@ export class DatabaseService {
     });
   }
 
-  async deleteRecord(table: string, id: string) {
+  deleteRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'DELETE',
       headers: apiClient.withApiKey(),

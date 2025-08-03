@@ -191,7 +191,7 @@ export function TableForm({
   }, [fields]);
 
   const createTableMutation = useMutation({
-    mutationFn: async (data: TableFormSchema) => {
+    mutationFn: (data: TableFormSchema) => {
       const columns = data.columns.map((col) => {
         // Find foreign key for this field if it exists
         const foreignKey = foreignKeys.find((fk) => fk.columnName === col.name);
@@ -201,12 +201,12 @@ export function TableForm({
           type: col.type,
           nullable: col.nullable,
           is_unique: col.is_unique,
-          default_value: col.default_value || null,
+          default_value: col.default_value,
           // Embed foreign key information directly in the column
           ...(foreignKey && {
             foreign_key: {
-              table: foreignKey.reference_table,
-              column: foreignKey.reference_column,
+              reference_table: foreignKey.reference_table,
+              reference_column: foreignKey.reference_column,
               on_delete: foreignKey.on_delete,
               on_update: foreignKey.on_update,
             },
@@ -228,7 +228,7 @@ export function TableForm({
       setForeignKeys([]);
       onSuccess?.();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       const errorMessage = err.message || 'Failed to create table';
       setError(errorMessage);
       showToast('Failed to create table', 'error');
@@ -236,9 +236,9 @@ export function TableForm({
   });
 
   const updateTableMutation = useMutation({
-    mutationFn: async (data: TableFormSchema) => {
+    mutationFn: (data: TableFormSchema) => {
       if (!editTable) {
-        return;
+        return Promise.resolve();
       }
 
       // System columns that cannot be modified
@@ -348,7 +348,7 @@ export function TableForm({
       setForeignKeys([]);
       onSuccess?.();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       // Invalidate queries to ensure we have fresh data after failed request
       void queryClient.invalidateQueries({ queryKey: ['table', editTable?.table_name] });
       void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.table_name] });

@@ -25,7 +25,7 @@ export class AuthService {
     return apiClient.request('/auth/me');
   }
 
-  async logout() {
+  logout() {
     apiClient.clearToken();
   }
 
