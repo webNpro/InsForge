@@ -15,7 +15,7 @@ export interface User {
 export class AuthService {
   async login(email: string, password: string) {
     const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/admin/sign-in' : '/auth/admin/login';
-    
+
     const data = await apiClient.request(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -38,7 +38,7 @@ export class AuthService {
         },
       };
     }
-    
+
     return data;
   }
 
@@ -87,7 +87,7 @@ export class AuthService {
     }
 
     const data = await apiClient.request(url);
-    
+
     // Both auth types return the same format
     return {
       records: data?.users || [],
@@ -99,7 +99,7 @@ export class AuthService {
     // Both auth systems don't support individual user fetching
     // Need to fetch all users and filter
     const allUsers = await this.getUsers();
-    const user = allUsers.records.find((u: any) => u.id === id);
+    const user = allUsers.records.find((u: User) => u.id === id);
     if (!user) {
       throw new Error('User not found');
     }
@@ -108,10 +108,8 @@ export class AuthService {
 
   async register(email: string, password: string, name?: string, id?: string) {
     const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/sign-up/email' : '/auth/register';
-    const body = ENABLE_BETTER_AUTH 
-      ? { email, password, name } 
-      : { email, password, name, id };
-    
+    const body = ENABLE_BETTER_AUTH ? { email, password, name } : { email, password, name, id };
+
     return apiClient.request(endpoint, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -119,21 +117,21 @@ export class AuthService {
   }
 
   async bulkDeleteUsers(userIds: string[]) {
-    const endpoint = ENABLE_BETTER_AUTH 
-      ? '/auth/v2/admin/users/bulk-delete' 
+    const endpoint = ENABLE_BETTER_AUTH
+      ? '/auth/v2/admin/users/bulk-delete'
       : '/auth/users/bulk-delete';
-    
+
     return apiClient.request(endpoint, {
       method: 'DELETE',
       body: JSON.stringify({ userIds }),
     });
   }
+}
 
-
-  // These operations are not implemented in the backend yet
-  // The backend would need to add:
-  // - PATCH /api/auth/users/:id for updating user email
-  // - DELETE /api/auth/users/:id for deleting users
-  // Profile updates go through /api/profile/me or /api/profile/:id
+// These operations are not implemented in the backend yet
+// The backend would need to add:
+// PATCH /api/auth/users/:id for updating user email
+//  DELETE /api/auth/users/:id for deleting users
+// Profile updates go through /api/profile/me or /api/profile/:id
 
 export const authService = new AuthService();
