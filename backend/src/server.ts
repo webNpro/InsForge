@@ -22,7 +22,7 @@ import { DatabaseManager } from '@/core/database/database.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { seedAdmin } from '@/utils/seed.js';
-import { EtcdServiceRegistry } from '@/utils/etcd-service-registry.js';
+// import { EtcdServiceRegistry } from '@/utils/etcd-service-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,19 +53,31 @@ export async function createApp() {
 
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,
+    max: 1000,
     message: 'Too many requests from this IP',
   });
 
   // Basic middleware
   app.use(cors());
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(limiter);
   app.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
   });
+
+  // Mount Better Auth BEFORE express.json() middleware
+  // This is required as per Better Auth documentation
+  if (process.env.ENABLE_BETTER_AUTH === 'true') {
+    const { toNodeHandler } = await import('better-auth/node');
+    const { auth } = await import('@/lib/better-auth.js');
+    // Better Auth handles its own body parsing
+    app.all('/api/auth/v2/*', toNodeHandler(auth));
+    console.log('Better Auth enabled at /api/auth/v2');
+  }
+
+  // Apply JSON middleware after Better Auth
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Create API router and mount all API routes under /api
   const apiRouter = express.Router();
@@ -162,7 +174,7 @@ const PORT = parseInt(process.env.PORT || '7130');
 async function initializeServer() {
   try {
     const app = await createApp();
-    app.listen(PORT, async () => {
+    app.listen(PORT, () => {
       console.log(`Backend API service listening on port ${PORT}`);
     });
   } catch (error) {
@@ -173,7 +185,7 @@ async function initializeServer() {
 
 void initializeServer();
 
-async function cleanup() {
+function cleanup() {
   console.log('Shutting down gracefully...');
   process.exit(0);
 }
