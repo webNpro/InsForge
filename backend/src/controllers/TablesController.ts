@@ -75,7 +75,7 @@ export class TablesController {
     // Filter out reserved fields with matching types, throw error for mismatched types
     const validatedColumns = this.validateReservedFields(columns);
 
-    // Validate remaining columns
+    // Validate remaining columns - only need to validate column names since Zod handles type validation
     validatedColumns.forEach((col: ColumnSchema, index: number) => {
       // Validate column name
       try {
@@ -90,27 +90,6 @@ export class TablesController {
           );
         }
         throw error;
-      }
-
-      // Validate column type
-      if (!col.type || !(col.type in COLUMN_TYPES)) {
-        throw new AppError(
-          `Invalid type at index ${index}: ${col.type}. Allowed types: ${Object.keys(COLUMN_TYPES).join(', ')}`,
-          400,
-          ERROR_CODES.DATABASE_VALIDATION_ERROR,
-          'Please check the column type, it must be one of the allowed types: ' +
-            Object.keys(COLUMN_TYPES).join(', ')
-        );
-      }
-
-      // Validate nullable is boolean
-      if (typeof col.nullable !== 'boolean') {
-        throw new AppError(
-          `Column 'nullable' must be a boolean at index ${index}`,
-          400,
-          ERROR_CODES.DATABASE_VALIDATION_ERROR,
-          `Column 'nullable' must be a boolean at index ${index}. Please check the column nullable, it must be a boolean.`
-        );
       }
     });
 
@@ -346,21 +325,6 @@ export class TablesController {
         403,
         ERROR_CODES.DATABASE_FORBIDDEN,
         'System tables cannot be modified. System tables are prefixed with underscore.'
-      );
-    }
-
-    if (
-      !add_columns &&
-      !drop_columns &&
-      !rename_columns &&
-      !add_fkey_columns &&
-      !drop_fkey_columns
-    ) {
-      throw new AppError(
-        'At least one operation (add_columns, drop_columns, rename_columns, add_fkey_columns, drop_fkey_columns) is required',
-        400,
-        ERROR_CODES.MISSING_FIELD,
-        'Please check the request body, at least one operation(add_columns, drop_columns, rename_columns, add_fkey_columns, drop_fkey_columns) is required'
       );
     }
 
@@ -697,26 +661,7 @@ export class TablesController {
 
     if (add_fkey_columns && Array.isArray(add_fkey_columns)) {
       for (const col of add_fkey_columns) {
-        if (!col.name) {
-          throw new AppError(
-            'Source Column name are required',
-            400,
-            ERROR_CODES.MISSING_FIELD,
-            'Please check the request body, column name are required'
-          );
-        }
-        if (
-          !col.foreign_key ||
-          !col.foreign_key.reference_table ||
-          !col.foreign_key.reference_column
-        ) {
-          throw new AppError(
-            'Target table/column are required',
-            400,
-            ERROR_CODES.MISSING_FIELD,
-            'Please check the request body, target table/column are required.'
-          );
-        }
+        // Zod already validates that name and foreign_key fields are present
         if (foreignKeyMap.has(col.name)) {
           throw new AppError(
             `Foreigh Key on Column(${col.name}) already exists`,
@@ -730,9 +675,7 @@ export class TablesController {
 
     if (drop_fkey_columns && Array.isArray(drop_fkey_columns)) {
       for (const col of drop_fkey_columns) {
-        if (!col.name) {
-          throw new AppError('Column name are required', 400, ERROR_CODES.MISSING_FIELD);
-        }
+        // Zod already validates that name is present
         if (!columnSet.has(col.name)) {
           throw new AppError(
             `Column(${col.name}) not found`,
@@ -755,9 +698,7 @@ export class TablesController {
     // First, validate and simulate drop columns (these happen first)
     if (drop_columns && Array.isArray(drop_columns)) {
       for (const col of drop_columns) {
-        if (!col.name) {
-          throw new AppError('Column name are required', 400, ERROR_CODES.MISSING_FIELD);
-        }
+        // Zod already validates that name is present
         if (!workingColumnSet.has(col.name)) {
           throw new AppError(
             `Column(${col.name}) not found`,
@@ -773,20 +714,7 @@ export class TablesController {
 
     if (add_columns && Array.isArray(add_columns)) {
       for (const col of add_columns) {
-        if (!col.name || !col.type) {
-          throw new AppError('Column name and type are required', 400, ERROR_CODES.MISSING_FIELD);
-        }
-
-        const fieldType = COLUMN_TYPES[col.type as ColumnType];
-        if (!fieldType) {
-          throw new AppError(
-            `Invalid column type: ${col.type}`,
-            400,
-            ERROR_CODES.DATABASE_VALIDATION_ERROR,
-            'Please check the column type, it must be one of the allowed types: ' +
-              Object.keys(COLUMN_TYPES).join(', ')
-          );
-        }
+        // Zod already validates column name, type, and that type is valid
 
         if (workingColumnSet.has(col.name)) {
           throw new AppError(
@@ -803,9 +731,7 @@ export class TablesController {
 
     if (rename_columns && typeof rename_columns === 'object') {
       for (const [oldName, newName] of Object.entries(rename_columns)) {
-        if (!oldName || !newName) {
-          throw new AppError('Old name and new name are required', 400, ERROR_CODES.MISSING_FIELD);
-        }
+        // Zod validates that rename_columns is a record of strings
         if (!workingColumnSet.has(oldName)) {
           throw new AppError(
             `Column(${oldName}) not found`,
