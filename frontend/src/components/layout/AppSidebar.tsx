@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
+import { OnboardButton } from '@/components/OnboardButton';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
   currentUser: any;
@@ -131,6 +132,19 @@ export default function AppSidebar({
         props.className
       )}
     >
+      {/* Navigation */}
+      <div className={`hidden lg:block py-3 ${isCollapsed ? 'px-1' : 'px-3'}`}>
+        {/* Onboard Button - Desktop */}
+        <div className="hidden lg:block">
+          <OnboardButton isCollapsed={isCollapsed} />
+        </div>
+
+        {/* Onboard Button - Mobile */}
+        <div className="lg:hidden">
+          <OnboardButton isCollapsed={false} />
+        </div>
+      </div>
+
       {/* Navigation */}
       <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
         <nav className="space-y-2">
