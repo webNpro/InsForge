@@ -22,7 +22,7 @@ import { DatabaseManager } from '@/core/database/database.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { seedAdmin } from '@/utils/seed.js';
-import { EtcdServiceRegistry } from '@/utils/etcd-service-registry.js';
+// import { EtcdServiceRegistry } from '@/utils/etcd-service-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -174,7 +174,7 @@ const PORT = parseInt(process.env.PORT || '7130');
 async function initializeServer() {
   try {
     const app = await createApp();
-    app.listen(PORT, async () => {
+    app.listen(PORT, () => {
       console.log(`Backend API service listening on port ${PORT}`);
     });
   } catch (error) {
@@ -185,7 +185,7 @@ async function initializeServer() {
 
 void initializeServer();
 
-async function cleanup() {
+function cleanup() {
   console.log('Shutting down gracefully...');
   process.exit(0);
 }

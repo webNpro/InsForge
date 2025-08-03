@@ -60,17 +60,36 @@ test_endpoint() {
 
     print_info "Test: $description"
 
-    local headers="-H \"Content-Type: application/json\""
-    if [ -n "$token" ]; then
-        headers="$headers -H \"Authorization: Bearer $token\""
-    fi
-
+    local response
     if [ "$method" = "GET" ]; then
-        response=$(eval "curl -s -w \"\n%{http_code}\" -X GET \"$endpoint\" $headers")
+        if [ -n "$token" ]; then
+            response=$(curl -s -w "\n%{http_code}" -X GET "$endpoint" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $token")
+        else
+            response=$(curl -s -w "\n%{http_code}" -X GET "$endpoint" \
+                -H "Content-Type: application/json")
+        fi
     elif [ "$method" = "POST" ]; then
-        response=$(eval "curl -s -w \"\n%{http_code}\" -X POST \"$endpoint\" $headers -d '$data'")
+        if [ -n "$token" ]; then
+            response=$(curl -s -w "\n%{http_code}" -X POST "$endpoint" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $token" \
+                -d "$data")
+        else
+            response=$(curl -s -w "\n%{http_code}" -X POST "$endpoint" \
+                -H "Content-Type: application/json" \
+                -d "$data")
+        fi
     elif [ "$method" = "DELETE" ]; then
-        response=$(eval "curl -s -w \"\n%{http_code}\" -X DELETE \"$endpoint\" $headers")
+        if [ -n "$token" ]; then
+            response=$(curl -s -w "\n%{http_code}" -X DELETE "$endpoint" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer $token")
+        else
+            response=$(curl -s -w "\n%{http_code}" -X DELETE "$endpoint" \
+                -H "Content-Type: application/json")
+        fi
     fi
 
     # Split response into body and status code
