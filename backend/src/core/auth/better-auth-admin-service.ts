@@ -78,8 +78,7 @@ export class BetterAuthAdminService {
   /**
    * Generates admin JWT token
    */
-  public;
-  generateAdminJWT(userId: string, email: string): string {
+  public generateAdminJWT(userId: string, email: string): string {
     return jwt.sign(
       {
         sub: userId,
