@@ -3,6 +3,7 @@ import { ColumnSchema, TableSchema, DatabaseSchema } from '@/types/database.js';
 import { StorageConfig } from '@/types/storage.js';
 import { AuthConfig } from '@/types/auth.js';
 import { AppMetadata } from '@/types/metadata.js';
+import { BETTER_AUTH_SYSTEM_TABLES } from '@/utils/constants.js';
 
 export class MetadataService {
   private static instance: MetadataService;
@@ -72,7 +73,7 @@ export class MetadataService {
       AND table_type = 'BASE TABLE'
       AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
       AND table_name != 'logs'
-      AND table_name NOT IN ('user', 'session', 'account', 'verification', 'jwks')
+      AND table_name NOT IN (${BETTER_AUTH_SYSTEM_TABLES.map((t) => `'${t}'`).join(', ')})
       ORDER BY table_name
     `
       )

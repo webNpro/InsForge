@@ -2,6 +2,7 @@ import { DatabaseManager } from '@/core/database/database.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
+import { BETTER_AUTH_SYSTEM_TABLES } from '@/utils/constants.js';
 import {
   COLUMN_TYPES,
   ColumnDefinition,
@@ -40,7 +41,7 @@ export class TablesController {
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND table_name NOT LIKE '\\_%'
-        AND table_name NOT IN ('user', 'session', 'account', 'verification', 'jwks')
+        AND table_name NOT IN (${BETTER_AUTH_SYSTEM_TABLES.map((t) => `'${t}'`).join(', ')})
       `
       )
       .all();
