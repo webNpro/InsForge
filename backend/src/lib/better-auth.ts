@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { jwt } from 'better-auth/plugins/jwt';
 import { bearer } from 'better-auth/plugins/bearer';
+import { google, github } from 'better-auth/social-providers';
 import { Pool } from 'pg';
 import { customAuthPlugin } from './custom-auth-plugin';
 
@@ -16,6 +17,20 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+// Debug OAuth configuration
+console.log('[Better Auth] OAuth Provider Configuration:', {
+  google: {
+    hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+    hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+    enabled: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+  },
+  github: {
+    hasClientId: !!process.env.GITHUB_CLIENT_ID,
+    hasClientSecret: !!process.env.GITHUB_CLIENT_SECRET,
+    enabled: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
+  },
+});
+
 export const auth = betterAuth({
   database: pool,
   basePath: '/api/auth/v2',
@@ -25,6 +40,22 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      redirectURI:
+        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/v2/callback/google',
+      enabled: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID || '',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+      redirectURI:
+        process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/v2/callback/github',
+      enabled: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
+    },
   },
   plugins: [
     bearer(),
@@ -44,5 +75,4 @@ export const auth = betterAuth({
       },
     }),
   ],
-  // We'll add OAuth providers in the next PR
 });
