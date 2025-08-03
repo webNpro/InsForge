@@ -40,6 +40,7 @@ export class TablesController {
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND table_name NOT LIKE '\\_%'
+        AND table_name NOT IN ('user', 'session', 'account', 'verification', 'jwks')
       `
       )
       .all();

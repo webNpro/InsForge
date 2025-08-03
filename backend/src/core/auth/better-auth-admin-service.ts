@@ -16,6 +16,7 @@ export interface UserRecord {
   name?: string | null;
   emailVerified?: boolean;
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface AdminCredentials {
@@ -214,7 +215,7 @@ export class BetterAuthAdminService {
     // Get all users
     const users = (await db
       .prepare(
-        'SELECT id, email, name, "emailVerified", "createdAt" FROM "user" ORDER BY "createdAt" DESC LIMIT ? OFFSET ?'
+        'SELECT id, email, name, "emailVerified", "createdAt", "updatedAt" FROM "user" ORDER BY "createdAt" DESC LIMIT ? OFFSET ?'
       )
       .all(limit, offset)) as UserRecord[];
 
@@ -228,8 +229,10 @@ export class BetterAuthAdminService {
         id: user.id,
         email: user.email,
         name: user.name || null,
-        emailVerified: user.emailVerified || false,
-        createdAt: user.createdAt,
+        identities: [], // TODO: Query account table for OAuth providers when implemented
+        provider_type: 'Email', // TODO: Set to 'Social' if user has OAuth identities
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
       })),
       total: regularUsers.length,
     };

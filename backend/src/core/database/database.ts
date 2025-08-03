@@ -560,12 +560,14 @@ export class DatabaseManager {
 
     try {
       // Get all user tables (excluding system tables except _auth)
+      // Also exclude Better Auth system tables
       const tablesResult = await client.query(`
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
+        AND table_name NOT IN ('user', 'session', 'account', 'verification', 'jwks')
       `);
 
       const metadata: DatabaseMetadata = {

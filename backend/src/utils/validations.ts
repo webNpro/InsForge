@@ -63,7 +63,8 @@ export function isValidIdentifier(identifier: string): boolean {
  */
 export function validateTableName(tableName: string): boolean {
   validateIdentifier(tableName, 'table');
-  // Additional check: prevent access to system tables
+  
+  // Prevent access to system tables (starting with _)
   if (tableName.startsWith('_')) {
     throw new AppError(
       'Access to system tables is not allowed',
@@ -72,6 +73,18 @@ export function validateTableName(tableName: string): boolean {
       'System tables (starting with _) cannot be accessed directly'
     );
   }
+  
+  // Prevent access to Better Auth system tables
+  const betterAuthTables = ['user', 'session', 'account', 'verification', 'jwks'];
+  if (betterAuthTables.includes(tableName.toLowerCase())) {
+    throw new AppError(
+      'Access to authentication system tables is not allowed',
+      403,
+      ERROR_CODES.FORBIDDEN,
+      'Authentication system tables cannot be accessed directly'
+    );
+  }
+  
   return true;
 }
 
