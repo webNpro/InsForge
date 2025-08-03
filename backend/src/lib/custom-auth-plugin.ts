@@ -103,8 +103,9 @@ export const customAuthPlugin: BetterAuthPlugin = {
         method: 'GET',
       },
       async (ctx) => {
-        const authHeader = ctx.request?.headers.get('authorization') || ctx.headers?.get('authorization');
-        
+        const authHeader =
+          ctx.request?.headers.get('authorization') || ctx.headers?.get('authorization');
+
         if (!authHeader) {
           throw new APIError('UNAUTHORIZED', {
             message: 'Missing authorization header',
@@ -112,20 +113,26 @@ export const customAuthPlugin: BetterAuthPlugin = {
         }
 
         const token = authHeader.replace('Bearer ', '');
-        
+
         // First, try as admin JWT token
         try {
           const authService = BetterAuthAdminService.getInstance();
           const decoded = await authService.verifyToken(token);
-          
+
           // It's a valid JWT token (admin)
+          if (!decoded.sub || !decoded.email) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Invalid token payload',
+            });
+          }
+
           return ctx.json({
             user: {
-              id: decoded.sub || 'admin',
-              email: decoded.email || '',
-              type: decoded.type || 'admin',
-              role: decoded.role || 'project_admin',
-            }
+              id: decoded.sub,
+              email: decoded.email,
+              type: decoded.type,
+              role: decoded.role,
+            },
           });
         } catch {
           // Not a JWT, might be a session token
@@ -133,24 +140,40 @@ export const customAuthPlugin: BetterAuthPlugin = {
 
         // Try as Better Auth session token
         try {
-          // Call Better Auth's get-session endpoint
-          const response = await fetch(`${ctx.request.url.origin}/api/auth/v2/get-session`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'x-api-key': ctx.request.headers.get('x-api-key') || '',
-            },
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.user) {
+          // Use Better Auth's adapter to query the session directly
+          const db = ctx.context.adapter;
+
+          // Define minimal types for what we need, these will be moved to shared tyles or better auth tyupes in the future
+          interface SessionRecord {
+            id: string;
+            userId: string;
+            token: string;
+          }
+
+          interface UserRecord {
+            id: string;
+            email: string;
+          }
+
+          const session = (await db.findOne({
+            model: 'session',
+            where: [{ field: 'token', value: token }],
+          })) as SessionRecord | null;
+
+          if (session && session.userId) {
+            const user = (await db.findOne({
+              model: 'user',
+              where: [{ field: 'id', value: session.userId }],
+            })) as UserRecord | null;
+
+            if (user && user.email) {
               return ctx.json({
                 user: {
-                  id: data.user.id,
-                  email: data.user.email,
-                  type: 'user',
-                  role: 'authenticated',
-                }
+                  id: user.id,
+                  email: user.email,
+                  type: 'user' as const,
+                  role: 'authenticated' as const,
+                },
               });
             }
           }

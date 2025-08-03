@@ -14,7 +14,7 @@ export interface User {
 
 export class AuthService {
   async login(email: string, password: string) {
-    const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/sign-in/email' : '/auth/admin/login';
+    const endpoint = ENABLE_BETTER_AUTH ? '/auth/v2/admin/sign-in' : '/auth/admin/login';
 
     const data = await apiClient.request(endpoint, {
       method: 'POST',
