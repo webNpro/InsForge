@@ -37,7 +37,10 @@ services:
     ports:
       - "5430:3000"
     depends_on:
-      - postgres
+      vector:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - insforge-network
 
@@ -48,6 +51,8 @@ services:
     container_name: insforge
     depends_on:
       postgres:
+        condition: service_healthy
+      vector:
         condition: service_healthy
     ports:
       - "7130:7130"
