@@ -1,6 +1,6 @@
-/* eslint-disable no-console */
 import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
+import logger from '@/utils/logger.js';
 
 export async function seedAdmin() {
   const authService = AuthService.getInstance();
@@ -13,11 +13,11 @@ export async function seedAdmin() {
     let superUser = await authService.getSuperUserByEmail(adminEmail);
     if (!superUser) {
       superUser = await authService.createSuperUser(adminEmail, adminPassword, 'Admin');
-      console.log(`\n🚀 Insforge Backend Starting...`);
-      console.log(`✅ Admin account created: ${adminEmail}`);
+      logger.info('Insforge Backend Starting');
+      logger.info('Admin account created', { email: adminEmail });
     } else {
-      console.log(`\n🚀 Insforge Backend Starting...`);
-      console.log(`✅ Admin account exists: ${adminEmail}`);
+      logger.info('Insforge Backend Starting');
+      logger.info('Admin account exists', { email: adminEmail });
     }
 
     // Initialize or get the single API key
@@ -26,18 +26,23 @@ export async function seedAdmin() {
     // Get database stats
     const tableCount = await dbManager.getUserTableCount();
 
-    console.log(
-      `✅ Database connected to PostgreSQL: ${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.POSTGRES_DB || 'insforge'}`
-    );
+    logger.info('Database connected to PostgreSQL', {
+      host: process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.POSTGRES_PORT || '5432',
+      database: process.env.POSTGRES_DB || 'insforge',
+    });
     if (tableCount > 0) {
-      console.log(`✅ Found ${tableCount} user tables`);
+      logger.info('Found user tables', { count: tableCount });
     }
-    console.log(`\n🔑 YOUR API KEY: ${apiKey}`);
-    console.log(`\n💡 Save this API key for your apps!`);
-
-    console.log(`🎨 Self hosting Dashboard: http://localhost:7131`);
-    console.log(`📡 Backend API: http://localhost:7130/api`);
+    logger.info('API key generated', { apiKey });
+    logger.info('Setup complete', {
+      message: 'Save this API key for your apps!',
+      dashboard: 'http://localhost:7131',
+      api: 'http://localhost:7130/api',
+    });
   } catch (error) {
-    console.error('Error during setup:', error);
+    logger.error('Error during setup', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
