@@ -19,7 +19,7 @@ async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Prom
     });
 
     if (result?.token) {
-      console.log(`✅ First admin created: ${adminEmail}`);
+      logger.info(`✅ First admin created: ${adminEmail}`);
     }
   } catch (error) {
     // Check if it's just an "already exists" error
@@ -27,7 +27,7 @@ async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Prom
     const errorCode = (error as { code?: string })?.code;
 
     if (errorCode === 'CONFLICT' || errorMessage.includes('already exists')) {
-      console.log(`✅ Admin already exists: ${adminEmail}`);
+      logger.info(`✅ Admin already exists: ${adminEmail}`);
     } else {
       // Non-critical error - admin can be created manually if needed
       console.warn('Could not verify/create admin user:', errorMessage);
@@ -43,7 +43,7 @@ export async function seedAdmin(): Promise<void> {
   const adminPassword = process.env.ADMIN_PASSWORD || 'change-this-password';
 
   try {
-    logger.info(`\n🚀 Insforge Backend Starting...`, {});
+    logger.info(`\n🚀 Insforge Backend Starting...`);
 
     // Handle auth based on Better Auth flag
     if (process.env.ENABLE_BETTER_AUTH === 'true') {
@@ -70,20 +70,17 @@ export async function seedAdmin(): Promise<void> {
       port: process.env.POSTGRES_PORT || '5432',
       database: process.env.POSTGRES_DB || 'insforge',
     });
-    // Database connection info
-    const dbHost = process.env.POSTGRES_HOST || 'localhost';
-    const dbPort = process.env.POSTGRES_PORT || '5432';
-    const dbName = process.env.POSTGRES_DB || 'insforge';
+    // Database connection info is already logged above
 
     if (tableCount > 0) {
       logger.info('Found user tables', { count: tableCount });
     }
-    logger.info('API key generated', { apiKey });
-    logger.info('Setup complete', {
-      message: 'Save this API key for your apps!',
-      dashboard: 'http://localhost:7131',
-      api: 'http://localhost:7130/api',
-    });
+    logger.info(`API key generated: ${apiKey}`);
+    logger.info(`Setup complete:
+      - Save this API key for your apps!
+      - Dashboard: http://localhost:7131
+      - API: http://localhost:7130/api
+    `);
   } catch (error) {
     logger.error('Error during setup', {
       error: error instanceof Error ? error.message : String(error),

@@ -63,30 +63,28 @@ export async function createApp() {
     const startTime = Date.now();
     const originalSend = res.send;
     const originalJson = res.json;
-    
+
     // Track response size
     let responseSize = 0;
-    
+
     // Override send method
-    res.send = function(data: any) {
+    res.send = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
       }
       return originalSend.call(this, data);
     };
-    
     // Override json method
-    res.json = function(data: any) {
+    res.json = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(JSON.stringify(data));
       }
       return originalJson.call(this, data);
     };
-    
     // Log after response is finished
     res.on('finish', () => {
       const duration = Date.now() - startTime;
-      logger.info('Request completed', {
+      logger.info('HTTP Request', {
         method: req.method,
         path: req.path,
         status: res.statusCode,
@@ -97,7 +95,6 @@ export async function createApp() {
         timestamp: new Date().toISOString(),
       });
     });
-    
     next();
   });
 
@@ -108,7 +105,7 @@ export async function createApp() {
     const { auth } = await import('@/lib/better-auth.js');
     // Better Auth handles its own body parsing
     app.all('/api/auth/v2/*', toNodeHandler(auth));
-    console.log('Better Auth enabled at /api/auth/v2');
+    logger.info('Better Auth enabled at /api/auth/v2');
   }
 
   // Apply JSON middleware after Better Auth
@@ -213,7 +210,7 @@ const PORT = parseInt(process.env.PORT || '7130');
 async function initializeServer() {
   try {
     const app = await createApp();
-    app.listen(PORT, async () => {
+    app.listen(PORT, () => {
       logger.info('Backend API service started', { port: PORT });
     });
   } catch (error) {
@@ -227,7 +224,7 @@ async function initializeServer() {
 
 void initializeServer();
 
-async function cleanup() {
+function cleanup() {
   logger.info('Shutting down gracefully...');
   process.exit(0);
 }
