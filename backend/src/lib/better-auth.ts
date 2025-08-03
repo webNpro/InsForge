@@ -19,6 +19,10 @@ const pool = new Pool({
 export const auth = betterAuth({
   database: pool,
   basePath: '/api/auth/v2',
+  advanced: {
+    // disable Cross-Site Request Forgery, if we need to enable it we must add trustedOrigins for domains
+    disableCSRFCheck: true,
+  },
   emailAndPassword: {
     enabled: true,
   },

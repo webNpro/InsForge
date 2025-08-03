@@ -81,5 +81,21 @@ export const customAdminPlugin: BetterAuthPlugin = {
         return ctx.json(await authService.listUsers(limit, offset));
       }
     ),
+
+    // Bulk delete users
+    bulkDeleteUsers: createAuthEndpoint(
+      '/admin/users/bulk-delete',
+      {
+        method: 'DELETE',
+        body: z.object({
+          userIds: z.array(z.string()),
+        }),
+        use: [requireProjectAdmin],
+      },
+      async (ctx) => {
+        const authService = BetterAuthAdminService.getInstance();
+        return ctx.json(await authService.bulkDeleteUsers(ctx.body.userIds));
+      }
+    ),
   },
 };

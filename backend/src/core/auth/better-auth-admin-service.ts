@@ -236,6 +236,60 @@ export class BetterAuthAdminService {
   }
 
   /**
+   * Bulk delete users
+   */
+  public async bulkDeleteUsers(userIds: string[]): Promise<{ deletedCount: number }> {
+    if (!userIds || userIds.length === 0) {
+      throw new APIError('BAD_REQUEST', {
+        message: 'No user IDs provided',
+      });
+    }
+
+    const db = this.getDb();
+    
+    // Filter out admin user to prevent self-deletion
+    const adminUser = (await db
+      .prepare('SELECT id FROM "user" WHERE email = ? LIMIT 1')
+      .get(this.adminEmail)) as UserRecord | null;
+    
+    const idsToDelete = userIds.filter(
+      id => !adminUser || id !== adminUser.id
+    );
+
+    if (idsToDelete.length === 0) {
+      return { deletedCount: 0 };
+    }
+
+    // Create placeholders for the IN clause
+    const placeholders = idsToDelete.map(() => '?').join(',');
+    
+    // Delete users and their sessions
+    await db.run('BEGIN TRANSACTION');
+    try {
+      // Delete sessions first (foreign key constraint)
+      await db.run(
+        `DELETE FROM "session" WHERE "userId" IN (${placeholders})`,
+        ...idsToDelete
+      );
+      
+      // Delete users
+      const result = await db.run(
+        `DELETE FROM "user" WHERE id IN (${placeholders})`,
+        ...idsToDelete
+      );
+      
+      await db.run('COMMIT');
+      
+      return { deletedCount: result.changes || 0 };
+    } catch (error) {
+      await db.run('ROLLBACK');
+      throw new APIError('INTERNAL_SERVER_ERROR', {
+        message: 'Failed to delete users',
+      });
+    }
+  }
+
+  /**
    * Checks if Better Auth is enabled
    */
   public static isEnabled(): boolean {
