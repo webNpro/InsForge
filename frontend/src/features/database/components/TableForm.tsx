@@ -13,7 +13,6 @@ import {
   tableFormSchema,
   TableFormSchema,
 } from '@/features/database/schema';
-import { mapDatabaseTypeToFieldType } from '@/lib/utils/utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
@@ -106,7 +105,7 @@ export function TableForm({
         name: editTable.table_name,
         columns: editTable.columns.map((col) => ({
           name: col.name,
-          type: mapDatabaseTypeToFieldType(col.type),
+          type: col.type,
           nullable: col.nullable,
           is_unique: col.is_unique || false,
           default_value: col.default_value || '',
@@ -191,7 +190,7 @@ export function TableForm({
   }, [fields]);
 
   const createTableMutation = useMutation({
-    mutationFn: async (data: TableFormSchema) => {
+    mutationFn: (data: TableFormSchema) => {
       const columns = data.columns.map((col) => {
         // Find foreign key for this field if it exists
         const foreignKey = foreignKeys.find((fk) => fk.columnName === col.name);
@@ -201,12 +200,12 @@ export function TableForm({
           type: col.type,
           nullable: col.nullable,
           is_unique: col.is_unique,
-          default_value: col.default_value || null,
+          default_value: col.default_value,
           // Embed foreign key information directly in the column
           ...(foreignKey && {
             foreign_key: {
-              table: foreignKey.reference_table,
-              column: foreignKey.reference_column,
+              reference_table: foreignKey.reference_table,
+              reference_column: foreignKey.reference_column,
               on_delete: foreignKey.on_delete,
               on_update: foreignKey.on_update,
             },
@@ -228,7 +227,7 @@ export function TableForm({
       setForeignKeys([]);
       onSuccess?.();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       const errorMessage = err.message || 'Failed to create table';
       setError(errorMessage);
       showToast('Failed to create table', 'error');
@@ -236,9 +235,9 @@ export function TableForm({
   });
 
   const updateTableMutation = useMutation({
-    mutationFn: async (data: TableFormSchema) => {
+    mutationFn: (data: TableFormSchema) => {
       if (!editTable) {
-        return;
+        return Promise.resolve();
       }
 
       // System columns that cannot be modified
@@ -276,7 +275,7 @@ export function TableForm({
           const { ...fieldData } = col;
           operations['add_columns'].push({
             ...fieldData,
-            default_value: fieldData.default_value || null,
+            default_value: fieldData.default_value || undefined,
           });
         }
       });
@@ -308,8 +307,8 @@ export function TableForm({
           operations['add_fkey_columns'].push({
             name: fk.columnName,
             foreign_key: {
-              table: fk.reference_table,
-              column: fk.reference_column,
+              reference_table: fk.reference_table,
+              reference_column: fk.reference_column,
               on_delete: fk.on_delete,
               on_update: fk.on_update,
             },
@@ -348,7 +347,7 @@ export function TableForm({
       setForeignKeys([]);
       onSuccess?.();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       // Invalidate queries to ensure we have fresh data after failed request
       void queryClient.invalidateQueries({ queryKey: ['table', editTable?.table_name] });
       void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.table_name] });
@@ -402,7 +401,7 @@ export function TableForm({
   return (
     <div className="flex flex-col h-full">
       {/* Content area with slate background */}
-      <div className="flex-1 px-6 bg-slate-100 flex flex-col items-center overflow-auto">
+      <div className="flex-1 bg-slate-100 flex flex-col items-center overflow-auto">
         <div className="flex flex-col gap-6 w-full max-w-[1080px] px-6 py-6">
           {/* Title Bar */}
           <div className="flex items-center justify-between">
@@ -443,15 +442,15 @@ export function TableForm({
               </div>
 
               {/* Columns Table */}
-              <div className="pb-6">
+              <div className="pb-6 overflow-x-auto">
                 {/* Table Headers */}
                 <div className="flex items-center gap-6 px-7 py-2 bg-slate-50 rounded-t text-sm font-medium text-zinc-950">
-                  <div className="w-[280px]">Name</div>
-                  <div className="w-[200px]">Type</div>
-                  <div className="w-[200px]">Default Value</div>
-                  <div className="flex-1 text-center">Nullable</div>
-                  <div className="flex-1 text-center">Unique</div>
-                  <div className="w-5" />
+                  <div className="flex-1 min-w-[175px]">Name</div>
+                  <div className="flex-1 min-w-[175px]">Type</div>
+                  <div className="flex-1 min-w-[175px]">Default Value</div>
+                  <div className="w-18 2xl:w-25 text-center flex-shrink-0">Nullable</div>
+                  <div className="w-18 2xl:w-25 text-center flex-shrink-0">Unique</div>
+                  <div className="w-5 flex-shrink-0" />
                 </div>
 
                 {/* Columns */}
@@ -502,23 +501,25 @@ export function TableForm({
                   {foreignKeys.map((fk) => (
                     <div
                       key={fk.columnName}
-                      className="group flex flex-wrap items-center gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150"
+                      className="group flex items-center gap-6 2xl:gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150"
                     >
-                      <div className="flex items-center gap-2 flex-1">
-                        <Link className="w-5 h-5 text-zinc-500" />
-                        <span className="font-medium text-sm text-zinc-950">{fk.columnName}</span>
-                        <MoveRight className="w-5 h-5 text-zinc-950" />
-                        <span className="font-medium text-sm text-zinc-950">
+                      <div className="flex items-center gap-2 flex-1 min-w-[188px] overflow-hidden">
+                        <Link className="flex-shrink-0 w-5 h-5 text-zinc-500" />
+                        <span className="font-medium text-sm text-zinc-950 truncate">
+                          {fk.columnName}
+                        </span>
+                        <MoveRight className="flex-shrink-0 w-5 h-5 text-zinc-950" />
+                        <span className="font-medium text-sm text-zinc-950 flex-1 truncate">
                           {fk.reference_table}.{fk.reference_column}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-2 w-47">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Update:
                         </span>
                         <span className="text-sm text-zinc-500">{fk.on_update}</span>
                       </div>
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-2 w-47">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Delete:
                         </span>

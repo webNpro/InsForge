@@ -91,6 +91,7 @@ services:
       - APP_KEY=${APP_KEY:-}
       # Better Auth Migration
       - ENABLE_BETTER_AUTH=${ENABLE_BETTER_AUTH:-false}
+      - VITE_ENABLE_BETTER_AUTH=${ENABLE_BETTER_AUTH:-false}
     volumes:
       - ./package.json:/app/package.json
       - ./backend:/app/backend
