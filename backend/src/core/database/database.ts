@@ -11,6 +11,7 @@ import {
   SuperUserProfileRecord,
 } from '@/types/auth.js';
 import { ProfileRecord } from '@/types/profile.js';
+import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -157,7 +158,9 @@ export class DatabaseManager {
             );
           }
         } catch (e) {
-          console.error('Failed to parse existing Google OAuth config:', e);
+          logger.error('Failed to parse existing Google OAuth config', {
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
     }
@@ -203,7 +206,9 @@ export class DatabaseManager {
             );
           }
         } catch (e) {
-          console.error('Failed to parse existing GitHub OAuth config:', e);
+          logger.error('Failed to parse existing GitHub OAuth config', {
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
     }
@@ -681,7 +686,12 @@ export class DatabaseManager {
         details ? JSON.stringify(details) : null
       );
     } catch (error) {
-      console.error('Failed to log activity:', error);
+      logger.error('Failed to log activity', {
+        error: error instanceof Error ? error.message : String(error),
+        action,
+        tableName,
+        recordId,
+      });
     }
   }
 
