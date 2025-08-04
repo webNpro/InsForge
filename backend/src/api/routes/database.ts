@@ -7,10 +7,21 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
+import { AuthService } from '@/core/auth/auth.js';
 
 const router = Router();
 const dbManager = DatabaseManager.getInstance();
+const authService = AuthService.getInstance();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
+
+// Generate anon token once and reuse
+// If we provide anonymous login, this token should be removed.
+const anonToken = authService.generateToken({
+  sub: 'anonymous-user',
+  email: 'anonymous@email.com',
+  role: 'anon',
+  type: 'user',
+});
 
 // Apply authentication to all routes
 router.use(verifyUserOrApiKey);
@@ -82,6 +93,12 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
         'content-length': undefined, // Let axios calculate
       },
     };
+
+    // If no authorization header, add anon token
+    // If we provide anonymous login, this part should be removed.
+    if (!req.headers.authorization) {
+      axiosConfig.headers.authorization = `Bearer ${anonToken}`;
+    }
 
     // Add body for methods that support it
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
