@@ -296,7 +296,7 @@ export class TablesController {
     const uniqueSet = new Set(uniqueColumns.map((u: { column_name: string }) => u.column_name));
 
     // Get row count
-    const { row_count } = await db.prepare(`SELECT COUNT(*) as row_count FROM ${table}`).get();
+    const { row_count } = await db.prepare(`SELECT COUNT(*) as row_count FROM "${table}"`).get();
 
     return {
       table_name: table,

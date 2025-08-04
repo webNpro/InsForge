@@ -1,19 +1,9 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface StoredFile {
-  bucket: string;
-  key: string;
-  size: number;
-  mime_type?: string;
-  uploaded_at: string;
-  url: string;
-}
-
-export interface ListObjectsResponse {
-  bucket: string;
-  prefix?: string;
-  objects: StoredFile[];
-}
+import {
+  StorageFileSchema,
+  StorageBucketSchema,
+  ListObjectsResponseSchema,
+} from '@insforge/shared-schemas';
 
 export interface ListObjectsParams {
   prefix?: string;
@@ -21,15 +11,9 @@ export interface ListObjectsParams {
   offset?: number;
 }
 
-export interface PaginationMeta {
-  limit: number;
-  offset: number;
-  total: number;
-}
-
 export const storageService = {
   // List all buckets
-  async listBuckets(): Promise<Array<{ name: string; public: boolean; created_at?: string }>> {
+  async listBuckets(): Promise<StorageBucketSchema[]> {
     const response = await apiClient.request('/storage/buckets', {
       headers: apiClient.withApiKey(),
     });
@@ -42,7 +26,7 @@ export const storageService = {
     bucket: string,
     params?: ListObjectsParams,
     searchQuery?: string
-  ): Promise<{ data: ListObjectsResponse; meta: { pagination: PaginationMeta } }> {
+  ): Promise<ListObjectsResponseSchema> {
     const searchParams = new URLSearchParams();
     if (params?.prefix) {
       searchParams.append('prefix', params.prefix);
@@ -67,22 +51,18 @@ export const storageService = {
     // Backend returns: { bucket, objects, pagination, ... }
     // Frontend expects: { data: { objects }, meta: { pagination } }
     return {
-      data: {
-        bucket: response.bucket,
-        objects: response.objects || [],
-      },
-      meta: {
-        pagination: {
-          total: parseInt(response.pagination?.total) || 0,
-          limit: response.pagination?.limit || 100,
-          offset: response.pagination?.offset || 0,
-        },
+      bucket_name: response.bucket_name,
+      objects: response.objects || [],
+      pagination: {
+        total: parseInt(response.pagination?.total) || 0,
+        limit: response.pagination?.limit || 100,
+        offset: response.pagination?.offset || 0,
       },
     };
   },
 
   // Upload a file to bucket
-  async uploadFile(bucket: string, key: string, file: File): Promise<StoredFile> {
+  async uploadFile(bucket: string, key: string, file: File): Promise<StorageFileSchema> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -136,25 +116,25 @@ export const storageService = {
   },
 
   // Create a new bucket
-  async createBucket(bucket: string, isPublic: boolean = true): Promise<void> {
+  async createBucket(bucketName: string, isPublic: boolean = true): Promise<void> {
     await apiClient.request('/storage/buckets', {
       method: 'POST',
       headers: apiClient.withApiKey(),
-      body: JSON.stringify({ bucket, public: isPublic }),
+      body: JSON.stringify({ bucket_name: bucketName, is_public: isPublic }),
     });
   },
 
   // Delete entire bucket
-  async deleteBucket(bucket: string): Promise<void> {
-    await apiClient.request(`/storage/${encodeURIComponent(bucket)}`, {
+  async deleteBucket(bucketName: string): Promise<void> {
+    await apiClient.request(`/storage/${encodeURIComponent(bucketName)}`, {
       method: 'DELETE',
       headers: apiClient.withApiKey(),
     });
   },
 
   // Edit bucket (update visibility or other config)
-  async editBucket(bucket: string, config: { public: boolean }): Promise<void> {
-    await apiClient.request(`/storage/buckets/${encodeURIComponent(bucket)}`, {
+  async editBucket(bucketName: string, config: { is_public: boolean }): Promise<void> {
+    await apiClient.request(`/storage/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'PATCH',
       headers: apiClient.withApiKey(),
       body: JSON.stringify(config),

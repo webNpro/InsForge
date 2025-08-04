@@ -1,10 +1,17 @@
 import { DatabaseManager } from '@/core/database/database.js';
-import { ColumnSchema, TableSchema, DatabaseSchema } from '@/types/database.js';
+import {
+  ColumnSchema,
+  TableSchema,
+  DatabaseSchema,
+  OnDeleteActionSchema,
+  OnUpdateActionSchema,
+} from '@insforge/shared-schemas';
 import { StorageConfig } from '@/types/storage.js';
 import { AuthConfig } from '@/types/auth.js';
 import { AppMetadata } from '@/types/metadata.js';
 import logger from '@/utils/logger.js';
 import { BETTER_AUTH_SYSTEM_TABLES } from '@/utils/constants.js';
+import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 export class MetadataService {
   private static instance: MetadataService;
@@ -133,24 +140,7 @@ export class MetadataService {
 
       const columnMetadata: ColumnSchema[] = columns.map((col) => {
         // Map PostgreSQL types to our type system
-        let type = col.type.toUpperCase();
-        if (type === 'TEXT' || type.startsWith('VARCHAR') || type.startsWith('CHAR')) {
-          type = 'string';
-        } else if (type === 'INTEGER' || type === 'BIGINT' || type === 'SMALLINT') {
-          type = 'integer';
-        } else if (type === 'DOUBLE PRECISION' || type === 'REAL' || type === 'NUMERIC') {
-          type = 'float';
-        } else if (type === 'BOOLEAN') {
-          type = 'boolean';
-        } else if (type === 'TIMESTAMPTZ' || type.startsWith('TIMESTAMPTZ')) {
-          type = 'datetime';
-        } else if (type === 'UUID') {
-          type = 'uuid';
-        } else if (type === 'JSONB' || type === 'JSON') {
-          type = 'json';
-        } else if (type === 'BYTEA') {
-          type = 'blob';
-        }
+        const type = convertSqlTypeToColumnType(col.type);
 
         const column: ColumnSchema = {
           name: col.name,
@@ -202,10 +192,10 @@ export class MetadataService {
         const column = columnMetadata.find((col) => col.name === fk.from_column);
         if (column) {
           column.foreign_key = {
-            table: fk.foreign_table,
-            column: fk.foreign_column,
-            on_delete: fk.on_delete,
-            on_update: fk.on_update,
+            reference_table: fk.foreign_table,
+            reference_column: fk.foreign_column,
+            on_delete: fk.on_delete as OnDeleteActionSchema,
+            on_update: fk.on_update as OnUpdateActionSchema,
           };
         }
       }
@@ -243,7 +233,7 @@ export class MetadataService {
       }
 
       tableMetadata.push({
-        name: table.name,
+        table_name: table.name,
         columns: columnMetadata,
         record_count: recordCount,
       });
@@ -338,7 +328,7 @@ export class MetadataService {
       }
     > = {};
     for (const table of database.tables) {
-      tables[table.name] = {
+      tables[table.table_name] = {
         record_count:
           typeof table.record_count === 'number'
             ? table.record_count

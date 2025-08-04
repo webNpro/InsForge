@@ -4,12 +4,13 @@ import { Dialog, DialogContent } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
 import { LoadingState } from '@/components';
-import { storageService, type StoredFile } from '@/features/storage/services/storage.service';
+import { storageService } from '@/features/storage/services/storage.service';
+import { StorageFileSchema } from '@insforge/shared-schemas';
 
 interface FilePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  file: StoredFile | null;
+  file: StorageFileSchema | null;
   bucket: string;
 }
 

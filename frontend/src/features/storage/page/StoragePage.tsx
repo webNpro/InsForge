@@ -72,19 +72,20 @@ export default function StoragePage() {
       const promises = currentBuckets.map(async (bucket) => {
         try {
           const result = await storageService.listObjects(bucket.name, { limit: 1000 });
-          const objects = result.data.objects;
+          const objects = result.objects;
           const totalSize = objects.reduce((sum, file) => sum + file.size, 0);
           return {
             bucketName: bucket.name,
             stats: {
-              file_count: result.meta.pagination.total,
+              file_count: result.pagination.total,
               total_size: totalSize,
               public: bucket.public,
               created_at: bucket.created_at,
             },
           };
-        } catch (error: any) {
-          if (error.response?.status === 404) {
+        } catch (error) {
+          if (error) {
+            console.error(error);
             return null;
           }
           return {

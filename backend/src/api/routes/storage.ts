@@ -7,7 +7,11 @@ import { DatabaseManager } from '@/core/database/database.js';
 import { successResponse } from '@/utils/response.js';
 import { upload, handleUploadError } from '@/api/middleware/upload.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
-import { BucketInfo } from '@/types/storage.js';
+import {
+  StorageBucketSchema,
+  createBucketRequestSchema,
+  updateBucketRequestSchema,
+} from '@insforge/shared-schemas';
 
 const router = Router();
 
@@ -43,7 +47,7 @@ router.get(
       // Get all buckets with their metadata from _storage_buckets table
       const buckets = (await db
         .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
-        .all()) as BucketInfo[];
+        .all()) as StorageBucketSchema[];
 
       // Traditional REST: return array directly
       successResponse(res, buckets);
@@ -59,21 +63,21 @@ router.post(
   verifyApiKey,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket, public: isPublic = true } = req.body;
-
-      if (!bucket) {
+      const validation = createBucketRequestSchema.safeParse(req.body);
+      if (!validation.success) {
         throw new AppError(
-          'Bucket name is required',
+          validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
           400,
           ERROR_CODES.STORAGE_INVALID_PARAMETER,
-          'Please check the bucket name, it must be a valid bucket name'
+          'Please check the request body, it must conform with the CreateBucketRequest schema.'
         );
       }
+      const { bucket_name, is_public } = validation.data;
 
       const storageService = StorageService.getInstance();
-      await storageService.createBucket(bucket, isPublic);
+      await storageService.createBucket(bucket_name, is_public);
 
-      const accessInfo = isPublic
+      const accessInfo = is_public
         ? 'This is a PUBLIC bucket - files can be accessed without authentication.'
         : 'This is a PRIVATE bucket - authentication is required to access files.';
 
@@ -81,8 +85,8 @@ router.post(
         res,
         {
           message: 'Bucket created successfully',
-          bucket,
-          public: isPublic,
+          bucket_name,
+          public: is_public,
           nextAction: `${accessInfo} You can use /api/storage/:bucket/:key to upload a file to the bucket, and /api/storage/:bucket to list the files in the bucket.`,
         },
         201
@@ -113,20 +117,21 @@ router.patch(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { bucket } = req.params;
-      const { public: isPublic } = req.body;
-
-      if (typeof isPublic !== 'boolean') {
+      const validation = updateBucketRequestSchema.safeParse(req.body);
+      if (!validation.success) {
         throw new AppError(
-          'Public flag must be a boolean',
+          validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
           400,
-          ERROR_CODES.STORAGE_INVALID_PARAMETER
+          ERROR_CODES.STORAGE_INVALID_PARAMETER,
+          'Please check the request body, it must conform with the UpdateBucketRequest schema.'
         );
       }
+      const { is_public } = validation.data;
 
       const storageService = StorageService.getInstance();
-      await storageService.updateBucketVisibility(bucket, isPublic);
+      await storageService.updateBucketVisibility(bucket, is_public);
 
-      const accessInfo = isPublic
+      const accessInfo = is_public
         ? 'Bucket is now PUBLIC - files can be accessed without authentication.'
         : 'Bucket is now PRIVATE - authentication is required to access files.';
 
@@ -135,7 +140,7 @@ router.patch(
         {
           message: 'Bucket visibility updated',
           bucket,
-          public: isPublic,
+          public: is_public,
           nextAction: accessInfo,
         },
         200
@@ -168,7 +173,7 @@ router.get(
       successResponse(
         res,
         {
-          bucket,
+          bucket_name: bucket,
           prefix,
           objects: result.objects,
           pagination: {
