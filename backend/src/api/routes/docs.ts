@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { successResponse, errorResponse } from '@/utils/response.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = Router();
 
@@ -28,7 +32,8 @@ router.get('/:docType', async (req, res, next) => {
     }
 
     // Read the documentation file
-    const filePath = path.resolve(process.cwd(), 'docs', docFileName);
+    // When running from backend directory, docs are in ../docs
+    const filePath = path.resolve(__dirname, '../../../../docs', docFileName);
     const content = await readFile(filePath, 'utf-8');
 
     // Traditional REST: return documentation directly
