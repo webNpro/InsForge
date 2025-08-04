@@ -57,6 +57,7 @@ services:
       - "7131:7131"
     environment:
       - PORT=7130
+      - PROJECT_ROOT=/app
       - API_BASE_URL=http://localhost:7130
       - VITE_API_BASE_URL=http://localhost:7130
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}

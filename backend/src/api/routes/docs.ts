@@ -32,8 +32,9 @@ router.get('/:docType', async (req, res, next) => {
     }
 
     // Read the documentation file
-    // When running from backend directory, docs are in ../docs
-    const filePath = path.resolve(__dirname, '../../../../docs', docFileName);
+    // PROJECT_ROOT is set in the docker-compose.yml file to point to the InsForge directory
+    const projectRoot = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../../..');
+    const filePath = path.join(projectRoot, 'docs', docFileName);
     const content = await readFile(filePath, 'utf-8');
 
     // Traditional REST: return documentation directly
