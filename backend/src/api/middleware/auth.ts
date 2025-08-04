@@ -248,8 +248,7 @@ export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: 
           sub: payload.sub,
           email: payload.email,
           type: payload.type,
-          role: payload.type === 'admin' ? 'service_role' : 'authenticated',
-          iss: 'insforge',
+          role: payload.type === 'admin' ? 'project_admin' : 'authenticated',
         },
         process.env.JWT_SECRET || '',
         { algorithm: 'HS256', expiresIn: '7d' }
