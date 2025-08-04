@@ -175,8 +175,8 @@ response=$(curl -s -w "\n%{http_code}" -X POST "$TEST_API_BASE/storage/buckets" 
   -H "x-api-key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
-    \"bucket\": \"$TEST_BUCKET\",
-    \"public\": false
+    \"bucket_name\": \"$TEST_BUCKET\",
+    \"is_public\": false
   }")
 test_endpoint "Create bucket" "$response" "201"
 

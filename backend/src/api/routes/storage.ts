@@ -140,7 +140,7 @@ router.patch(
         {
           message: 'Bucket visibility updated',
           bucket,
-          public: is_public,
+          is_public: is_public,
           nextAction: accessInfo,
         },
         200

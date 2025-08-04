@@ -162,9 +162,9 @@ if [ -n "$API_KEY" ]; then
     response=$(curl -s -X POST "$API_BASE/storage/buckets" \
         -H "Content-Type: application/json" \
         -H "x-api-key: $API_KEY" \
-        -d "{\"bucket\": \"$BUCKET_NAME\", \"public\": true}")
+        -d "{\"bucket_name\": \"$BUCKET_NAME\", \"is_public\": true}")
     
-    if echo "$response" | grep -q '"bucket"'; then
+    if echo "$response" | grep -q '"bucket_name"'; then
         print_success "Bucket created"
         register_test_bucket "$BUCKET_NAME"
         test_response_format "Success message field" "$response" '"message":"Bucket created successfully"'

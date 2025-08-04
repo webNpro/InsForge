@@ -40,7 +40,7 @@ print_info "1️⃣  Creating PUBLIC bucket: $PUBLIC_BUCKET"
 response=$(curl -s -w "\n%{http_code}" -X POST "${API_BASE_URL}/storage/buckets" \
   -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
-  -d "{\"bucket\": \"${PUBLIC_BUCKET}\", \"public\": true}")
+  -d "{\"bucket_name\": \"${PUBLIC_BUCKET}\", \"is_public\": true}")
 
 body=$(echo "$response" | sed '$d')
 status=$(echo "$response" | tail -n 1)
@@ -63,7 +63,7 @@ print_info "2️⃣  Creating PRIVATE bucket: $PRIVATE_BUCKET"
 response=$(curl -s -w "\n%{http_code}" -X POST "${API_BASE_URL}/storage/buckets" \
   -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
-  -d "{\"bucket\": \"${PRIVATE_BUCKET}\", \"public\": false}")
+  -d "{\"bucket_name\": \"${PRIVATE_BUCKET}\", \"is_public\": false}")
 
 body=$(echo "$response" | sed '$d')
 status=$(echo "$response" | tail -n 1)
@@ -221,7 +221,7 @@ print_info "🔟 Testing bucket visibility update (making public bucket private)
 response=$(curl -s -w "\n%{http_code}" -X PATCH "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}" \
   -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
-  -d '{"public": false}')
+  -d '{"is_public": false}')
 
 body=$(echo "$response" | sed '$d')
 status=$(echo "$response" | tail -n 1)

@@ -11,7 +11,7 @@
 ## Bucket Operations (Use MCP Tools)
 
 ### Available MCP Tools
-1. **create-bucket** - Create bucket (`bucket_name`, `public`: true by default)
+1. **create-bucket** - Create bucket (`bucket_name`, `is_public`: true by default)
 2. **list-buckets** - List all buckets
 3. **delete-bucket** - Delete bucket
 
@@ -90,7 +90,7 @@ Query parameters:
 Returns:
 ```json
 {
-  "bucket": "test-images",
+  "bucket_name": "test-images",
   "prefix": null,
   "objects": [
     {
@@ -101,7 +101,13 @@ Returns:
       "uploaded_at": "2025-07-18T04:32:13.801Z",
       "url": "/api/storage/test-images/test.txt"
     }
-  ]
+  ],
+  "pagination": {
+    "limit": 100,
+    "offset": 0,
+    "total": 1
+  },
+  "nextAction": "You can use PUT /api/storage/:bucket/:key to upload with a specific key, or POST /api/storage/:bucket to upload with auto-generated key, and GET /api/storage/:bucket/:key to download a file."
 }
 ```
 
@@ -137,7 +143,7 @@ curl -X DELETE http://localhost:7130/api/storage/avatars/user123.jpg \
 
 Request body:
 ```json
-{ "public": true }
+{ "is_public": true }
 ```
 
 Returns:
@@ -145,7 +151,8 @@ Returns:
 {
   "message": "Bucket visibility updated",
   "bucket": "test-images",
-  "public": false
+  "is_public": false,
+  "nextAction": "Bucket is now PRIVATE - authentication is required to access files."
 }
 ```
 
@@ -154,7 +161,7 @@ Example curl:
 curl -X PATCH http://localhost:7130/api/storage/buckets/avatars \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"public": true}'
+  -d '{"is_public": true}'
 ```
 
 ## Database Integration
