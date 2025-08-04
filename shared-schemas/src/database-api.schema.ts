@@ -1,11 +1,14 @@
 import { z } from "zod";
 import { columnSchema, foreignKeySchema, tableSchema } from "./database.schema";
 
-export const createTableRequestSchema = z.object({
-  table_name: z.string().min(1, "table_name cannot be empty"),
-  columns: z.array(columnSchema).min(1, "At least one column is required"),
-  rls_enabled: z.boolean().default(true),
-});
+export const createTableRequestSchema = tableSchema
+  .pick({
+    table_name: true,
+    columns: true,
+  })
+  .extend({
+    rls_enabled: z.boolean().default(true),
+  });
 
 export const createTableResponseSchema = tableSchema
   .pick({
@@ -32,8 +35,14 @@ export const updateTableSchemaRequest = z
       .optional(),
     rename_columns: z
       .record(
-        z.string().min(1, "Old column name cannot be empty"),
-        z.string().min(1, "New column name cannot be empty")
+        z
+          .string()
+          .min(1, "Old column name cannot be empty")
+          .max(64, "Old column name must be less than 64 characters"),
+        z
+          .string()
+          .min(1, "New column name cannot be empty")
+          .max(64, "New column name must be less than 64 characters")
       )
       .optional(),
     add_fkey_columns: z

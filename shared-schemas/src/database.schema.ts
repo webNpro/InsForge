@@ -33,7 +33,7 @@ export const foreignKeySchema = z.object({
 });
 
 export const columnSchema = z.object({
-  name: z.string().min(1, "Column name cannot be empty"),
+  name: z.string().min(1, "Column name cannot be empty").max(64, "Column name must be less than 64 characters"),
   type: columnTypeSchema,
   nullable: z.boolean(),
   default_value: z.string().optional(),
@@ -43,8 +43,8 @@ export const columnSchema = z.object({
 });
 
 export const tableSchema = z.object({
-  table_name: z.string().min(1, "Table name cannot be empty"),
-  columns: z.array(columnSchema),
+  table_name: z.string().min(1, "Table name cannot be empty").max(64, "Table name must be less than 64 characters"),
+  columns: z.array(columnSchema).min(1, "At least one column is required"),
   record_count: z.number().default(0),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
