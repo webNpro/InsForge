@@ -29,8 +29,8 @@ REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/register" \
   -H "Content-Type: application/json" \
   -d "{\"email\": \"$EMAIL\", \"password\": \"Test123!\", \"name\": \"Test User\"}")
 echo "$REGISTER_RESPONSE" | jq '.'
-TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.access_token')
-echo -e "${GREEN}✓ Returns user object with access_token (no wrapper)${NC}"
+TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.accessToken')
+echo -e "${GREEN}✓ Returns user object with accessToken (no wrapper)${NC}"
 
 # Login
 echo -e "\n${BLUE}2b. Login (Object Response)${NC}"
@@ -66,10 +66,10 @@ CREATE_TABLE_RESPONSE=$(curl -s -X POST "$BASE_URL/database/tables" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
-    \"table_name\": \"$TABLE_NAME\",
+    \"tableName\": \"$TABLE_NAME\",
     \"columns\": [
-      {\"name\": \"name\", \"type\": \"string\", \"nullable\": false},
-      {\"name\": \"price\", \"type\": \"float\", \"nullable\": false}
+      {\"columnName\": \"name\", \"type\": \"string\", \"isNullable\": false, \"isUnique\": false},
+      {\"columnName\": \"price\", \"type\": \"float\", \"isNullable\": false, \"isUnique\": false}
     ]
   }")
 echo "$CREATE_TABLE_RESPONSE" | jq '.'
