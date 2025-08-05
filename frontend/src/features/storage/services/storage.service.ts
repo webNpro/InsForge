@@ -51,7 +51,7 @@ export const storageService = {
     // Backend returns: { bucket, objects, pagination, ... }
     // Frontend expects: { data: { objects }, meta: { pagination } }
     return {
-      bucket_name: response.bucket_name,
+      bucketName: response.bucketName,
       objects: response.objects || [],
       pagination: {
         total: parseInt(response.pagination?.total) || 0,
@@ -127,7 +127,7 @@ export const storageService = {
     await apiClient.request('/storage/buckets', {
       method: 'POST',
       headers: apiClient.withApiKey(),
-      body: JSON.stringify({ bucket_name: bucketName, is_public: isPublic }),
+      body: JSON.stringify({ bucketName: bucketName, isPublic: isPublic }),
     });
   },
 
@@ -140,7 +140,7 @@ export const storageService = {
   },
 
   // Edit bucket (update visibility or other config)
-  async editBucket(bucketName: string, config: { is_public: boolean }): Promise<void> {
+  async editBucket(bucketName: string, config: { isPublic: boolean }): Promise<void> {
     await apiClient.request(`/storage/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'PATCH',
       headers: apiClient.withApiKey(),

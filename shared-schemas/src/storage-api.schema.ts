@@ -2,16 +2,16 @@ import { z } from "zod";
 import { storageFileSchema } from "./storage.schema";
 
 export const createBucketRequestSchema = z.object({
-  bucket_name: z.string().min(1, "Bucket name cannot be empty"),
-  is_public: z.boolean().default(true),
+  bucketName: z.string().min(1, "Bucket name cannot be empty"),
+  isPublic: z.boolean().default(true),
 });
 
 export const updateBucketRequestSchema = z.object({
-  is_public: z.boolean(),
+  isPublic: z.boolean(),
 });
 
 export const listObjectsResponseSchema = z.object({
-  bucket_name: z.string().min(1, "Bucket name cannot be empty"),
+  bucketName: z.string().min(1, "Bucket name cannot be empty"),
   prefix: z.string().optional(),
   objects: z.array(storageFileSchema),
   pagination: z.object({

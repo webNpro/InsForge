@@ -144,7 +144,7 @@ paths:
                 error: "VALIDATION_ERROR"
                 message: "Table name already exists"
                 statusCode: 400
-                nextAction: "Choose a different table name"
+                nextActions: "Choose a different table name"
         '422':
           description: Unprocessable entity
           content:
@@ -155,7 +155,7 @@ paths:
                 error: "INVALID_FIELD_TYPE"
                 message: "Invalid field type: 'text'. Valid types are: string, integer, float, boolean, datetime, uuid, json, file"
                 statusCode: 422
-                nextAction: "Use one of the valid field types"
+                nextActions: "Use one of the valid field types"
 
   /api/tables/{tableName}/schema:
     get:
@@ -244,7 +244,7 @@ paths:
                 error: "TABLE_NOT_FOUND"
                 message: "Table 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Check table name and try again"
+                nextActions: "Check table name and try again"
     patch:
       summary: Update Table Schema
       security:
@@ -329,7 +329,7 @@ paths:
                 error: "COLUMN_EXISTS"
                 message: "Column 'title' already exists in table 'posts'"
                 statusCode: 400
-                nextAction: "Choose a different column name or drop it first"
+                nextActions: "Choose a different column name or drop it first"
 
   /api/tables/{tableName}:
     delete:
@@ -368,7 +368,7 @@ paths:
                 error: "TABLE_NOT_FOUND"
                 message: "Table 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Check table name and try again"
+                nextActions: "Check table name and try again"
 
 components:
   securitySchemes:
@@ -397,6 +397,6 @@ components:
         statusCode:
           type: integer
           description: HTTP status code
-        nextAction:
+        nextActions:
           type: string
           description: Suggested action to resolve the error

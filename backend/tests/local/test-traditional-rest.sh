@@ -64,7 +64,7 @@ response=$(curl -s "$API_BASE/auth/me")
 test_response_format "Error format" "$response" '"error":"AUTH_INVALID_CREDENTIALS"'
 test_response_format "Message field" "$response" '"message":"No token provided"'
 test_response_format "Status code field" "$response" '"statusCode":401'
-test_response_format "NextAction field" "$response" '"nextAction":"'
+test_response_format "NextAction field" "$response" '"nextActions":"'
 
 # 3. Test Login Endpoint (Missing Credentials)
 print_info "3. Testing Login Endpoint (Missing Credentials)"
@@ -168,7 +168,7 @@ if [ -n "$API_KEY" ]; then
         print_success "Bucket created"
         register_test_bucket "$BUCKET_NAME"
         test_response_format "Success message field" "$response" '"message":"Bucket created successfully"'
-        test_response_format "NextAction guidance" "$response" '"nextAction":'
+        test_response_format "NextAction guidance" "$response" '"nextActions":'
     else
         print_fail "Bucket creation failed"
         echo "Response: $response"

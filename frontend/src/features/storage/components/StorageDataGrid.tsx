@@ -115,7 +115,7 @@ export function createStorageColumns(
       renderCell: FileSizeRenderer,
     },
     {
-      key: 'mime_type',
+      key: 'mimeType',
       name: 'Type',
       width: '1fr',
       resizable: true,

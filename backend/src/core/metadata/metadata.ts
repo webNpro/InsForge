@@ -143,12 +143,12 @@ export class MetadataService {
         const type = convertSqlTypeToColumnType(col.type);
 
         const column: ColumnSchema = {
-          name: col.name,
+          columnName: col.name,
           type: type,
-          nullable: col.is_nullable === 'YES',
-          default_value: col.dflt_value || undefined,
-          primary_key: col.is_primary_key,
-          is_unique: col.is_unique,
+          isNullable: col.is_nullable === 'YES',
+          defaultValue: col.dflt_value || undefined,
+          isPrimaryKey: col.is_primary_key,
+          isUnique: col.is_unique,
         };
 
         return column;
@@ -189,13 +189,13 @@ export class MetadataService {
 
       // Map foreign keys to columns
       for (const fk of foreignKeys) {
-        const column = columnMetadata.find((col) => col.name === fk.from_column);
+        const column = columnMetadata.find((col) => col.columnName === fk.from_column);
         if (column) {
-          column.foreign_key = {
-            reference_table: fk.foreign_table,
-            reference_column: fk.foreign_column,
-            on_delete: fk.on_delete as OnDeleteActionSchema,
-            on_update: fk.on_update as OnUpdateActionSchema,
+          column.foreignKey = {
+            referenceTable: fk.foreign_table,
+            referenceColumn: fk.foreign_column,
+            onDelete: fk.on_delete as OnDeleteActionSchema,
+            onUpdate: fk.on_update as OnUpdateActionSchema,
           };
         }
       }
@@ -233,9 +233,9 @@ export class MetadataService {
       }
 
       tableMetadata.push({
-        table_name: table.name,
+        tableName: table.name,
         columns: columnMetadata,
-        record_count: recordCount,
+        recordCount: recordCount,
       });
     }
 
@@ -270,7 +270,7 @@ export class MetadataService {
     const buckets = storageBuckets.map((b) => ({
       name: b.name,
       public: b.public,
-      created_at: b.created_at,
+      createdAt: b.created_at,
     }));
 
     const storageMetadata: StorageConfig = { buckets };
@@ -328,13 +328,13 @@ export class MetadataService {
       }
     > = {};
     for (const table of database.tables) {
-      tables[table.table_name] = {
+      tables[table.tableName] = {
         record_count:
-          typeof table.record_count === 'number'
-            ? table.record_count
-            : parseInt(String(table.record_count || '0'), 10) || 0,
-        created_at: table.created_at,
-        updated_at: table.updated_at,
+          typeof table.recordCount === 'number'
+            ? table.recordCount
+            : parseInt(String(table.recordCount || '0'), 10) || 0,
+        created_at: table.createdAt,
+        updated_at: table.updatedAt,
       };
     }
 

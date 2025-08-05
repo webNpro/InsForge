@@ -66,7 +66,7 @@ export default function StoragePage() {
     queryFn: async () => {
       const stats: Record<
         string,
-        { file_count: number; total_size: number; public: boolean; created_at?: string }
+        { fileCount: number; totalSize: number; public: boolean; createdAt?: string }
       > = {};
       const currentBuckets = buckets;
       const promises = currentBuckets.map(async (bucket) => {
@@ -77,10 +77,10 @@ export default function StoragePage() {
           return {
             bucketName: bucket.name,
             stats: {
-              file_count: result.pagination.total,
-              total_size: totalSize,
+              fileCount: result.pagination.total,
+              totalSize: totalSize,
               public: bucket.public,
-              created_at: bucket.created_at,
+              createdAt: bucket.createdAt,
             },
           };
         } catch (error) {
@@ -91,10 +91,10 @@ export default function StoragePage() {
           return {
             bucketName: bucket.name,
             stats: {
-              file_count: 0,
-              total_size: 0,
+              fileCount: 0,
+              totalSize: 0,
               public: bucket.public,
-              created_at: bucket.created_at,
+              createdAt: bucket.createdAt,
             },
           };
         }
@@ -423,7 +423,7 @@ export default function StoragePage() {
 
               <StorageManager
                 bucketName={selectedBucket}
-                fileCount={bucketStats?.[selectedBucket]?.file_count || 0}
+                fileCount={bucketStats?.[selectedBucket]?.fileCount || 0}
                 searchQuery={searchQuery}
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}

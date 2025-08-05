@@ -72,12 +72,12 @@ router.post(
           'Please check the request body, it must conform with the CreateBucketRequest schema.'
         );
       }
-      const { bucket_name, is_public } = validation.data;
+      const { bucketName, isPublic } = validation.data;
 
       const storageService = StorageService.getInstance();
-      await storageService.createBucket(bucket_name, is_public);
+      await storageService.createBucket(bucketName, isPublic);
 
-      const accessInfo = is_public
+      const accessInfo = isPublic
         ? 'This is a PUBLIC bucket - objects can be accessed without authentication.'
         : 'This is a PRIVATE bucket - authentication is required to access objects.';
 
@@ -85,9 +85,9 @@ router.post(
         res,
         {
           message: 'Bucket created successfully',
-          bucket_name,
-          public: is_public,
-          nextAction: `${accessInfo} You can use /api/storage/buckets/:bucketName/objects/:objectKey to upload an object to the bucket, and /api/storage/buckets/:bucketName/objects to list the objects in the bucket.`,
+          bucketName,
+          isPublic: isPublic,
+          nextActions: `${accessInfo} You can use /api/storage/buckets/:bucketName/objects/:objectKey to upload an object to the bucket, and /api/storage/buckets/:bucketName/objects to list the objects in the bucket.`,
         },
         201
       );
@@ -126,12 +126,12 @@ router.patch(
           'Please check the request body, it must conform with the UpdateBucketRequest schema.'
         );
       }
-      const { is_public } = validation.data;
+      const { isPublic } = validation.data;
 
       const storageService = StorageService.getInstance();
-      await storageService.updateBucketVisibility(bucketName, is_public);
+      await storageService.updateBucketVisibility(bucketName, isPublic);
 
-      const accessInfo = is_public
+      const accessInfo = isPublic
         ? 'Bucket is now PUBLIC - objects can be accessed without authentication.'
         : 'Bucket is now PRIVATE - authentication is required to access objects.';
 
@@ -140,8 +140,8 @@ router.patch(
         {
           message: 'Bucket visibility updated',
           bucket: bucketName,
-          is_public: is_public,
-          nextAction: accessInfo,
+          isPublic: isPublic,
+          nextActions: accessInfo,
         },
         200
       );
@@ -187,7 +187,7 @@ router.get(
             offset,
             total: result.total,
           },
-          nextAction:
+          nextActions:
             'You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object.',
         },
         200
@@ -303,7 +303,7 @@ router.get(
       const { file, metadata } = result;
 
       // Set appropriate headers
-      res.setHeader('Content-Type', metadata.mime_type || 'application/octet-stream');
+      res.setHeader('Content-Type', metadata.mimeType || 'application/octet-stream');
       res.setHeader('Content-Length', file.length.toString());
 
       // Send object content
@@ -336,7 +336,7 @@ router.delete(
         res,
         {
           message: 'Bucket deleted successfully',
-          nextAction:
+          nextActions:
             'You can use POST /api/storage/buckets to create a new bucket, and GET /api/storage/buckets/:bucketName/objects to list the objects in the bucket.',
         },
         200

@@ -51,7 +51,7 @@ echo "Testing with invalid credentials:"
 curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"email": "nonexistent@example.com", "password": "wrong"}' | jq '.'
-echo -e "${GREEN}✓ Error format: {error, message, statusCode, nextAction}${NC}"
+echo -e "${GREEN}✓ Error format: {error, message, statusCode, nextActions}${NC}"
 
 # 4. Database Tables - Returns array
 echo -e "\n${BLUE}4. Database Tables (Array Response)${NC}"
@@ -152,5 +152,5 @@ echo -e "\n${GREEN}✅ All tests completed!${NC}"
 echo -e "\n${BLUE}Summary of Response Formats:${NC}"
 echo "• Objects: health, auth, table info, specific doc"
 echo "• Arrays: database tables, database records (PostgREST), storage buckets, docs list"
-echo "• Errors: Consistent format with error, message, statusCode, nextAction"
+echo "• Errors: Consistent format with error, message, statusCode, nextActions"
 echo "• Pagination: Via HTTP headers (X-Total-Count, X-Page, etc.)"

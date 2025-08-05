@@ -16,7 +16,7 @@ export interface LogsResponse {
 
 export interface LogsStats {
   actionStats: Array<{ action: string; count: number }>;
-  tableStats: Array<{ table_name: string; count: number }>;
+  tableStats: Array<{ tableName: string; count: number }>;
   recentActivity: number;
   totalLogs: { count: number };
 }
@@ -58,11 +58,11 @@ export class LogsService {
     };
   }
 
-  async getStats(): Promise<LogsStats> {
+  getStats(): Promise<LogsStats> {
     return apiClient.request('/logs/stats');
   }
 
-  async clearLogs(before?: string): Promise<{ message: string; deleted: number }> {
+  clearLogs(before?: string): Promise<{ message: string; deleted: number }> {
     const params = before ? `?before=${before}` : '';
     return apiClient.request(`/logs${params}`, {
       method: 'DELETE',

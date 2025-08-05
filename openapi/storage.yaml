@@ -76,7 +76,7 @@ paths:
                 error: "INVALID_BUCKET_NAME"
                 message: "Bucket name must contain only alphanumeric characters, underscores, and hyphens"
                 statusCode: 400
-                nextAction: "Use a valid bucket name format"
+                nextActions: "Use a valid bucket name format"
         '409':
           description: Bucket already exists
           content:
@@ -87,7 +87,7 @@ paths:
                 error: "BUCKET_EXISTS"
                 message: "Bucket 'avatars' already exists"
                 statusCode: 409
-                nextAction: "Choose a different bucket name"
+                nextActions: "Choose a different bucket name"
 
   /api/storage/buckets/{bucketName}:
     patch:
@@ -146,7 +146,7 @@ paths:
                 error: "BUCKET_NOT_FOUND"
                 message: "Bucket 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Check bucket name and try again"
+                nextActions: "Check bucket name and try again"
 
   /api/storage/buckets/{bucketName}/objects:
     get:
@@ -265,7 +265,7 @@ paths:
                 error: "BUCKET_NOT_FOUND"
                 message: "Bucket 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Check bucket name and try again"
+                nextActions: "Check bucket name and try again"
     
     post:
       summary: Upload Object with Auto-Generated Key
@@ -316,7 +316,7 @@ paths:
                 error: "INVALID_FILE"
                 message: "No file provided in the request"
                 statusCode: 400
-                nextAction: "Include a file in the multipart form data"
+                nextActions: "Include a file in the multipart form data"
         '404':
           description: Bucket not found
           content:
@@ -327,7 +327,7 @@ paths:
                 error: "BUCKET_NOT_FOUND"
                 message: "Bucket 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Create the bucket first"
+                nextActions: "Create the bucket first"
 
   /api/storage/buckets/{bucketName}/objects/{objectKey}:
     put:
@@ -386,7 +386,7 @@ paths:
                 error: "INVALID_FILE"
                 message: "No file provided in the request"
                 statusCode: 400
-                nextAction: "Include a file in the multipart form data"
+                nextActions: "Include a file in the multipart form data"
         '404':
           description: Bucket not found
           content:
@@ -397,7 +397,7 @@ paths:
                 error: "BUCKET_NOT_FOUND"
                 message: "Bucket 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Create the bucket first"
+                nextActions: "Create the bucket first"
 
     get:
       summary: Download Object
@@ -444,7 +444,7 @@ paths:
                 error: "OBJECT_NOT_FOUND"
                 message: "Object 'user123.jpg' not found in bucket 'avatars'"
                 statusCode: 404
-                nextAction: "Check the bucket and key combination"
+                nextActions: "Check the bucket and key combination"
 
     delete:
       summary: Delete Object
@@ -486,7 +486,7 @@ paths:
                 error: "OBJECT_NOT_FOUND"
                 message: "Object 'user123.jpg' not found in bucket 'avatars'"
                 statusCode: 404
-                nextAction: "Check the bucket and key combination"
+                nextActions: "Check the bucket and key combination"
 
 components:
   securitySchemes:
@@ -567,7 +567,7 @@ components:
           type: integer
           description: HTTP status code
           example: 400
-        nextAction:
+        nextActions:
           type: string
           description: Suggested action to resolve the error
           example: "Check your request parameters"

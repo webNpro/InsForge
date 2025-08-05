@@ -38,7 +38,7 @@ export class MetadataService {
       const metadata = await this.getAppMetadata();
       const tableNames = Object.keys(metadata.tables);
       const totalRecords = Object.values(metadata.tables).reduce(
-        (sum, table) => sum + table.record_count,
+        (sum, table) => sum + table.recordCount,
         0
       );
 

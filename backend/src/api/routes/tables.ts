@@ -35,8 +35,8 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
       );
     }
 
-    const { table_name, columns, rls_enabled } = validation.data;
-    const result = await tablesController.createTable(table_name, columns, rls_enabled);
+    const { tableName, columns, rlsEnabled } = validation.data;
+    const result = await tablesController.createTable(tableName, columns, rlsEnabled);
     successResponse(res, result, 201);
   } catch (error) {
     next(error);

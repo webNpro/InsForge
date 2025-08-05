@@ -391,7 +391,7 @@ components:
           type: integer
           description: HTTP status code
           example: 400
-        nextAction:
+        nextActions:
           type: string
           description: Suggested action to resolve the error
           example: "Please use a different email address"

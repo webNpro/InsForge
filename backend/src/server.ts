@@ -193,7 +193,7 @@ export async function createApp() {
         error: 'NOT_FOUND',
         message: `Endpoint ${req.originalUrl} not found`,
         statusCode: 404,
-        nextAction: 'Please check the API documentation for available endpoints',
+        nextActions: 'Please check the API documentation for available endpoints',
       });
     });
   }

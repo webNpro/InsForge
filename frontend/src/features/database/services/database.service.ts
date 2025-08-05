@@ -24,7 +24,7 @@ export class DatabaseService {
   }
 
   createTable(tableName: string, columns: ColumnSchema[]) {
-    const body: CreateTableRequest = { table_name: tableName, columns, rls_enabled: true };
+    const body: CreateTableRequest = { tableName: tableName, columns, rlsEnabled: true };
     return apiClient.request('/database/tables', {
       method: 'POST',
       headers: apiClient.withApiKey({
@@ -77,7 +77,7 @@ export class DatabaseService {
           const type = col.type.toLowerCase();
           return type === 'text' || type === 'varchar' || type.includes('character varying');
         })
-        .map((col: ColumnSchema) => col.name);
+        .map((col: ColumnSchema) => col.columnName);
 
       if (textColumns.length > 0) {
         // Create PostgREST OR filter for text columns

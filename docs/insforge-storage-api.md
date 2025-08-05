@@ -107,7 +107,7 @@ Returns:
     "offset": 0,
     "total": 1
   },
-  "nextAction": "You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object."
+  "nextActions": "You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object."
 }
 ```
 
@@ -152,7 +152,7 @@ Returns:
   "message": "Bucket visibility updated",
   "bucket": "test-images",
   "is_public": false,
-  "nextAction": "Bucket is now PRIVATE - authentication is required to access objects."
+  "nextActions": "Bucket is now PRIVATE - authentication is required to access objects."
 }
 ```
 
@@ -227,7 +227,7 @@ All error responses follow this format:
   "error": "ERROR_CODE",
   "message": "Human-readable error message",
   "statusCode": 400,
-  "nextAction": "Suggested action to resolve the error"
+  "nextActions": "Suggested action to resolve the error"
 }
 ```
 
@@ -237,7 +237,7 @@ Example error:
   "error": "BUCKET_NOT_FOUND",
   "message": "Bucket 'nonexistent' does not exist",
   "statusCode": 404,
-  "nextAction": "Create the bucket first"
+  "nextActions": "Create the bucket first"
 }
 ```
 

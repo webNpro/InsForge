@@ -94,7 +94,7 @@ paths:
                 error: "TABLE_NOT_FOUND"
                 message: "Table 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Check table name and try again"
+                nextActions: "Check table name and try again"
         '400':
           description: Invalid query parameters
           content:
@@ -105,7 +105,7 @@ paths:
                 error: "INVALID_QUERY"
                 message: "Invalid filter syntax"
                 statusCode: 400
-                nextAction: "Check PostgREST filter documentation"
+                nextActions: "Check PostgREST filter documentation"
 
     post:
       summary: Create Records
@@ -174,7 +174,7 @@ paths:
                 error: "VALIDATION_ERROR"
                 message: "Invalid field type: expected integer for 'age'"
                 statusCode: 400
-                nextAction: "Ensure field types match the table schema"
+                nextActions: "Ensure field types match the table schema"
         '404':
           description: Table not found
           content:
@@ -185,7 +185,7 @@ paths:
                 error: "TABLE_NOT_FOUND"
                 message: "Table 'nonexistent' does not exist"
                 statusCode: 404
-                nextAction: "Create the table first"
+                nextActions: "Create the table first"
 
     patch:
       summary: Update Records
@@ -264,7 +264,7 @@ paths:
                 error: "VALIDATION_ERROR"
                 message: "Invalid field type"
                 statusCode: 400
-                nextAction: "Check field types match table schema"
+                nextActions: "Check field types match table schema"
 
     delete:
       summary: Delete Records
@@ -346,7 +346,7 @@ components:
           type: integer
           description: HTTP status code
           example: 400
-        nextAction:
+        nextActions:
           type: string
           description: Suggested action to resolve the error
           example: "Check the request body format"

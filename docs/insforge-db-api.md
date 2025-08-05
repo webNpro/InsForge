@@ -242,7 +242,7 @@ All error responses follow this format:
   "error": "ERROR_CODE",
   "message": "Human-readable error message",
   "statusCode": 400,
-  "nextAction": "Suggested action to resolve the error"
+  "nextActions": "Suggested action to resolve the error"
 }
 ```
 
@@ -252,7 +252,7 @@ Example error:
   "error": "TABLE_NOT_FOUND",
   "message": "Table 'nonexistent' does not exist",
   "statusCode": 404,
-  "nextAction": "Check table name and try again"
+  "nextActions": "Check table name and try again"
 }
 ```
 

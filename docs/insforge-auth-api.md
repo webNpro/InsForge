@@ -33,7 +33,7 @@ Response:
   },
   "access_token": "jwt-token",
   "message": "Registration successful",
-  "nextAction": "You can use this access token to access other endpoints (always add it to HTTP Header 'Authorization', then send requests). Please keep it safe."
+  "nextActions": "You can use this access token to access other endpoints (always add it to HTTP Header 'Authorization', then send requests). Please keep it safe."
 }
 ```
 
@@ -70,7 +70,7 @@ Response:
   },
   "access_token": "jwt-token",
   "message": "Login successful",
-  "nextAction": "Use the access token in the Authorization header for subsequent requests"
+  "nextActions": "Use the access token in the Authorization header for subsequent requests"
 }
 ```
 
@@ -119,7 +119,7 @@ All error responses follow this format:
   "error": "ERROR_CODE",
   "message": "Human-readable error message",
   "statusCode": 400,
-  "nextAction": "Suggested action to resolve the error"
+  "nextActions": "Suggested action to resolve the error"
 }
 ```
 
@@ -129,7 +129,7 @@ Example error:
   "error": "INVALID_CREDENTIALS",
   "message": "Invalid email or password",
   "statusCode": 401,
-  "nextAction": "Please check your credentials and try again"
+  "nextActions": "Please check your credentials and try again"
 }
 ```
 
@@ -157,7 +157,7 @@ Response:
 {
   "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id={your_client_id}&redirect_uri=hfa&scope=user%3Aemail&state=eyJ9",
   "message": "Redirect the user to the auth_url for Google authentication",
-  "nextAction": "After authentication, user will be redirected back with auth code"
+  "nextActions": "After authentication, user will be redirected back with auth code"
 }
 ```
 
@@ -176,7 +176,7 @@ Response:
 {
   "auth_url": "https://github.com/login/oauth/authorize?client_id={your_client_id}&redirect_uri=hfa&scope=user%3Aemail&state=eyJ9",
   "message": "Redirect the user to the auth_url for GitHub authentication",
-  "nextAction": "After authentication, user will be redirected back with auth code"
+  "nextActions": "After authentication, user will be redirected back with auth code"
 }
 ```
 
