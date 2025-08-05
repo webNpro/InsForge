@@ -327,7 +327,7 @@ export function TableForm({
         }
       });
 
-      return databaseService.modifyTable(data.name, operations);
+      return databaseService.updateTableSchema(data.name, operations);
     },
     onSuccess: (_, data) => {
       void queryClient.invalidateQueries({ queryKey: ['metadata'] });

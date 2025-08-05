@@ -47,7 +47,7 @@ The dashboard communicates with the Insforge backend via REST API:
 - `POST /api/database/tables` - Create new table with schema
 - `DELETE /api/database/tables/:tablename` - Delete table
 - `GET /api/database/tables/:tablename/schema` - Get table schema
-- `PATCH /api/database/tables/:tablename` - Modify table schema
+- `PATCH /api/database/tables/:tablename/schema` - Modify table schema
 
 ### Record Operations
 - `GET /api/database/records/:tablename` - Query records (supports pagination)

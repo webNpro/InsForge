@@ -13,7 +13,7 @@
 
 1. **get-backend-metadata** - Get current database structure (always start here)
 2. **create-table** - Create new table with explicit schema
-3. **modify-table** - Alter existing table schema  
+3. **update-table-schema** - Alter existing table schema  
 4. **delete-table** - Remove table completely
 5. **get-table-schema** - Get specific table structure
 

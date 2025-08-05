@@ -6,7 +6,7 @@ info:
 paths:
   /api/tables/field-types:
     get:
-      summary: Get available field types
+      summary: Get Available Field Types
       security:
         - bearerAuth: []
         - apiKey: []
@@ -52,7 +52,7 @@ paths:
 
   /api/tables:
     get:
-      summary: List tables
+      summary: List Tables
       security:
         - bearerAuth: []
         - apiKey: []
@@ -72,7 +72,7 @@ paths:
                 - "categories"
 
     post:
-      summary: Create table
+      summary: Create Table
       security:
         - bearerAuth: []
         - apiKey: []
@@ -157,14 +157,14 @@ paths:
                 statusCode: 422
                 nextAction: "Use one of the valid field types"
 
-  /api/tables/{table}/schema:
+  /api/tables/{tableName}/schema:
     get:
-      summary: Get table schema
+      summary: Get Table Schema
       security:
         - bearerAuth: []
         - apiKey: []
       parameters:
-        - name: table
+        - name: tableName
           in: path
           required: true
           schema:
@@ -245,15 +245,13 @@ paths:
                 message: "Table 'nonexistent' does not exist"
                 statusCode: 404
                 nextAction: "Check table name and try again"
-
-  /api/tables/{table}:
     patch:
-      summary: Modify table schema
+      summary: Update Table Schema
       security:
         - bearerAuth: []
         - apiKey: []
       parameters:
-        - name: table
+        - name: tableName
           in: path
           required: true
           schema:
@@ -333,13 +331,14 @@ paths:
                 statusCode: 400
                 nextAction: "Choose a different column name or drop it first"
 
+  /api/tables/{tableName}:
     delete:
-      summary: Delete table
+      summary: Delete Table
       security:
         - bearerAuth: []
         - apiKey: []
       parameters:
-        - name: table
+        - name: tableName
           in: path
           required: true
           schema:

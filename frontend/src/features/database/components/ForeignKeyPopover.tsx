@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/radix/Select';
 import { metadataService } from '@/features/dashboard/services/metadata.service';
-import { apiClient } from '@/lib/api/client';
+import { databaseService } from '@/features/database/services/database.service';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
 import { ColumnSchema, OnDeleteActionSchema, OnUpdateActionSchema } from '@insforge/shared-schemas';
@@ -80,18 +80,12 @@ export function ForeignKeyPopover({
 
   // Get columns for selected reference table
   const { data: referenceTableSchema } = useQuery({
-    queryKey: ['schema', newForeignKey.reference_table],
+    queryKey: ['table-schema', newForeignKey.reference_table],
     queryFn: async () => {
       if (!newForeignKey.reference_table) {
         return null;
       }
-      const response = await apiClient.request(
-        `/database/tables/${newForeignKey.reference_table}/schema`,
-        {
-          headers: apiClient.withApiKey(),
-        }
-      );
-      return response;
+      return await databaseService.getTableSchema(newForeignKey.reference_table);
     },
     enabled: !!newForeignKey.reference_table && open,
   });

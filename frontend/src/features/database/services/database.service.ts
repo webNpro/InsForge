@@ -9,7 +9,7 @@ import {
 
 export class DatabaseService {
   // Table operations
-  async getTables(): Promise<string[]> {
+  async listTables(): Promise<string[]> {
     const data = await apiClient.request('/database/tables', {
       headers: apiClient.withApiKey(),
     });
@@ -41,11 +41,11 @@ export class DatabaseService {
     });
   }
 
-  modifyTable(
+  updateTableSchema(
     tableName: string,
     operations: UpdateTableSchemaRequest
   ): Promise<UpdateTableSchemaResponse | void> {
-    return apiClient.request(`/database/tables/${tableName}`, {
+    return apiClient.request(`/database/tables/${tableName}/schema`, {
       method: 'PATCH',
       headers: apiClient.withApiKey({
         'Content-Type': 'application/json',
