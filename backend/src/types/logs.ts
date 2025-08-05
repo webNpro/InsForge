@@ -37,6 +37,7 @@ export interface AnalyticsLogRecord {
   id: string;
   event_message: string;
   timestamp: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: Record<string, any>;
 }
 

@@ -11,7 +11,7 @@ export class AnalyticsManager {
     'cloudflare.logs.prod': 'insforge.logs',
     'deno-relay-logs': 'function.logs',
     'postgREST.logs.prod': 'postgREST.logs',
-    'postgres.logs': 'postgres.logs'
+    'postgres.logs': 'postgres.logs',
   };
 
   // Reverse mapping for API calls
@@ -19,7 +19,7 @@ export class AnalyticsManager {
     'insforge.logs': 'cloudflare.logs.prod',
     'function.logs': 'deno-relay-logs',
     'postgREST.logs': 'postgREST.logs.prod',
-    'postgres.logs': 'postgres.logs'
+    'postgres.logs': 'postgres.logs',
   };
 
   private constructor() {}
@@ -76,26 +76,26 @@ export class AnalyticsManager {
         FROM _analytics.sources 
         ORDER BY name
       `);
-      
+
       // Filter out sources that have no data
       const sourcesWithData: LogSource[] = [];
-      
+
       for (const source of result.rows) {
         const tableName = `log_events_${source.token.replace(/-/g, '_')}`;
-        
+
         try {
           // Check if the table exists and has data
           const countResult = await client.query(`
             SELECT COUNT(*) as count
             FROM _analytics.${tableName}
           `);
-          
+
           const count = parseInt(countResult.rows[0].count);
           if (count > 0) {
             // Apply name mapping before returning
             sourcesWithData.push({
               ...source,
-              name: this.getDisplayName(source.name)
+              name: this.getDisplayName(source.name),
             });
           }
         } catch (error) {
@@ -105,7 +105,7 @@ export class AnalyticsManager {
           });
         }
       }
-      
+
       return sourcesWithData;
     } finally {
       client.release();
@@ -128,7 +128,7 @@ export class AnalyticsManager {
     try {
       // Convert display name to internal name for query
       const internalSourceName = this.getInternalName(sourceName);
-      
+
       // First, get the source token to determine the table name
       const sourceResult = await client.query(
         `SELECT token FROM _analytics.sources WHERE name = $1`,
@@ -262,7 +262,7 @@ export class AnalyticsManager {
     const client = await this.pool.connect();
     try {
       let sources: LogSource[];
-      
+
       if (sourceName) {
         // Convert display name to internal name for query
         const internalSourceName = this.getInternalName(sourceName);
@@ -271,9 +271,9 @@ export class AnalyticsManager {
           [internalSourceName]
         );
         // Apply name mapping to the result
-        sources = sourceResult.rows.map(source => ({
+        sources = sourceResult.rows.map((source) => ({
           ...source,
-          name: this.getDisplayName(source.name)
+          name: this.getDisplayName(source.name),
         }));
       } else {
         // getLogSources already returns mapped names
@@ -288,24 +288,26 @@ export class AnalyticsManager {
 
         try {
           // Search in event_message and body fields
-          const searchResult = await client.query(`
-            SELECT id, event_message, timestamp, body, $1 as source
+          const searchResult = await client.query(
+            `SELECT id, event_message, timestamp, body, $1 as source
             FROM _analytics.${tableName}
             WHERE event_message ILIKE $2 
                OR body::text ILIKE $2
             ORDER BY timestamp DESC
-            LIMIT $3 OFFSET $4
-          `, [source.name, `%${query}%`, limit, offset]);
+            LIMIT $3 OFFSET $4`,
+            [source.name, `%${query}%`, limit, offset]
+          );
 
           results.push(...searchResult.rows);
 
           // Get count for this source
-          const countResult = await client.query(`
-            SELECT COUNT(*) as count
+          const countResult = await client.query(
+            `SELECT COUNT(*) as count
             FROM _analytics.${tableName}
             WHERE event_message ILIKE $1 
-               OR body::text ILIKE $1
-          `, [`%${query}%`]);
+               OR body::text ILIKE $1`,
+            [`%${query}%`]
+          );
 
           totalCount += parseInt(countResult.rows[0].count);
         } catch (error) {

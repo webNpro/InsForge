@@ -73,6 +73,7 @@ export async function createApp() {
     let responseSize = 0;
 
     // Override send method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res.send = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
@@ -80,6 +81,7 @@ export async function createApp() {
       return originalSend.call(this, data);
     };
     // Override json method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res.json = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(JSON.stringify(data));
@@ -92,7 +94,7 @@ export async function createApp() {
       if (req.path.includes('/analytics/')) {
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logger.info('HTTP Request', {
         method: req.method,
