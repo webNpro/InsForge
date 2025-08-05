@@ -37,7 +37,7 @@
 Query parameters:
 - `limit` - Maximum records (default: 100)
 - `offset` - Skip records for pagination
-- `order` - Sort by field (e.g., `created_at.desc`)
+- `order` - Sort by field (e.g., `createdAt.desc`)
 - PostgREST filters: `field=eq.value`, `field=gt.value`, etc.
 
 Response format:
@@ -46,15 +46,15 @@ Response format:
   {
     "id": "248373e1-0aea-45ce-8844-5ef259203749",
     "name": "John Doe",
-    "created_at": "2025-07-18T05:37:24.338Z",
-    "updated_at": "2025-07-18T05:37:24.338Z"
+    "createdAt": "2025-07-18T05:37:24.338Z",
+    "updatedAt": "2025-07-18T05:37:24.338Z"
   }
 ]
 ```
 
 Example curl:
 ```bash
-curl -X GET "http://localhost:7130/api/database/records/users?limit=10&order=created_at.desc" \
+curl -X GET "http://localhost:7130/api/database/records/users?limit=10&order=createdAt.desc" \
   -H "x-api-key: YOUR_API_KEY"
 ```
 
@@ -103,8 +103,8 @@ Response format (WITH `Prefer: return=representation` header):
     "id": "248373e1-0aea-45ce-8844-5ef259203749",
     "name": "John Doe",
     "email": "john@example.com",
-    "created_at": "2025-07-18T05:37:24.338Z",
-    "updated_at": "2025-07-18T05:37:24.338Z"
+    "createdAt": "2025-07-18T05:37:24.338Z",
+    "updatedAt": "2025-07-18T05:37:24.338Z"
   }
 ]
 ```
@@ -160,8 +160,8 @@ Response format (WITH `Prefer: return=representation` header):
   {
     "id": "123e4567-e89b-12d3-a456-426614174000",
     "field1": "new_value",
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-21T11:00:00Z"
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": "2025-01-21T11:00:00Z"
   }
 ]
 ```
@@ -209,8 +209,8 @@ Response format (WITH `Prefer: return=representation` header):
   {
     "id": "123e4567-e89b-12d3-a456-426614174000",
     "name": "Deleted User",
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-21T11:00:00Z"
+    "createdAt": "2025-01-01T00:00:00Z",
+    "updatedAt": "2025-01-21T11:00:00Z"
   }
 ]
 
@@ -260,8 +260,8 @@ Example error:
 
 1. **Auto-Generated Fields**
    - `id` - UUID primary key (auto-generated)
-   - `created_at` - Timestamp (auto-set)
-   - `updated_at` - Timestamp (auto-updated)
+   - `createdAt` - Timestamp (auto-set)
+   - `updatedAt` - Timestamp (auto-updated)
 
 2. **System Tables**
    - Tables prefixed with `_` are system tables

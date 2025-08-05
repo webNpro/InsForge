@@ -39,8 +39,8 @@ paths:
           in: query
           schema:
             type: string
-          description: Sort order (e.g., "created_at.desc", "name.asc")
-          example: created_at.desc
+          description: Sort order (e.g., "createdAt.desc", "name.asc")
+          example: createdAt.desc
         - name: select
           in: query
           schema:
@@ -77,13 +77,13 @@ paths:
                 - id: "248373e1-0aea-45ce-8844-5ef259203749"
                   name: "John Doe"
                   email: "john@example.com"
-                  created_at: "2025-07-18T05:37:24.338Z"
-                  updated_at: "2025-07-18T05:37:24.338Z"
+                  createdAt: "2025-07-18T05:37:24.338Z"
+                  updatedAt: "2025-07-18T05:37:24.338Z"
                 - id: "348373e1-0aea-45ce-8844-5ef259203750"
                   name: "Jane Smith"
                   email: "jane@example.com"
-                  created_at: "2025-07-19T08:15:10.123Z"
-                  updated_at: "2025-07-19T08:15:10.123Z"
+                  createdAt: "2025-07-19T08:15:10.123Z"
+                  updatedAt: "2025-07-19T08:15:10.123Z"
         '404':
           description: Table not found
           content:
@@ -162,8 +162,8 @@ paths:
                       name: "John Doe"
                       email: "john@example.com"
                       age: 30
-                      created_at: "2025-07-18T05:37:24.338Z"
-                      updated_at: "2025-07-18T05:37:24.338Z"
+                      createdAt: "2025-07-18T05:37:24.338Z"
+                      updatedAt: "2025-07-18T05:37:24.338Z"
         '400':
           description: Invalid input
           content:
@@ -243,8 +243,8 @@ paths:
                     - id: "123e4567-e89b-12d3-a456-426614174000"
                       name: "Jane Doe"
                       email: "jane.doe@example.com"
-                      created_at: "2025-01-01T00:00:00Z"
-                      updated_at: "2025-01-21T11:00:00Z"
+                      createdAt: "2025-01-01T00:00:00Z"
+                      updatedAt: "2025-01-21T11:00:00Z"
         '404':
           description: No records found to update
           content:
@@ -310,8 +310,8 @@ paths:
                   value:
                     - id: "123e4567-e89b-12d3-a456-426614174000"
                       name: "Deleted User"
-                      created_at: "2025-01-01T00:00:00Z"
-                      updated_at: "2025-01-21T11:00:00Z"
+                      createdAt: "2025-01-01T00:00:00Z"
+                      updatedAt: "2025-01-21T11:00:00Z"
                 no_records:
                   summary: No records found to delete
                   value: []
@@ -358,11 +358,11 @@ components:
           type: string
           format: uuid
           description: Auto-generated UUID
-        created_at:
+        createdAt:
           type: string
           format: date-time
           description: Timestamp when record was created
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
           description: Timestamp when record was last updated

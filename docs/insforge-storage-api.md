@@ -11,7 +11,7 @@
 ## Bucket Operations (Use MCP Tools)
 
 ### Available MCP Tools
-1. **create-bucket** - Create bucket (`bucket_name`, `is_public`: true by default)
+1. **create-bucket** - Create bucket (`bucketName`, `isPublic`: true by default)
 2. **list-buckets** - List all buckets
 3. **delete-bucket** - Delete bucket
 
@@ -36,8 +36,8 @@ Returns:
   "bucket": "test-images",
   "key": "test.txt", 
   "size": 30,
-  "mime_type": "text/plain",
-  "uploaded_at": "2025-07-18T04:32:13.801Z",
+  "mimeType": "text/plain",
+  "uploadedAt": "2025-07-18T04:32:13.801Z",
   "url": "/api/storage/buckets/test-images/objects/test.txt"
 }
 ```
@@ -65,8 +65,8 @@ Response:
   "bucket": "avatars",
   "key": "image-1737546841234-a3f2b1.jpg", 
   "size": 15234,
-  "mime_type": "image/jpeg",
-  "uploaded_at": "2025-07-18T04:32:13.801Z",
+  "mimeType": "image/jpeg",
+  "uploadedAt": "2025-07-18T04:32:13.801Z",
   "url": "/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
 }
 ```
@@ -90,15 +90,15 @@ Query parameters:
 Returns:
 ```json
 {
-  "bucket_name": "test-images",
+  "bucketName": "test-images",
   "prefix": null,
   "objects": [
     {
       "bucket": "test-images",
       "key": "test.txt",
       "size": 30,
-      "mime_type": "text/plain",
-      "uploaded_at": "2025-07-18T04:32:13.801Z",
+      "mimeType": "text/plain",
+      "uploadedAt": "2025-07-18T04:32:13.801Z",
       "url": "/api/storage/buckets/test-images/objects/test.txt"
     }
   ],
@@ -143,7 +143,7 @@ curl -X DELETE http://localhost:7130/api/storage/buckets/avatars/objects/user123
 
 Request body:
 ```json
-{ "is_public": true }
+{ "isPublic": true }
 ```
 
 Returns:
@@ -151,7 +151,7 @@ Returns:
 {
   "message": "Bucket visibility updated",
   "bucket": "test-images",
-  "is_public": false,
+  "isPublic": false,
   "nextActions": "Bucket is now PRIVATE - authentication is required to access objects."
 }
 ```
@@ -161,7 +161,7 @@ Example curl:
 curl -X PATCH http://localhost:7130/api/storage/buckets/avatars \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"is_public": true}'
+  -d '{"isPublic": true}'
 ```
 
 ## Database Integration
@@ -179,7 +179,7 @@ const upload = await fetch('/api/storage/buckets/images/objects/avatar.jpg', {
 
 // Step 2: Store metadata
 const records = [{
-  user_id: 'user123',
+  userId: 'user123',
   image: await upload.json()  // Store object metadata
 }];
 await fetch('/api/database/profiles', {
@@ -206,7 +206,7 @@ const fileData = await upload.json();
 
 // Step 2: Store metadata with generated key
 const records = [{
-  user_id: 'user123',
+  userId: 'user123',
   image: fileData  // Contains auto-generated key
 }];
 await fetch('/api/database/profiles', {

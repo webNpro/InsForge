@@ -179,7 +179,7 @@ router.get(
       successResponse(
         res,
         {
-          bucket_name: bucketName,
+          bucketName: bucketName,
           prefix,
           objects: result.objects,
           pagination: {

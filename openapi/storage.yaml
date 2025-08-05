@@ -37,14 +37,14 @@ paths:
             schema:
               type: object
               required:
-                - bucket_name
+                - bucketName
               properties:
-                bucket_name:
+                bucketName:
                   type: string
                   pattern: '^[a-zA-Z0-9_-]+$'
                   description: Bucket name (alphanumeric, underscore, and hyphen only)
                   example: avatars
-                is_public:
+                isPublic:
                   type: boolean
                   description: Whether the bucket is publicly accessible
                   default: true
@@ -60,7 +60,7 @@ paths:
                   message:
                     type: string
                     example: "Bucket created successfully"
-                  bucket_name:
+                  bucketName:
                     type: string
                     example: avatars
               example:
@@ -111,7 +111,7 @@ paths:
               required:
                 - is_public
               properties:
-                is_public:
+                isPublic:
                   type: boolean
                   description: Whether the bucket should be publicly accessible
                   example: true
@@ -129,13 +129,13 @@ paths:
                   bucket:
                     type: string
                     example: avatars
-                  is_public:
+                  isPublic:
                     type: boolean
                     example: true
               example:
                 message: "Bucket visibility updated"
                 bucket: "avatars"
-                is_public: true
+                isPublic: true
         '404':
           description: Bucket not found
           content:
@@ -221,14 +221,14 @@ paths:
                   - bucket: "avatars"
                     key: "users/user123.jpg"
                     size: 102400
-                    mime_type: "image/jpeg"
-                    uploaded_at: "2024-01-15T10:30:00Z"
+                    mimeType: "image/jpeg"
+                    uploadedAt: "2024-01-15T10:30:00Z"
                     url: "/api/storage/buckets/avatars/objects/users/user123.jpg"
                   - bucket: "avatars"
                     key: "users/user456.png"
                     size: 204800
-                    mime_type: "image/png"
-                    uploaded_at: "2024-01-16T11:00:00Z"
+                    mimeType: "image/png"
+                    uploadedAt: "2024-01-16T11:00:00Z"
                     url: "/api/storage/buckets/avatars/objects/users/user456.png"
 
     delete:
@@ -303,8 +303,8 @@ paths:
                 bucket: "avatars"
                 key: "image-1737546841234-a3f2b1.jpg"
                 size: 102400
-                mime_type: "image/jpeg"
-                uploaded_at: "2024-01-21T10:30:00Z"
+                mimeType: "image/jpeg"
+                uploadedAt: "2024-01-21T10:30:00Z"
                 url: "/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
         '400':
           description: Invalid bucket name or file
@@ -373,8 +373,8 @@ paths:
                 bucket: "avatars"
                 key: "user123.jpg"
                 size: 102400
-                mime_type: "image/jpeg"
-                uploaded_at: "2024-01-21T10:30:00Z"
+                mimeType: "image/jpeg"
+                uploadedAt: "2024-01-21T10:30:00Z"
                 url: "/api/storage/buckets/avatars/objects/user123.jpg"
         '400':
           description: Invalid bucket name, key, or file
@@ -511,11 +511,11 @@ components:
           type: integer
           example: 102400
           description: Size of the file in bytes
-        mime_type:
+        mimeType:
           type: string
           example: image/jpeg
           description: MIME type of the file
-        uploaded_at:
+        uploadedAt:
           type: string
           format: date-time
           example: "2024-01-15T10:30:00Z"
@@ -528,7 +528,7 @@ components:
         - bucket
         - key
         - size
-        - uploaded_at
+        - uploadedAt
         - url
 
     Pagination:
