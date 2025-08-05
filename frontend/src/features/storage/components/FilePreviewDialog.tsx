@@ -37,7 +37,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
       try {
         const fileBucket = file.bucket || bucket;
-        const blob = await storageService.downloadFile(fileBucket, file.key);
+        const blob = await storageService.downloadObject(fileBucket, file.key);
 
         // Validate blob
         if (!blob || blob.size === 0) {

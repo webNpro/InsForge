@@ -74,7 +74,7 @@ export function StorageManager({
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: ({ bucket, key }: { bucket: string; key: string }) =>
-      storageService.deleteFile(bucket, key),
+      storageService.deleteObject(bucket, key),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
@@ -115,7 +115,7 @@ export function StorageManager({
     async (file: StorageFileSchema) => {
       setDownloadingFiles((prev) => new Set(prev).add(file.key));
       try {
-        const blob = await storageService.downloadFile(bucketName, file.key);
+        const blob = await storageService.downloadObject(bucketName, file.key);
 
         // Create download link
         const url = window.URL.createObjectURL(blob);

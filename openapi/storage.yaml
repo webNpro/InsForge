@@ -7,7 +7,7 @@ info:
 paths:
   /api/storage/buckets:
     get:
-      summary: List all buckets
+      summary: List All Buckets
       security:
         - apiKey: []
       responses:
@@ -27,7 +27,7 @@ paths:
                 buckets: ["avatars", "documents", "uploads", "public", "private"]
 
     post:
-      summary: Create a new bucket
+      summary: Create New Bucket
       security:
         - apiKey: []
       requestBody:
@@ -89,13 +89,13 @@ paths:
                 statusCode: 409
                 nextAction: "Choose a different bucket name"
 
-  /api/storage/buckets/{bucket}:
+  /api/storage/buckets/{bucketName}:
     patch:
-      summary: Update bucket visibility
+      summary: Update Bucket
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
@@ -148,13 +148,13 @@ paths:
                 statusCode: 404
                 nextAction: "Check bucket name and try again"
 
-  /api/storage/{bucket}:
+  /api/storage/buckets/{bucketName}/objects:
     get:
-      summary: List objects in bucket
+      summary: List Objects in Bucket
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
@@ -223,20 +223,20 @@ paths:
                     size: 102400
                     mime_type: "image/jpeg"
                     uploaded_at: "2024-01-15T10:30:00Z"
-                    url: "/api/storage/avatars/users/user123.jpg"
+                    url: "/api/storage/buckets/avatars/objects/users/user123.jpg"
                   - bucket: "avatars"
                     key: "users/user456.png"
                     size: 204800
                     mime_type: "image/png"
                     uploaded_at: "2024-01-16T11:00:00Z"
-                    url: "/api/storage/avatars/users/user456.png"
+                    url: "/api/storage/buckets/avatars/objects/users/user456.png"
 
     delete:
-      summary: Delete entire bucket and all its objects
+      summary: Delete Bucket
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
@@ -266,21 +266,83 @@ paths:
                 message: "Bucket 'nonexistent' does not exist"
                 statusCode: 404
                 nextAction: "Check bucket name and try again"
-
-  /api/storage/{bucket}/{key}:
-    put:
-      summary: Upload object to bucket
+    
+    post:
+      summary: Upload Object with Auto-Generated Key
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
             type: string
             pattern: '^[a-zA-Z0-9_-]+$'
           example: avatars
-        - name: key
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+              required:
+                - file
+      responses:
+        '201':
+          description: Object uploaded successfully with auto-generated key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredFile'
+              example:
+                bucket: "avatars"
+                key: "image-1737546841234-a3f2b1.jpg"
+                size: 102400
+                mime_type: "image/jpeg"
+                uploaded_at: "2024-01-21T10:30:00Z"
+                url: "/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
+        '400':
+          description: Invalid bucket name or file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "INVALID_FILE"
+                message: "No file provided in the request"
+                statusCode: 400
+                nextAction: "Include a file in the multipart form data"
+        '404':
+          description: Bucket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "BUCKET_NOT_FOUND"
+                message: "Bucket 'nonexistent' does not exist"
+                statusCode: 404
+                nextAction: "Create the bucket first"
+
+  /api/storage/buckets/{bucketName}/objects/{objectKey}:
+    put:
+      summary: Upload Object
+      security:
+        - apiKey: []
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]+$'
+          example: avatars
+        - name: objectKey
           in: path
           required: true
           schema:
@@ -313,7 +375,7 @@ paths:
                 size: 102400
                 mime_type: "image/jpeg"
                 uploaded_at: "2024-01-21T10:30:00Z"
-                url: "/api/storage/avatars/user123.jpg"
+                url: "/api/storage/buckets/avatars/objects/user123.jpg"
         '400':
           description: Invalid bucket name, key, or file
           content:
@@ -338,11 +400,11 @@ paths:
                 nextAction: "Create the bucket first"
 
     get:
-      summary: Download object from bucket
+      summary: Download Object
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
@@ -385,11 +447,11 @@ paths:
                 nextAction: "Check the bucket and key combination"
 
     delete:
-      summary: Delete object from bucket
+      summary: Delete Object
       security:
         - apiKey: []
       parameters:
-        - name: bucket
+        - name: bucketName
           in: path
           required: true
           schema:
@@ -460,7 +522,7 @@ components:
           description: ISO timestamp when the file was uploaded
         url:
           type: string
-          example: "/api/storage/avatars/user123.jpg"
+          example: "/api/storage/buckets/avatars/objects/user123.jpg"
           description: URL to download the file
       required:
         - bucket

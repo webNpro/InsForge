@@ -18,10 +18,10 @@ const router = Router();
 // Middleware to conditionally apply authentication based on bucket visibility
 const conditionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   // For GET and HEAD requests to download objects, check if bucket is public
-  if ((req.method === 'GET' || req.method === 'HEAD') && req.params.bucket) {
+  if ((req.method === 'GET' || req.method === 'HEAD') && req.params.bucketName) {
     try {
       const storageService = StorageService.getInstance();
-      const isPublic = await storageService.isBucketPublic(req.params.bucket);
+      const isPublic = await storageService.isBucketPublic(req.params.bucketName);
 
       if (isPublic) {
         // Public bucket - skip authentication
@@ -78,8 +78,8 @@ router.post(
       await storageService.createBucket(bucket_name, is_public);
 
       const accessInfo = is_public
-        ? 'This is a PUBLIC bucket - files can be accessed without authentication.'
-        : 'This is a PRIVATE bucket - authentication is required to access files.';
+        ? 'This is a PUBLIC bucket - objects can be accessed without authentication.'
+        : 'This is a PRIVATE bucket - authentication is required to access objects.';
 
       successResponse(
         res,
@@ -87,7 +87,7 @@ router.post(
           message: 'Bucket created successfully',
           bucket_name,
           public: is_public,
-          nextAction: `${accessInfo} You can use /api/storage/:bucket/:key to upload a file to the bucket, and /api/storage/:bucket to list the files in the bucket.`,
+          nextAction: `${accessInfo} You can use /api/storage/buckets/:bucketName/objects/:objectKey to upload an object to the bucket, and /api/storage/buckets/:bucketName/objects to list the objects in the bucket.`,
         },
         201
       );
@@ -110,13 +110,13 @@ router.post(
   }
 );
 
-// PATCH /api/storage/buckets/:bucket - Update bucket visibility (requires auth)
+// PATCH /api/storage/buckets/:bucketName - Update bucket (requires auth)
 router.patch(
-  '/buckets/:bucket',
+  '/buckets/:bucketName',
   verifyApiKey,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
+      const { bucketName } = req.params;
       const validation = updateBucketRequestSchema.safeParse(req.body);
       if (!validation.success) {
         throw new AppError(
@@ -129,17 +129,17 @@ router.patch(
       const { is_public } = validation.data;
 
       const storageService = StorageService.getInstance();
-      await storageService.updateBucketVisibility(bucket, is_public);
+      await storageService.updateBucketVisibility(bucketName, is_public);
 
       const accessInfo = is_public
-        ? 'Bucket is now PUBLIC - files can be accessed without authentication.'
-        : 'Bucket is now PRIVATE - authentication is required to access files.';
+        ? 'Bucket is now PUBLIC - objects can be accessed without authentication.'
+        : 'Bucket is now PRIVATE - authentication is required to access objects.';
 
       successResponse(
         res,
         {
           message: 'Bucket visibility updated',
-          bucket,
+          bucket: bucketName,
           is_public: is_public,
           nextAction: accessInfo,
         },
@@ -155,25 +155,31 @@ router.patch(
   }
 );
 
-// GET /api/storage/:bucket - List objects in bucket (requires auth)
+// GET /api/storage/buckets/:bucketName/objects - List objects in bucket (requires auth)
 router.get(
-  '/:bucket',
+  '/buckets/:bucketName/objects',
   verifyApiKey,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
+      const { bucketName } = req.params;
       const prefix = req.query.prefix as string;
       const searchQuery = req.query.search as string;
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
       const offset = parseInt(req.query.offset as string) || 0;
 
       const storageService = StorageService.getInstance();
-      const result = await storageService.listObjects(bucket, prefix, limit, offset, searchQuery);
+      const result = await storageService.listObjects(
+        bucketName,
+        prefix,
+        limit,
+        offset,
+        searchQuery
+      );
 
       successResponse(
         res,
         {
-          bucket_name: bucket,
+          bucket_name: bucketName,
           prefix,
           objects: result.objects,
           pagination: {
@@ -182,7 +188,7 @@ router.get(
             total: result.total,
           },
           nextAction:
-            'You can use PUT /api/storage/:bucket/:key to upload with a specific key, or POST /api/storage/:bucket to upload with auto-generated key, and GET /api/storage/:bucket/:key to download a file.',
+            'You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object.',
         },
         200
       );
@@ -192,18 +198,18 @@ router.get(
   }
 );
 
-// PUT /api/storage/:bucket/:key - Upload object to bucket (requires auth)
+// PUT /api/storage/buckets/:bucketName/objects/:objectKey - Upload object to bucket (requires auth)
 router.put(
-  '/:bucket/*',
+  '/buckets/:bucketName/objects/*',
   verifyApiKey,
   upload.single('file'),
   handleUploadError,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
-      const key = req.params[0]; // Everything after bucket
+      const { bucketName } = req.params;
+      const objectKey = req.params[0]; // Everything after objects
 
-      if (!key) {
+      if (!objectKey) {
         throw new AppError('Object key is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
       }
 
@@ -212,7 +218,7 @@ router.put(
       }
 
       const storageService = StorageService.getInstance();
-      const storedFile = await storageService.putObject(bucket, key, req.file);
+      const storedFile = await storageService.putObject(bucketName, objectKey, req.file);
 
       successResponse(res, storedFile, 201);
     } catch (error) {
@@ -227,21 +233,21 @@ router.put(
   }
 );
 
-// POST /api/storage/:bucket - Upload object with server-generated key (requires auth)
+// POST /api/storage/buckets/:bucketName/objects - Upload object with server-generated key (requires auth)
 router.post(
-  '/:bucket',
+  '/buckets/:bucketName/objects',
   verifyApiKey,
   upload.single('file'),
   handleUploadError,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
+      const { bucketName } = req.params;
 
       if (!req.file) {
         throw new AppError('File is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
       }
 
-      // Generate a unique key for the file
+      // Generate a unique key for the object
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 8);
       const fileExt = req.file.originalname ? path.extname(req.file.originalname) : '';
@@ -249,10 +255,10 @@ router.post(
         ? path.basename(req.file.originalname, fileExt)
         : 'file';
       const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '-').substring(0, 32);
-      const key = `${sanitizedBaseName}-${timestamp}-${randomStr}${fileExt}`;
+      const objectKey = `${sanitizedBaseName}-${timestamp}-${randomStr}${fileExt}`;
 
       const storageService = StorageService.getInstance();
-      const storedFile = await storageService.putObject(bucket, key, req.file);
+      const storedFile = await storageService.putObject(bucketName, objectKey, req.file);
 
       successResponse(res, storedFile, 201);
     } catch (error) {
@@ -274,21 +280,21 @@ router.post(
   }
 );
 
-// GET /api/storage/:bucket/:key - Download object from bucket (conditional auth)
+// GET /api/storage/buckets/:bucketName/objects/:objectKey - Download object from bucket (conditional auth)
 router.get(
-  '/:bucket/*',
+  '/buckets/:bucketName/objects/*',
   conditionalAuth,
   async (req: AuthRequest | Request, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
-      const key = req.params[0]; // Everything after bucket
+      const { bucketName } = req.params;
+      const objectKey = req.params[0]; // Everything after objects
 
-      if (!key) {
+      if (!objectKey) {
         throw new AppError('Object key is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
       }
 
       const storageService = StorageService.getInstance();
-      const result = await storageService.getObject(bucket, key);
+      const result = await storageService.getObject(bucketName, objectKey);
 
       if (!result) {
         throw new AppError('Object not found', 404, ERROR_CODES.NOT_FOUND);
@@ -300,7 +306,7 @@ router.get(
       res.setHeader('Content-Type', metadata.mime_type || 'application/octet-stream');
       res.setHeader('Content-Length', file.length.toString());
 
-      // Send file
+      // Send object content
       res.send(file);
     } catch (error) {
       if (error instanceof Error && error.message.includes('Invalid')) {
@@ -312,15 +318,15 @@ router.get(
   }
 );
 
-// DELETE /api/storage/:bucket - Delete entire bucket (requires auth)
+// DELETE /api/storage/buckets/:bucketName - Delete entire bucket (requires auth)
 router.delete(
-  '/:bucket',
+  '/buckets/:bucketName',
   verifyApiKey,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
+      const { bucketName } = req.params;
       const storageService = StorageService.getInstance();
-      const deleted = await storageService.deleteBucket(bucket);
+      const deleted = await storageService.deleteBucket(bucketName);
 
       if (!deleted) {
         throw new AppError('Bucket not found or already empty', 404, ERROR_CODES.NOT_FOUND);
@@ -331,7 +337,7 @@ router.delete(
         {
           message: 'Bucket deleted successfully',
           nextAction:
-            'You can use POST /api/storage/buckets to create a new bucket, and GET /api/storage/:bucket to list the files in the bucket.',
+            'You can use POST /api/storage/buckets to create a new bucket, and GET /api/storage/buckets/:bucketName/objects to list the objects in the bucket.',
         },
         200
       );
@@ -341,22 +347,22 @@ router.delete(
   }
 );
 
-// DELETE /api/storage/:bucket/:key - Delete object from bucket (requires auth)
+// DELETE /api/storage/buckets/:bucketName/objects/:objectKey - Delete object from bucket (requires auth)
 router.delete(
-  '/:bucket/*',
+  '/buckets/:bucketName/objects/*',
   verifyApiKey,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucket } = req.params;
-      const key = req.params[0]; // Everything after bucket
+      const { bucketName } = req.params;
+      const objectKey = req.params[0]; // Everything after objects
 
-      if (!key) {
+      if (!objectKey) {
         throw new AppError('Object key is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
       }
 
       // Delete specific object
       const storageService = StorageService.getInstance();
-      const deleted = await storageService.deleteObject(bucket, key);
+      const deleted = await storageService.deleteObject(bucketName, objectKey);
 
       if (!deleted) {
         throw new AppError('Object not found', 404, ERROR_CODES.NOT_FOUND);

@@ -120,7 +120,7 @@ export default function StoragePage() {
   const uploadMutation = useMutation({
     mutationFn: async ({ bucket, file }: { bucket: string; file: File }) => {
       const key = file.name;
-      return await storageService.uploadFile(bucket, key, file);
+      return await storageService.uploadObject(bucket, key, file);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage'] });
@@ -166,7 +166,7 @@ export default function StoragePage() {
 
     if (shouldDelete) {
       try {
-        await Promise.all(fileKeys.map((key) => storageService.deleteFile(selectedBucket, key)));
+        await Promise.all(fileKeys.map((key) => storageService.deleteObject(selectedBucket, key)));
         void queryClient.invalidateQueries({ queryKey: ['storage'] });
         setSelectedFiles(new Set());
         showToast(`${fileKeys.length} files deleted successfully`, 'success');

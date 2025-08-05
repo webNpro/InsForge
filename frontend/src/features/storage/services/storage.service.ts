@@ -23,7 +23,7 @@ export const storageService = {
 
   // List objects in a bucket
   async listObjects(
-    bucket: string,
+    bucketName: string,
     params?: ListObjectsParams,
     searchQuery?: string
   ): Promise<ListObjectsResponseSchema> {
@@ -41,7 +41,7 @@ export const storageService = {
       searchParams.append('search', searchQuery.trim());
     }
 
-    const url = `/storage/${encodeURIComponent(bucket)}${searchParams.toString() ? `?${searchParams}` : ''}`;
+    const url = `/storage/buckets/${encodeURIComponent(bucketName)}/objects${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiClient.request(url, {
       headers: apiClient.withApiKey(),
       returnFullResponse: true,
@@ -61,14 +61,18 @@ export const storageService = {
     };
   },
 
-  // Upload a file to bucket
-  async uploadFile(bucket: string, key: string, file: File): Promise<StorageFileSchema> {
+  // Upload an object to bucket
+  async uploadObject(
+    bucketName: string,
+    objectKey: string,
+    object: File
+  ): Promise<StorageFileSchema> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', object);
 
-    // Use fetch directly for file uploads to avoid Content-Type header issues
+    // Use fetch directly for object uploads to avoid Content-Type header issues
     const response = await fetch(
-      `/api/storage/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
+      `/api/storage/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(objectKey)}`,
       {
         method: 'PUT',
         headers: {
@@ -89,30 +93,33 @@ export const storageService = {
     return result;
   },
 
-  // Get download URL for a file
-  getDownloadUrl(bucket: string, key: string): string {
-    return `/api/storage/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`;
+  // Get download URL for an object
+  getDownloadUrl(bucketName: string, objectKey: string): string {
+    return `/api/storage/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(objectKey)}`;
   },
 
-  // Download a file (returns blob)
-  async downloadFile(bucket: string, key: string): Promise<Blob> {
-    const response = await fetch(this.getDownloadUrl(bucket, key), {
+  // Download an object (returns blob)
+  async downloadObject(bucketName: string, objectKey: string): Promise<Blob> {
+    const response = await fetch(this.getDownloadUrl(bucketName, objectKey), {
       headers: {
         'x-api-key': apiClient.getApiKey() || '',
       },
     });
     if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
+      throw new Error(`Failed to download object: ${response.statusText}`);
     }
     return await response.blob();
   },
 
-  // Delete a file
-  async deleteFile(bucket: string, key: string): Promise<void> {
-    await apiClient.request(`/storage/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`, {
-      method: 'DELETE',
-      headers: apiClient.withApiKey(),
-    });
+  // Delete an object
+  async deleteObject(bucketName: string, objectKey: string): Promise<void> {
+    await apiClient.request(
+      `/storage/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(objectKey)}`,
+      {
+        method: 'DELETE',
+        headers: apiClient.withApiKey(),
+      }
+    );
   },
 
   // Create a new bucket
@@ -126,7 +133,7 @@ export const storageService = {
 
   // Delete entire bucket
   async deleteBucket(bucketName: string): Promise<void> {
-    await apiClient.request(`/storage/${encodeURIComponent(bucketName)}`, {
+    await apiClient.request(`/storage/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'DELETE',
       headers: apiClient.withApiKey(),
     });
