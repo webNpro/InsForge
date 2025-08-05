@@ -20,12 +20,12 @@ router.use(verifyUserOrApiKey);
  */
 const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { tablename } = req.params;
+    const { tableName } = req.params;
     const wildcardPath = req.params[0] || '';
 
     // Validate table name (includes check for system tables)
     try {
-      validateTableName(tablename);
+      validateTableName(tableName);
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
@@ -36,7 +36,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     // Process request body for POST/PATCH/PUT operations
     const method = req.method.toUpperCase();
     if (['POST', 'PATCH', 'PUT'].includes(method) && req.body && typeof req.body === 'object') {
-      const columnTypeMap = await DatabaseManager.getColumnTypeMap(tablename);
+      const columnTypeMap = await DatabaseManager.getColumnTypeMap(tableName);
       if (Array.isArray(req.body)) {
         req.body = req.body.map((item) => {
           if (item && typeof item === 'object') {
@@ -62,7 +62,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     // Build the target URL
-    const targetPath = wildcardPath ? `/${tablename}/${wildcardPath}` : `/${tablename}`;
+    const targetPath = wildcardPath ? `/${tableName}/${wildcardPath}` : `/${tableName}`;
     const targetUrl = `${postgrestUrl}${targetPath}`;
 
     // Forward the request
@@ -117,7 +117,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     successResponse(res, responseData, response.status);
 
     // Log the activity
-    await dbManager.logActivity(req.method, tablename, wildcardPath || 'table', {
+    await dbManager.logActivity(req.method, tableName, wildcardPath || 'table', {
       query: req.query,
       user_id: req.user?.id,
     });
@@ -136,7 +136,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 };
 
 // Forward all database operations to PostgREST
-router.all('/:tablename', forwardToPostgrest);
-router.all('/:tablename/*', forwardToPostgrest);
+router.all('/:tableName', forwardToPostgrest);
+router.all('/:tableName/*', forwardToPostgrest);
 
 export { router as databaseRouter };

@@ -86,11 +86,11 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
       res,
       profiles.map((profile) => ({
         id: profile.id,
-        auth_id: profile.auth_id,
+        authId: profile.authId,
         name: profile.name,
-        avatar_url: profile.avatar_url,
+        avatarUrl: profile.avatarUrl,
         bio: profile.bio,
-        created_at: profile.created_at,
+        createdAt: profile.createdAt,
       }))
     );
   } catch (error) {
@@ -119,9 +119,9 @@ router.get('/:userId', async (req: Request, res: Response, next: NextFunction) =
     successResponse(res, {
       id: profile.id,
       name: profile.name,
-      avatar_url: profile.avatar_url,
+      avatarUrl: profile.avatarUrl,
       bio: profile.bio,
-      created_at: profile.created_at,
+      createdAt: profile.createdAt,
     });
   } catch (error) {
     next(error);

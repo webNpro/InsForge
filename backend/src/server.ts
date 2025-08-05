@@ -8,7 +8,7 @@ import fs from 'fs';
 import { authRouter } from '@/api/routes/auth.js';
 import { profileRouter } from '@/api/routes/profile.js';
 import { tablesRouter } from '@/api/routes/tables.js';
-import { databaseRouter } from '@/api/routes/database.js';
+import { databaseRouter } from '@/api/routes/records.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
@@ -193,7 +193,7 @@ export async function createApp() {
         error: 'NOT_FOUND',
         message: `Endpoint ${req.originalUrl} not found`,
         statusCode: 404,
-        nextAction: 'Please check the API documentation for available endpoints',
+        nextActions: 'Please check the API documentation for available endpoints',
       });
     });
   }
