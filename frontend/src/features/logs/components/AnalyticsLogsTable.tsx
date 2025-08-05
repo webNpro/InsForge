@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, ChevronRight, ChevronDown } from 'lucide-react';
+import { Clock, ChevronRight, ChevronDown, ArrowDown } from 'lucide-react';
 import { AnalyticsLogRecord } from '@/features/logs/services/logs.service';
 import { Badge } from '@/components/radix/Badge';
 import { JsonHighlight } from '@/components/JsonHighlight';
@@ -16,6 +16,7 @@ interface AnalyticsLogsTableProps {
   hasMore: boolean;
   isLoadingMore: boolean;
   autoRefresh: boolean;
+  onScrollToBottom: () => void;
 }
 
 export function AnalyticsLogsTable({
@@ -29,6 +30,7 @@ export function AnalyticsLogsTable({
   hasMore,
   isLoadingMore,
   autoRefresh,
+  onScrollToBottom,
 }: AnalyticsLogsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -100,7 +102,18 @@ export function AnalyticsLogsTable({
         <div className="flex items-center space-x-4">
           <span>{logs.length} logs loaded</span>
           {hasMore && (
-            <span className="text-blue-600">Scroll up to load older logs</span>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onScrollToBottom}
+                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                title="Go to bottom"
+              >
+                <ArrowDown className="h-3 w-3" />
+                <span>Go to bottom</span>
+              </button>
+              <span className="text-gray-400">•</span>
+              <span className="text-blue-600">Scroll up to load older logs</span>
+            </div>
           )}
           {autoRefresh && (
             <span className="text-green-600 flex items-center">

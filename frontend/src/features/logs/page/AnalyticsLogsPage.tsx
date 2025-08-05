@@ -65,8 +65,16 @@ export default function AnalyticsLogsPage() {
     queryFn: async () => {
       if (!selectedSource) return null;
       
+      console.log('Fetching logs for source:', selectedSource);
+      
       // Get initial logs without beforeTimestamp (gets newest logs)
       const data = await analyticsService.getLogsBySource(selectedSource, pageSize);
+      
+      console.log('Received logs data:', { 
+        source: selectedSource, 
+        logsCount: data.logs?.length, 
+        total: data.total 
+      });
       
       // Backend returns logs in DESC order, reverse them for chronological display
       const reversedLogs = data.logs ? [...data.logs].reverse() : [];
@@ -79,6 +87,8 @@ export default function AnalyticsLogsPage() {
     },
     enabled: !!selectedSource,
     refetchInterval: autoRefresh ? refreshInterval : false,
+    retry: 1, // Retry failed requests once
+    staleTime: 0, // Always refetch when switching sources
   });
 
   // Search logs (no pagination for search, just show first results)
@@ -101,47 +111,67 @@ export default function AnalyticsLogsPage() {
     enabled: !!searchQuery.trim(),
   });
 
-  // Update loaded logs when initial data changes
+  // Combined effect to handle source changes and data updates
   useEffect(() => {
-    if (initialLogsData?.logs) {
+    console.log('Effect triggered - selectedSource:', selectedSource, 'initialLogsData:', {
+      hasData: !!initialLogsData,
+      logsLength: initialLogsData?.logs?.length,
+      source: initialLogsData?.source
+    });
+    
+    // If we have data for the current selected source, update the logs
+    if (initialLogsData?.logs !== undefined && initialLogsData.source === selectedSource) {
+      console.log('Updating loadedLogs state with', initialLogsData.logs.length, 'logs for source', selectedSource);
       setLoadedLogs(initialLogsData.logs);
       setHasMore(initialLogsData.logs.length === pageSize);
+      setIsLoadingMore(false);
       
-      // Scroll to bottom on initial load to show newest logs
-      // Use requestAnimationFrame and multiple timeouts to ensure DOM is fully rendered
-      setIsAutoScrolling(true);
-      
-      const scrollToBottom = () => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      };
-      
-      requestAnimationFrame(() => {
-        scrollToBottom();
-        setTimeout(scrollToBottom, 50);
-        setTimeout(scrollToBottom, 200);
-        setTimeout(() => {
+      // Only auto-scroll if we have logs
+      if (initialLogsData.logs.length > 0) {
+        // Scroll to bottom on initial load to show newest logs
+        setIsAutoScrolling(true);
+        
+        const scrollToBottom = () => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
+        };
+        
+        requestAnimationFrame(() => {
           scrollToBottom();
-          // Re-enable infinite scroll after auto-scrolling is complete
-          setIsAutoScrolling(false);
-        }, 500);
-      });
+          setTimeout(scrollToBottom, 50);
+          setTimeout(scrollToBottom, 200);
+          setTimeout(() => {
+            scrollToBottom();
+            setIsAutoScrolling(false);
+          }, 500);
+        });
+      } else {
+        setIsAutoScrolling(false);
+      }
+    } else if (selectedSource && (!initialLogsData || initialLogsData.source !== selectedSource)) {
+      // If we have a selected source but no matching data (or data for a different source), reset state
+      console.log('Resetting state for source change to:', selectedSource);
+      setLoadedLogs([]);
+      setHasMore(true);
+      setIsLoadingMore(false);
+      setIsAutoScrolling(false);
+      
+      // Reset scroll position when source changes
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = 0;
+      }
     }
-  }, [initialLogsData, pageSize]);
+  }, [selectedSource, initialLogsData, pageSize]);
 
-  // Reset when source changes
+  // Debug loadedLogs changes
   useEffect(() => {
-    setLoadedLogs([]);
-    setHasMore(true);
-    setIsLoadingMore(false);
-    setIsAutoScrolling(false);
-    
-    // Reset scroll position when source changes
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
-  }, [selectedSource]);
+    console.log('loadedLogs updated:', { 
+      length: loadedLogs.length, 
+      selectedSource,
+      loading: logsLoading 
+    });
+  }, [loadedLogs, selectedSource, logsLoading]);
 
   // Auto scroll to bottom when new logs arrive and auto-refresh is on
   useEffect(() => {
@@ -226,7 +256,6 @@ export default function AnalyticsLogsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <nav className="flex items-center text-[22px] font-semibold">
-                  <Activity className="h-6 w-6 mr-2 text-blue-600" />
                   <span className="text-gray-900">Analytics Logs</span>
                 </nav>
 
@@ -419,7 +448,7 @@ export default function AnalyticsLogsPage() {
               ) : (
                 <AnalyticsLogsTable
                   logs={loadedLogs}
-                  loading={logsLoading}
+                  loading={logsLoading && loadedLogs.length === 0}
                   source={selectedSource}
                   onRefresh={refetchInitialLogs}
                   onScroll={handleScroll}
@@ -427,6 +456,7 @@ export default function AnalyticsLogsPage() {
                   hasMore={hasMore}
                   isLoadingMore={isLoadingMore}
                   autoRefresh={autoRefresh}
+                  onScrollToBottom={scrollToBottom}
                 />
               )}
             </div>
