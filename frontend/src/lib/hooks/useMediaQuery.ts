@@ -39,7 +39,8 @@ export function useMediaQuery(
     // Triggered at the first client-side load and if query changes
     handleChange()
 
-    // Use deprecated `addListener` and `removeListener` to support Safari < 14 (#135)
+    // Use deprecated `addListener` and `removeListener` to support Safari < 14
+    // See: https://github.com/<OWNER>/<REPO>/issues/135 for details.
     if (matchMedia.addListener) {
       matchMedia.addListener(handleChange)
     } else {
