@@ -29,10 +29,10 @@
 ## Record Operations (Use REST API)
 
 ### Base URL
-`/api/database/records/:tablename`
+`/api/database/records/:tableName`
 
 ### Query Records
-**GET** `/api/database/records/:tablename`
+**GET** `/api/database/records/:tableName`
 
 Query parameters:
 - `limit` - Maximum records (default: 100)
@@ -59,7 +59,7 @@ curl -X GET "http://localhost:7130/api/database/records/users?limit=10&order=cre
 ```
 
 ### Create Records
-**POST** `/api/database/records/:tablename`
+**POST** `/api/database/records/:tableName`
 
 **CRITICAL**: Request body MUST be an array, even for single records!
 
@@ -133,7 +133,7 @@ curl -X POST http://localhost:7130/api/database/records/users \
 ```
 
 ### Update Record
-**PATCH** `/api/database/records/:tablename?id=eq.uuid`
+**PATCH** `/api/database/records/:tableName?id=eq.uuid`
 
 **⚠️ IMPORTANT: Default Response Behavior**
 - **By default, PATCH requests return an empty array `[]`**
@@ -188,7 +188,7 @@ curl -X PATCH "http://localhost:7130/api/database/records/users?id=eq.123e4567-e
 ```
 
 ### Delete Record
-**DELETE** `/api/database/records/:tablename?id=eq.uuid`
+**DELETE** `/api/database/records/:tableName?id=eq.uuid`
 
 **⚠️ IMPORTANT: Delete Behavior**
 - **Without `Prefer: return=representation`**: Returns `204 No Content` (no body)

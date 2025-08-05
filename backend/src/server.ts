@@ -8,7 +8,7 @@ import fs from 'fs';
 import { authRouter } from '@/api/routes/auth.js';
 import { profileRouter } from '@/api/routes/profile.js';
 import { tablesRouter } from '@/api/routes/tables.js';
-import { databaseRouter } from '@/api/routes/database.js';
+import { databaseRouter } from '@/api/routes/records.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';

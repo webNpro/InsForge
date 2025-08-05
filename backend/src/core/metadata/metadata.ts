@@ -219,7 +219,7 @@ export class MetadataService {
 
         if (tableExists?.exists) {
           const countResult = (await this.db
-            .prepare(`SELECT COUNT(*) as count FROM ${table.name}`)
+            .prepare(`SELECT COUNT(*) as count FROM "${table.name}"`)
             .get()) as { count: number } | null;
           recordCount = countResult?.count || 0;
         }
