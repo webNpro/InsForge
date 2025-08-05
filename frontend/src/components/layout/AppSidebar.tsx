@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
 
-interface AppSidebarProps {
+interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
   currentUser: any;
   onLogout: () => void;
   isCollapsed: boolean;
@@ -59,6 +59,7 @@ export default function AppSidebar({
   onLogout: _onLogout,
   isCollapsed,
   onToggleCollapse,
+  ...props
 }: AppSidebarProps) {
   const location = useLocation();
 
@@ -69,22 +70,19 @@ export default function AppSidebar({
       <Button
         variant={isActive ? 'default' : 'ghost'}
         className={cn(
-          'relative transition-all duration-200 ease-in-out group',
-          isCollapsed ? 'w-12 h-12 p-0 justify-center' : 'w-full h-12 justify-start px-3.5 gap-0',
-          !isActive && 'hover:bg-zinc-100 text-black',
-          isActive && 'bg-zinc-950 text-white',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400'
+          'w-full h-12 relative transition-all duration-200 ease-in-out',
+          isActive ? 'bg-zinc-950 text-white' : 'hover:bg-zinc-100 text-black',
         )}
         onClick={onClick}
       >
-        <item.icon
-          className={cn(
-            'transition-all duration-200',
-            'h-5 w-5 flex-shrink-0',
-            isCollapsed ? '' : 'mr-3'
-          )}
-        />
-        {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
+        <div className="absolute left-3.5 h-5 w-5">
+          <item.icon
+            className={cn(
+              'h-5 w-5'
+            )}
+          />
+        </div>
+        {!isCollapsed && <span className="absolute left-11.5 font-medium truncate">{item.name}</span>}
       </Button>
     );
 
@@ -127,73 +125,70 @@ export default function AppSidebar({
 
   return (
     <aside
+      {...props}
       className={cn(
         'fixed left-0 z-40 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out',
         'top-16 bottom-0',
-        isCollapsed ? 'w-[72px]' : 'w-[240px]'
+        isCollapsed ? 'w-18' : 'w-60',
+        props.className
       )}
     >
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
         <nav className="space-y-2">
           {navigation.map((item) => (
-            <div key={item.name}>
-              <NavItem item={item} />
-            </div>
+            <NavItem key={item.name} item={item} />
           ))}
         </nav>
       </ScrollArea>
 
       {/* Bottom section */}
-      <div className="p-3 space-y-6">
+      <div className="p-3 pr-[11px] space-y-6">
         {/* Bottom navigation items */}
         {bottomNavigation.map((item) => (
           <div key={item.name}>
             <Button
               variant="ghost"
               className={cn(
-                'relative transition-all duration-200 ease-in-out group border border-gray-200 rounded-md',
-                isCollapsed
-                  ? 'w-12 h-12 p-0 justify-center'
-                  : 'w-full h-12 justify-start px-3.5 gap-0',
+                'w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 rounded-md',
                 'hover:bg-zinc-100 text-black',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400'
               )}
               onClick={() => window.open(item.href, '_blank')}
             >
-              <item.icon
-                className={cn(
-                  'transition-all duration-200',
-                  'h-5 w-5 flex-shrink-0',
-                  isCollapsed ? '' : 'mr-3'
+              <div className="absolute left-3.5 h-5 w-5">
+                <item.icon
+                  className={cn(
+                    'h-5 w-5',
+                  )}
+                />
+              </div>
+              {!isCollapsed && <>
+                <span className="absolute left-11.5 font-medium truncate">{item.name}</span>
+                {item.external && (
+                  <ExternalLink className="absolute left-46.5 h-4 w-4 text-zinc-400" />
                 )}
-              />
-              {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
-              {!isCollapsed && item.external && (
-                <ExternalLink className="h-4 w-4 ml-auto text-zinc-400" />
-              )}
+              </>}
             </Button>
           </div>
         ))}
 
-        {/* Collapse button */}
-        <div>
+        {/* Collapse button - only visible on 2xl screens */}
+        <div className="hidden 2xl:block">
           <Button
             variant="ghost"
             className={cn(
-              'relative transition-all duration-200 ease-in-out hover:bg-zinc-100',
-              isCollapsed
-                ? 'w-12 h-12 p-0 justify-center'
-                : 'w-full h-12 justify-start px-3.5 gap-0'
+              'w-full h-12 relative transition-all duration-200 ease-in-out hover:bg-zinc-100',
             )}
             onClick={onToggleCollapse}
           >
-            {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelRightOpen className="h-4 w-4 mr-3" />
-            )}
-            {!isCollapsed && <span className="font-medium">Collapse</span>}
+            <div className="absolute left-3.5 h-5 w-5">
+              {isCollapsed ? (
+                <PanelLeftOpen className="h-5 w-5" />
+              ) : (
+                <PanelRightOpen className="h-5 w-5" />
+              )}
+            </div>
+            {!isCollapsed && <span className="absolute left-11.5 font-medium">Collapse</span>}
           </Button>
         </div>
       </div>
