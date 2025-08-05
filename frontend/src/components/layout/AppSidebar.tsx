@@ -143,7 +143,7 @@ export default function AppSidebar({
       </ScrollArea>
 
       {/* Bottom section */}
-      <div className="p-3 pr-[11px] space-y-6">
+      <div className="p-3 pr-[11px] space-y-6 overflow-hidden">
         {/* Bottom navigation items */}
         {bottomNavigation.map((item) => (
           <div key={item.name}>
