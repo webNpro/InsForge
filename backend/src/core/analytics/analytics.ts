@@ -6,6 +6,22 @@ export class AnalyticsManager {
   private static instance: AnalyticsManager;
   private pool!: Pool;
 
+  // Source name mapping for user-friendly display
+  private sourceNameMap: Record<string, string> = {
+    'cloudflare.logs.prod': 'insforge.logs',
+    'deno-relay-logs': 'function.logs',
+    'postgREST.logs.prod': 'postgREST.logs',
+    'postgres.logs': 'postgres.logs'
+  };
+
+  // Reverse mapping for API calls
+  private reverseSourceNameMap: Record<string, string> = {
+    'insforge.logs': 'cloudflare.logs.prod',
+    'function.logs': 'deno-relay-logs',
+    'postgREST.logs': 'postgREST.logs.prod',
+    'postgres.logs': 'postgres.logs'
+  };
+
   private constructor() {}
 
   static getInstance(): AnalyticsManager {
@@ -13,6 +29,16 @@ export class AnalyticsManager {
       AnalyticsManager.instance = new AnalyticsManager();
     }
     return AnalyticsManager.instance;
+  }
+
+  // Convert internal source name to display name
+  private getDisplayName(sourceName: string): string {
+    return this.sourceNameMap[sourceName] || sourceName;
+  }
+
+  // Convert display name back to internal source name
+  private getInternalName(displayName: string): string {
+    return this.reverseSourceNameMap[displayName] || displayName;
   }
 
   async initialize(): Promise<void> {
@@ -66,7 +92,11 @@ export class AnalyticsManager {
           
           const count = parseInt(countResult.rows[0].count);
           if (count > 0) {
-            sourcesWithData.push(source);
+            // Apply name mapping before returning
+            sourcesWithData.push({
+              ...source,
+              name: this.getDisplayName(source.name)
+            });
           }
         } catch (error) {
           // If table doesn't exist or query fails, skip this source
@@ -82,11 +112,11 @@ export class AnalyticsManager {
     }
   }
 
-  // Get logs from a specific source
+  // Get logs from a specific source using timestamp-based pagination
   async getLogsBySource(
     sourceName: string,
     limit: number = 100,
-    offset: number = 0,
+    beforeTimestamp?: string,
     startTime?: string,
     endTime?: string
   ): Promise<{
@@ -96,10 +126,13 @@ export class AnalyticsManager {
   }> {
     const client = await this.pool.connect();
     try {
+      // Convert display name to internal name for query
+      const internalSourceName = this.getInternalName(sourceName);
+      
       // First, get the source token to determine the table name
       const sourceResult = await client.query(
         `SELECT token FROM _analytics.sources WHERE name = $1`,
-        [sourceName]
+        [internalSourceName]
       );
 
       if (sourceResult.rows.length === 0) {
@@ -109,7 +142,7 @@ export class AnalyticsManager {
       const token = sourceResult.rows[0].token;
       const tableName = `log_events_${token.replace(/-/g, '_')}`;
 
-      // Build the query with optional time filters
+      // Build the query with timestamp-based pagination
       let query = `
         SELECT id, event_message, timestamp, body
         FROM _analytics.${tableName}
@@ -118,6 +151,7 @@ export class AnalyticsManager {
       const params: (string | number)[] = [];
       let paramIndex = 1;
 
+      // Add time range filters
       if (startTime) {
         query += ` AND timestamp >= $${paramIndex}`;
         params.push(startTime);
@@ -130,23 +164,18 @@ export class AnalyticsManager {
         paramIndex++;
       }
 
-      // For the first page (offset 0), get the latest logs but return in chronological order
-      if (offset === 0) {
-        // Get the latest logs first, then reverse to chronological order
-        query += ` ORDER BY timestamp DESC LIMIT $${paramIndex}`;
-        params.push(limit);
-      } else {
-        // For subsequent pages, get older logs in chronological order
-        query += ` ORDER BY timestamp ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        params.push(limit, offset);
+      // Add timestamp cursor for pagination (load older logs)
+      if (beforeTimestamp) {
+        query += ` AND timestamp < $${paramIndex}`;
+        params.push(beforeTimestamp);
+        paramIndex++;
       }
 
+      // Always order by timestamp DESC to get newest first, then reverse in frontend
+      query += ` ORDER BY timestamp DESC LIMIT $${paramIndex}`;
+      params.push(limit);
+
       const logsResult = await client.query(query, params);
-      
-      // If this is the first page, reverse the results to get chronological order
-      if (offset === 0 && logsResult.rows.length > 0) {
-        logsResult.rows.reverse();
-      }
 
       // Get total count
       let countQuery = `SELECT COUNT(*) as count FROM _analytics.${tableName} WHERE 1=1`;
@@ -235,12 +264,19 @@ export class AnalyticsManager {
       let sources: LogSource[];
       
       if (sourceName) {
+        // Convert display name to internal name for query
+        const internalSourceName = this.getInternalName(sourceName);
         const sourceResult = await client.query(
           `SELECT id, name, token FROM _analytics.sources WHERE name = $1`,
-          [sourceName]
+          [internalSourceName]
         );
-        sources = sourceResult.rows;
+        // Apply name mapping to the result
+        sources = sourceResult.rows.map(source => ({
+          ...source,
+          name: this.getDisplayName(source.name)
+        }));
       } else {
+        // getLogSources already returns mapped names
         sources = await this.getLogSources();
       }
 

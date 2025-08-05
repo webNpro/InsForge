@@ -31,26 +31,3 @@ export const mapDatabaseTypeToFieldType = (dbType: string): ColumnType => {
   }
 };
 
-// Map analytics log source names to display names
-export const getSourceDisplayName = (sourceName: string): string => {
-  const sourceMap: Record<string, string> = {
-    'cloudflare.logs.prod': 'insforge.logs',
-    'deno-relay-logs': 'function.logs',
-    'postgREST.logs.prod': 'postgREST.logs',
-    'postgres.logs': 'postgres.logs'
-  };
-  
-  return sourceMap[sourceName] || sourceName;
-};
-
-// Map display names back to original source names for API calls
-export const getOriginalSourceName = (displayName: string): string => {
-  const reverseMap: Record<string, string> = {
-    'insforge.logs': 'cloudflare.logs.prod',
-    'function.logs': 'deno-relay-logs',
-    'postgREST.logs': 'postgREST.logs.prod',
-    'postgres.logs': 'postgres.logs'
-  };
-  
-  return reverseMap[displayName] || displayName;
-};

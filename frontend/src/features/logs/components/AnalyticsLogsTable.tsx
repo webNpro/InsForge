@@ -3,7 +3,7 @@ import { Clock, ChevronRight, ChevronDown } from 'lucide-react';
 import { AnalyticsLogRecord } from '@/features/logs/services/logs.service';
 import { Badge } from '@/components/radix/Badge';
 import { JsonHighlight } from '@/components/JsonHighlight';
-import { cn, getSourceDisplayName } from '@/lib/utils/utils';
+import { cn } from '@/lib/utils/utils';
 
 interface AnalyticsLogsTableProps {
   logs: AnalyticsLogRecord[];
@@ -85,7 +85,7 @@ export function AnalyticsLogsTable({
           <p className="text-sm text-gray-500">
             {source === 'search' 
               ? 'No logs match your search criteria'
-              : `No logs available for ${getSourceDisplayName(source)}`
+              : `No logs available for ${source}`
             }
           </p>
         </div>
@@ -100,7 +100,7 @@ export function AnalyticsLogsTable({
         <div className="flex items-center space-x-4">
           <span>{logs.length} logs loaded</span>
           {hasMore && (
-            <span className="text-blue-600">Scroll down to load more</span>
+            <span className="text-blue-600">Scroll up to load older logs</span>
           )}
           {autoRefresh && (
             <span className="text-green-600 flex items-center">
@@ -121,6 +121,16 @@ export function AnalyticsLogsTable({
         onScroll={onScroll}
       >
         <div className="font-mono text-sm">
+          {/* Loading indicator at top for older logs */}
+          {isLoadingMore && (
+            <div className="px-4 py-2 text-center text-gray-500 text-xs bg-gray-50 border-b">
+              <div className="inline-flex items-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-2" />
+                Loading older logs...
+              </div>
+            </div>
+          )}
+          
           {logs.map((log, index) => {
             const uniqueKey = `${log.id}-${log.timestamp}-${index}`;
             const isExpanded = expandedRows.has(log.id);
@@ -172,21 +182,14 @@ export function AnalyticsLogsTable({
                       {/* Source name for search results */}
                       {showSource && log.source && (
                         <span className="text-blue-600 text-xs font-medium bg-blue-50 px-2 py-1 rounded">
-                          {getSourceDisplayName(log.source)}
+                          {log.source}
                         </span>
                       )}
                       
                       {/* Duration */}
                       {log.body?.duration && (
-                        <span className="text-orange-600 text-xs bg-orange-50 px-2 py-1 rounded">
+                        <span className="text-gray-600 text-xs bg-gray-50 px-2 py-1 rounded">
                           {log.body.duration}
-                        </span>
-                      )}
-                      
-                      {/* Method */}
-                      {log.body?.method && (
-                        <span className="text-purple-600 text-xs bg-purple-50 px-2 py-1 rounded">
-                          {log.body.method}
                         </span>
                       )}
                       
@@ -254,15 +257,6 @@ export function AnalyticsLogsTable({
             );
           })}
 
-          {/* Loading indicator at bottom */}
-          {isLoadingMore && (
-            <div className="px-4 py-2 text-center text-gray-500 text-xs bg-gray-50 border-t">
-              <div className="inline-flex items-center">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 mr-2" />
-                Loading older logs...
-              </div>
-            </div>
-          )}
 
           {/* End indicator */}
           {!hasMore && logs.length > 0 && (

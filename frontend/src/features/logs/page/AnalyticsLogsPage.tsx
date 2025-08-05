@@ -16,7 +16,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
-import { getSourceDisplayName, getOriginalSourceName } from '@/lib/utils/utils';
 
 export default function AnalyticsLogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,11 +65,14 @@ export default function AnalyticsLogsPage() {
     queryFn: async () => {
       if (!selectedSource) return null;
       
-      // Convert display name back to original name for API call
-      const originalSourceName = getOriginalSourceName(selectedSource);
-      const data = await analyticsService.getLogsBySource(originalSourceName, pageSize, 0);
+      // Get initial logs without beforeTimestamp (gets newest logs)
+      const data = await analyticsService.getLogsBySource(selectedSource, pageSize);
+      
+      // Backend returns logs in DESC order, reverse them for chronological display
+      const reversedLogs = data.logs ? [...data.logs].reverse() : [];
+      
       return {
-        logs: data.logs || [],
+        logs: reversedLogs,
         total: data.total || 0,
         source: data.source,
       };
@@ -148,18 +150,24 @@ export default function AnalyticsLogsPage() {
     }
   }, [loadedLogs.length, autoRefresh]);
 
-  // Load more older logs
+  // Load more older logs (prepend to the beginning of the list)
   const loadMoreLogs = useCallback(async () => {
     if (!selectedSource || !hasMore || isLoadingMore) return;
     
     setIsLoadingMore(true);
     try {
-      const originalSourceName = getOriginalSourceName(selectedSource);
-      const offset = loadedLogs.length;
-      const data = await analyticsService.getLogsBySource(originalSourceName, pageSize, offset);
+      // Get the timestamp of the oldest log currently loaded
+      // Since frontend logs are in chronological order (oldest first), loadedLogs[0] is the oldest
+      const oldestTimestamp = loadedLogs.length > 0 ? loadedLogs[0]?.timestamp : undefined;
+      
+      const data = await analyticsService.getLogsBySource(selectedSource, pageSize, oldestTimestamp);
       
       if (data.logs && data.logs.length > 0) {
-        setLoadedLogs(prev => [...prev, ...data.logs]);
+        // Backend returns logs in DESC order, so reverse them to get chronological order
+        const reversedLogs = [...data.logs].reverse();
+        
+        // Prepend older logs to the beginning of the list
+        setLoadedLogs(prev => [...reversedLogs, ...prev]);
         setHasMore(data.logs.length === pageSize);
       } else {
         setHasMore(false);
@@ -169,17 +177,18 @@ export default function AnalyticsLogsPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [selectedSource, loadedLogs.length, hasMore, isLoadingMore, pageSize]);
+  }, [selectedSource, loadedLogs, hasMore, isLoadingMore, pageSize]);
 
   // Handle scroll to load more
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     // Skip scroll handling during auto-scroll to prevent unwanted loads
     if (isAutoScrolling) return;
     
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const { scrollTop } = e.currentTarget;
     
-    // Load more when scrolled to bottom (for older logs)
-    if (scrollTop + clientHeight >= scrollHeight - 100 && hasMore && !isLoadingMore) {
+    // Load more when scrolled to top (for older logs)
+    // Since logs are in chronological order (oldest to newest), older logs go at the top
+    if (scrollTop <= 100 && hasMore && !isLoadingMore) {
       loadMoreLogs();
     }
   }, [hasMore, isLoadingMore, loadMoreLogs, isAutoScrolling]);
@@ -341,13 +350,13 @@ export default function AnalyticsLogsPage() {
                     key={stat.source} 
                     className="cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => {
-                      setSelectedSource(getSourceDisplayName(stat.source));
+                      setSelectedSource(stat.source);
                       setActiveTab('logs');
                     }}
                   >
                     <CardHeader className="pb-3 pt-4">
                       <CardTitle className="text-sm font-medium flex items-center justify-between">
-                        <span className="truncate">{getSourceDisplayName(stat.source)}</span>
+                        <span className="truncate">{stat.source}</span>
                         <Badge variant={stat.count > 0 ? "default" : "secondary"} className="ml-2">
                           {stat.count.toLocaleString()}
                         </Badge>
@@ -389,8 +398,8 @@ export default function AnalyticsLogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {sources?.map((source) => (
-                      <SelectItem key={source.id} value={getSourceDisplayName(source.name)}>
-                        {getSourceDisplayName(source.name)}
+                      <SelectItem key={source.id} value={source.name}>
+                        {source.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

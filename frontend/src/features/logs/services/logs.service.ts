@@ -110,19 +110,21 @@ class AnalyticsService {
     return apiClient.request('/logs/analytics/stats');
   }
 
-  // Get logs from a specific source
+  // Get logs from a specific source with timestamp-based pagination
   async getLogsBySource(
     sourceName: string,
     limit = 100,
-    offset = 0,
+    beforeTimestamp?: string,
     startTime?: string,
     endTime?: string
   ): Promise<AnalyticsLogResponse> {
     const params = new URLSearchParams({
       limit: limit.toString(),
-      offset: offset.toString(),
     });
 
+    if (beforeTimestamp) {
+      params.append('before_timestamp', beforeTimestamp);
+    }
     if (startTime) {
       params.append('start_time', startTime);
     }

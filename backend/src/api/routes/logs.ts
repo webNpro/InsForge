@@ -198,13 +198,13 @@ router.get('/analytics/search', async (req: AuthRequest, res: Response, next: Ne
 router.get('/analytics/:source', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { source } = req.params;
-    const { limit = 100, offset = 0, start_time, end_time } = req.query;
+    const { limit = 100, before_timestamp, start_time, end_time } = req.query;
 
     const analyticsManager = AnalyticsManager.getInstance();
     const result = await analyticsManager.getLogsBySource(
       source,
       Number(limit),
-      Number(offset),
+      before_timestamp as string | undefined,
       start_time as string | undefined,
       end_time as string | undefined
     );
@@ -213,7 +213,7 @@ router.get('/analytics/:source', async (req: AuthRequest, res: Response, next: N
       source,
       logs: result.logs,
       total: result.total,
-      page: Math.floor(Number(offset) / Number(limit)) + 1,
+      page: 1, // Not applicable for timestamp-based pagination
       pageSize: Number(limit),
     };
 
