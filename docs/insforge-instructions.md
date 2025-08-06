@@ -45,8 +45,49 @@ Before ANY database operation, call `get-backend-metadata` to get the current da
 - Frequently check `get-instructions` and `get-backend-metadata`
 - Always define explicit table schemas (no assumptions)
 - Every table gets auto ID, created_at, updated_at fields
-- All operations need API key authentication
+- **Database operations require**: JWT token (Authorization: Bearer header)
+- **API keys (x-api-key) are ONLY for MCP testing**, not for production applications
 - File uploads work automatically with multipart/form-data
+
+## Authentication Requirements
+
+### Database Operations Need Authentication Token:
+1. **JWT Token**: `Authorization: Bearer your-jwt-token` - Authenticates the user
+
+**Important Note about API Keys:**
+- The `x-api-key` header is ONLY used for MCP (Model Context Protocol) testing
+- Production applications should NEVER use API keys
+- Always use JWT tokens from user/admin authentication for real applications
+
+Without the Bearer token, you'll get "permission denied" errors when trying to insert, update, or delete records.
+
+### Getting Authentication:
+```bash
+# 1. First login to get JWT token
+curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"your-password"}'
+
+# Response includes token: {"token": "eyJ...", "user": {...}}
+
+# 2. Use the auth token for database operations
+curl -X POST http://localhost:7130/api/database/records/products \
+  -H "Authorization: Bearer eyJ..." \
+  -H "Content-Type: application/json" \
+  -d '[{"name": "Product", "price": 99.99}]'
+```
+## System Tables
+
+### User Table (Read-Only Access)
+The `user` table is a **system-managed table** from Better Auth:
+- **✅ CAN READ** via `GET /api/database/records/user`
+- **❌ CANNOT MODIFY** through database API - use Auth API instead
+- **✅ CAN REFERENCE** by other tables using `user_id` foreign keys
+
+To work with users:
+- Read users: `GET /api/database/records/user`
+- Create/update users: Use `/api/auth/v2/*` endpoints
+- Store additional data: Create your own `user_profiles` table
 
 ## Example: Comment Upvoting Feature
 
@@ -62,15 +103,17 @@ Before ANY database operation, call `get-backend-metadata` to get the current da
 After creating or modifying any API endpoint, always test it with curl to verify it works correctly:
 
 ```bash
-# Example: Test creating a record
+# Example: Test creating a record (requires JWT token)
 curl -X POST http://localhost:7130/api/database/records/posts \
   -H "x-api-key: your-api-key" \
+  -H "Authorization: Bearer your-jwt-token" \
   -H "Content-Type: application/json" \
-  -d '{"title": "Test Post", "content": "Test content"}'
+  -d '[{"title": "Test Post", "content": "Test content"}]'
 
-# Example: Test querying records
+# Example: Test querying records (requires both API key and JWT token)
 curl http://localhost:7130/api/database/records/posts?id=eq.123 \
-  -H "x-api-key: your-api-key"
+  -H "x-api-key: your-api-key" \
+  -H "Authorization: Bearer your-jwt-token"
 
 # Example: Test authentication
 curl -X POST http://localhost:7130/api/auth/register \
@@ -79,7 +122,8 @@ curl -X POST http://localhost:7130/api/auth/register \
 ```
 
 Always include:
-- Proper headers (x-api-key for database operations, Authorization for auth endpoints)
+- **Both headers for database operations**: x-api-key AND Authorization: Bearer token
 - Correct HTTP method (GET, POST, PATCH, DELETE)
-- Valid JSON payload for POST/PATCH requests
+- Valid JSON payload for POST/PATCH requests (remember: POST requires array format `[{...}]`)
 - Query parameters for filtering GET requests
+- Prefer: return=representation header if you want to see the created/updated records

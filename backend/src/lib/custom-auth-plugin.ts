@@ -44,7 +44,7 @@ export const customAuthPlugin: BetterAuthPlugin = {
       },
       async (ctx) => {
         const authService = BetterAuthAdminService.getInstance();
-        return ctx.json(await authService.registerAdmin(ctx.body));
+        return ctx.json(authService.registerAdmin(ctx.body));
       }
     ),
 
@@ -60,7 +60,7 @@ export const customAuthPlugin: BetterAuthPlugin = {
       },
       async (ctx) => {
         const authService = BetterAuthAdminService.getInstance();
-        return ctx.json(await authService.signInAdmin(ctx.body));
+        return ctx.json(authService.signInAdmin(ctx.body));
       }
     ),
 

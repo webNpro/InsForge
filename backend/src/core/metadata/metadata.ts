@@ -10,7 +10,6 @@ import { StorageConfig } from '@/types/storage.js';
 import { AuthConfig } from '@/types/auth.js';
 import { AppMetadata } from '@/types/metadata.js';
 import logger from '@/utils/logger.js';
-import { BETTER_AUTH_SYSTEM_TABLES } from '@/utils/constants.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 export class MetadataService {
@@ -70,8 +69,8 @@ export class MetadataService {
   }
 
   async updateDatabaseMetadata(): Promise<void> {
-    // Get all tables excluding system tables (those starting with _) except _auth, and logs
-    // Also exclude Better Auth system tables
+    // Get all tables excluding system tables (those starting with _) and logs
+    // Also exclude Better Auth system tables, except for user table
     const allTables = (await this.db
       .prepare(
         `
@@ -79,9 +78,8 @@ export class MetadataService {
       FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_type = 'BASE TABLE'
-      AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
-      AND table_name != 'logs'
-      AND table_name NOT IN (${BETTER_AUTH_SYSTEM_TABLES.map((t) => `'${t}'`).join(', ')})
+      AND (table_name NOT LIKE '\\_%' OR table_name = '_user')
+      AND table_name NOT IN ('logs', 'jwks')
       ORDER BY table_name
     `
       )

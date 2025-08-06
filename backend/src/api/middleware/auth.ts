@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from './error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
@@ -35,21 +36,31 @@ function setRequestUser(
   };
 }
 
-export function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
+/**
+ * Verifies user authentication (accepts both user and admin tokens)
+ */
+export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
+  // API key takes precedence for backward compatibility
   const apiKey = req.headers['x-api-key'] as string;
   if (apiKey) {
     return verifyApiKey(req, res, next);
-  } else {
-    return verifyToken(req, res, next);
   }
+
+  // Use the main verifyToken that handles all the logic
+  return verifyToken(req, res, next);
 }
 
-export function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+/**
+ * Verifies admin authentication (requires admin token)
+ */
+export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  // API key takes precedence for backward compatibility
+  const apiKey = req.headers['x-api-key'] as string;
+  if (apiKey) {
+    return verifyApiKey(req, res, next);
+  }
+
   try {
-    const apiKey = req.headers['x-api-key'] as string;
-    if (apiKey) {
-      return verifyApiKey(req, res, next);
-    }
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
       throw new AppError(
@@ -60,7 +71,9 @@ export function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction)
       );
     }
 
+    // For admin, we only support legacy JWT tokens (no Better Auth for admin)
     const payload = authService.verifyToken(token);
+
     if (payload.type !== 'admin') {
       throw new AppError(
         'Admin access required',
@@ -88,7 +101,7 @@ export function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
-export async function verifyApiKey(req: AuthRequest, res: Response, next: NextFunction) {
+export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const apiKey = req.headers['x-api-key'] as string;
     if (!apiKey) {
@@ -118,7 +131,12 @@ export async function verifyApiKey(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
-export function verifyToken(req: AuthRequest, res: Response, next: NextFunction) {
+/**
+ * Core token verification middleware that handles all token extraction and verification
+ * Automatically detects Better Auth vs Legacy auth
+ * Sets req.user and generates PostgREST-compatible tokens
+ */
+export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
@@ -130,7 +148,25 @@ export function verifyToken(req: AuthRequest, res: Response, next: NextFunction)
       );
     }
 
-    const payload = authService.verifyToken(token);
+    let payload;
+    let isBetterAuthToken = false;
+
+    if (process.env.ENABLE_BETTER_AUTH === 'true') {
+      // Try Better Auth first (session token -> JWT exchange)
+      try {
+        payload = await authService.verifyBetterAuthUserSessionToken(token);
+        isBetterAuthToken = true;
+      } catch {
+        // Fall back to legacy auth (direct JWT verification)
+        // This is used for admin auth and backward compatibility
+        payload = authService.verifyToken(token);
+      }
+    } else {
+      // Legacy auth only
+      payload = authService.verifyToken(token);
+    }
+
+    // Validate token type
     if (payload.type !== 'user' && payload.type !== 'admin') {
       throw new AppError(
         'Invalid token type',
@@ -140,7 +176,28 @@ export function verifyToken(req: AuthRequest, res: Response, next: NextFunction)
       );
     }
 
+    // Set user info on request
     setRequestUser(req, payload);
+
+    // Generate PostgREST-compatible token if needed
+    // Better Auth tokens are EdDSA-signed; PostgREST needs HS256
+    if (isBetterAuthToken) {
+      const postgrestToken = jwt.sign(
+        {
+          sub: payload.sub,
+          email: payload.email,
+          type: payload.type,
+          role: payload.role,
+        },
+        process.env.JWT_SECRET || '',
+        { algorithm: 'HS256', expiresIn: '7d' }
+      );
+      (req as Request & { postgrestToken: string }).postgrestToken = postgrestToken;
+    } else {
+      // Legacy tokens are already HS256-signed, use as-is
+      (req as Request & { postgrestToken: string }).postgrestToken = token;
+    }
+
     next();
   } catch (error) {
     if (error instanceof AppError) {
@@ -157,23 +214,3 @@ export function verifyToken(req: AuthRequest, res: Response, next: NextFunction)
     }
   }
 }
-
-// export async function verifyUserOrApiKey(req: AuthRequest, res: Response, next: NextFunction) {
-//   const authHeader = req.headers.authorization;
-//   const apiKey = req.headers['x-api-key'] as string;
-
-//   if (authHeader && authHeader.startsWith('Bearer ')) {
-//     return verifyUserOrAdmin(req, res, next);
-//   } else if (apiKey) {
-//     return verifyApiKey(req, res, next);
-//   } else {
-//     next(
-//       new AppError(
-//         'No authentication provided',
-//         401,
-//         ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-//         NEXT_ACTION.CHECK_TOKEN
-//       )
-//     );
-//   }
-// }
