@@ -23,7 +23,15 @@ export const onDeleteActionSchema = z.enum([
   "NO ACTION",
 ]);
 
-export const columnTypeSchema = z.enum(ColumnType);
+export const columnTypeSchema = z.enum([
+  ColumnType.STRING,
+  ColumnType.DATETIME,
+  ColumnType.INTEGER,
+  ColumnType.FLOAT,
+  ColumnType.BOOLEAN,
+  ColumnType.UUID,
+  ColumnType.JSON,
+]);
 
 export const foreignKeySchema = z.object({
   referenceTable: z.string().min(1, "Target table cannot be empty"),
