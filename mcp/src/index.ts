@@ -11,16 +11,9 @@ import path from 'path';
 import { 
   ColumnType,
   CreateTableRequest,
-  CreateTableResponse,
   UpdateTableSchemaRequest,
-  UpdateTableSchemaResponse,
-  DeleteTableResponse,
-  GetTableSchemaResponse,
   createTableRequestSchema,
   updateTableSchemaBase,
-  updateTableSchemaRequest,
-  columnSchema,
-  foreignKeySchema,
   CreateBucketRequest,
   createBucketRequestSchema
 } from '@insforge/shared-schemas';
