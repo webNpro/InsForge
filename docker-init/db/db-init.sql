@@ -53,9 +53,10 @@ BEGIN
   FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag = 'CREATE TABLE'
   LOOP
     -- Extract schema and table name from object_identity
+    -- Handle quoted identifiers by removing quotes
     SELECT INTO table_schema, table_name
       split_part(obj.object_identity, '.', 1),
-      split_part(obj.object_identity, '.', 2);
+      trim(both '"' from split_part(obj.object_identity, '.', 2));
     -- Check if RLS is enabled on the table
     SELECT INTO has_rls
       rowsecurity
@@ -93,9 +94,10 @@ BEGIN
   FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag = 'ALTER TABLE'
   LOOP
     -- Extract schema and table name
+    -- Handle quoted identifiers by removing quotes
     SELECT INTO table_schema, table_name
       split_part(obj.object_identity, '.', 1),
-      split_part(obj.object_identity, '.', 2);
+      trim(both '"' from split_part(obj.object_identity, '.', 2));
     -- Check if table has RLS enabled and no policies yet
     IF EXISTS (
       SELECT 1 FROM pg_tables

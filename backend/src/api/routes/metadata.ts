@@ -44,7 +44,7 @@ router.get(
       const authService = AuthService.getInstance();
       const apiKey = await authService.initializeApiKey();
 
-      successResponse(res, { api_key: apiKey });
+      successResponse(res, { apiKey: apiKey });
     } catch (error) {
       next(error);
     }
