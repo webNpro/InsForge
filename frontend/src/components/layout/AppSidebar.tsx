@@ -71,18 +71,16 @@ export default function AppSidebar({
         variant={isActive ? 'default' : 'ghost'}
         className={cn(
           'w-full h-12 relative transition-all duration-200 ease-in-out',
-          isActive ? 'bg-zinc-950 text-white' : 'hover:bg-zinc-100 text-black',
+          isActive ? 'bg-zinc-950 text-white' : 'hover:bg-zinc-100 text-black'
         )}
         onClick={onClick}
       >
         <div className="absolute left-3.5 h-5 w-5">
-          <item.icon
-            className={cn(
-              'h-5 w-5'
-            )}
-          />
+          <item.icon className={cn('h-5 w-5')} />
         </div>
-        {!isCollapsed && <span className="absolute left-11.5 font-medium truncate">{item.name}</span>}
+        {!isCollapsed && (
+          <span className="absolute left-11.5 font-medium truncate">{item.name}</span>
+        )}
       </Button>
     );
 
@@ -151,23 +149,21 @@ export default function AppSidebar({
               variant="ghost"
               className={cn(
                 'w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 rounded-md',
-                'hover:bg-zinc-100 text-black',
+                'hover:bg-zinc-100 text-black'
               )}
               onClick={() => window.open(item.href, '_blank')}
             >
               <div className="absolute left-3.5 h-5 w-5">
-                <item.icon
-                  className={cn(
-                    'h-5 w-5',
-                  )}
-                />
+                <item.icon className={cn('h-5 w-5')} />
               </div>
-              {!isCollapsed && <>
-                <span className="absolute left-11.5 font-medium truncate">{item.name}</span>
-                {item.external && (
-                  <ExternalLink className="absolute left-46.5 h-4 w-4 text-zinc-400" />
-                )}
-              </>}
+              {!isCollapsed && (
+                <>
+                  <span className="absolute left-11.5 font-medium truncate">{item.name}</span>
+                  {item.external && (
+                    <ExternalLink className="absolute left-46.5 h-4 w-4 text-zinc-400" />
+                  )}
+                </>
+              )}
             </Button>
           </div>
         ))}
@@ -177,7 +173,7 @@ export default function AppSidebar({
           <Button
             variant="ghost"
             className={cn(
-              'w-full h-12 relative transition-all duration-200 ease-in-out hover:bg-zinc-100',
+              'w-full h-12 relative transition-all duration-200 ease-in-out hover:bg-zinc-100'
             )}
             onClick={onToggleCollapse}
           >
