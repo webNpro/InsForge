@@ -1,4 +1,4 @@
-wname: Publish MCP Package
+name: Publish MCP Package
 
 on:
   workflow_dispatch:
@@ -13,21 +13,9 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    branches:
-      - main
-    paths:
-      - 'mcp/package.json'
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-    paths:
-      - 'mcp/package.json'
 
 jobs:
   check-and-publish:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     
     steps:
@@ -117,14 +105,3 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Comment on PR
-        if: github.event_name == 'pull_request' && steps.version-check.outputs.version_changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🎉 Published `@insforge/insforge-mcp` version ${{ steps.version-check.outputs.new_version }} to npm!'
-            })
