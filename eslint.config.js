@@ -244,6 +244,45 @@ export default tseslint.config(
       'prettier/prettier': 'error',
     },
   },
+  // MCP configuration - minimal linting without TypeScript project
+  {
+    files: ['mcp/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+    },
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      // Basic TypeScript rules that don't require type checking
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      
+      // General rules
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-debugger': 'error',
+      'no-duplicate-imports': 'error',
+      'no-unused-expressions': 'error',
+      'prefer-const': 'error',
+      'no-var': 'error',
+      eqeqeq: ['error', 'always'],
+      curly: ['error', 'all'],
+      
+      // Prettier integration
+      'prettier/prettier': 'error',
+    },
+  },
   // Global ignores
   {
     ignores: [
@@ -267,6 +306,7 @@ export default tseslint.config(
       'docs/**',
       'examples/**',
       'openapi/**',
+      'functions/',
     ],
   }
 );
