@@ -1,5 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { AuthRequest } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
@@ -23,7 +24,8 @@ const adminToken = authService.generateToken({
   type: 'admin',
 });
 
-// anonymous users can access the database, postgREST does not require authentication
+// anonymous users can access the database, postgREST does not require authentication, however we seed to unwrap session token for better auth, thus
+// we need to verify user token below.
 // router.use(verifyUserOrApiKey);
 
 /**
@@ -37,7 +39,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     // Validate table name with operation type
     const method = req.method.toUpperCase();
     const operation = method === 'GET' ? 'READ' : 'WRITE';
-    
+
     try {
       validateTableName(tableName, operation);
     } catch (error) {
@@ -101,6 +103,35 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     const postgrestToken = (req as AuthRequest & { postgrestToken?: string }).postgrestToken;
     if (postgrestToken) {
       axiosConfig.headers.authorization = `Bearer ${postgrestToken}`;
+    }
+
+    // Handle Better Auth session tokens when ENABLE_BETTER_AUTH is true
+    if (!postgrestToken && process.env.ENABLE_BETTER_AUTH === 'true' && req.headers.authorization) {
+      const token = req.headers.authorization.startsWith('Bearer ')
+        ? req.headers.authorization.substring(7)
+        : req.headers.authorization;
+
+      try {
+        // Try to verify as Better Auth session token
+        const payload = await authService.verifyBetterAuthUserSessionToken(token);
+
+        // Generate PostgREST-compatible JWT token
+        const postgrestJwt = jwt.sign(
+          {
+            sub: payload.sub,
+            email: payload.email,
+            type: payload.type,
+            role: payload.role,
+          },
+          process.env.JWT_SECRET || '',
+          { algorithm: 'HS256', expiresIn: '7d' }
+        );
+
+        axiosConfig.headers.authorization = `Bearer ${postgrestJwt}`;
+      } catch {
+        // If it's not a valid Better Auth token, pass it through as-is
+        // It might be a legacy JWT token
+      }
     }
 
     // If no authorization header, check api key

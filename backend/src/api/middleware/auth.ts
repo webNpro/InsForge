@@ -36,69 +36,31 @@ function setRequestUser(
   };
 }
 
-export async function verifyUser(req: AuthRequest, _res: Response, next: NextFunction) {
-  try {
-    // Check for API key first as a fallback mechanism
-    const apiKey = req.headers['x-api-key'] as string;
-    if (apiKey) {
-      return verifyApiKey(req, _res, next);
-    }
-
-    const token = extractBearerToken(req.headers.authorization);
-    if (!token) {
-      throw new AppError(
-        'No token provided',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      );
-    }
-
-    let payload;
-
-    if (process.env.ENABLE_BETTER_AUTH === 'true') {
-      // Better Auth: verify session token and get JWT
-      payload = await authService.verifyBetterAuthUserSessionToken(token);
-    } else {
-      // Legacy auth: direct JWT verification
-      payload = authService.verifyToken(token);
-    }
-
-    if (payload.type !== 'user') {
-      throw new AppError(
-        'Invalid token type',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      );
-    }
-
-    setRequestUser(req, payload);
-    next();
-  } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-    } else {
-      next(
-        new AppError(
-          'Invalid token',
-          401,
-          ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-          NEXT_ACTION.CHECK_TOKEN
-        )
-      );
-    }
+/**
+ * Verifies user authentication (accepts both user and admin tokens)
+ */
+export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
+  // API key takes precedence for backward compatibility
+  const apiKey = req.headers['x-api-key'] as string;
+  if (apiKey) {
+    return verifyApiKey(req, res, next);
   }
+
+  // Use the main verifyToken that handles all the logic
+  return verifyToken(req, res, next);
 }
 
-export async function verifyAdmin(req: AuthRequest, _res: Response, next: NextFunction) {
-  try {
-    // Check for API key first as admin can use API key
-    const apiKey = req.headers['x-api-key'] as string;
-    if (apiKey) {
-      return verifyApiKey(req, _res, next);
-    }
+/**
+ * Verifies admin authentication (requires admin token)
+ */
+export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  // API key takes precedence for backward compatibility
+  const apiKey = req.headers['x-api-key'] as string;
+  if (apiKey) {
+    return verifyApiKey(req, res, next);
+  }
 
+  try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
       throw new AppError(
@@ -109,7 +71,9 @@ export async function verifyAdmin(req: AuthRequest, _res: Response, next: NextFu
       );
     }
 
+    // For admin, we only support legacy JWT tokens (no Better Auth for admin)
     const payload = authService.verifyToken(token);
+
     if (payload.type !== 'admin') {
       throw new AppError(
         'Admin access required',
@@ -167,39 +131,12 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
   }
 }
 
-// This is a legacy function that verifies token without Better Auth support
-export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
-  try {
-    const token = extractBearerToken(req.headers.authorization);
-    if (!token) {
-      throw new AppError(
-        'No token provided',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      );
-    }
-
-    const payload = authService.verifyToken(token);
-    setRequestUser(req, payload);
-    next();
-  } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-    } else {
-      next(
-        new AppError(
-          'Invalid token',
-          401,
-          ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-          NEXT_ACTION.CHECK_TOKEN
-        )
-      );
-    }
-  }
-}
-
-export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: NextFunction) {
+/**
+ * Core token verification middleware that handles all token extraction and verification
+ * Automatically detects Better Auth vs Legacy auth
+ * Sets req.user and generates PostgREST-compatible tokens
+ */
+export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
@@ -213,13 +150,15 @@ export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: 
 
     let payload;
     let isBetterAuthToken = false;
+
     if (process.env.ENABLE_BETTER_AUTH === 'true') {
       // Try Better Auth first (session token -> JWT exchange)
       try {
         payload = await authService.verifyBetterAuthUserSessionToken(token);
         isBetterAuthToken = true;
       } catch {
-        // Fall back to legacy auth (direct JWT verification), this is used for admin auth
+        // Fall back to legacy auth (direct JWT verification)
+        // This is used for admin auth and backward compatibility
         payload = authService.verifyToken(token);
       }
     } else {
@@ -227,7 +166,7 @@ export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: 
       payload = authService.verifyToken(token);
     }
 
-    // Validate token type, this will get deleted and changed to "role"
+    // Validate token type
     if (payload.type !== 'user' && payload.type !== 'admin') {
       throw new AppError(
         'Invalid token type',
@@ -251,7 +190,6 @@ export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: 
           role: payload.role,
         },
         process.env.JWT_SECRET || '',
-        // TODO: Add a way to configure the token expiration time and refresh token
         { algorithm: 'HS256', expiresIn: '7d' }
       );
       (req as Request & { postgrestToken: string }).postgrestToken = postgrestToken;
@@ -274,25 +212,5 @@ export async function verifyUserOrAdmin(req: AuthRequest, _res: Response, next: 
         )
       );
     }
-  }
-}
-
-export async function verifyUserOrApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  const apiKey = req.headers['x-api-key'] as string;
-
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return await verifyUserOrAdmin(req, _res, next);
-  } else if (apiKey) {
-    return await verifyApiKey(req, _res, next);
-  } else {
-    next(
-      new AppError(
-        'No authentication provided',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      )
-    );
   }
 }

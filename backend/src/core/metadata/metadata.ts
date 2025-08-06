@@ -79,7 +79,7 @@ export class MetadataService {
       WHERE table_schema = 'public' 
       AND table_type = 'BASE TABLE'
       AND (table_name NOT LIKE '\\_%' OR table_name = '_user')
-      AND table_name != 'logs'
+      AND table_name NOT IN ('logs', 'jwks')
       ORDER BY table_name
     `
       )

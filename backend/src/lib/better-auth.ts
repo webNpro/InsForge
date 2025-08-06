@@ -36,7 +36,7 @@ export const auth = betterAuth({
     modelName: '_verification',
   },
   jwks: {
-    modelName: '_jwks',
+    modelName: 'jwks', // Changed from '_jwks' to match database table
   },
   emailAndPassword: {
     enabled: true,

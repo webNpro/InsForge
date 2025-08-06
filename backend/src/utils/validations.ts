@@ -83,6 +83,16 @@ export function validateTableName(tableName: string, operation?: 'READ' | 'WRITE
     }
   }
 
+  // Prevent access to jwks table (Better Auth JWT keys)
+  if (tableName.toLowerCase() === 'jwks') {
+    throw new AppError(
+      'Access to jwks table is not allowed',
+      403,
+      ERROR_CODES.FORBIDDEN,
+      'The jwks table is a system table for JWT key management'
+    );
+  }
+
   // Prevent access to all other system tables (starting with _)
   if (tableName.startsWith('_')) {
     throw new AppError(

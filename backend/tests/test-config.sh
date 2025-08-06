@@ -58,8 +58,8 @@ get_admin_token() {
             -H "Content-Type: application/json" \
             -d "{\"email\":\"$TEST_ADMIN_EMAIL\",\"password\":\"$TEST_ADMIN_PASSWORD\"}")
         
-        if echo "$response" | grep -q '"access_token"'; then
-            echo "$response" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4
+        if echo "$response" | grep -q '"accessToken"'; then
+            echo "$response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4
         else
             echo ""
         fi

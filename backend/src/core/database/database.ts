@@ -389,8 +389,9 @@ export class DatabaseManager {
         "updatedAt" TIMESTAMPTZ DEFAULT NOW()
       );
 
-      -- JWT plugin tables
-      CREATE TABLE IF NOT EXISTS _jwks (
+      -- JWT plugin tables (no underscore prefix for Better Auth compatibility)
+      -- Although better auth allows us to use underscore prefix rename, there is a bug where it's /token endpoint still uses old name
+      CREATE TABLE IF NOT EXISTS jwks (
         "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
         "publicKey" TEXT NOT NULL,
         "privateKey" TEXT NOT NULL,
@@ -566,13 +567,14 @@ export class DatabaseManager {
 
     try {
       // Get all user tables (excluding system tables except _auth)
-      // Also exclude Better Auth system tables
+      // Also exclude Better Auth system tables and jwks
       const tablesResult = await client.query(`
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
+        AND table_name != 'jwks'
       `);
 
       const metadata: DatabaseMetadata = {

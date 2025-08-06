@@ -37,25 +37,21 @@ const conditionalAuth = async (req: Request, res: Response, next: NextFunction) 
 };
 
 // GET /api/storage/buckets - List all buckets (requires auth)
-router.get(
-  '/buckets',
-  verifyAdmin,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const db = DatabaseManager.getInstance().getDb();
+router.get('/buckets', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const db = DatabaseManager.getInstance().getDb();
 
-      // Get all buckets with their metadata from _storage_buckets table
-      const buckets = (await db
-        .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
-        .all()) as StorageBucketSchema[];
+    // Get all buckets with their metadata from _storage_buckets table
+    const buckets = (await db
+      .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
+      .all()) as StorageBucketSchema[];
 
-      // Traditional REST: return array directly
-      successResponse(res, buckets);
-    } catch (error) {
-      next(error);
-    }
+    // Traditional REST: return array directly
+    successResponse(res, buckets);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 // POST /api/storage/buckets - Create a new bucket (requires auth)
 router.post(
