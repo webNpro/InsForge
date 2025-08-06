@@ -76,7 +76,7 @@ export default function AppSidebar({
         onClick={onClick}
       >
         <div className="absolute left-3.5 h-5 w-5">
-          <item.icon className={cn('h-5 w-5')} />
+          <item.icon className="h-5 w-5" />
         </div>
         {!isCollapsed && (
           <span className="absolute left-11.5 font-medium truncate">{item.name}</span>
@@ -147,14 +147,11 @@ export default function AppSidebar({
           <div key={item.name}>
             <Button
               variant="ghost"
-              className={cn(
-                'w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 rounded-md',
-                'hover:bg-zinc-100 text-black'
-              )}
+              className="w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 rounded-md hover:bg-zinc-100 text-black"
               onClick={() => window.open(item.href, '_blank')}
             >
               <div className="absolute left-3.5 h-5 w-5">
-                <item.icon className={cn('h-5 w-5')} />
+                <item.icon className="h-5 w-5" />
               </div>
               {!isCollapsed && (
                 <>
@@ -172,9 +169,7 @@ export default function AppSidebar({
         <div className="hidden 2xl:block">
           <Button
             variant="ghost"
-            className={cn(
-              'w-full h-12 relative transition-all duration-200 ease-in-out hover:bg-zinc-100'
-            )}
+            className="w-full h-12 relative transition-all duration-200 ease-in-out hover:bg-zinc-100"
             onClick={onToggleCollapse}
           >
             <div className="absolute left-3.5 h-5 w-5">

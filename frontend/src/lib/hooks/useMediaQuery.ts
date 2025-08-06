@@ -40,7 +40,6 @@ export function useMediaQuery(
     handleChange();
 
     // Use deprecated `addListener` and `removeListener` to support Safari < 14
-    // See: https://github.com/<OWNER>/<REPO>/issues/135 for details.
     if (matchMedia.addListener) {
       matchMedia.addListener(handleChange);
     } else {
