@@ -138,18 +138,14 @@ export default function AppSidebar({
         <div className="hidden lg:block">
           <OnboardButton isCollapsed={isCollapsed} />
         </div>
-
-        {/* Onboard Button - Mobile */}
-        <div className="lg:hidden">
-          <OnboardButton isCollapsed={false} />
-        </div>
       </div>
-
-      {/* Navigation */}
-      <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
+      <ScrollArea className="flex-1 px-3 lg:px-3 py-4">
         <nav className="space-y-2">
+          {/* Regular Navigation - Desktop */}
           {navigation.map((item) => (
-            <NavItem key={item.name} item={item} />
+            <div key={item.name}>
+              <NavItem item={item} />
+            </div>
           ))}
         </nav>
       </ScrollArea>
