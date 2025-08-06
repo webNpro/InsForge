@@ -18,6 +18,7 @@ import functionsRouter from '@/api/routes/functions.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
 import { DatabaseManager } from '@/core/database/database.js';
+import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { seedAdmin } from '@/utils/seed.js';
@@ -48,6 +49,10 @@ export async function createApp() {
   const metadataService = MetadataService.getInstance();
   await metadataService.initialize(); // populate _metadata table
 
+  // Initialize analytics service
+  const analyticsManager = AnalyticsManager.getInstance();
+  await analyticsManager.initialize(); // connect to _insforge database
+
   const app = express();
 
   const limiter = rateLimit({
@@ -68,6 +73,7 @@ export async function createApp() {
     let responseSize = 0;
 
     // Override send method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res.send = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
@@ -75,6 +81,7 @@ export async function createApp() {
       return originalSend.call(this, data);
     };
     // Override json method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res.json = function (data: any) {
       if (data) {
         responseSize = Buffer.byteLength(JSON.stringify(data));
@@ -83,6 +90,11 @@ export async function createApp() {
     };
     // Log after response is finished
     res.on('finish', () => {
+      // Skip logging for analytics endpoints to avoid infinite loops
+      if (req.path.includes('/analytics/')) {
+        return;
+      }
+
       const duration = Date.now() - startTime;
       logger.info('HTTP Request', {
         method: req.method,
