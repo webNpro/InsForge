@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { ProfileService } from '@/core/auth/profile.js';
 import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from '@/api/middleware/error.js';
-import { verifyUser, AuthRequest } from '@/api/middleware/auth.js';
+import { verifyToken, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
 import { UpdateProfileRequest } from '@/types/profile.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -12,9 +12,9 @@ const profileService = new ProfileService();
 const authService = AuthService.getInstance();
 
 // Get current user's profile
-router.get('/me', verifyUser, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/me', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // verifyUser middleware already checks for user, but we need to check again for type safety
+    // verifyToken middleware already checks for user, but we need to check again for type safety
     if (!req.user) {
       throw new AppError(
         'User not authenticated',
@@ -41,9 +41,9 @@ router.get('/me', verifyUser, async (req: AuthRequest, res: Response, next: Next
 });
 
 // Update current user's profile
-router.patch('/me', verifyUser, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.patch('/me', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // verifyUser middleware already checks for user, but we need to check again for type safety
+    // verifyToken middleware already checks for user, but we need to check again for type safety
     if (!req.user) {
       throw new AppError(
         'User not authenticated',

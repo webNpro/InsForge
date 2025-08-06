@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
-import { verifyUserOrAdmin, verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
+import { verifyAdmin, verifyUser, verifyToken, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { validateEmail } from '@/utils/validations.js';
@@ -193,7 +193,7 @@ router.post('/admin/login', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-router.get('/me', verifyUserOrAdmin, (req: AuthRequest, res: Response) => {
+router.get('/me', verifyToken, (req: AuthRequest, res: Response) => {
   successResponse(res, {
     user: req.user,
   });
@@ -232,7 +232,7 @@ router.get('/users', verifyAdmin, async (req: AuthRequest, res: Response, next: 
 // Admin endpoint to bulk delete users
 router.delete(
   '/users/bulk-delete',
-  verifyUserOrAdmin,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       // Only admins can delete users
@@ -520,7 +520,7 @@ router.get('/v1/callback', async (req: Request, res: Response, next: NextFunctio
 // OAuth configuration endpoints
 router.get(
   '/oauth/config',
-  verifyUserOrAdmin,
+  verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (req.user?.type !== 'admin') {
@@ -607,7 +607,7 @@ router.get(
 
 router.post(
   '/oauth/config',
-  verifyUserOrAdmin,
+  verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (req.user?.type !== 'admin') {

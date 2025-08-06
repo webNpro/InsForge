@@ -1,14 +1,14 @@
 import { Router, Response, NextFunction } from 'express';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
-import { verifyUserOrAdmin, AuthRequest } from '@/api/middleware/auth.js';
+import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
 import { LogRecord, LogActionStat, LogTableStat, AnalyticsLogResponse } from '@/types/logs.js';
 
 const router = Router();
 
 // All logs routes require admin authentication
-router.use(verifyUserOrAdmin);
+router.use(verifyAdmin);
 
 // GET /logs - List activity logs
 router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {

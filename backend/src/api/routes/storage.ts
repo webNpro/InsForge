@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
-import { verifyApiKey, AuthRequest } from '@/api/middleware/auth.js';
+import { verifyAdmin, AuthRequest, verifyUser } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { DatabaseManager } from '@/core/database/database.js';
@@ -33,13 +33,13 @@ const conditionalAuth = async (req: Request, res: Response, next: NextFunction) 
   }
 
   // All other cases require authentication
-  return verifyApiKey(req, res, next);
+  return verifyUser(req, res, next);
 };
 
 // GET /api/storage/buckets - List all buckets (requires auth)
 router.get(
   '/buckets',
-  verifyApiKey,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const db = DatabaseManager.getInstance().getDb();
@@ -60,7 +60,7 @@ router.get(
 // POST /api/storage/buckets - Create a new bucket (requires auth)
 router.post(
   '/buckets',
-  verifyApiKey,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const validation = createBucketRequestSchema.safeParse(req.body);
@@ -113,7 +113,7 @@ router.post(
 // PATCH /api/storage/buckets/:bucketName - Update bucket (requires auth)
 router.patch(
   '/buckets/:bucketName',
-  verifyApiKey,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { bucketName } = req.params;
@@ -158,7 +158,7 @@ router.patch(
 // GET /api/storage/buckets/:bucketName/objects - List objects in bucket (requires auth)
 router.get(
   '/buckets/:bucketName/objects',
-  verifyApiKey,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { bucketName } = req.params;
@@ -201,7 +201,7 @@ router.get(
 // PUT /api/storage/buckets/:bucketName/objects/:objectKey - Upload object to bucket (requires auth)
 router.put(
   '/buckets/:bucketName/objects/*',
-  verifyApiKey,
+  verifyUser,
   upload.single('file'),
   handleUploadError,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -236,7 +236,7 @@ router.put(
 // POST /api/storage/buckets/:bucketName/objects - Upload object with server-generated key (requires auth)
 router.post(
   '/buckets/:bucketName/objects',
-  verifyApiKey,
+  verifyUser,
   upload.single('file'),
   handleUploadError,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -321,7 +321,7 @@ router.get(
 // DELETE /api/storage/buckets/:bucketName - Delete entire bucket (requires auth)
 router.delete(
   '/buckets/:bucketName',
-  verifyApiKey,
+  verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { bucketName } = req.params;
@@ -350,7 +350,7 @@ router.delete(
 // DELETE /api/storage/buckets/:bucketName/objects/:objectKey - Delete object from bucket (requires auth)
 router.delete(
   '/buckets/:bucketName/objects/*',
-  verifyApiKey,
+  verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { bucketName } = req.params;
@@ -359,6 +359,9 @@ router.delete(
       if (!objectKey) {
         throw new AppError('Object key is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
       }
+
+      // TODO: we need add more policies to check if user has permission to delete this object
+      // For now, we assume user has permission if they can access the bucket
 
       // Delete specific object
       const storageService = StorageService.getInstance();

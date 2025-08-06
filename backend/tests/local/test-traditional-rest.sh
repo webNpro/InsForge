@@ -80,6 +80,8 @@ response=$(curl -s "$API_BASE/nonexistent")
 test_response_format "404 error" "$response" '"statusCode":404'
 test_response_format "Not found message" "$response" '"error":"NOT_FOUND"'
 
+ADMIN_TOKEN=$(get_admin_token)
+
 # 5. Test with Authentication
 print_info "5. Creating test user for authenticated tests"
 auth_response=$(curl -s -X POST "$API_BASE/auth/register" \
@@ -107,7 +109,7 @@ if echo "$auth_response" | grep -q '"accessToken"'; then
     print_info "7. Testing Create Table (Success Response)"
     TABLE_NAME="test_rest_table_$(date +%s)"
     response=$(curl -s -X POST "$API_BASE/database/tables" \
-        -H "Authorization: Bearer $AUTH_TOKEN" \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H "Content-Type: application/json" \
         -d "{
             \"tableName\": \"$TABLE_NAME\",
@@ -133,7 +135,7 @@ if echo "$auth_response" | grep -q '"accessToken"'; then
     print_info "8. Testing Pagination Headers"
     # Use -I for headers, but we need both headers and body
     full_response=$(curl -s -i "$API_BASE/logs?limit=10" \
-        -H "Authorization: Bearer $AUTH_TOKEN")
+        -H "Authorization: Bearer $ADMIN_TOKEN")
     
     # Extract headers (everything before empty line)
     headers=$(echo "$full_response" | awk 'BEGIN{RS="\r\n\r\n"} NR==1')
