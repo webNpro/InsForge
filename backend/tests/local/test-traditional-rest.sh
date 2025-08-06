@@ -60,19 +60,18 @@ test_response_format "No data wrapper" "$response" '"data":{' "true"
 
 # 2. Test Authentication Errors
 print_info "2. Testing Authentication Errors"
-response=$(curl -s "$API_BASE/auth/me")
-test_response_format "Error format" "$response" '"error":"AUTH_INVALID_CREDENTIALS"'
-test_response_format "Message field" "$response" '"message":"No token provided"'
-test_response_format "Status code field" "$response" '"statusCode":401'
-test_response_format "NextAction field" "$response" '"nextActions":"'
+response=$(curl -s "$API_BASE/auth/v2/me")
+test_response_format "Error format" "$response" '"code":"MISSING_AUTHORIZATION_HEADER"'
+test_response_format "Message field" "$response" '"message":"Missing authorization header"'
+# Better Auth doesn't include statusCode or nextActions in response body
 
 # 3. Test Login Endpoint (Missing Credentials)
 print_info "3. Testing Login Endpoint (Missing Credentials)"
-response=$(curl -s -X POST "$API_BASE/auth/login" \
+response=$(curl -s -X POST "$API_BASE/auth/v2/sign-in/email" \
     -H "Content-Type: application/json" \
     -d '{}')
-test_response_format "Error response" "$response" '"error":"MISSING_FIELD"'
-test_response_format "400 status" "$response" '"statusCode":400'
+test_response_format "Error response" "$response" '"code":"VALIDATION_ERROR"'
+test_response_format "Message field" "$response" '"message":"Invalid body parameters"'
 
 # 4. Test Invalid Endpoint (404)
 print_info "4. Testing Invalid Endpoint (404)"
@@ -84,7 +83,7 @@ ADMIN_TOKEN=$(get_admin_token)
 
 # 5. Test with Authentication
 print_info "5. Creating test user for authenticated tests"
-auth_response=$(curl -s -X POST "$API_BASE/auth/register" \
+auth_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-up/email" \
     -H "Content-Type: application/json" \
     -d "{
         \"email\": \"$TEST_USER_EMAIL\",
@@ -93,8 +92,8 @@ auth_response=$(curl -s -X POST "$API_BASE/auth/register" \
     }")
 
 # Check if registration was successful
-if echo "$auth_response" | grep -q '"accessToken"'; then
-    AUTH_TOKEN=$(echo "$auth_response" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+if echo "$auth_response" | grep -q '"token"'; then
+    AUTH_TOKEN=$(echo "$auth_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
     print_success "User registered successfully"
     register_test_user "$TEST_USER_EMAIL"
     
@@ -159,13 +158,16 @@ else
     admin_token="$AUTH_TOKEN"
 fi
 
-API_KEY=$(get_admin_api_key)
-
-# If that fails, try to get it via the API endpoint
-if [ -z "$API_KEY" ] && [ -n "$admin_token" ]; then
+# Try to get API key from the API endpoint first
+if [ -n "$admin_token" ]; then
     api_key_response=$(curl -s "$API_BASE/metadata/api-key" \
         -H "Authorization: Bearer $admin_token")
     API_KEY=$(echo "$api_key_response" | grep -o '"apiKey":"[^"]*' | cut -d'"' -f4)
+fi
+
+# If that fails, try the helper function  
+if [ -z "$API_KEY" ]; then
+    API_KEY=$(get_admin_api_key)
 fi
 
 # Export for cleanup

@@ -61,13 +61,13 @@ USER_NAME="${TEST_USER_EMAIL_PREFIX}$(date +%s)"
 register_test_user "$USER_EMAIL"
 
 echo "📝 Registering new user..."
-register_response=$(curl -s -X POST "$API_BASE/auth/register" \
+register_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-up/email" \
     -H "Content-Type: application/json" \
     -d '{"email":"'$USER_EMAIL'","password":"'$USER_PASS'","name":"'$USER_NAME'"}')
 
-if echo "$register_response" | grep -q '"accessToken"'; then
+if echo "$register_response" | grep -q '"token"'; then
     print_success "Register success"
-    AUTH_TOKEN=$(echo "$register_response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+    AUTH_TOKEN=$(echo "$register_response" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 else
     print_fail "Register failed"
     echo "Response: $register_response"
@@ -77,13 +77,13 @@ echo ""
 
 # 2. login with correct password
 echo "🔑 Logging in with correct password..."
-login_response=$(curl -s -X POST "$API_BASE/auth/login" \
+login_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-in/email" \
     -H "Content-Type: application/json" \
     -d '{"email":"'$USER_EMAIL'","password":"'$USER_PASS'"}')
 
-if echo "$login_response" | grep -q '"accessToken"'; then
+if echo "$login_response" | grep -q '"token"'; then
     print_success "Login success"
-    AUTH_TOKEN=$(echo "$login_response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+    AUTH_TOKEN=$(echo "$login_response" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 else
     print_fail "Login failed"
     echo "Response: $login_response"
@@ -93,11 +93,11 @@ echo ""
 
 # 3. login with wrong password
 echo "🔒 Logging in with wrong password..."
-wrong_login_response=$(curl -s -X POST "$API_BASE/auth/login" \
+wrong_login_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-in/email" \
     -H "Content-Type: application/json" \
     -d '{"email":"'$USER_EMAIL'","password":"wrongpass"}')
 
-if echo "$wrong_login_response" | grep -q '"error":"AUTH_INVALID_CREDENTIALS"'; then
+if echo "$wrong_login_response" | grep -q '"INVALID_EMAIL_OR_PASSWORD"'; then
     print_success "Wrong password login failed as expected"
 else
     print_fail "Wrong password login did not fail"
@@ -108,11 +108,11 @@ echo ""
 
 # 4. register with duplicate email
 echo "📝 Registering with duplicate email..."
-duplicate_register_response=$(curl -s -X POST "$API_BASE/auth/register" \
+duplicate_register_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-up/email" \
     -H "Content-Type: application/json" \
     -d '{"email":"'$USER_EMAIL'","password":"'$USER_PASS'","name":"'$USER_NAME' duplicate"}')
 
-if echo "$duplicate_register_response" | grep -q '"error":"ALREADY_EXISTS"'; then
+if echo "$duplicate_register_response" | grep -q '"USER_ALREADY_EXISTS"'; then
     print_success "Duplicate register failed as expected"
 else
     print_fail "Duplicate register did not fail"
@@ -123,7 +123,7 @@ echo ""
 
 # 5. get current user info
 echo "👤 Getting current user info..."
-me_response=$(curl -s -X GET "$API_BASE/auth/me" \
+me_response=$(curl -s -X GET "$API_BASE/auth/v2/me" \
     -H "Authorization: Bearer $AUTH_TOKEN" \
     -H "Content-Type: application/json")
 

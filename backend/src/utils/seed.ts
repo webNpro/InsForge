@@ -45,19 +45,8 @@ export async function seedAdmin(): Promise<void> {
   try {
     logger.info(`\n🚀 Insforge Backend Starting...`);
 
-    // Handle auth based on Better Auth flag
-    if (process.env.ENABLE_BETTER_AUTH === 'true') {
-      await ensureFirstAdmin(adminEmail, adminPassword);
-    } else {
-      // Legacy auth flow
-      const superUser = await authService.getSuperUserByEmail(adminEmail);
-      if (!superUser) {
-        await authService.createSuperUser(adminEmail, adminPassword, 'Admin');
-        logger.info(`✅ Admin account created: ${adminEmail}`);
-      } else {
-        logger.info(`✅ Admin account exists: ${adminEmail}`);
-      }
-    }
+    // Use Better Auth for admin creation
+    await ensureFirstAdmin(adminEmail, adminPassword);
 
     // Initialize API key
     const apiKey = await authService.initializeApiKey();

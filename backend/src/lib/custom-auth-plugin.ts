@@ -130,7 +130,6 @@ export const customAuthPlugin: BetterAuthPlugin = {
             user: {
               id: decoded.sub,
               email: decoded.email,
-              type: decoded.type,
               role: decoded.role,
             },
           });
@@ -171,7 +170,6 @@ export const customAuthPlugin: BetterAuthPlugin = {
                 user: {
                   id: user.id,
                   email: user.email,
-                  type: 'user' as const,
                   role: 'authenticated' as const,
                 },
               });

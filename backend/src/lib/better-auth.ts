@@ -67,8 +67,6 @@ export const auth = betterAuth({
           return {
             sub: user.id,
             email: user.email,
-            // Default values for all users, admin login will be handled by custom admin plugin
-            type: 'user',
             role: 'authenticated',
           };
         },

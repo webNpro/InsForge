@@ -83,7 +83,6 @@ export class BetterAuthAdminService {
       {
         sub: userId,
         email,
-        type: 'admin',
         role: 'project_admin',
         iss: 'self-hosted',
       },
