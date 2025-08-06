@@ -15,8 +15,8 @@ import {
   createTableRequestSchema,
   updateTableSchemaBase,
   CreateBucketRequest,
-  createBucketRequestSchema,
-} from '@insforge/shared-schemas';
+  createBucketRequestSchema
+} from './schemas/index.js';
 
 // Parse command line arguments
 program.option('--api_key <value>', 'API Key');
