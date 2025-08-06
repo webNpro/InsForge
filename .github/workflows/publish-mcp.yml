@@ -1,6 +1,11 @@
 name: Publish MCP Package
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mcp/**'
   workflow_dispatch:
     inputs:
       dry_run:
