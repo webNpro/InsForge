@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { verifyUserOrApiKey, AuthRequest } from '@/api/middleware/auth.js';
+import { verifyAdmin, verifyUser, AuthRequest } from '@/api/middleware/auth.js';
 import { TablesController } from '@/controllers/TablesController.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
@@ -10,10 +10,10 @@ const router = Router();
 const tablesController = new TablesController();
 
 // All table routes accept either JWT token or API key authentication
-router.use(verifyUserOrApiKey);
+// router.use(verifyAdmin);
 
 // List all tables
-router.get('/', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/', verifyUser, async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const tables = await tablesController.listTables();
     successResponse(res, tables);
@@ -23,7 +23,7 @@ router.get('/', async (_req: AuthRequest, res: Response, next: NextFunction) => 
 });
 
 // Create a new table
-router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validation = createTableRequestSchema.safeParse(req.body);
     if (!validation.success) {
@@ -44,7 +44,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
 });
 
 // Get table schema
-router.get('/:tableName/schema', async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/:tableName/schema', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { tableName } = req.params;
     const schema = await tablesController.getTableSchema(tableName);
@@ -55,7 +55,7 @@ router.get('/:tableName/schema', async (req: AuthRequest, res: Response, next: N
 });
 
 // Update table schema
-router.patch('/:tableName/schema', async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.patch('/:tableName/schema', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { tableName } = req.params;
 
@@ -78,7 +78,7 @@ router.patch('/:tableName/schema', async (req: AuthRequest, res: Response, next:
 });
 
 // Delete a table
-router.delete('/:tableName', async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete('/:tableName', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { tableName } = req.params;
     const result = await tablesController.deleteTable(tableName);

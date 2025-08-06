@@ -1,19 +1,30 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { verifyUserOrApiKey, AuthRequest } from '@/api/middleware/auth.js';
+import { AuthRequest } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
+import { AuthService } from '@/core/auth/auth.js';
 
 const router = Router();
 const dbManager = DatabaseManager.getInstance();
+const authService = AuthService.getInstance();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
 
-// Apply authentication to all routes
-router.use(verifyUserOrApiKey);
+// Generate admin token once and reuse
+// If user request with api key, this token should be added automatically.
+const adminToken = authService.generateToken({
+  sub: 'project-admin-with-api-key',
+  email: 'project-admin@email.com',
+  role: 'project_admin',
+  type: 'admin',
+});
+
+// anonymous users can access the database, postgREST does not require authentication
+// router.use(verifyUserOrApiKey);
 
 /**
  * Forward database requests to PostgREST
@@ -82,6 +93,18 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
         'content-length': undefined, // Let axios calculate
       },
     };
+
+    // If no authorization header, check api key
+    if (!req.headers.authorization) {
+      const apiKey = req.headers['x-api-key'] as string;
+      if (apiKey) {
+        // If API key is provided, use it
+        const isValid = await authService.verifyApiKey(apiKey);
+        if (isValid) {
+          axiosConfig.headers.authorization = `Bearer ${adminToken}`;
+        }
+      }
+    }
 
     // Add body for methods that support it
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
