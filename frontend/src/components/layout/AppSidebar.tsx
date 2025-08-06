@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
-import { OnboardButton } from '@/components/OnboardButton';
+import { OnboardButton } from '@/features/onboard/components/OnboardButton';
 import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
@@ -73,7 +73,7 @@ export default function AppSidebar({
         ...navigation,
         {
           name: 'Reinstall',
-          href: '/onboard?step=1',
+          href: '/dashboard/onboard?step=1',
           icon: RotateCw,
         },
       ]
