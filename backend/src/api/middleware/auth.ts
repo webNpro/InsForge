@@ -8,7 +8,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    type?: 'user' | 'admin';
+    role: string;
   };
   authenticated?: boolean;
   apiKey?: string;
@@ -25,14 +25,11 @@ function extractBearerToken(authHeader: string | undefined): string | null {
 }
 
 // Helper function to set user on request
-function setRequestUser(
-  req: AuthRequest,
-  payload: { sub: string; email: string; type: 'user' | 'admin' }
-) {
+function setRequestUser(req: AuthRequest, payload: { sub: string; email: string; role: string }) {
   req.user = {
     id: payload.sub,
     email: payload.email,
-    type: payload.type,
+    role: payload.role,
   };
 }
 
@@ -71,10 +68,10 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
       );
     }
 
-    // For admin, we only support legacy JWT tokens (no Better Auth for admin)
+    // For admin, we use JWT tokens
     const payload = authService.verifyToken(token);
 
-    if (payload.type !== 'admin') {
+    if (payload.role !== 'project_admin') {
       throw new AppError(
         'Admin access required',
         403,
@@ -133,7 +130,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 
 /**
  * Core token verification middleware that handles all token extraction and verification
- * Automatically detects Better Auth vs Legacy auth
+ * Automatically detects Better Auth session tokens vs JWT tokens
  * Sets req.user and generates PostgREST-compatible tokens
  */
 export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
@@ -151,25 +148,20 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
     let payload;
     let isBetterAuthToken = false;
 
-    if (process.env.ENABLE_BETTER_AUTH === 'true') {
-      // Try Better Auth first (session token -> JWT exchange)
-      try {
-        payload = await authService.verifyBetterAuthUserSessionToken(token);
-        isBetterAuthToken = true;
-      } catch {
-        // Fall back to legacy auth (direct JWT verification)
-        // This is used for admin auth and backward compatibility
-        payload = authService.verifyToken(token);
-      }
-    } else {
-      // Legacy auth only
+    // Try Better Auth first (session token -> JWT exchange)
+    try {
+      payload = await authService.verifyBetterAuthUserSessionToken(token);
+      isBetterAuthToken = true;
+    } catch {
+      // Fall back to JWT verification
+      // This is used for admin tokens
       payload = authService.verifyToken(token);
     }
 
-    // Validate token type
-    if (payload.type !== 'user' && payload.type !== 'admin') {
+    // Validate token has a role
+    if (!payload.role) {
       throw new AppError(
-        'Invalid token type',
+        'Invalid token: missing role',
         401,
         ERROR_CODES.AUTH_INVALID_CREDENTIALS,
         NEXT_ACTION.CHECK_TOKEN
@@ -186,7 +178,6 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
         {
           sub: payload.sub,
           email: payload.email,
-          type: payload.type,
           role: payload.role,
         },
         process.env.JWT_SECRET || '',
@@ -194,7 +185,7 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
       );
       (req as Request & { postgrestToken: string }).postgrestToken = postgrestToken;
     } else {
-      // Legacy tokens are already HS256-signed, use as-is
+      // JWT tokens are already HS256-signed, use as-is
       (req as Request & { postgrestToken: string }).postgrestToken = token;
     }
 

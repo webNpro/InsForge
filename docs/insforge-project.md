@@ -51,7 +51,8 @@ The `user` table is **protected** by Better Auth:
 ### 🚨 IMPORTANT: Correct Auth Endpoints
 - **✅ CORRECT**: Use `/api/auth/v2/me` to check current user
 - `/api/auth/v2/me` returns `{"user": {...}}` - nested structure
-- Store tokens and include as `Authorization: Bearer {token}` header
+- Store tokens and include as `Authorization: Bearer {session-token}` header
+- **Note**: Login returns a session token (not JWT) - backend converts it automatically
 
 ### Regular API Response Format
 
@@ -66,11 +67,12 @@ The `user` table is **protected** by Better Auth:
 
 ### 🚨 Storage API Rules
 - **Upload Methods**: 
-  - **PUT** `/api/storage/{bucket}/{filename}` - Upload with specific key
-  - **POST** `/api/storage/{bucket}` - Upload with auto-generated key
+  - **PUT** `/api/storage/buckets/{bucket}/objects/{filename}` - Upload with specific key
+  - **POST** `/api/storage/buckets/{bucket}/objects` - Upload with auto-generated key
+- **Authentication**: Upload operations require `Authorization: Bearer {session-token}`
 - **Generate Unique Filenames**: Use POST for auto-generated keys to prevent overwrites
 - **Multipart Form**: Use FormData for file uploads
-- **URL Format**: Response `url` field contains `/api/storage/...` - prepend host only (no /api)
+- **URL Format**: Response `url` field now contains correct format `/api/storage/buckets/{bucket}/objects/{filename}`
 
 ## 🔥 Test EVERY Endpoint
 
@@ -78,6 +80,7 @@ The `user` table is **protected** by Better Auth:
 
 Always test with cURL before UI integration:
 - Use single quotes for JSON: `-d '[{"key": "value"}]'`
+- Include `Authorization: Bearer TOKEN` for write operations
 - Include `Authorization: Bearer TOKEN` for auth
 - Add `Prefer: return=representation` to see created data
 

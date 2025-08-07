@@ -40,30 +40,16 @@ print_blue() {
 
 # Function to login as admin and get token
 get_admin_token() {
-    # Check if Better Auth is enabled
-    if [ "$ENABLE_BETTER_AUTH" = "true" ]; then
-        # Use Better Auth admin endpoint
-        local response=$(curl -s -X POST "$TEST_API_BASE/auth/v2/admin/sign-in" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$TEST_ADMIN_EMAIL\",\"password\":\"$TEST_ADMIN_PASSWORD\"}")
-        
-        if echo "$response" | grep -q '"token"'; then
+    # Use Better Auth admin endpoint
+    local response=$(curl -s -X POST "$TEST_API_BASE/auth/v2/admin/sign-in" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$TEST_ADMIN_EMAIL\",\"password\":\"$TEST_ADMIN_PASSWORD\"}")
+    
+    if echo "$response" | grep -q '"token"'; then
             echo "$response" | grep -o '"token":"[^"]*"' | cut -d'"' -f4
         else
             echo ""
         fi
-    else
-        # Use legacy auth endpoint
-        local response=$(curl -s -X POST "$TEST_API_BASE/auth/admin/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$TEST_ADMIN_EMAIL\",\"password\":\"$TEST_ADMIN_PASSWORD\"}")
-        
-        if echo "$response" | grep -q '"accessToken"'; then
-            echo "$response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4
-        else
-            echo ""
-        fi
-    fi
 }
 
 # Function to get admin API key
@@ -126,56 +112,36 @@ register_test_bucket() {
     TEST_BUCKETS_CREATED+=("$bucket_name")
 }
 
-# Function to register a user with Better Auth or legacy auth
+# Function to register a user with Better Auth
 register_user() {
     local email=$1
     local password=$2
     local name=${3:-"Test User"}
     
-    if [ "$ENABLE_BETTER_AUTH" = "true" ]; then
-        # Use Better Auth registration
-        curl -s -X POST "$TEST_API_BASE/auth/v2/sign-up/email" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$email\",\"password\":\"$password\",\"name\":\"$name\"}"
-    else
-        # Use legacy auth registration
-        curl -s -X POST "$TEST_API_BASE/auth/register" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$email\",\"password\":\"$password\",\"name\":\"$name\"}"
-    fi
+    # Use Better Auth registration
+    curl -s -X POST "$TEST_API_BASE/auth/v2/sign-up/email" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$email\",\"password\":\"$password\",\"name\":\"$name\"}"
 }
 
-# Function to login a user with Better Auth or legacy auth
+# Function to login a user with Better Auth
 login_user() {
     local email=$1
     local password=$2
     
-    if [ "$ENABLE_BETTER_AUTH" = "true" ]; then
-        # Use Better Auth login
-        curl -s -X POST "$TEST_API_BASE/auth/v2/sign-in/email" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$email\",\"password\":\"$password\"}"
-    else
-        # Use legacy auth login
-        curl -s -X POST "$TEST_API_BASE/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$email\",\"password\":\"$password\"}"
-    fi
+    # Use Better Auth login
+    curl -s -X POST "$TEST_API_BASE/auth/v2/sign-in/email" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$email\",\"password\":\"$password\"}"
 }
 
 # Function to get user profile with auth token
 get_user_profile() {
     local token=$1
     
-    if [ "$ENABLE_BETTER_AUTH" = "true" ]; then
-        # Use Better Auth profile endpoint
-        curl -s -X GET "$TEST_API_BASE/auth/v2/me" \
-            -H "Authorization: Bearer $token"
-    else
-        # Use legacy auth profile endpoint
-        curl -s -X GET "$TEST_API_BASE/auth/me" \
-            -H "Authorization: Bearer $token"
-    fi
+    # Use Better Auth profile endpoint
+    curl -s -X GET "$TEST_API_BASE/auth/v2/me" \
+        -H "Authorization: Bearer $token"
 }
 
 # Function to delete a table
@@ -235,16 +201,19 @@ cleanup_test_data() {
         print_info "Deleting test users..."
         
         # Get all users to find IDs of test users
-        local users_response=$(curl -s -X GET "$TEST_API_BASE/auth/users?limit=100" \
+        local users_response=$(curl -s -X GET "$TEST_API_BASE/auth/v2/admin/users?limit=100" \
             -H "Authorization: Bearer $admin_token" \
             -H "Content-Type: application/json" 2>/dev/null || echo "")
         
-        if [ -n "$users_response" ] && echo "$users_response" | grep -q '\['; then
+        if [ -n "$users_response" ] && echo "$users_response" | grep -q '"users"'; then
             local user_ids=()
+            
+            # Extract users array from response
+            local users_json=$(echo "$users_response" | grep -o '"users":\[[^]]*\]' | sed 's/"users"://')
             
             # Find IDs of test users by email
             for test_email in "${TEST_USERS_CREATED[@]}"; do
-                local user_id=$(echo "$users_response" | grep -B2 -A2 "\"email\":\"$test_email\"" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+                local user_id=$(echo "$users_json" | grep -B2 -A2 "\"email\":\"$test_email\"" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
                 if [ -n "$user_id" ]; then
                     user_ids+=("$user_id")
                     print_info "  - Found test user: $test_email (ID: $user_id)"
@@ -253,7 +222,7 @@ cleanup_test_data() {
             
             # Bulk delete test users
             if [ ${#user_ids[@]} -gt 0 ]; then
-                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/users/bulk-delete" \
+                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/v2/admin/users" \
                     -H "Authorization: Bearer $admin_token" \
                     -H "Content-Type: application/json" \
                     -d "{\"userIds\": [$(printf '"%s",' "${user_ids[@]}" | sed 's/,$//' )]}")

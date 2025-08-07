@@ -4,19 +4,18 @@ This directory contains tests that need to be run manually and are not included 
 
 ## Better Auth Tests
 
-These tests are for the Better Auth v2 implementation and require `ENABLE_BETTER_AUTH=true` to be set.
+These tests are for the Better Auth v2 implementation.
 
 ### Running Better Auth Tests
 
 Run the Better Auth test:
 ```bash
-ENABLE_BETTER_AUTH=true ./tests/manual/test-better-auth.sh
+./tests/manual/test-better-auth.sh
 ```
 
 ### Prerequisites
 
 - Docker must be running with the InsForge backend on port 7130
-- `ENABLE_BETTER_AUTH=true` must be set in the environment
 - Admin credentials should be configured in environment variables:
   - `ADMIN_EMAIL` (default: admin@example.com)
   - `ADMIN_PASSWORD` (default: change-this-password)
@@ -28,10 +27,10 @@ ENABLE_BETTER_AUTH=true ./tests/manual/test-better-auth.sh
 cd backend
 
 # Run Better Auth test
-ENABLE_BETTER_AUTH=true ./tests/manual/test-better-auth.sh
+./tests/manual/test-better-auth.sh
 
 # Run with custom admin credentials
-ADMIN_EMAIL=admin@mycompany.com ADMIN_PASSWORD=mysecurepass ENABLE_BETTER_AUTH=true ./tests/manual/test-better-auth.sh
+ADMIN_EMAIL=admin@mycompany.com ADMIN_PASSWORD=mysecurepass ./tests/manual/test-better-auth.sh
 ```
 
 ### Test Coverage
@@ -47,9 +46,6 @@ The test covers:
 ### Why These Tests Are Manual
 
 These tests are kept separate because:
-1. They require Better Auth to be enabled, which is not the default
-2. They use different authentication endpoints (`/api/auth/v2/*`) than the regular tests
-3. They need to be run independently during the Better Auth migration phase
-4. They don't interfere with the existing test suite that uses the old auth system
-
-Once Better Auth becomes the default authentication system, these tests can be moved back to the automated test suite.
+1. They use authentication endpoints (`/api/auth/v2/*`) that require specific setup
+2. They test admin-specific functionality that needs manual verification
+3. They verify JWT token structure and claims that may vary between environments

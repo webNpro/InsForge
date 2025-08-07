@@ -3,13 +3,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { DatabaseMetadata, ColumnInfo, PrimaryKeyInfo } from '@/types/database.js';
-import {
-  AuthRecord,
-  IdentifiesRecord,
-  SuperUserAuthRecord,
-  SuperUserProfileRecord,
-} from '@/types/auth.js';
-import { ProfileRecord } from '@/types/profile.js';
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
@@ -21,12 +14,7 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
-// Type aliases for backward compatibility
-export type Auth = AuthRecord;
-export type Profile = ProfileRecord;
-export type Identifies = IdentifiesRecord;
-export type SuperUserAuth = SuperUserAuthRecord;
-export type SuperUserProfile = SuperUserProfileRecord;
+// Using Better Auth for authentication
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -219,10 +207,15 @@ export class DatabaseManager {
     try {
       await client.query('BEGIN');
 
-      // Drop old tables if they exist (clean slate for new schema)
+      // Drop old auth tables if they exist - using Better Auth now
       await client.query(`
         DROP TABLE IF EXISTS users CASCADE;
         DROP TABLE IF EXISTS _superuser CASCADE;
+        DROP TABLE IF EXISTS _identifies CASCADE;
+        DROP TABLE IF EXISTS _profiles CASCADE;
+        DROP TABLE IF EXISTS _auth CASCADE;
+        DROP TABLE IF EXISTS _superuser_profiles CASCADE;
+        DROP TABLE IF EXISTS _superuser_auth CASCADE;
       `);
 
       // Create all necessary tables
@@ -235,44 +228,7 @@ export class DatabaseManager {
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
 
-      -- Auth table (authentication only - simplified)
-      CREATE TABLE IF NOT EXISTS _auth (
-        id UUID PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Profiles table (user profile data)
-      CREATE TABLE IF NOT EXISTS _profiles (
-        id TEXT PRIMARY KEY,
-        auth_id UUID UNIQUE NOT NULL REFERENCES _auth(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        avatar_url TEXT,
-        bio TEXT,
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Superuser auth table (admin authentication)
-      CREATE TABLE IF NOT EXISTS _superuser_auth (
-        id UUID PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Superuser profiles table (admin profiles)
-      CREATE TABLE IF NOT EXISTS _superuser_profiles (
-        id TEXT PRIMARY KEY,
-        auth_id UUID UNIQUE NOT NULL REFERENCES _superuser_auth(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
+      -- Using Better Auth tables for authentication
 
       -- App metadata
       CREATE TABLE IF NOT EXISTS _metadata (
@@ -311,18 +267,7 @@ export class DatabaseManager {
         FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
       );
 
-      -- Identifies table for third-party authentication
-      CREATE TABLE IF NOT EXISTS _identifies (
-        auth_id UUID NOT NULL REFERENCES _auth(id) ON DELETE CASCADE,
-        provider TEXT NOT NULL,
-        provider_id TEXT NOT NULL,
-        identity_data JSONB DEFAULT '{}',
-        email TEXT NULL,
-        last_login_at TIMESTAMPTZ NULL,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (auth_id, provider, provider_id)
-      );
+      -- Better Auth uses _account table for OAuth
 
       -- Edge functions
       CREATE TABLE IF NOT EXISTS _edge_functions (
@@ -412,16 +357,7 @@ export class DatabaseManager {
       `);
 
       // Create triggers for updated_at
-      const tables = [
-        '_config',
-        '_auth',
-        '_profiles',
-        '_superuser_auth',
-        '_superuser_profiles',
-        '_metadata',
-        '_identifies',
-        '_edge_functions',
-      ];
+      const tables = ['_config', '_metadata', '_edge_functions'];
       for (const table of tables) {
         await client.query(`
           DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};
@@ -432,11 +368,6 @@ export class DatabaseManager {
 
       // Create indexes for better performance
       await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_auth_email ON _auth(email);
-        CREATE INDEX IF NOT EXISTS idx_profiles_auth_id ON _profiles(auth_id);
-        CREATE INDEX IF NOT EXISTS idx_superuser_auth_email ON _superuser_auth(email);
-        CREATE INDEX IF NOT EXISTS idx_superuser_profiles_auth_id ON _superuser_profiles(auth_id);
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_identify_provider_id ON _identifies(provider, provider_id);
         CREATE INDEX IF NOT EXISTS idx_edge_functions_slug ON _edge_functions(slug);
         CREATE INDEX IF NOT EXISTS idx_edge_functions_status ON _edge_functions(status);
         
@@ -566,14 +497,14 @@ export class DatabaseManager {
     const client = await this.pool.connect();
 
     try {
-      // Get all user tables (excluding system tables except _auth)
+      // Get all user tables (excluding system tables)
       // Also exclude Better Auth system tables and jwks
       const tablesResult = await client.query(`
         SELECT table_name 
         FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
-        AND (table_name NOT LIKE '\\_%' OR table_name = '_auth')
+        AND table_name NOT LIKE '\\_%'
         AND table_name != 'jwks'
       `);
 

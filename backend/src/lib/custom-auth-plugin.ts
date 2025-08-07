@@ -130,7 +130,6 @@ export const customAuthPlugin: BetterAuthPlugin = {
             user: {
               id: decoded.sub,
               email: decoded.email,
-              type: decoded.type,
               role: decoded.role,
             },
           });
@@ -171,7 +170,6 @@ export const customAuthPlugin: BetterAuthPlugin = {
                 user: {
                   id: user.id,
                   email: user.email,
-                  type: 'user' as const,
                   role: 'authenticated' as const,
                 },
               });
@@ -187,9 +185,9 @@ export const customAuthPlugin: BetterAuthPlugin = {
       }
     ),
 
-    // Bulk delete users
-    bulkDeleteUsers: createAuthEndpoint(
-      '/admin/users/bulk-delete',
+    // Delete users (single or multiple)
+    deleteUsers: createAuthEndpoint(
+      '/admin/users',
       {
         method: 'DELETE',
         body: z.object({
@@ -199,7 +197,7 @@ export const customAuthPlugin: BetterAuthPlugin = {
       },
       async (ctx) => {
         const authService = BetterAuthAdminService.getInstance();
-        return ctx.json(await authService.bulkDeleteUsers(ctx.body.userIds));
+        return ctx.json(await authService.deleteUsers(ctx.body.userIds));
       }
     ),
   },

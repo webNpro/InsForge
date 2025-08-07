@@ -5,8 +5,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { authRouter } from '@/api/routes/auth.js';
-import { profileRouter } from '@/api/routes/profile.js';
 import { tablesRouter } from '@/api/routes/tables.js';
 import { databaseRouter } from '@/api/routes/records.js';
 import { storageRouter } from '@/api/routes/storage.js';
@@ -112,13 +110,26 @@ export async function createApp() {
 
   // Mount Better Auth BEFORE express.json() middleware
   // This is required as per Better Auth documentation
-  if (process.env.ENABLE_BETTER_AUTH === 'true') {
-    const { toNodeHandler } = await import('better-auth/node');
-    const { auth } = await import('@/lib/better-auth.js');
-    // Better Auth handles its own body parsing
-    app.all('/api/auth/v2/*', toNodeHandler(auth));
-    logger.info('Better Auth enabled at /api/auth/v2');
-  }
+  const { toNodeHandler } = await import('better-auth/node');
+  const { auth } = await import('@/lib/better-auth.js');
+  // Better Auth handles its own body parsing
+  const handler = toNodeHandler(auth);
+
+  // Wrap to prevent crashes from Better Auth errors
+  app.all('/api/auth/v2/*', async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (error: any) {
+      logger.error('Better Auth error:', { message: error.message });
+      if (!res.headersSent) {
+        res.status(400).json({
+          code: 'BAD_REQUEST',
+          message: error.message || 'Invalid request',
+        });
+      }
+    }
+  });
+  logger.info('Better Auth enabled at /api/auth/v2');
 
   // Apply JSON middleware after Better Auth
   app.use(express.json({ limit: '100mb' }));
@@ -136,8 +147,7 @@ export async function createApp() {
     });
   });
 
-  apiRouter.use('/auth', authRouter);
-  apiRouter.use('/profiles', profileRouter);
+  // Auth is handled by Better Auth at /api/auth/v2/*
   apiRouter.use('/database/tables', tablesRouter);
   apiRouter.use('/database/records', databaseRouter);
   apiRouter.use('/storage', storageRouter);

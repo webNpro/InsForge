@@ -21,7 +21,6 @@ const adminToken = authService.generateToken({
   sub: 'project-admin-with-api-key',
   email: 'project-admin@email.com',
   role: 'project_admin',
-  type: 'admin',
 });
 
 // anonymous users can access the database, postgREST does not require authentication, however we seed to unwrap session token for better auth, thus
@@ -105,8 +104,8 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       axiosConfig.headers.authorization = `Bearer ${postgrestToken}`;
     }
 
-    // Handle Better Auth session tokens when ENABLE_BETTER_AUTH is true
-    if (!postgrestToken && process.env.ENABLE_BETTER_AUTH === 'true' && req.headers.authorization) {
+    // Handle Better Auth session tokens
+    if (!postgrestToken && req.headers.authorization) {
       const token = req.headers.authorization.startsWith('Bearer ')
         ? req.headers.authorization.substring(7)
         : req.headers.authorization;
@@ -120,7 +119,6 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
           {
             sub: payload.sub,
             email: payload.email,
-            type: payload.type,
             role: payload.role,
           },
           process.env.JWT_SECRET || '',
@@ -130,7 +128,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
         axiosConfig.headers.authorization = `Bearer ${postgrestJwt}`;
       } catch {
         // If it's not a valid Better Auth token, pass it through as-is
-        // It might be a legacy JWT token
+        // It might be a JWT token
       }
     }
 

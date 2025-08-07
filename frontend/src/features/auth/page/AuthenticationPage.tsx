@@ -28,7 +28,7 @@ export default function AuthenticationPage() {
 
     try {
       const userIds = Array.from(selectedRows);
-      await authService.bulkDeleteUsers(userIds);
+      await authService.deleteUsers(userIds);
       void refetch();
       setSelectedRows(new Set());
       showToast(
