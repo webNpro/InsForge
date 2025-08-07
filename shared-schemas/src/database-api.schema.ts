@@ -23,29 +23,29 @@ export const createTableResponseSchema = tableSchema
 
 export const getTableSchemaResponseSchema = tableSchema;
 
-// Base schema without refinement - for MCP tool definition
-export const updateTableSchemaBase = z.object({
-  addColumns: z.array(columnSchema).optional(),
-  dropColumns: z
+export const updateTableSchemaRequestSchema = z.object({
+  addColumns: z
     .array(
-      z.object({
-        columnName: z.string().min(1, 'Column name is required for drop operation'),
+      columnSchema.omit({
+        foreignKey: true,
       })
     )
     .optional(),
-  renameColumns: z
-    .record(
-      z
-        .string()
-        .min(1, 'Old column name cannot be empty')
-        .max(64, 'Old column name must be less than 64 characters'),
-      z
-        .string()
-        .min(1, 'New column name cannot be empty')
-        .max(64, 'New column name must be less than 64 characters')
+  dropColumns: z.array(z.string()).optional(),
+  updateColumns: z
+    .array(
+      z.object({
+        columnName: z.string(),
+        defaultValue: z.string().optional(),
+        newColumnName: z
+          .string()
+          .min(1, 'New column name cannot be empty')
+          .max(64, 'New column name must be less than 64 characters')
+          .optional(),
+      })
     )
     .optional(),
-  addFkeyColumns: z
+  addForeignKeys: z
     .array(
       z.object({
         columnName: z.string().min(1, 'Column name is required for adding foreign key'),
@@ -53,28 +53,16 @@ export const updateTableSchemaBase = z.object({
       })
     )
     .optional(),
-  dropFkeyColumns: z
-    .array(
-      z.object({
-        columnName: z.string().min(1, 'Column name is required for dropping foreign key'),
-      })
-    )
+  dropForeignKeys: z.array(z.string()).optional(),
+  renameTable: z
+    .object({
+      newTableName: z
+        .string()
+        .min(1, 'New table name cannot be empty')
+        .max(64, 'New table name must be less than 64 characters'),
+    })
     .optional(),
 });
-
-// Full schema with refinement - for validation
-export const updateTableSchemaRequest = updateTableSchemaBase.refine(
-  (data) =>
-    data.addColumns ||
-    data.dropColumns ||
-    data.renameColumns ||
-    data.addFkeyColumns ||
-    data.dropFkeyColumns,
-  {
-    message:
-      'At least one operation (addColumns, dropColumns, renameColumns, addFkeyColumns, dropFkeyColumns) is required. Please check the request body.',
-  }
-);
 
 export const updateTableSchemaResponse = z.object({
   message: z.string(),
@@ -91,6 +79,6 @@ export const deleteTableResponse = z.object({
 export type CreateTableRequest = z.infer<typeof createTableRequestSchema>;
 export type CreateTableResponse = z.infer<typeof createTableResponseSchema>;
 export type GetTableSchemaResponse = z.infer<typeof getTableSchemaResponseSchema>;
-export type UpdateTableSchemaRequest = z.infer<typeof updateTableSchemaRequest>;
+export type UpdateTableSchemaRequest = z.infer<typeof updateTableSchemaRequestSchema>;
 export type UpdateTableSchemaResponse = z.infer<typeof updateTableSchemaResponse>;
 export type DeleteTableResponse = z.infer<typeof deleteTableResponse>;

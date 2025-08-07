@@ -3,7 +3,7 @@ import { columnSchema, foreignKeySchema } from '@insforge/shared-schemas';
 
 // Foreign key schema
 export const tableFormForeignKeySchema = foreignKeySchema.extend({
-  columnName: z.string().optional(),
+  columnName: z.string(),
 });
 
 export const tableFormColumnSchema = columnSchema.extend({
@@ -15,7 +15,7 @@ export const tableFormColumnSchema = columnSchema.extend({
 
 // Table form schema
 export const tableFormSchema = z.object({
-  name: z.string(),
+  tableName: z.string(),
   columns: z.array(tableFormColumnSchema),
 });
 

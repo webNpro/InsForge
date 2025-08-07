@@ -4,7 +4,7 @@ import { TablesController } from '@/controllers/TablesController.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
-import { createTableRequestSchema, updateTableSchemaRequest } from '@insforge/shared-schemas';
+import { createTableRequestSchema, updateTableSchemaRequestSchema } from '@insforge/shared-schemas';
 
 const router = Router();
 const tablesController = new TablesController();
@@ -66,7 +66,7 @@ router.patch(
     try {
       const { tableName } = req.params;
 
-      const validation = updateTableSchemaRequest.safeParse(req.body);
+      const validation = updateTableSchemaRequestSchema.safeParse(req.body);
       if (!validation.success) {
         throw new AppError(
           validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),

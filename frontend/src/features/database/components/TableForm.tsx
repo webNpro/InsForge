@@ -16,7 +16,7 @@ import {
 import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
-import { ColumnType, TableSchema } from '@insforge/shared-schemas';
+import { ColumnType, TableSchema, UpdateTableSchemaRequest } from '@insforge/shared-schemas';
 
 // System fields that cannot be modified
 const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
@@ -56,7 +56,7 @@ export function TableForm({
   const form = useForm({
     resolver: zodResolver(tableFormSchema),
     defaultValues: {
-      name: '',
+      tableName: '',
       columns:
         mode === 'create'
           ? [
@@ -102,7 +102,7 @@ export function TableForm({
 
     if (open && mode === 'edit' && editTable) {
       form.reset({
-        name: editTable.tableName,
+        tableName: editTable.tableName,
         columns: editTable.columns.map((col) => ({
           columnName: col.columnName,
           type: col.type,
@@ -128,7 +128,7 @@ export function TableForm({
       setForeignKeys(existingForeignKeys);
     } else {
       form.reset({
-        name: '',
+        tableName: '',
         columns: [
           {
             columnName: 'id',
@@ -213,7 +213,7 @@ export function TableForm({
         };
       });
 
-      return databaseService.createTable(data.name, columns);
+      return databaseService.createTable(data.tableName, columns);
     },
     onSuccess: (_) => {
       void queryClient.invalidateQueries({ queryKey: ['metadata'] });
@@ -241,13 +241,11 @@ export function TableForm({
       }
 
       // Compare fields to determine what operations to perform
-      const operations = {
-        addColumns: [] as any[],
-        dropColumns: [] as any[],
-        renameColumns: {} as Record<string, string>,
-        addFkeyColumns: [] as any[],
-        dropFkeyColumns: [] as any[],
-      };
+      const addColumns: UpdateTableSchemaRequest['addColumns'] = [];
+      const dropColumns: UpdateTableSchemaRequest['dropColumns'] = [];
+      const updateColumns: UpdateTableSchemaRequest['updateColumns'] = [];
+      const addForeignKeys: UpdateTableSchemaRequest['addForeignKeys'] = [];
+      const dropForeignKeys: UpdateTableSchemaRequest['dropForeignKeys'] = [];
 
       // Filter out system columns from existing fields for comparison
       const existingUserColumns = editTable.columns.filter(
@@ -265,12 +263,16 @@ export function TableForm({
 
           // Check if it was renamed
           if (col.originalName !== col.columnName) {
-            operations['renameColumns'][col.originalName] = col.columnName;
+            updateColumns.push({
+              columnName: col.originalName,
+              defaultValue: col.defaultValue || undefined,
+              newColumnName: col.columnName,
+            });
           }
         } else {
           // This is a new field (added via Add Field button)
           const { ...fieldData } = col;
-          operations['addColumns'].push({
+          addColumns.push({
             ...fieldData,
             defaultValue: fieldData.defaultValue || undefined,
           });
@@ -280,9 +282,7 @@ export function TableForm({
       // Find dropped columns
       existingUserColumns.forEach((col) => {
         if (!processedOriginalColumns.has(col.columnName)) {
-          operations['dropColumns'].push({
-            columnName: col.columnName,
-          });
+          dropColumns.push(col.columnName);
         }
       });
 
@@ -301,7 +301,7 @@ export function TableForm({
 
         if (!existingFK) {
           // This is a new foreign key
-          operations['addFkeyColumns'].push({
+          addForeignKeys.push({
             columnName: fk.columnName,
             foreignKey: {
               referenceTable: fk.referenceTable,
@@ -318,13 +318,23 @@ export function TableForm({
         const stillExists = foreignKeys.find((fk) => fk.columnName === efk.columnName);
         if (!stillExists) {
           // This foreign key was removed
-          operations['dropFkeyColumns'].push({
-            columnName: efk.columnName,
-          });
+          dropForeignKeys.push(efk.columnName);
         }
       });
 
-      return databaseService.updateTableSchema(data.name, operations);
+      const operations: UpdateTableSchemaRequest = {
+        addColumns,
+        dropColumns,
+        updateColumns,
+        addForeignKeys,
+        dropForeignKeys
+      }
+
+      if (data.tableName !== editTable.tableName) {
+        operations.renameTable = { newTableName: data.tableName };
+      }
+
+      return databaseService.updateTableSchema(editTable.tableName, operations);
     },
     onSuccess: (_, data) => {
       void queryClient.invalidateQueries({ queryKey: ['metadata'] });
@@ -336,7 +346,7 @@ export function TableForm({
       // Invalidate the separate table schema query used by AddRecordSheet
       void queryClient.invalidateQueries({ queryKey: ['table-schema', editTable?.tableName] });
 
-      showToast(`Table "${data.name}" updated successfully!`, 'success');
+      showToast(`Table "${data.tableName}" updated successfully!`, 'success');
 
       onOpenChange(false);
       form.reset();
@@ -420,13 +430,12 @@ export function TableForm({
               <div className="flex flex-col gap-3">
                 <label className="text-sm font-medium text-zinc-950">Table Name</label>
                 <Input
-                  {...form.register('name')}
+                  {...form.register('tableName')}
                   placeholder="e.g., products, orders, customers"
                   className="h-10 rounded-md border-zinc-200 shadow-sm placeholder:text-zinc-500"
-                  disabled={mode === 'edit'}
                 />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                {form.formState.errors.tableName && (
+                  <p className="text-sm text-destructive">{form.formState.errors.tableName.message}</p>
                 )}
               </div>
             </div>
@@ -510,20 +519,20 @@ export function TableForm({
                           {fk.referenceTable}.{fk.referenceColumn}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 w-47">
+                      <div className="flex items-center gap-2 w-45">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Update:
                         </span>
                         <span className="text-sm text-zinc-500">{fk.onUpdate}</span>
                       </div>
-                      <div className="flex items-center gap-2 w-47">
+                      <div className="flex items-center gap-2 w-45">
                         <span className="font-medium text-sm text-zinc-950 whitespace-nowrap">
                           On Delete:
                         </span>
                         <span className="text-sm text-zinc-500">{fk.onDelete}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button
+                        {/* <Button
                           type="button"
                           variant="ghost"
                           size="sm"
@@ -535,7 +544,7 @@ export function TableForm({
                         >
                           <Pencil className="w-4 h-4" />
                           <span className="font-medium text-sm">Edit</span>
-                        </Button>
+                        </Button> */}
                         <Button
                           type="button"
                           variant="ghost"
