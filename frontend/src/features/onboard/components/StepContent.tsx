@@ -1,6 +1,6 @@
 import { OnboardStep } from '../types';
 import { CodeBlock } from '@/components/CodeBlock';
-import { McpInstaller } from '@/components/mcp';
+import { McpInstallation } from '@/components/mcp';
 import { TestConnectionStep } from './TestConnectionStep';
 
 interface StepContentProps {
@@ -46,7 +46,7 @@ export function StepContent({ step }: StepContentProps) {
       );
 
     case OnboardStep.INSTALL_MCP:
-      return <McpInstaller />;
+      return <McpInstallation />;
 
     case OnboardStep.TEST_CONNECTION:
       return <TestConnectionStep />;

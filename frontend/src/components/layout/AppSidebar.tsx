@@ -35,7 +35,6 @@ interface NavigationProps {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  external?: boolean;
 }
 
 const navigation: NavigationProps[] = [
@@ -100,25 +99,6 @@ export default function AppSidebar({
       </Button>
     );
 
-    if (item.external) {
-      return (
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <a href={item.href} target="_blank" rel="noopener noreferrer" className="block">
-                {buttonContent}
-              </a>
-            </TooltipTrigger>
-            {isCollapsed && (
-              <TooltipContent side="right">
-                <p>{item.name}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-
     return (
       <TooltipProvider delayDuration={300}>
         <Tooltip>
@@ -148,19 +128,15 @@ export default function AppSidebar({
       )}
     >
       {!isCompleted && (
-        <div className={`py-3 ${isCollapsed ? 'px-1' : 'px-3'}`}>
-          <div className="hidden lg:block">
-            <OnboardButton isCollapsed={isCollapsed} />
-          </div>
+        <div className={`py-3 ${isCollapsed ? 'pl-1 pr-[3px]' : 'pl-3 pr-[11px]'} overflow-hidden`}>
+          <OnboardButton isCollapsed={isCollapsed} />
         </div>
       )}
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
         <nav className="space-y-2">
           {dynamicNavigation.map((item) => (
-            <div key={item.name}>
-              <NavItem item={item} />
-            </div>
+            <NavItem key={item.name} item={item} />
           ))}
         </nav>
       </ScrollArea>

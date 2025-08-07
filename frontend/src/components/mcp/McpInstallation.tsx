@@ -20,7 +20,7 @@ interface McpInstallerProps {
   defaultAgent?: string;
 }
 
-export function McpInstaller({ className, defaultAgent = 'cursor' }: McpInstallerProps) {
+export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInstallerProps) {
   const [selectedAgent, setSelectedAgent] = useState<MCPAgent>(() => {
     return MCP_AGENTS.find((agent) => agent.id === defaultAgent) || MCP_AGENTS[0];
   });

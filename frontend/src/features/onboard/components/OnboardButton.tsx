@@ -32,14 +32,11 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
             <Button
               variant="ghost"
               className={cn(
-                'relative transition-all duration-200 ease-in-out group border-2 rounded-lg',
-                isCollapsed
-                  ? 'w-16 h-16 py-3 px-2.5 justify-center'
-                  : 'w-full h-16 justify-start px-4 gap-3',
+                'absolute w-full h-16 relative transition-all duration-200 ease-in-out border-2 rounded-lg justify-start',
+                isCollapsed ? 'pl-[11px] pr-2.5' : 'px-3.5',
                 isActive
                   ? 'border-zinc-900 bg-zinc-900 hover:bg-zinc-900'
-                  : 'border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400'
+                  : 'border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300'
               )}
             >
               <CircularStepper
@@ -49,7 +46,7 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
                 isActive={isActive}
               />
               {!isCollapsed && (
-                <div className="flex flex-col items-start">
+                <div className="absolute left-16.5 flex flex-col items-start">
                   <span
                     className={cn(
                       'font-semibold text-sm transition-colors duration-200',
@@ -72,7 +69,7 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
           </Link>
         </TooltipTrigger>
         {isCollapsed && (
-          <TooltipContent side="right" className="hidden lg:block">
+          <TooltipContent side="right">
             <div className="text-center">
               <p className="font-semibold">Get Started</p>
               <p className="text-xs text-text-gray">{currentDescription}</p>

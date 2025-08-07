@@ -37,5 +37,5 @@ export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGr
 export type { DataGridColumn, DataGridProps } from './DataGrid';
 
 // MCP Components
-export { McpInstaller, CursorDeeplinkGenerator } from './mcp';
+export { McpInstallation, CursorDeeplinkGenerator } from './mcp';
 export type { MCPAgent, PlatformType } from './mcp';
