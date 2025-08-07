@@ -51,13 +51,13 @@ export class AuthService {
    */
   verifyToken(token: string): TokenPayload {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
       return {
         sub: decoded.sub,
         email: decoded.email,
         role: decoded.role || 'authenticated',
       };
-    } catch (error) {
+    } catch {
       throw new Error('Invalid token');
     }
   }
@@ -69,7 +69,7 @@ export class AuthService {
   async verifyBetterAuthUserSessionToken(sessionToken: string): Promise<TokenPayload> {
     try {
       const baseURL = process.env.API_BASE_URL || 'http://localhost:7130';
-      
+
       // 1. Exchange session token for JWT using Better Auth's /token endpoint
       const tokenResponse = await axios.get('/api/auth/v2/token', {
         headers: {
@@ -122,7 +122,9 @@ export class AuthService {
    * Verify API key against stored key
    */
   async verifyApiKey(apiKey: string): Promise<boolean> {
-    if (!apiKey) return false;
+    if (!apiKey) {
+      return false;
+    }
     const dbManager = DatabaseManager.getInstance();
     const storedApiKey = await dbManager.getApiKey();
     return storedApiKey === apiKey;

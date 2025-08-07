@@ -3,9 +3,12 @@
 ## API Basics
 
 **Base URL:** `http://localhost:7130`  
-**Authentication:** All requests require `x-api-key` header (except public bucket downloads)  
+**Authentication:**
+- **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <session-token>` header
+- **Download from public buckets:** No authentication required
+- **List/manage buckets:** Requires authentication  
 **System:** Bucket-based storage with public/private access control
-**URL Format**: Response `url` field contains `/api/storage/buckets/...` - prepend host only (no /api)
+**URL Format**: Response `url` field contains `/api/storage/buckets/{bucket}/objects/{filename}` - correct format for serving files
 
 
 ## Bucket Operations (Use MCP Tools)
@@ -45,7 +48,7 @@ Returns:
 Example curl:
 ```bash
 curl -X PUT http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -F "file=@/path/to/image.jpg"
 ```
 
@@ -54,8 +57,8 @@ curl -X PUT http://localhost:7130/api/storage/buckets/avatars/objects/user123.jp
 
 Request:
 ```bash
-curl -X POST http://localhost:7130/api/storage/buckets/avatars/objects \
-  -H "x-api-key: YOUR_API_KEY" \
+curl -X POST http://localhost:7130/api/storage/buckets/posts/objects \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -F "file=@/path/to/image.jpg"
 ```
 

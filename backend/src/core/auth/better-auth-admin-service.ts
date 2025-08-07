@@ -279,7 +279,7 @@ export class BetterAuthAdminService {
   /**
    * Bulk delete users
    */
-  public async bulkDeleteUsers(userIds: string[]): Promise<{ deletedCount: number }> {
+  public async deleteUsers(userIds: string[]): Promise<{ deletedCount: number }> {
     if (!userIds || userIds.length === 0) {
       throw new APIError('BAD_REQUEST', {
         message: 'No user IDs provided',

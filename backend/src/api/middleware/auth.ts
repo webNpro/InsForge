@@ -25,10 +25,7 @@ function extractBearerToken(authHeader: string | undefined): string | null {
 }
 
 // Helper function to set user on request
-function setRequestUser(
-  req: AuthRequest,
-  payload: { sub: string; email: string; role: string }
-) {
+function setRequestUser(req: AuthRequest, payload: { sub: string; email: string; role: string }) {
   req.user = {
     id: payload.sub,
     email: payload.email,

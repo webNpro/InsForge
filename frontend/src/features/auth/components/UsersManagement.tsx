@@ -66,7 +66,7 @@ export function UsersManagement({
     try {
       setIsDeleting(true);
       const userIds = Array.from(selectedRows);
-      await authService.bulkDeleteUsers(userIds);
+      await authService.deleteUsers(userIds);
       setSelectedRows(new Set());
       setShowDeleteDialog(false);
       void refetch();
@@ -85,7 +85,7 @@ export function UsersManagement({
   // Handle single user deletion
   const handleDeleteSingleUser = async (userId: string) => {
     try {
-      await authService.bulkDeleteUsers([userId]);
+      await authService.deleteUsers([userId]);
       // Remove from selected rows if it was selected
       if (selectedRows.has(userId)) {
         const updated = new Set(selectedRows);

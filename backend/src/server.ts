@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { profileRouter } from '@/api/routes/profile.js';
 import { tablesRouter } from '@/api/routes/tables.js';
 import { databaseRouter } from '@/api/routes/records.js';
 import { storageRouter } from '@/api/routes/storage.js';
@@ -114,7 +113,22 @@ export async function createApp() {
   const { toNodeHandler } = await import('better-auth/node');
   const { auth } = await import('@/lib/better-auth.js');
   // Better Auth handles its own body parsing
-  app.all('/api/auth/v2/*', toNodeHandler(auth));
+  const handler = toNodeHandler(auth);
+
+  // Wrap to prevent crashes from Better Auth errors
+  app.all('/api/auth/v2/*', async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (error: any) {
+      logger.error('Better Auth error:', { message: error.message });
+      if (!res.headersSent) {
+        res.status(400).json({
+          code: 'BAD_REQUEST',
+          message: error.message || 'Invalid request',
+        });
+      }
+    }
+  });
   logger.info('Better Auth enabled at /api/auth/v2');
 
   // Apply JSON middleware after Better Auth

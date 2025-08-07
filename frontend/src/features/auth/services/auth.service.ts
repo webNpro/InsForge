@@ -79,8 +79,8 @@ export class AuthService {
     });
   }
 
-  async bulkDeleteUsers(userIds: string[]) {
-    return apiClient.request('/auth/v2/admin/users/bulk-delete', {
+  async deleteUsers(userIds: string[]) {
+    return apiClient.request('/auth/v2/admin/users', {
       method: 'DELETE',
       body: JSON.stringify({ userIds }),
     });

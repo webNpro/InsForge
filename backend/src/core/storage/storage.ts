@@ -279,10 +279,14 @@ export class StorageService {
       )
       .run(bucket, key, file.size, file.mimetype || null);
 
-    // Get the actual uploaded_at timestamp from database
+    // Get the actual uploaded_at timestamp from database (with alias for camelCase)
     const result = (await db
-      .prepare('SELECT uploaded_at FROM _storage WHERE bucket = ? AND key = ?')
-      .get(bucket, key)) as Pick<StorageRecord, 'uploaded_at'>;
+      .prepare('SELECT uploaded_at as uploadedAt FROM _storage WHERE bucket = ? AND key = ?')
+      .get(bucket, key)) as { uploadedAt: string } | undefined;
+
+    if (!result) {
+      throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
+    }
 
     // Log the upload activity
     const dbManager = DatabaseManager.getInstance();
@@ -295,9 +299,9 @@ export class StorageService {
       bucket,
       key,
       size: file.size,
-      mime_type: file.mimetype,
-      uploaded_at: result.uploaded_at,
-      url: `/api/storage/${bucket}/${encodeURIComponent(key)}`,
+      mimeType: file.mimetype,
+      uploadedAt: result.uploadedAt,
+      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
   }
 
@@ -327,7 +331,7 @@ export class StorageService {
       file,
       metadata: {
         ...metadata,
-        url: `/api/storage/${bucket}/${encodeURIComponent(key)}`,
+        url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       },
     };
   }
@@ -356,7 +360,7 @@ export class StorageService {
       const dbManager = DatabaseManager.getInstance();
       await dbManager.logActivity('DELETE', `storage/${bucket}`, key, {
         size: fileInfo.size,
-        mime_type: fileInfo.mime_type,
+        mime_type: fileInfo.mimeType,
       });
     }
 
@@ -401,7 +405,7 @@ export class StorageService {
     return {
       objects: objects.map((obj) => ({
         ...obj,
-        url: `/api/storage/${bucket}/${encodeURIComponent(obj.key)}`,
+        url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
       })),
       total,
     };

@@ -222,7 +222,7 @@ cleanup_test_data() {
             
             # Bulk delete test users
             if [ ${#user_ids[@]} -gt 0 ]; then
-                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/v2/admin/users/bulk-delete" \
+                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/v2/admin/users" \
                     -H "Authorization: Bearer $admin_token" \
                     -H "Content-Type: application/json" \
                     -d "{\"userIds\": [$(printf '"%s",' "${user_ids[@]}" | sed 's/,$//' )]}")

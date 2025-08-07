@@ -3,8 +3,16 @@
 ## API Basics
 
 **Base URL:** `http://localhost:7130`
-**Authentication:** All requests require authentication token (`Authorization: Bearer <token>` header)
-**Note:** The `x-api-key` header is only used for MCP testing and should not be used in production applications
+
+**Authentication Requirements:**
+- **READ operations (GET):** No authentication required - public access by default
+- **WRITE operations (POST/PATCH/DELETE):** Requires `Authorization: Bearer <session-token>` header
+- **Note:** The `x-api-key` header is only for MCP tool testing, not needed for regular API calls
+
+**Important: How Authentication Actually Works**
+1. Login returns a **session token** (NOT a JWT) - e.g., `ciJv6pHifEz2N7WRYRZFg8YF6D1jTnFk` (32 chars, no dots)
+2. Backend middleware automatically converts session token → JWT for PostgREST (handled transparently)
+3. Just use: `Authorization: Bearer <session-token>` - no JWT handling needed on your end
 **Critical:** Always call `get-backend-metadata` first to understand current database structure
 **Critical:** POST body must be arrays `[{...}]`, query filters `?field=eq.value`, add header `Prefer: return=representation` to return created data - follows PostgREST design (not traditional REST)
 
@@ -23,7 +31,7 @@
 - `integer` - Whole numbers
 - `float` - Decimal numbers
 - `boolean` - True/false values
-- `datetime` - Date and timep
+- `datetime` - Date and time
 - `json` - JSON objects
 - `uuid` - Unique identifiers
 
@@ -45,12 +53,14 @@ Response: Array of records with auto-generated `id`, `created_at`, `updated_at` 
 
 Example:
 ```bash
-curl -X GET "http://localhost:7130/api/database/records/users?limit=10" \
-  -H "Authorization: Bearer TOKEN"
+# No authentication needed for reading!
+curl -X GET "http://localhost:7130/api/database/records/posts?limit=10"
 ```
 
 ### Create Records
 **POST** `/api/database/records/:tableName`
+
+**AUTHENTICATION REQUIRED** - Must include `Authorization: Bearer <session-token>`
 
 **CRITICAL**: Request body MUST be an array, even for single records!
 
@@ -102,17 +112,36 @@ Response format (WITH `Prefer: return=representation` header):
 
 Example:
 ```bash
-curl -X POST http://localhost:7130/api/database/records/users \
-  -H "Authorization: Bearer TOKEN" \
+curl -X POST http://localhost:7130/api/database/records/comments \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
-  -d '[{"name": "John Doe", "email": "john@example.com"}]'
+  -d '[{"user_id": "from-localStorage", "post_id": "post-uuid", "content": "Great!"}]'
 ```
 
 ### Update Record
 **PATCH** `/api/database/records/:tableName?id=eq.uuid`
 
-**⚠️ IMPORTANT: Default Response Behavior**
+**AUTHENTICATION REQUIRED**
+
+**⚠️ IMPORTANT: PATCH Limitations**
+- **PostgREST does NOT support SQL expressions** like `count + 1`
+- You must fetch the current value and calculate in your code:
+
+```javascript
+// ❌ WRONG - This will NOT work
+await api.patch(`/api/database/records/posts?id=eq.${postId}`, {
+  comments_count: 'comments_count + 1'  // PostgREST doesn't evaluate expressions!
+});
+
+// ✅ CORRECT - Fetch and calculate
+const post = await api.get(`/api/database/records/posts?id=eq.${postId}`);
+await api.patch(`/api/database/records/posts?id=eq.${postId}`, {
+  comments_count: post.data[0].comments_count + 1
+});
+```
+
+**Default Response Behavior**
 - **By default, PATCH requests return an empty array `[]`**
 - **To get the updated record in the response, you MUST include the header:**
   ```
@@ -154,6 +183,8 @@ curl -X PATCH "http://localhost:7130/api/database/records/users?id=eq.UUID" \
 
 ### Delete Record
 **DELETE** `/api/database/records/:tableName?id=eq.uuid`
+
+**AUTHENTICATION REQUIRED**
 
 **⚠️ IMPORTANT: Delete Behavior**
 - **Without `Prefer: return=representation`**: Returns `204 No Content` (no body)
@@ -213,9 +244,25 @@ Example error:
 }
 ```
 
+## Pagination
+
+For paginated results, use the `Range` header:
+```bash
+curl "http://localhost:7130/api/database/records/posts" \
+  -H "Range: 0-9" \
+  -H "Prefer: count=exact"
+```
+
+Response includes `Content-Range` header:
+```
+Content-Range: 0-9/100  # Shows items 0-9 out of 100 total
+```
+
+Without `Prefer: count=exact`, you get: `Content-Range: 0-9/*` (no total count)
+
 ## 🚨 Critical: User Table is Read-Only
 
-**The `user` table has limited access:**
+**The `_user` table is managed by Better Auth:**
 - **✅ READ**: `GET /api/database/records/user` - Works!
 - **❌ WRITE**: POST/PUT/PATCH/DELETE returns `403 FORBIDDEN`
 - **Solution**: For additional user data, create `user_profiles` table:
@@ -261,7 +308,15 @@ curl -X POST http://localhost:7130/api/database/records/comments \
 
 ## Important Rules
 
-1. **Auto-Generated Fields**
+1. **Authentication Summary**:
+   | Operation | Auth Required | Header |
+   |-----------|--------------|--------|
+   | GET (read) | ❌ No | None needed |
+   | POST (create) | ✅ Yes | `Authorization: Bearer <session-token>` |
+   | PATCH (update) | ✅ Yes | `Authorization: Bearer <session-token>` |
+   | DELETE | ✅ Yes | `Authorization: Bearer <session-token>` |
+
+2. **Auto-Generated Fields**
    - `id` - UUID primary key (auto-generated)
    - `createdAt` - Timestamp (auto-set)
    - `updatedAt` - Timestamp (auto-updated)
@@ -271,9 +326,20 @@ curl -X POST http://localhost:7130/api/database/records/comments \
    - Better Auth tables (`user`, `session`, `account`) - use Auth API only
    - **`user` table is PROTECTED** - cannot query via database API
 
-3. **Remember**
-   - Schema changes use MCP tools
-   - Record operations use REST API
-   - All operations need authentication token (Bearer token)
-   - API keys (`x-api-key`) are only for MCP testing, not for production use
+3. **Common PostgREST Errors**:
+   ```json
+   {"code": "42501", "message": "permission denied for table comments"}
+   // Means: User not authenticated for write operation
+   
+   {"code": "PGRST301", "message": "JWSError (CompactDecodeError Invalid number of parts: Expected 3 parts; got 1)"}
+   // Means: Invalid or expired session token - user needs to login again
+   ```
+
+4. **Remember**
+   - READ operations are public (no auth needed)
+   - WRITE operations require session token from login
+   - POST needs array `[{...}]` even for single record
+   - Add `Prefer: return=representation` to see created/updated data  
+   - PATCH cannot use SQL expressions - calculate in JavaScript
+   - Session tokens from login work directly - no JWT handling needed
    - Always include `user_id` in user-related tables

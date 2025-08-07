@@ -357,11 +357,7 @@ export class DatabaseManager {
       `);
 
       // Create triggers for updated_at
-      const tables = [
-        '_config',
-        '_metadata',
-        '_edge_functions',
-      ];
+      const tables = ['_config', '_metadata', '_edge_functions'];
       for (const table of tables) {
         await client.query(`
           DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};
