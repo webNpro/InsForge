@@ -261,7 +261,7 @@ export function TableForm({
           // This field existed before
           processedOriginalColumns.add(col.originalName);
           const newDefaultValue = col.defaultValue || undefined;
-          const orginalDefaultValue = editTable.columns.find(
+          const originalDefaultValue = editTable.columns.find(
             (_col) => _col.columnName === col.originalName
           )?.defaultValue;
 
@@ -270,10 +270,10 @@ export function TableForm({
             updateColumns.push({
               columnName: col.originalName,
               defaultValue:
-                newDefaultValue !== orginalDefaultValue ? (newDefaultValue ?? '') : undefined,
+                newDefaultValue !== originalDefaultValue ? (newDefaultValue ?? '') : undefined,
               newColumnName: col.columnName,
             });
-          } else if (newDefaultValue !== orginalDefaultValue) {
+          } else if (newDefaultValue !== originalDefaultValue) {
             updateColumns.push({
               columnName: col.columnName,
               defaultValue: newDefaultValue ?? '',
