@@ -149,12 +149,6 @@
   font-family: 'Ubuntu Mono', 'Consolas', 'Monaco', monospace;
 }
 
-/* Custom focus styles */
-:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
-}
-
 /* Removed duplicate forced scrollbar */
 
 /* Ensure dropdown menu doesn't cause layout shift */
