@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
+import logger from '@/utils/logger.js';
 
 export interface WebSocketMessage {
   type: string;
@@ -49,7 +50,8 @@ export class WebSocketService {
         this.clients.delete(ws);
       });
 
-      ws.on('error', () => {
+      ws.on('error', (error) => {
+        logger.error('WebSocket error:', error);
         this.clients.delete(ws);
       });
     });

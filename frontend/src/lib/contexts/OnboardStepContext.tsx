@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { OnboardStep } from '@/features/onboard/types';
+import { OnboardStep, TOTAL_STEPS } from '@/features/onboard/types';
 
 interface OnboardContextValue {
   currentStep: OnboardStep;
@@ -50,7 +50,7 @@ export function OnboardStepProvider({ children }: { children: React.ReactNode })
 
   return (
     <OnboardContext.Provider
-      value={{ currentStep, updateStep, getCurrentDescription, totalSteps: Object.keys(OnboardStep).filter(key => !isNaN(Number(key))).length }}
+      value={{ currentStep, updateStep, getCurrentDescription, totalSteps: TOTAL_STEPS }}
     >
       {children}
     </OnboardContext.Provider>

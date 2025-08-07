@@ -4,3 +4,5 @@ export enum OnboardStep {
   TEST_CONNECTION = 3,
   FINAL_SETUP = 4,
 }
+
+export const TOTAL_STEPS = Object.keys(OnboardStep).filter(key => !isNaN(Number(key))).length;
