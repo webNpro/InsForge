@@ -222,6 +222,30 @@ export class TablesController {
   /**
    * Get table schema
    */
+  /**
+   * Parse PostgreSQL default value format
+   * Extracts the actual value from formats like 'abc'::text or 123::integer
+   */
+  private parseDefaultValue(defaultValue: string | null): string | undefined {
+    if (!defaultValue) {
+      return undefined;
+    }
+    // Handle string literals with type casting (e.g., 'abc'::text)
+    const stringMatch = defaultValue.match(/^'([^']*)'::[\w\s]+$/);
+    if (stringMatch) {
+      return stringMatch[1];
+    }
+
+    // Handle numeric/boolean values with type casting (e.g., 123::integer, true::boolean)
+    const typeCastMatch = defaultValue.match(/^(.+?)::[\w\s]+$/);
+    if (typeCastMatch) {
+      return typeCastMatch[1];
+    }
+
+    // Return as-is if no type casting pattern found
+    return defaultValue;
+  }
+
   async getTableSchema(table: string): Promise<GetTableSchemaResponse> {
     const db = this.dbManager.getAppDb();
 
@@ -305,7 +329,7 @@ export class TablesController {
         isNullable: col.is_nullable === 'YES',
         isPrimaryKey: pkSet.has(col.column_name),
         isUnique: pkSet.has(col.column_name) || uniqueSet.has(col.column_name),
-        defaultValue: col.column_default ?? undefined,
+        defaultValue: this.parseDefaultValue(col.column_default),
         ...(foreignKeyMap.has(col.column_name) && {
           foreignKey: foreignKeyMap.get(col.column_name),
         }),
@@ -360,15 +384,15 @@ export class TablesController {
 
     const safeTableName = this.quoteIdentifier(tableName);
 
-    const tableColumns = await db
-      .prepare(
-        `
-          SELECT column_name FROM information_schema.columns
-          WHERE table_schema = 'public' AND table_name = ?
-        `
-      )
-      .all(safeTableName);
-    const columnSet = new Set(tableColumns.map((c: { column_name: string }) => c.column_name));
+    // const tableColumns = await db
+    //   .prepare(
+    //     `
+    //       SELECT column_name FROM information_schema.columns
+    //       WHERE table_schema = 'public' AND table_name = ?
+    //     `
+    //   )
+    //   .all(safeTableName);
+    // const columnSet = new Set(tableColumns.map((c: { column_name: string }) => c.column_name));
 
     // Create a working copy of columnSet to track state changes during validation
     //const workingColumnSet = new Set(columnSet);
@@ -424,54 +448,12 @@ export class TablesController {
       }
     }
 
-    // Add new columns
-    if (addColumns && Array.isArray(addColumns)) {
-      // Validate and filter reserved fields
-      const columnsToAdd = this.validateReservedFields(addColumns);
-
-      for (const col of columnsToAdd) {
-        const fieldType = COLUMN_TYPES[col.type as ColumnType];
-        let sqlType = fieldType.sqlType;
-        if (col.type === ColumnType.UUID) {
-          sqlType = 'UUID';
-        }
-
-        const nullable = col.isNullable !== false ? '' : 'NOT NULL';
-        let defaultClause = '';
-
-        if (col.defaultValue !== undefined) {
-          defaultClause = `DEFAULT ${col.defaultValue}`;
-        } else if (col.isNullable === false && fieldType.defaultValue) {
-          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
-            defaultClause = 'DEFAULT gen_random_uuid()';
-          } else {
-            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
-          }
-        }
-
-        await db
-          .prepare(
-            `
-              ALTER TABLE ${safeTableName} 
-              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${defaultClause}
-            `
-          )
-          .exec();
-
-        completedOperations.push(`Added column: ${col.columnName}`);
-      }
-    }
-
     // Update columns
     if (updateColumns && Array.isArray(updateColumns)) {
       for (const column of updateColumns) {
-        if (!columnSet.has(column.columnName)) {
-          continue;
-        }
-
         // Handle default value changes
         if (column.defaultValue !== undefined) {
-          if (column.defaultValue === null || column.defaultValue === '') {
+          if (column.defaultValue === '') {
             // Drop default
             await db
               .prepare(
@@ -487,7 +469,7 @@ export class TablesController {
               .prepare(
                 `
                 ALTER TABLE ${safeTableName} 
-                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET DEFAULT ${column.defaultValue}
+                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET DEFAULT '${column.defaultValue}'
               `
               )
               .exec();
@@ -506,6 +488,44 @@ export class TablesController {
             .exec();
         }
         completedOperations.push(`Updated column: ${column.columnName}`);
+      }
+    }
+
+    // Add new columns
+    if (addColumns && Array.isArray(addColumns)) {
+      // Validate and filter reserved fields
+      const columnsToAdd = this.validateReservedFields(addColumns);
+
+      for (const col of columnsToAdd) {
+        const fieldType = COLUMN_TYPES[col.type as ColumnType];
+        let sqlType = fieldType.sqlType;
+        if (col.type === ColumnType.UUID) {
+          sqlType = 'UUID';
+        }
+
+        const nullable = col.isNullable !== false ? '' : 'NOT NULL';
+        let defaultClause = '';
+
+        if (col.defaultValue !== undefined) {
+          defaultClause = `DEFAULT '${col.defaultValue}'`;
+        } else if (col.isNullable === false && fieldType.defaultValue) {
+          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
+            defaultClause = 'DEFAULT gen_random_uuid()';
+          } else {
+            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
+          }
+        }
+
+        await db
+          .prepare(
+            `
+              ALTER TABLE ${safeTableName} 
+              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${defaultClause}
+            `
+          )
+          .exec();
+
+        completedOperations.push(`Added column: ${col.columnName}`);
       }
     }
 
@@ -537,7 +557,7 @@ export class TablesController {
         );
       }
 
-      const safeNewTableName = this.quoteIdentifier(renameTable.newTableName); 
+      const safeNewTableName = this.quoteIdentifier(renameTable.newTableName);
       // Check if new table name already exists
       const tableExists = await db
         .prepare(
@@ -550,7 +570,7 @@ export class TablesController {
           `
         )
         .get(safeNewTableName);
-      
+
       if (tableExists?.exists) {
         throw new AppError(
           `Table ${renameTable.newTableName} already exists`,
@@ -559,7 +579,7 @@ export class TablesController {
           `Table ${renameTable.newTableName} already exists. Please choose a different table name.`
         );
       }
-      
+
       // Rename the table
       await db
         .prepare(
@@ -569,7 +589,7 @@ export class TablesController {
           `
         )
         .exec();
-      
+
       completedOperations.push(`Renamed table from ${tableName} to ${renameTable.newTableName}`);
     }
 

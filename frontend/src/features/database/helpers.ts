@@ -122,8 +122,21 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
         values[column.columnName] = column.isNullable ? null : false;
         break;
       case ColumnType.INTEGER:
+        values[column.columnName] = column.defaultValue
+          ? parseInt(column.defaultValue, 10)
+          : column.isNullable
+            ? undefined
+            : 0;
+        break;
       case ColumnType.FLOAT:
-        values[column.columnName] = column.isNullable ? undefined : 0;
+        values[column.columnName] = column.defaultValue
+          ? parseFloat(column.defaultValue)
+          : column.isNullable
+            ? undefined
+            : 0;
+        break;
+      case ColumnType.STRING:
+        values[column.columnName] = column.defaultValue ?? '';
         break;
       default:
         values[column.columnName] = '';

@@ -260,13 +260,23 @@ export function TableForm({
         if (col.originalName) {
           // This field existed before
           processedOriginalColumns.add(col.originalName);
+          const newDefaultValue = col.defaultValue || undefined;
+          const orginalDefaultValue = editTable.columns.find(
+            (_col) => _col.columnName === col.originalName
+          )?.defaultValue;
 
           // Check if it was renamed
           if (col.originalName !== col.columnName) {
             updateColumns.push({
               columnName: col.originalName,
-              defaultValue: col.defaultValue || undefined,
+              defaultValue:
+                newDefaultValue !== orginalDefaultValue ? (newDefaultValue ?? '') : undefined,
               newColumnName: col.columnName,
+            });
+          } else if (newDefaultValue !== orginalDefaultValue) {
+            updateColumns.push({
+              columnName: col.columnName,
+              defaultValue: newDefaultValue ?? '',
             });
           }
         } else {
@@ -327,8 +337,8 @@ export function TableForm({
         dropColumns,
         updateColumns,
         addForeignKeys,
-        dropForeignKeys
-      }
+        dropForeignKeys,
+      };
 
       if (data.tableName !== editTable.tableName) {
         operations.renameTable = { newTableName: data.tableName };
@@ -435,7 +445,9 @@ export function TableForm({
                   className="h-10 rounded-md border-zinc-200 shadow-sm placeholder:text-zinc-500"
                 />
                 {form.formState.errors.tableName && (
-                  <p className="text-sm text-destructive">{form.formState.errors.tableName.message}</p>
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.tableName.message}
+                  </p>
                 )}
               </div>
             </div>
