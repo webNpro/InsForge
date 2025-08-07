@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -16,7 +14,7 @@ import {
   updateTableSchemaBase,
   CreateBucketRequest,
   createBucketRequestSchema
-} from './schemas/index.js';
+} from '@insforge/shared-schemas';
 
 // Parse command line arguments
 program.option('--api_key <value>', 'API Key');
