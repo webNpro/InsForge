@@ -11,7 +11,7 @@ import {
   CreateTableRequest,
   UpdateTableSchemaRequest,
   createTableRequestSchema,
-  updateTableSchemaBase,
+  updateTableSchemaRequestSchema,
   CreateBucketRequest,
   createBucketRequestSchema
 } from '@insforge/shared-schemas';
@@ -466,16 +466,17 @@ server.tool(
       .optional()
       .describe('API key for authentication (optional if provided via --api_key)'),
     tableName: z.string().describe('Name of the table to modify'),
-    ...updateTableSchemaBase.shape,
+    ...updateTableSchemaRequestSchema.shape,
   },
   async ({
     apiKey,
     tableName,
     addColumns,
     dropColumns,
-    renameColumns,
-    addFkeyColumns,
-    dropFkeyColumns,
+    updateColumns,
+    addForeignKeys,
+    dropForeignKeys,
+    renameTable,
   }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
@@ -489,14 +490,17 @@ server.tool(
       if (dropColumns) {
         requestBody.dropColumns = dropColumns;
       }
-      if (renameColumns) {
-        requestBody.renameColumns = renameColumns;
+      if (updateColumns) {
+        requestBody.updateColumns = updateColumns;
       }
-      if (addFkeyColumns) {
-        requestBody.addFkeyColumns = addFkeyColumns;
+      if (addForeignKeys) {
+        requestBody.addForeignKeys = addForeignKeys;
       }
-      if (dropFkeyColumns) {
-        requestBody.dropFkeyColumns = dropFkeyColumns;
+      if (dropForeignKeys) {
+        requestBody.dropForeignKeys = dropForeignKeys;
+      }
+      if (renameTable) {
+        requestBody.renameTable = renameTable;
       }
 
       const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {

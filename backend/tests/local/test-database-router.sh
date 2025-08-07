@@ -39,6 +39,7 @@ test_endpoint() {
         response=$(curl -s -w "\n%{http_code}" -X POST "$endpoint" \
             -H "Authorization: Bearer $AUTH_TOKEN" \
             -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
             -d "$data")
     fi
     
@@ -90,25 +91,25 @@ create_table_response=$(curl -s -X POST "$API_BASE/database/tables" \
         "tableName": "'$TEST_TABLE'",
         "rlsEnabled": false,
         "columns":[
-  {
-    "columnName": "name",
-    "type": "string",
-    "isNullable": true,
-    "isUnique": false
-  },
-  {
-    "columnName": "price",
-    "type": "float",
-    "isNullable": true,
-    "isUnique": false
-  },
-  {
-    "columnName": "category",
-    "type": "string",
-    "isNullable": true,
-    "isUnique": false
-  }
-] 
+            {
+                "columnName": "name",
+                "type": "string",
+                "isNullable": true,
+                "isUnique": false
+            },
+            {
+                "columnName": "price",
+                "type": "float",
+                "isNullable": true,
+                "isUnique": false
+            },
+            {
+                "columnName": "category",
+                "type": "string",
+                "isNullable": true,
+                "isUnique": false
+            }
+        ] 
     }')
 
 if ! echo "$create_table_response" | grep -q '"error"'; then
@@ -126,7 +127,7 @@ sleep 3
 
 # Insert data
 test_endpoint "POST" "$API_BASE/database/records/$TEST_TABLE" \
-    '{"name":"iPhone 15","price":999.99,"category":"Electronics"}' \
+    '[{"name":"iPhone 15","price":999.99,"category":"Electronics"}]' \
     "Insert product data"
 
 # Query data
@@ -148,6 +149,71 @@ test_endpoint "GET" "$API_BASE/database/records/$TEST_TABLE?select=name,price" \
 test_endpoint "GET" "$API_BASE/database/records/$TEST_TABLE?limit=1&offset=0" \
     "" \
     "Pagination query"
+
+# Test update table schema
+echo -e "${YELLOW}🔧 Testing table schema update...${NC}"
+
+# Add a new column
+update_schema_response=$(curl -s -w "\n%{http_code}" -X PATCH "$API_BASE/database/tables/$TEST_TABLE/schema" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "addColumns": [
+            {
+                "columnName": "discount",
+                "type": "float",
+                "isNullable": true,
+                "isUnique": false,
+                "defaultValue": "0.0"
+            }
+        ]
+    }')
+
+body=$(echo "$update_schema_response" | sed '$d')
+status=$(echo "$update_schema_response" | tail -n 1)
+
+if [ "$status" -eq 200 ]; then
+    print_success "Added column successfully"
+    echo "Response: $body" | head -c 200
+else
+    print_fail "Failed to add column ($status)"
+    echo "Error: $body"
+fi
+echo ""
+
+# Test multiple operations
+echo -e "${YELLOW}Test: Multiple schema operations${NC}"
+multi_ops_response=$(curl -s -w "\n%{http_code}" -X PATCH "$API_BASE/database/tables/$TEST_TABLE/schema" \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "addColumns": [
+            {
+                "columnName": "brand",
+                "type": "string",
+                "isNullable": true,
+                "isUnique": false
+            }
+        ],
+        "updateColumns": [
+            {
+                "columnName": "name",
+                "newColumnName": "product_name"
+            }
+        ]
+    }')
+
+body=$(echo "$multi_ops_response" | sed '$d')
+status=$(echo "$multi_ops_response" | tail -n 1)
+
+if [ "$status" -eq 200 ]; then
+    print_success "Multiple operations successful"
+    echo "Response: $body" | head -c 300
+else
+    print_fail "Multiple operations failed ($status)"
+    echo "Error: $body"
+fi
+echo ""
 
 echo -e "${GREEN}🎉 Database router test completed!${NC}"
 echo ""
