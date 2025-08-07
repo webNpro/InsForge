@@ -10,6 +10,7 @@ import {
   PanelRightOpen,
   BookOpen,
   ExternalLink,
+  RotateCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { Button } from '@/components/radix/Button';
@@ -20,6 +21,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
+import { OnboardButton } from '@/features/onboard/components/OnboardButton';
+import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
   currentUser: any;
@@ -32,7 +35,6 @@ interface NavigationProps {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  external?: boolean;
 }
 
 const navigation: NavigationProps[] = [
@@ -62,9 +64,22 @@ export default function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const location = useLocation();
+  const { isCompleted } = useOnboardingCompletion();
+
+  // Add reinstall navigation item when onboarding is completed
+  const dynamicNavigation = isCompleted
+    ? [
+        ...navigation,
+        {
+          name: 'Reinstall',
+          href: '/dashboard/onboard?step=1',
+          icon: RotateCw,
+        },
+      ]
+    : navigation;
 
   const NavItem = ({ item, onClick }: { item: NavigationProps; onClick?: () => void }) => {
-    const isActive = location.pathname === item.href;
+    const isActive = location.pathname === item.href.split('?')[0];
 
     const buttonContent = (
       <Button
@@ -83,25 +98,6 @@ export default function AppSidebar({
         )}
       </Button>
     );
-
-    if (item.external) {
-      return (
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <a href={item.href} target="_blank" rel="noopener noreferrer" className="block">
-                {buttonContent}
-              </a>
-            </TooltipTrigger>
-            {isCollapsed && (
-              <TooltipContent side="right">
-                <p>{item.name}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
 
     return (
       <TooltipProvider delayDuration={300}>
@@ -131,10 +127,15 @@ export default function AppSidebar({
         props.className
       )}
     >
+      {!isCompleted && (
+        <div className={`py-3 ${isCollapsed ? 'pl-1 pr-[3px]' : 'pl-3 pr-[11px]'} overflow-hidden`}>
+          <OnboardButton isCollapsed={isCollapsed} />
+        </div>
+      )}
       {/* Navigation */}
       <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
         <nav className="space-y-2">
-          {navigation.map((item) => (
+          {dynamicNavigation.map((item) => (
             <NavItem key={item.name} item={item} />
           ))}
         </nav>

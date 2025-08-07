@@ -12,7 +12,9 @@ import LogsPage from './features/logs/page/LogsPage';
 import AnalyticsLogsPage from './features/logs/page/AnalyticsLogsPage';
 import StoragePage from './features/storage/page/StoragePage';
 import MetadataPage from './features/metadata/page/MetadataPage';
+import OnBoardPage from './features/onboard/page/OnBoardPage';
 import Layout from './components/layout/Layout';
+import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +32,9 @@ function App() {
       <AuthErrorBoundary>
         <AuthProvider>
           <ToastProvider>
-            <AppRoutes />
+            <OnboardStepProvider>
+              <AppRoutes />
+            </OnboardStepProvider>
           </ToastProvider>
         </AuthProvider>
       </AuthErrorBoundary>
@@ -56,6 +60,7 @@ function AppRoutes() {
                 <Route path="/dashboard/logs" element={<LogsPage />} />
                 <Route path="/dashboard/analytics" element={<AnalyticsLogsPage />} />
                 <Route path="/dashboard/metadata" element={<MetadataPage />} />
+                <Route path="/dashboard/onboard" element={<OnBoardPage />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Layout>
