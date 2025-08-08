@@ -84,8 +84,8 @@ jobs:
             
             # Authentication
             JWT_SECRET=your-secret-jwt-key-must-be-32-characters-minimum
-            ADMIN_EMAIL=admin@insforge.com
-            ADMIN_PASSWORD=admin123
+            ADMIN_EMAIL=admin@example.com
+            ADMIN_PASSWORD=change-this-password
             
             # Logflare
             LOGFLARE_PUBLIC_ACCESS_TOKEN=your-super-secret-and-long-logflare-key-public
@@ -112,4 +112,4 @@ jobs:
             # Check deployment status
             sleep 10
             sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml ps
-            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml logs --tail=50
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml logs --tail=50======-
