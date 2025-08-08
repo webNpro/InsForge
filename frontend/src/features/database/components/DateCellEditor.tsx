@@ -9,7 +9,7 @@ interface DateCellEditorProps {
   value: string | null;
   type?: 'date' | 'datetime';
   nullable: boolean;
-  onValueChange: (newValue: string) => void;
+  onValueChange: (newValue: string | null) => void;
   onCancel: () => void;
 }
 
@@ -190,13 +190,22 @@ export function DateCellEditor({
     if (type === 'datetime') {
       const dateTime = new Date(selectedDate);
       dateTime.setHours(selectedHour, selectedMinute, 0, 0);
-      // Format as local ISO string to avoid timezone conversion
+      // Format as local ISO string with timezone offset
       const year = dateTime.getFullYear();
       const month = String(dateTime.getMonth() + 1).padStart(2, '0');
       const day = String(dateTime.getDate()).padStart(2, '0');
       const hours = String(selectedHour).padStart(2, '0');
       const minutes = String(selectedMinute).padStart(2, '0');
-      const localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+
+      // Get timezone offset in format +/-HH:MM
+      const offset = dateTime.getTimezoneOffset();
+      const absOffset = Math.abs(offset);
+      const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, '0');
+      const offsetMinutes = String(absOffset % 60).padStart(2, '0');
+      const offsetSign = offset <= 0 ? '+' : '-';
+      const timezoneOffset = `${offsetSign}${offsetHours}:${offsetMinutes}`;
+
+      const localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00${timezoneOffset}`;
       onValueChange(localISOString);
     } else {
       onValueChange(format(selectedDate, 'yyyy-MM-dd'));
@@ -206,7 +215,7 @@ export function DateCellEditor({
 
   const handleClear = () => {
     if (nullable) {
-      onValueChange('null');
+      onValueChange(null);
       setOpen(false);
     }
   };

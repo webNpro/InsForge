@@ -31,7 +31,9 @@ export default function DatabasePage() {
   const [selectedTable, setSelectedTable] = useState<string | null>(() => {
     return localStorage.getItem('selectedTable');
   });
+  const [pendingTableSelection, setPendingTableSelection] = useState<string>();
   const [showRecordForm, setShowRecordForm] = useState(false);
+  const [isTableFormDirty, setIsTableFormDirty] = useState(false);
   const [showTableForm, setShowTableForm] = useState(false);
   const [editingTable, setEditingTable] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,16 +190,22 @@ export default function DatabasePage() {
   useEffect(() => {
     if (metadata) {
       const tableNames = Object.keys(metadata.tables).filter((name) => !name.startsWith('_'));
+      if (pendingTableSelection && tableNames.includes(pendingTableSelection)) {
+        setSelectedTable(pendingTableSelection);
+        setPendingTableSelection(undefined);
+        return;
+      }
 
       if (selectedTable && !tableNames.includes(selectedTable)) {
         setSelectedTable(null);
+        return;
       }
 
-      if (!selectedTable && tableNames.length > 0) {
+      if (!selectedTable && tableNames.length > 0 && !showTableForm && !pendingTableSelection) {
         setSelectedTable(tableNames[0]);
       }
     }
-  }, [metadata, selectedTable]);
+  }, [metadata, pendingTableSelection, selectedTable, showTableForm]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -218,12 +226,49 @@ export default function DatabasePage() {
     }
   };
 
+  const handleTableFormClose = async (): Promise<boolean> => {
+    if (isTableFormDirty) {
+      const confirmOptions = {
+        title: 'Unsaved Changes',
+        description: `You have unsaved changes. Do you want to discard the changes and exit the form?`,
+        confirmText: 'Discard',
+        destructive: true,
+      };
+
+      const shouldDiscard = await confirm(confirmOptions);
+      if (shouldDiscard) {
+        setShowTableForm(false);
+        setEditingTable(null);
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      setShowTableForm(false);
+      return true;
+    }
+  };
+
+  const handleSelectTable = (tableName: string) => {
+    if (showTableForm) {
+      void handleTableFormClose().then((discarded) => {
+        if (discarded) {
+          setSelectedTable(tableName);
+        }
+      });
+    } else {
+      setSelectedTable(tableName);
+    }
+  };
+
   const handleCreateTable = () => {
+    setSelectedTable(null);
     setEditingTable(null);
     setShowTableForm(true);
   };
 
   const handleEditTable = (tableName: string) => {
+    setSelectedTable(tableName);
     setEditingTable(tableName);
     setShowTableForm(true);
   };
@@ -269,7 +314,7 @@ export default function DatabasePage() {
 
     try {
       // Find column schema to determine the correct type conversion
-      const columnSchema = tableData?.schema?.columns?.find((col: any) => col.name === columnKey);
+      const columnSchema = tableData?.schema?.columns?.find((col) => col.columnName === columnKey);
 
       // Convert value based on column type using utility function
       let convertedValue: any = newValue;
@@ -388,7 +433,7 @@ export default function DatabasePage() {
       <TableSidebar
         tables={filteredTables}
         selectedTable={selectedTable || undefined}
-        onTableSelect={setSelectedTable}
+        onTableSelect={handleSelectTable}
         loading={isLoading}
         onNewTable={handleCreateTable}
         onEditTable={handleEditTable}
@@ -403,17 +448,17 @@ export default function DatabasePage() {
             open={showTableForm}
             onOpenChange={(open) => {
               if (!open) {
-                setShowTableForm(false);
-                setEditingTable(null);
+                void handleTableFormClose();
               }
             }}
             mode={editingTable ? 'edit' : 'create'}
             editTable={editingTable ? editingTableSchema : undefined}
-            onSuccess={() => {
+            setFormIsDirty={setIsTableFormDirty}
+            onSuccess={(newTableName?: string) => {
               void refetchMetadata();
               void refetchTableData();
               setShowTableForm(false);
-              setEditingTable(null);
+              setPendingTableSelection(newTableName);
             }}
           />
         ) : (

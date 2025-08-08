@@ -1,3 +1,5 @@
+import { ColumnType } from '@insforge/shared-schemas';
+
 export interface ColumnSchema {
   type: string;
   nullable?: boolean;
@@ -23,12 +25,12 @@ export function convertValueForColumn(
   try {
     let convertedValue: any = newValue;
 
-    if (columnSchema.type === 'integer') {
+    if (columnSchema.type === ColumnType.INTEGER) {
       if (newValue === '' || newValue === null) {
         convertedValue = null;
       } else {
         convertedValue = parseInt(String(newValue), 10);
-        if (isNaN(convertedValue)) {
+        if (isNaN(convertedValue) || String(convertedValue) !== String(newValue)) {
           return {
             success: false,
             error: 'Please enter a valid integer',
@@ -62,12 +64,12 @@ export function convertValueForColumn(
           };
         }
       }
-    } else if (columnSchema.type === 'double precision' || columnSchema.type === 'float8') {
+    } else if (columnSchema.type === ColumnType.FLOAT) {
       if (newValue === '' || newValue === null) {
         convertedValue = null;
       } else {
         convertedValue = parseFloat(String(newValue));
-        if (isNaN(convertedValue)) {
+        if (isNaN(convertedValue) || String(convertedValue) !== String(newValue)) {
           return {
             success: false,
             error: 'Please enter a valid number',
@@ -151,7 +153,7 @@ export function convertValueForColumn(
           };
         }
       }
-    } else if (columnSchema.type === 'boolean') {
+    } else if (columnSchema.type === ColumnType.BOOLEAN) {
       if (typeof newValue === 'string') {
         switch (newValue.toLowerCase()) {
           case 'true':
