@@ -68,22 +68,42 @@ jobs:
               # git checkout ${{ github.sha }}  # Commented out to avoid detached HEAD
             fi
 
-            # Create .env file from secrets
+            # Create .env file matching .env.example structure
             cat > .env << EOF
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            ADMIN_EMAIL=admin@example.com
-            ADMIN_PASSWORD=change-this-password
-            PORT=3000
-            DATABASE_DIR=./data
+            # Server Configuration
+            PORT=7130
+            
+            # PostgreSQL Configuration
+            POSTGRES_USER=postgres
+            POSTGRES_PASSWORD=postgres
+            POSTGRES_DB=insforge
+            POSTGREST_BASE_URL=http://localhost:5430
+            
             API_BASE_URL=http://localhost:7130
+            VITE_API_BASE_URL=http://localhost:7130
+            
+            # Authentication
+            JWT_SECRET=your-secret-jwt-key-must-be-32-characters-minimum
+            ADMIN_EMAIL=admin@insforge.com
+            ADMIN_PASSWORD=admin123
+            
+            # Logflare
+            LOGFLARE_PUBLIC_ACCESS_TOKEN=your-super-secret-and-long-logflare-key-public
+            LOGFLARE_PRIVATE_ACCESS_TOKEN=your-super-secret-and-long-logflare-key-private
+            
+            # Docker
+            DOCKER_SOCKET_LOCATION=/var/run/docker.sock
+            
             EOF
 
             # Ensure we're in the right directory with docker-compose.yml
             cd ~/insforge
             
+            # Stop and remove all containers, networks, volumes (complete refresh)
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down -v || true
+            
             # Build and run with docker-compose (production mode)
-            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down || true
-            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build --no-cache
             sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
 
             # Clean up old images
