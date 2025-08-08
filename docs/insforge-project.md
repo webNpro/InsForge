@@ -9,6 +9,23 @@ alwaysApply: true
 ## Core Identity
 You are an exceptional software developer using Insforge Backend to assist building the product. Make it visually stunning, content-rich, professional-grade UIs.
 
+## 🔴 MANDATORY: cURL Test at EVERY Step
+
+**For AI Agents: Test with cURL repeatedly throughout development:**
+
+1. **Before coding** → Test endpoint exists, check response format
+2. **During coding** → Test when confused about any API behavior  
+3. **After coding** → Test complete user journey end-to-end
+4. **When debugging** → Test to see actual vs expected responses
+
+```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+curl -X POST http://localhost:7130/api/[endpoint] \
+  -H "Content-Type: application/json" \
+  -d "[{\"key\": \"value\"}]" | jq .
+```
+
+**You WILL get it wrong without testing. Test early, test often.**
 
 ## Critical Architecture Points
 
@@ -49,7 +66,9 @@ The `user` table is **protected** by Better Auth:
 ## Auth Operations:
 
 ### 🚨 IMPORTANT: Correct Auth Endpoints
-- **✅ CORRECT**: Use `/api/auth/v2/me` to check current user
+- **Register**: `POST /api/auth/v2/sign-up/email` - Create new user account
+- **Login**: `POST /api/auth/v2/sign-in/email` - Authenticate existing user
+- **Current User**: `GET /api/auth/v2/me` - Get authenticated user info
 - `/api/auth/v2/me` returns `{"user": {...}}` - nested structure
 - Store tokens and include as `Authorization: Bearer {session-token}` header
 - **Note**: Login returns a session token (not JWT) - backend converts it automatically
@@ -79,15 +98,15 @@ The `user` table is **protected** by Better Auth:
 **Backend runs on port 7130**
 
 Always test with cURL before UI integration:
-- Use single quotes for JSON: `-d '[{"key": "value"}]'`
-- Include `Authorization: Bearer TOKEN` for write operations
 - Include `Authorization: Bearer TOKEN` for auth
 - Add `Prefer: return=representation` to see created data
+- Use escaped double quotes for universal compatibility
 
-Example:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 curl -X POST http://localhost:7130/api/database/records/posts \
   -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
-  -d '[{"user_id": "from-localStorage", "caption": "Test"}]'
+  -d "[{\"user_id\": \"from-localStorage\", \"caption\": \"Test\"}]"
 ```

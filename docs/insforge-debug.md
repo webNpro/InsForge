@@ -29,6 +29,22 @@ Before debugging, you MUST read all documentation to understand how the API work
 4. Test with curl using exact format from docs
 5. Verify response matches documentation
 
+### Example Debug Tests
+
+```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Test GET endpoint
+curl -X GET http://localhost:7130/api/database/records/your_table \
+  -H "Authorization: Bearer YOUR_TOKEN" | jq .
+
+# Test POST with array format
+curl -X POST http://localhost:7130/api/database/records/your_table \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Prefer: return=representation" \
+  -d "[{\"field\": \"value\"}]" | jq .
+```
+
 ## Key Rules
 
 - Backend runs on port 7130
