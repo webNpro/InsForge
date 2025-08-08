@@ -31,7 +31,7 @@ export function Checkbox({
         <input
           type="checkbox"
           className={cn(
-            'w-4 h-4 bg-white rounded appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 row-start-1 col-start-1 disabled:cursor-not-allowed disabled:opacity-50',
+            'w-4 h-4 bg-white rounded appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)] cursor-pointer row-start-1 col-start-1 disabled:cursor-not-allowed disabled:opacity-50',
             className
           )}
           checked={indeterminate ? false : checked}
@@ -45,7 +45,7 @@ export function Checkbox({
           <img
             src={iconSrc}
             alt={iconAlt}
-            className={`pointer-events-none mx-auto w-4 h-4 bg-white rounded row-start-1 col-start-1 ${disabled ? 'opacity-50' : ''}`}
+            className={`pointer-events-none mx-auto w-4 h-4 bg-white rounded row-start-1 col-start-1 ${disabled ? 'opacity-20' : ''}`}
           />
         )}
       </div>

@@ -92,7 +92,7 @@ export const TableFormColumn = memo(function TableFormColumn({
             <Checkbox
               checked={field.value}
               onChange={field.onChange}
-              disabled={isSystemColumn}
+              disabled={!isNewColumn}
               className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
             />
           )}
@@ -108,7 +108,7 @@ export const TableFormColumn = memo(function TableFormColumn({
             <Checkbox
               checked={field.value}
               onChange={field.onChange}
-              disabled={isSystemColumn}
+              disabled={!isNewColumn}
               className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
             />
           )}
