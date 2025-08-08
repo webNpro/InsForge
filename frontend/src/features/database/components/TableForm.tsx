@@ -34,9 +34,10 @@ const newColumn: TableFormColumnSchema = {
 interface TableFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: (newTable?: string) => void;
   mode?: 'create' | 'edit';
   editTable?: TableSchema;
+  setFormIsDirty: (dirty: boolean) => void;
 }
 
 export function TableForm({
@@ -45,6 +46,7 @@ export function TableForm({
   onSuccess,
   mode = 'create',
   editTable,
+  setFormIsDirty,
 }: TableFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [showForeignKeyDialog, setShowForeignKeyDialog] = useState(false);
@@ -164,6 +166,10 @@ export function TableForm({
     }
   }, [mode, editTable, form, open]);
 
+  useEffect(() => {
+    setFormIsDirty(form.formState.isDirty);
+  }, [form.formState.isDirty, setFormIsDirty]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'columns',
@@ -215,17 +221,16 @@ export function TableForm({
 
       return databaseService.createTable(data.tableName, columns);
     },
-    onSuccess: (_) => {
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['metadata'] });
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
 
       showToast('Table created successfully!', 'success');
 
-      onOpenChange(false);
       form.reset();
       setError(null);
       setForeignKeys([]);
-      onSuccess?.();
+      onSuccess?.(data.tableName);
     },
     onError: (err) => {
       const errorMessage = err.message || 'Failed to create table';
@@ -358,7 +363,6 @@ export function TableForm({
 
       showToast(`Table "${data.tableName}" updated successfully!`, 'success');
 
-      onOpenChange(false);
       form.reset();
       setError(null);
       setForeignKeys([]);

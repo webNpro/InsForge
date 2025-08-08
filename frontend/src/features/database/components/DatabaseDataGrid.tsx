@@ -18,7 +18,7 @@ function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) 
     const oldValue = row[column.key];
     const newValue = value;
 
-    if (onCellEdit && oldValue !== newValue) {
+    if (onCellEdit && String(oldValue) !== String(newValue)) {
       try {
         await onCellEdit(row.id, column.key, newValue);
       } catch (error) {
@@ -29,7 +29,7 @@ function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) 
     const updatedRow = { ...row, [column.key]: newValue };
     onRowChange(updatedRow);
     onClose();
-  }, [row, column.key, value, onRowChange, onClose, onCellEdit]);
+  }, [row, column.key, value, onCellEdit, onRowChange, onClose]);
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
@@ -103,8 +103,11 @@ function CustomBooleanCellEditor({ row, column, onRowChange, onClose, onCellEdit
 
 function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) {
   const handleValueChange = React.useCallback(
-    async (newValue: string) => {
-      if (onCellEdit && row[column.key] !== newValue) {
+    async (newValue: string | null) => {
+      if (
+        onCellEdit &&
+        new Date(row[column.key]).getTime() !== new Date(newValue ?? '').getTime()
+      ) {
         try {
           await onCellEdit(row.id, column.key, newValue);
         } catch (error) {
