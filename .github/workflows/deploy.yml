@@ -52,9 +52,10 @@ jobs:
 
             # Pull latest code or fresh clone
             if [ -d ".git" ]; then
-              # Make sure we're on a branch, not detached HEAD
-              git checkout master || git checkout main
-              git pull origin master || git pull origin main
+              # Reset any local changes and get latest code
+              git fetch origin
+              git reset --hard origin/main || git reset --hard origin/master
+              git pull origin main || git pull origin master
             else
               # Remove existing non-git directory if it exists
               if [ -d ~/insforge ] && [ ! -d ~/insforge/.git ]; then
