@@ -53,6 +53,7 @@ Response: Array of records with auto-generated `id`, `created_at`, `updated_at` 
 
 Example:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # No authentication needed for reading!
 curl -X GET "http://localhost:7130/api/database/records/posts?limit=10"
 ```
@@ -112,6 +113,7 @@ Response format (WITH `Prefer: return=representation` header):
 
 Example:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -H "Content-Type: application/json" \
@@ -174,6 +176,7 @@ Response format (WITH `Prefer: return=representation` header):
 
 Example:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 curl -X PATCH "http://localhost:7130/api/database/records/users?id=eq.UUID" \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
@@ -216,6 +219,7 @@ Response format (WITH `Prefer: return=representation` header):
 
 Example:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 curl -X DELETE "http://localhost:7130/api/database/records/users?id=eq.UUID" \
   -H "Authorization: Bearer TOKEN" \
   -H "Prefer: return=representation"
@@ -248,6 +252,7 @@ Example error:
 
 For paginated results, use the `Range` header:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 curl "http://localhost:7130/api/database/records/posts" \
   -H "Range: 0-9" \
   -H "Prefer: count=exact"
@@ -289,11 +294,13 @@ const userId = localStorage.getItem('user_id');
 ```
 
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # ❌ WRONG - Missing user_id
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer TOKEN" \
   -d '[{"content": "Great post"}]'
 
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # ✅ CORRECT - Includes user_id
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer TOKEN" \

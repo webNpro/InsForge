@@ -63,6 +63,7 @@ Without the Bearer token, you'll get "permission denied" errors when trying to i
 
 ### Getting Authentication:
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # 1. First login to get JWT token
 curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
   -H "Content-Type: application/json" \
@@ -70,6 +71,7 @@ curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
 
 # Response includes token: {"token": "eyJ...", "user": {...}}
 
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # 2. Use the auth token for database operations
 curl -X POST http://localhost:7130/api/database/records/products \
   -H "Authorization: Bearer eyJ..." \
@@ -103,6 +105,7 @@ To work with users:
 After creating or modifying any API endpoint, always test it with curl to verify it works correctly:
 
 ```bash
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Example: Test creating a record (requires JWT token)
 curl -X POST http://localhost:7130/api/database/records/posts \
   -H "x-api-key: your-api-key" \
@@ -110,11 +113,13 @@ curl -X POST http://localhost:7130/api/database/records/posts \
   -H "Content-Type: application/json" \
   -d '[{"title": "Test Post", "content": "Test content"}]'
 
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Example: Test querying records (requires both API key and JWT token)
 curl http://localhost:7130/api/database/records/posts?id=eq.123 \
   -H "x-api-key: your-api-key" \
   -H "Authorization: Bearer your-jwt-token"
 
+# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Example: Test authentication
 curl -X POST http://localhost:7130/api/auth/register \
   -H "Content-Type: application/json" \
