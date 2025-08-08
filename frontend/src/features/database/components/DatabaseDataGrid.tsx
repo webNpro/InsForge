@@ -103,7 +103,7 @@ function CustomBooleanCellEditor({ row, column, onRowChange, onClose, onCellEdit
 
 function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) {
   const handleValueChange = React.useCallback(
-    async (newValue: string) => {
+    async (newValue: string | null) => {
       if (onCellEdit && new Date(row[column.key]).getTime() !== new Date(newValue).getTime()) {
         try {
           await onCellEdit(row.id, column.key, newValue);
