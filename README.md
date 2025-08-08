@@ -49,7 +49,7 @@ Prerequisites: [Docker](https://www.docker.com/) + [Node.js](https://nodejs.org/
 # Run with Docker
 git clone https://github.com/insforge/insforge.git
 cd insforge
-cp .env.docker.example .env
+cp .env.example .env
 docker compose up
 ```
 
