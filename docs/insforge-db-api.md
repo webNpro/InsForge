@@ -118,7 +118,7 @@ curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
-  -d '[{"user_id": "from-localStorage", "post_id": "post-uuid", "content": "Great!"}]'
+  -d "[{\"user_id\": \"from-localStorage\", \"post_id\": \"post-uuid\", \"content\": \"Great!\"}]"
 ```
 
 ### Update Record
@@ -298,14 +298,14 @@ const userId = localStorage.getItem('user_id');
 # ❌ WRONG - Missing user_id
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer TOKEN" \
-  -d '[{"content": "Great post"}]'
+  -d "[{\"content\": \"Great post\"}]"
 
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # ✅ CORRECT - Includes user_id
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer TOKEN" \
   -H "Prefer: return=representation" \
-  -d '[{"content": "Great post!", "user_id": "user-uuid-from-localStorage"}]'
+  -d "[{\"content\": \"Great post!\", \"user_id\": \"user-uuid-from-localStorage\"}]"
 ```
 
 **Required for all user-related operations:**

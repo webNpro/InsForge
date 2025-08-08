@@ -67,7 +67,7 @@ Without the Bearer token, you'll get "permission denied" errors when trying to i
 # 1. First login to get JWT token
 curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"your-password"}'
+  -d "{\"email\":\"admin@example.com\",\"password\":\"your-password\"}"
 
 # Response includes token: {"token": "eyJ...", "user": {...}}
 
@@ -76,7 +76,7 @@ curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
 curl -X POST http://localhost:7130/api/database/records/products \
   -H "Authorization: Bearer eyJ..." \
   -H "Content-Type: application/json" \
-  -d '[{"name": "Product", "price": 99.99}]'
+  -d "[{\"name\": \"Product\", \"price\": 99.99}]"
 ```
 ## System Tables
 
@@ -111,7 +111,7 @@ curl -X POST http://localhost:7130/api/database/records/posts \
   -H "x-api-key: your-api-key" \
   -H "Authorization: Bearer your-jwt-token" \
   -H "Content-Type: application/json" \
-  -d '[{"title": "Test Post", "content": "Test content"}]'
+  -d "[{\"title\": \"Test Post\", \"content\": \"Test content\"}]"
 
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Example: Test querying records (requires both API key and JWT token)
@@ -123,7 +123,7 @@ curl http://localhost:7130/api/database/records/posts?id=eq.123 \
 # Example: Test authentication
 curl -X POST http://localhost:7130/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "testpass123"}'
+  -d "{\"email\": \"test@example.com\", \"password\": \"testpass123\"}"
 ```
 
 Always include:
