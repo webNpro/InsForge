@@ -65,10 +65,15 @@ Response:
 ```
 
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Mac/Linux
 curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","password":"change-this-password"}'
+
+# Windows PowerShell (use curl.exe)
+curl.exe -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@example.com\",\"password\":\"change-this-password\"}"
+  -d '{\"email\":\"admin@example.com\",\"password\":\"change-this-password\"}'
 ```
 
 ## Error Response Format
@@ -132,10 +137,15 @@ Response (when disableRedirect: true):
 ```
 
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Mac/Linux
 curl -X POST http://localhost:7130/api/auth/v2/sign-in/social \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"google","callbackURL":"http://localhost:7131/dashboard","disableRedirect":true}'
+
+# Windows PowerShell (use curl.exe)
+curl.exe -X POST http://localhost:7130/api/auth/v2/sign-in/social \
   -H "Content-Type: application/json" \
-  -d "{\"provider\":\"google\",\"callbackURL\":\"http://localhost:7131/dashboard\",\"disableRedirect\":true}"
+  -d '{\"provider\":\"google\",\"callbackURL\":\"http://localhost:7131/dashboard\",\"disableRedirect\":true}'
 ```
 
 #### OAuth Callback

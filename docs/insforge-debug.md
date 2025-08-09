@@ -32,17 +32,25 @@ Before debugging, you MUST read all documentation to understand how the API work
 ### Example Debug Tests
 
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Test GET endpoint
+# Windows PowerShell: use curl.exe
 curl -X GET http://localhost:7130/api/database/records/your_table \
   -H "Authorization: Bearer YOUR_TOKEN" | jq .
 
 # Test POST with array format
+# Mac/Linux
 curl -X POST http://localhost:7130/api/database/records/your_table \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Prefer: return=representation' \
+  -d '[{"field": "value"}]' | jq .
+
+# Windows PowerShell (use curl.exe) - different quotes for nested JSON
+curl.exe -X POST http://localhost:7130/api/database/records/your_table \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Prefer: return=representation" \
-  -d "[{\"field\": \"value\"}]" | jq .
+  -d '[{\"field\": \"value\"}]' | jq .
 ```
 
 ## Key Rules
