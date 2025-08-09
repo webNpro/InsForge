@@ -282,10 +282,10 @@ export class DatabaseManager {
         deployed_at TIMESTAMPTZ
       );
 
-      -- Better Auth Tables
+      -- Better Auth Tables (using native UUID for optimal storage)
       -- User table
       CREATE TABLE IF NOT EXISTS _user (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         "email" TEXT UNIQUE NOT NULL,
         "emailVerified" BOOLEAN DEFAULT false,
         "name" TEXT,
@@ -296,8 +296,8 @@ export class DatabaseManager {
 
       -- Session table
       CREATE TABLE IF NOT EXISTS _session (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-        "userId" TEXT NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
         "expiresAt" TIMESTAMPTZ NOT NULL,
         "token" TEXT UNIQUE NOT NULL,
         "ipAddress" TEXT,
@@ -308,8 +308,8 @@ export class DatabaseManager {
 
       -- Account table (for OAuth and credentials)
       CREATE TABLE IF NOT EXISTS _account (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-        "userId" TEXT NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
         "accountId" TEXT NOT NULL,
         "providerId" TEXT NOT NULL,
         "accessToken" TEXT,
@@ -326,7 +326,7 @@ export class DatabaseManager {
 
       -- Verification table
       CREATE TABLE IF NOT EXISTS _verification (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         "identifier" TEXT NOT NULL,
         "value" TEXT NOT NULL,
         "expiresAt" TIMESTAMPTZ NOT NULL,
@@ -337,7 +337,7 @@ export class DatabaseManager {
       -- JWT plugin tables (no underscore prefix for Better Auth compatibility)
       -- Although better auth allows us to use underscore prefix rename, there is a bug where it's /token endpoint still uses old name
       CREATE TABLE IF NOT EXISTS jwks (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         "publicKey" TEXT NOT NULL,
         "privateKey" TEXT NOT NULL,
         "createdAt" TIMESTAMPTZ DEFAULT NOW()
