@@ -1,0 +1,26 @@
+name: CI Pre-merge Check
+
+on:
+  pull_request:
+    branches: [ main, master, develop ]
+  push:
+    branches: [ main, master, develop ]
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: insforge:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
