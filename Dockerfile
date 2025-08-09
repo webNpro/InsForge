@@ -16,7 +16,6 @@ RUN npm ci --production=false
 # Copy source code
 COPY . .
 
-# Build the application (both backend and frontend)
 RUN npm run build
 
 # Expose ports

@@ -45,16 +45,19 @@ jobs:
               sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
-
+            
             # Navigate to application directory
             mkdir -p ~/insforge
             cd ~/insforge
 
             # Pull latest code or fresh clone
             if [ -d ".git" ]; then
-              # Make sure we're on a branch, not detached HEAD
-              git checkout master || git checkout main
-              git pull origin master || git pull origin main
+              # Clean up old branches and reset to latest
+              git remote prune origin
+              git fetch --all --prune
+              # Use the branch that triggered the workflow
+              git checkout ${{ github.ref_name }} || git checkout main || git checkout master
+              git reset --hard origin/${{ github.ref_name }} || git reset --hard origin/main || git reset --hard origin/master
             else
               # Remove existing non-git directory if it exists
               if [ -d ~/insforge ] && [ ! -d ~/insforge/.git ]; then
@@ -68,22 +71,55 @@ jobs:
               # git checkout ${{ github.sha }}  # Commented out to avoid detached HEAD
             fi
 
-            # Create .env file from secrets
+            # Create .env file matching .env.example structure
             cat > .env << EOF
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            # Server Configuration
+            PORT=7130
+            
+            # PostgreSQL Configuration
+            POSTGRES_USER=postgres
+            POSTGRES_PASSWORD=postgres
+            POSTGRES_DB=insforge
+            POSTGREST_BASE_URL=http://localhost:5430
+            
+            API_BASE_URL=http://localhost:7130
+            VITE_API_BASE_URL=http://localhost:7130
+            
+            # Authentication
+            JWT_SECRET=your-secret-jwt-key-must-be-32-characters-minimum
             ADMIN_EMAIL=admin@example.com
             ADMIN_PASSWORD=change-this-password
-            PORT=3000
-            DATABASE_DIR=./data
-            API_BASE_URL=http://localhost:7130
+            
+            # Logflare
+            LOGFLARE_PUBLIC_ACCESS_TOKEN=your-super-secret-and-long-logflare-key-public
+            LOGFLARE_PRIVATE_ACCESS_TOKEN=your-super-secret-and-long-logflare-key-private
+            
+            # Docker
+            DOCKER_SOCKET_LOCATION=/var/run/docker.sock
+            
             EOF
 
             # Ensure we're in the right directory with docker-compose.yml
             cd ~/insforge
             
-            # Build and run with docker-compose (production mode)
-            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down || true
-            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build
+            # Stop ALL containers regardless of which compose file started them
+            # This ensures clean slate even if previous deploy used different compose file
+            sudo docker stop $(sudo docker ps -aq) || true
+            sudo docker rm $(sudo docker ps -aq) || true
+            
+            # Also try to stop using both compose files (in case either was used)
+            # IMPORTANT: Specify -f for dev file too, to avoid default file selection
+            sudo /usr/local/bin/docker-compose -f docker-compose.yml down -v || true
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down -v || true
+            
+            # Clean up any orphaned volumes and networks
+            sudo docker volume prune -f || true
+            sudo docker network prune -f || true
+            
+            # Build fresh image with no cache and latest base images
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build --no-cache --pull
+            
+            # Now start fresh with production compose
             sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
 
             # Clean up old images

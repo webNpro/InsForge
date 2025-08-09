@@ -50,7 +50,7 @@ export class WebSocketService {
         this.clients.delete(ws);
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', (error: Error) => {
         logger.error('WebSocket error:', error);
         this.clients.delete(ws);
       });
