@@ -154,7 +154,11 @@ export function ForeignKeyPopover({
                   {columns
                     .filter((col) => col.columnName)
                     .map((col, index) => (
-                      <SelectItem key={col.columnName || index} value={col.columnName}>
+                      <SelectItem
+                        key={col.columnName || index}
+                        value={col.columnName}
+                        disabled={col.isSystemColumn}
+                      >
                         {col.columnName} ({col.type})
                       </SelectItem>
                     ))}
