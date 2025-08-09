@@ -24,6 +24,12 @@ import {
 import { validateIdentifier } from '@/utils/validations.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
+const reservedColumns = {
+  id: ColumnType.UUID,
+  created_at: ColumnType.DATETIME,
+  updated_at: ColumnType.DATETIME,
+};
+
 export class TablesController {
   private dbManager: DatabaseManager;
   private metadataService: MetadataService;
@@ -212,7 +218,7 @@ export class TablesController {
       tableName: table_name,
       columns: validatedColumns.map((col) => ({
         ...col,
-        sql_type: COLUMN_TYPES[col.type].sqlType,
+        sqlType: COLUMN_TYPES[col.type].sqlType,
       })),
       autoFields: ['id', 'created_at', 'updated_at'],
       nextActions: 'you can now use the table with the POST /api/database/tables/{table} endpoint',
@@ -410,6 +416,14 @@ export class TablesController {
     // Drop columns first (to avoid conflicts with renames)
     if (dropColumns && Array.isArray(dropColumns)) {
       for (const col of dropColumns) {
+        if (Object.keys(reservedColumns).includes(col)) {
+          throw new AppError(
+            'cannot drop system columns',
+            404,
+            ERROR_CODES.DATABASE_FORBIDDEN,
+            `You cannot drop the system column '${col}'`
+          );
+        }
         await db
           .prepare(
             `
@@ -426,6 +440,15 @@ export class TablesController {
     // Update columns
     if (updateColumns && Array.isArray(updateColumns)) {
       for (const column of updateColumns) {
+        if (Object.keys(reservedColumns).includes(column.columnName)) {
+          throw new AppError(
+            'cannot update system columns',
+            404,
+            ERROR_CODES.DATABASE_FORBIDDEN,
+            `You cannot update the system column '${column.columnName}'`
+          );
+        }
+
         // Handle default value changes
         if (column.defaultValue !== undefined) {
           if (column.defaultValue === '') {
@@ -507,6 +530,14 @@ export class TablesController {
     // Add foreign key constraints
     if (addForeignKeys && Array.isArray(addForeignKeys)) {
       for (const col of addForeignKeys) {
+        if (Object.keys(reservedColumns).includes(col.columnName)) {
+          throw new AppError(
+            'cannot add foreign key on system columns',
+            404,
+            ERROR_CODES.DATABASE_FORBIDDEN,
+            `You cannot add foreign key on the system column '${col.columnName}'`
+          );
+        }
         const fkeyConstraint = this.generateFkeyConstraintStatement(col, true);
         await db
           .prepare(
@@ -608,13 +639,8 @@ export class TablesController {
   }
 
   private validateReservedFields(columns: ColumnSchema[]): ColumnSchema[] {
-    const reservedFields = {
-      id: ColumnType.UUID,
-      created_at: ColumnType.DATETIME,
-      updated_at: ColumnType.DATETIME,
-    };
     return columns.filter((col: ColumnSchema) => {
-      const reservedType = reservedFields[col.columnName as keyof typeof reservedFields];
+      const reservedType = reservedColumns[col.columnName as keyof typeof reservedColumns];
       if (reservedType) {
         // If it's a reserved field name
         if (col.type === reservedType) {
