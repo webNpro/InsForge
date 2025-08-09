@@ -108,7 +108,8 @@ jobs:
             sudo docker rm $(sudo docker ps -aq) || true
             
             # Also try to stop using both compose files (in case either was used)
-            sudo /usr/local/bin/docker-compose down -v || true
+            # IMPORTANT: Specify -f for dev file too, to avoid default file selection
+            sudo /usr/local/bin/docker-compose -f docker-compose.yml down -v || true
             sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml down -v || true
             
             # Clean up any orphaned volumes and networks
