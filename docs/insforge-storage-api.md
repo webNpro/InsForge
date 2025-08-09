@@ -47,7 +47,7 @@ Returns:
 
 Example curl:
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Windows PowerShell: use curl.exe
 curl -X PUT http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -F "file=@/path/to/image.jpg"
@@ -58,7 +58,7 @@ curl -X PUT http://localhost:7130/api/storage/buckets/avatars/objects/user123.jp
 
 Request:
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Windows PowerShell: use curl.exe
 curl -X POST http://localhost:7130/api/storage/buckets/posts/objects \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
   -F "file=@/path/to/image.jpg"
@@ -123,7 +123,7 @@ Pagination headers:
 
 Example curl:
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Windows PowerShell: use curl.exe
 curl -X GET "http://localhost:7130/api/storage/buckets/avatars/objects?limit=10&prefix=users/" \
   -H "x-api-key: YOUR_API_KEY"
 ```
@@ -140,7 +140,7 @@ Returns:
 
 Example curl:
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Windows PowerShell: use curl.exe
 curl -X DELETE http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg \
   -H "x-api-key: YOUR_API_KEY"
 ```
@@ -165,11 +165,17 @@ Returns:
 
 Example curl:
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Mac/Linux
 curl -X PATCH http://localhost:7130/api/storage/buckets/avatars \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"isPublic": true}'
+
+# Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
+curl.exe -X PATCH http://localhost:7130/api/storage/buckets/avatars \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"isPublic": true}'
+  -d '{\"isPublic\": true}'
 ```
 
 ## Database Integration

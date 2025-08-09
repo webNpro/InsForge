@@ -19,10 +19,15 @@ You are an exceptional software developer using Insforge Backend to assist build
 4. **When debugging** → Test to see actual vs expected responses
 
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Mac/Linux
 curl -X POST http://localhost:7130/api/[endpoint] \
+  -H 'Content-Type: application/json' \
+  -d '[{"key": "value"}]' | jq .
+
+# Windows PowerShell (use curl.exe) - different quotes for nested JSON
+curl.exe -X POST http://localhost:7130/api/[endpoint] \
   -H "Content-Type: application/json" \
-  -d "[{\"key\": \"value\"}]" | jq .
+  -d '[{\"key\": \"value\"}]' | jq .
 ```
 
 **You WILL get it wrong without testing. Test early, test often.**
@@ -100,13 +105,20 @@ The `user` table is **protected** by Better Auth:
 Always test with cURL before UI integration:
 - Include `Authorization: Bearer TOKEN` for auth
 - Add `Prefer: return=representation` to see created data
-- Use escaped double quotes for universal compatibility
+- Windows PowerShell: use curl.exe
 
 ```bash
-# Works on both Windows and Unix (Windows PowerShell: use curl.exe)
+# Mac/Linux
 curl -X POST http://localhost:7130/api/database/records/posts \
+  -H 'Authorization: Bearer TOKEN' \
+  -H 'Content-Type: application/json' \
+  -H 'Prefer: return=representation' \
+  -d '[{"user_id": "from-localStorage", "caption": "Test"}]'
+
+# Windows PowerShell (use curl.exe) - different quotes for nested JSON
+curl.exe -X POST http://localhost:7130/api/database/records/posts \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
-  -d "[{\"user_id\": \"from-localStorage\", \"caption\": \"Test\"}]"
+  -d '[{\"user_id\": \"from-localStorage\", \"caption\": \"Test\"}]'
 ```
