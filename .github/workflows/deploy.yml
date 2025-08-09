@@ -116,6 +116,9 @@ jobs:
             sudo docker volume prune -f || true
             sudo docker network prune -f || true
             
+            # Build fresh image with no cache and latest base images
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml build --no-cache --pull
+            
             # Now start fresh with production compose
             sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
 
