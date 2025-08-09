@@ -9,7 +9,7 @@ on:
 
 jobs:
   docker-build:
-    name: Docker Build Check
+    name: CI Pre-merge Check
     runs-on: ubuntu-latest
     
     steps:
@@ -21,4 +21,4 @@ jobs:
       with:
         context: .
         push: false
-        tags: insforge:docker-build-test
+        tags: insforge:test
