@@ -282,7 +282,7 @@ export class DatabaseManager {
         deployed_at TIMESTAMPTZ
       );
 
-      -- Better Auth Tables (using native UUID for optimal storage)
+      -- Better Auth Tables
       -- User table
       CREATE TABLE IF NOT EXISTS _user (
         "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
