@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, type DragEvent } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Upload } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg';
@@ -32,6 +32,7 @@ interface BucketFormState {
 export default function StoragePage() {
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [_isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -177,8 +178,7 @@ export default function StoragePage() {
     void queryClient.invalidateQueries({ queryKey: ['storage'] });
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const uploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedBucket) {
       return;
     }
@@ -231,6 +231,19 @@ export default function StoragePage() {
     }
   };
 
+  const handleFileUpload = useCallback(uploadFiles, [
+    cancelUpload,
+    selectedBucket,
+    showToast,
+    showUploadToast,
+    updateUploadProgress,
+    uploadMutation,
+  ]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    await handleFileUpload(event.target.files);
+  };
+
   const handleDeleteBucket = async (bucketName: string) => {
     const confirmOptions = {
       title: 'Delete Bucket',
@@ -273,6 +286,24 @@ export default function StoragePage() {
     });
     setBucketFormOpen(true);
   };
+
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((_event: DragEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragging(false);
+      void handleFileUpload(event.dataTransfer.files);
+    },
+    [handleFileUpload]
+  );
 
   const error = bucketsError;
 
@@ -414,7 +445,12 @@ export default function StoragePage() {
             </div>
 
             {/* Content */}
-            <div className="relative flex-1 flex flex-col overflow-hidden">
+            <div
+              className="relative flex-1 flex flex-col overflow-hidden"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               {error && (
                 <Alert variant="destructive" className="mb-4 mx-8 mt-4">
                   <AlertDescription>{String(error)}</AlertDescription>
