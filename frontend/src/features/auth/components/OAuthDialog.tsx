@@ -20,7 +20,7 @@ import { CopyButton } from '@/components/CopyButton';
 const getCallbackUrl = () => {
   // Use backend API URL for OAuth callback
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
-  return `${apiBaseUrl}/api/auth/v2/callback`;
+  return `${apiBaseUrl}/api/auth/v1/callback`;
 };
 
 // OAuth provider configuration schema

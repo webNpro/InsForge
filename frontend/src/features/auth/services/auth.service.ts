@@ -11,29 +11,25 @@ export interface User {
 
 export class AuthService {
   async login(email: string, password: string) {
-    const data = await apiClient.request('/auth/v2/admin/sign-in', {
+    const data = await apiClient.request('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
 
     // Set token in apiClient
-    if (data.token) {
-      apiClient.setToken(data.token);
+    if (data.data?.accessToken) {
+      apiClient.setToken(data.data.accessToken);
     }
 
     // Return unified format
     return {
-      accessToken: data.token,
-      user: {
-        ...data.user,
-        createdAt: data.user.createdAt,
-        updatedAt: data.user.updatedAt,
-      },
+      accessToken: data.data?.accessToken,
+      user: data.data?.user,
     };
   }
 
   async getCurrentUser() {
-    const response = await apiClient.request('/auth/v2/me');
+    const response = await apiClient.request('/auth/me');
     return response.user;
   }
 
@@ -48,7 +44,7 @@ export class AuthService {
    * @returns Users list with total count
    */
   async getUsers(queryParams: string = '', searchQuery?: string) {
-    let url = '/auth/v2/admin/users';
+    let url = '/auth/users';
     const params = new URLSearchParams(queryParams);
 
     if (searchQuery && searchQuery.trim()) {
@@ -68,19 +64,20 @@ export class AuthService {
   }
 
   async getUser(id: string) {
-    return await apiClient.request(`/auth/v2/admin/users/${id}`);
+    return await apiClient.request(`/auth/users/${id}`);
   }
 
-  async register(email: string, password: string, name?: string, id?: string) {
-    // Better Auth doesn't support custom IDs, so id parameter is ignored
-    return apiClient.request('/auth/v2/sign-up/email', {
+  async register(email: string, password: string, name?: string) {
+    const response = await apiClient.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
+    
+    return response.data;
   }
 
   async deleteUsers(userIds: string[]) {
-    return apiClient.request('/auth/v2/admin/users', {
+    return apiClient.request('/auth/users', {
       method: 'DELETE',
       body: JSON.stringify({ userIds }),
     });

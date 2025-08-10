@@ -267,7 +267,6 @@ export class DatabaseManager {
         FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
       );
 
-      -- Better Auth uses _account table for OAuth
 
       -- Edge functions
       CREATE TABLE IF NOT EXISTS _edge_functions (
@@ -282,65 +281,30 @@ export class DatabaseManager {
         deployed_at TIMESTAMPTZ
       );
 
-      -- Better Auth Tables
+      -- Auth Tables (2-table structure)
       -- User table
       CREATE TABLE IF NOT EXISTS _user (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "email" TEXT UNIQUE NOT NULL,
-        "emailVerified" BOOLEAN DEFAULT false,
-        "name" TEXT,
-        "image" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE NOT NULL,
+        password TEXT, -- NULL for OAuth-only users
+        name TEXT,
+        email_verified BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
-      -- Session table
-      CREATE TABLE IF NOT EXISTS _session (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
-        "expiresAt" TIMESTAMPTZ NOT NULL,
-        "token" TEXT UNIQUE NOT NULL,
-        "ipAddress" TEXT,
-        "userAgent" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- Account table (for OAuth and credentials)
+      -- Account table (for OAuth connections)
       CREATE TABLE IF NOT EXISTS _account (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
-        "accountId" TEXT NOT NULL,
-        "providerId" TEXT NOT NULL,
-        "accessToken" TEXT,
-        "refreshToken" TEXT,
-        "idToken" TEXT,
-        "accessTokenExpiresAt" TIMESTAMPTZ,
-        "refreshTokenExpiresAt" TIMESTAMPTZ,
-        "scope" TEXT,
-        "password" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE("providerId", "accountId")
-      );
-
-      -- Verification table
-      CREATE TABLE IF NOT EXISTS _verification (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "identifier" TEXT NOT NULL,
-        "value" TEXT NOT NULL,
-        "expiresAt" TIMESTAMPTZ NOT NULL,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- JWT plugin tables (no underscore prefix for Better Auth compatibility)
-      -- Although better auth allows us to use underscore prefix rename, there is a bug where it's /token endpoint still uses old name
-      CREATE TABLE IF NOT EXISTS jwks (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-        "publicKey" TEXT NOT NULL,
-        "privateKey" TEXT NOT NULL,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES _user(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL,
+        provider_account_id TEXT NOT NULL,
+        access_token TEXT,
+        refresh_token TEXT,
+        provider_data JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(provider, provider_account_id)
       );
 
     `);
@@ -371,12 +335,10 @@ export class DatabaseManager {
         CREATE INDEX IF NOT EXISTS idx_edge_functions_slug ON _edge_functions(slug);
         CREATE INDEX IF NOT EXISTS idx_edge_functions_status ON _edge_functions(status);
         
-        -- Better Auth indexes
-        CREATE INDEX IF NOT EXISTS idx_user_email ON _user("email");
-        CREATE INDEX IF NOT EXISTS idx_session_userId ON _session("userId");
-        CREATE INDEX IF NOT EXISTS idx_session_token ON _session("token");
-        CREATE INDEX IF NOT EXISTS idx_account_userId ON _account("userId");
-        CREATE INDEX IF NOT EXISTS idx_verification_identifier ON _verification("identifier");
+        -- Auth indexes for our 2-table structure
+        CREATE INDEX IF NOT EXISTS idx_user_email ON _user(email);
+        CREATE INDEX IF NOT EXISTS idx_account_user_id ON _account(user_id);
+        CREATE INDEX IF NOT EXISTS idx_account_provider ON _account(provider, provider_account_id);
       `);
 
       // Insert initial metadata
