@@ -399,12 +399,14 @@ export class StorageService {
     query += ' ORDER BY key LIMIT ? OFFSET ?';
     const queryParams = [...params, limit, offset];
 
-    const objects = (await db.prepare(query).all(...queryParams)) as StorageRecord[];
+    const objects = await db.prepare(query).all(...queryParams);
     const total = ((await db.prepare(countQuery).get(...params)) as { count: number }).count;
 
     return {
       objects: objects.map((obj) => ({
         ...obj,
+        mimeType: obj.mime_type,
+        uploadedAt: obj.uploaded_at,
         url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
       })),
       total,

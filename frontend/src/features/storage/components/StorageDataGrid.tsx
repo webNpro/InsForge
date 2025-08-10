@@ -123,7 +123,7 @@ export function createStorageColumns(
       renderCell: MimeTypeRenderer,
     },
     {
-      key: 'uploaded_at',
+      key: 'uploadedAt',
       name: 'Uploaded',
       width: '1fr',
       resizable: true,
