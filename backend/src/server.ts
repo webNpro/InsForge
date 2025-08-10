@@ -61,7 +61,10 @@ export async function createApp() {
   });
 
   // Basic middleware
-  app.use(cors());
+  app.use(cors({
+    origin: true, // Allow all origins (matches Better Auth's trustedOrigins: ['*'])
+    credentials: true // Allow cookies/credentials
+  }));
   app.use(limiter);
   app.use((req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
@@ -111,21 +114,20 @@ export async function createApp() {
 
   // Mount Better Auth BEFORE express.json() middleware
   // This is required as per Better Auth documentation
-  const { toNodeHandler } = await import('better-auth/node');
-  const { auth } = await import('@/lib/better-auth.js');
-  // Better Auth handles its own body parsing
-  const handler = toNodeHandler(auth);
+  // Use dynamic auth handler that can be reloaded
+  const { dynamicAuthHandler } = await import('@/lib/auth-reloader.js');
 
   // Wrap to prevent crashes from Better Auth errors
   app.all('/api/auth/v2/*', async (req, res) => {
     try {
-      await handler(req, res);
-    } catch (error: any) {
-      logger.error('Better Auth error:', { message: error.message });
+      await dynamicAuthHandler(req, res);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid request';
+      logger.error('Better Auth error:', { message: errorMessage });
       if (!res.headersSent) {
         res.status(400).json({
           code: 'BAD_REQUEST',
-          message: error.message || 'Invalid request',
+          message: errorMessage,
         });
       }
     }
