@@ -143,7 +143,7 @@ export function BucketFormDialog({
               </div>
               <p className="text-sm text-zinc-500">
                 {mode === 'create'
-                  ? 'Use lowercase letters, numbers and hyphens only.'
+                  ? 'Use lowercase letters, numbers, hyphens, and underscores only.'
                   : 'Bucket name cannot be changed.'}
               </p>
             </div>
