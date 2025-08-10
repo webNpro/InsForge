@@ -178,7 +178,7 @@ export default function StoragePage() {
     void queryClient.invalidateQueries({ queryKey: ['storage'] });
   };
 
-  const uploadFiles = async (files: FileList | null) => {
+  const uploadFiles = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0 || !selectedBucket) {
       return;
     }
@@ -300,7 +300,16 @@ export default function StoragePage() {
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setIsDragging(false);
-      void handleFileUpload(event.dataTransfer.files);
+
+      // To support only file uploads (not directories), we filter through
+      // dataTransfer.items instead of directly using dataTransfer.files.
+      // Ref: https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem/webkitGetAsEntry
+      const fileItems: File[] = Array.from(event.dataTransfer.items)
+        .filter((item) => item.webkitGetAsEntry()?.isFile)
+        .map((item) => item.getAsFile())
+        .filter((item) => item !== null);
+
+      void handleFileUpload(fileItems);
     },
     [handleFileUpload]
   );
