@@ -54,26 +54,50 @@ async function loadOAuthConfig(): Promise<OAuthConfig> {
   };
 
   try {
+    // Fetch all OAuth settings from the config table
     const result = await pool.query(
       "SELECT key, value FROM _config WHERE key LIKE $1",
       ['oauth_%']
     );
     
+    // Build a map for easier access
+    const configMap = new Map<string, string>();
     for (const row of result.rows) {
-      const [, provider, field] = row.key.split('_');
-      if ((provider === 'google' || provider === 'github') && field) {
-        const providerConfig = config[provider as 'google' | 'github'];
-        if (field === 'clientId' && row.value) {
-          providerConfig.clientId = row.value;
-        } else if (field === 'clientSecret' && row.value && !row.value.includes('****')) {
-          providerConfig.clientSecret = row.value;
-        } else if (field === 'enabled') {
-          providerConfig.enabled = row.value === 'true';
-        } else if (field === 'useSharedKeys') {
-          providerConfig.useSharedKeys = row.value === 'true';
-        }
-      }
+      configMap.set(row.key, row.value);
     }
+    
+    // Helper function to get config value
+    const getConfigValue = (provider: string, field: string): string | undefined => {
+      return configMap.get(`oauth_${provider}_${field}`);
+    };
+    
+    // Update Google config
+    const googleClientId = getConfigValue('google', 'clientId');
+    const googleClientSecret = getConfigValue('google', 'clientSecret');
+    const googleEnabled = getConfigValue('google', 'enabled');
+    const googleUseSharedKeys = getConfigValue('google', 'useSharedKeys');
+    
+    if (googleClientId) config.google.clientId = googleClientId;
+    // Don't update if it's a masked value from the UI
+    if (googleClientSecret && !googleClientSecret.includes('****')) {
+      config.google.clientSecret = googleClientSecret;
+    }
+    if (googleEnabled !== undefined) config.google.enabled = googleEnabled === 'true';
+    if (googleUseSharedKeys !== undefined) config.google.useSharedKeys = googleUseSharedKeys === 'true';
+    
+    // Update GitHub config
+    const githubClientId = getConfigValue('github', 'clientId');
+    const githubClientSecret = getConfigValue('github', 'clientSecret');
+    const githubEnabled = getConfigValue('github', 'enabled');
+    const githubUseSharedKeys = getConfigValue('github', 'useSharedKeys');
+    
+    if (githubClientId) config.github.clientId = githubClientId;
+    // Don't update if it's a masked value from the UI
+    if (githubClientSecret && !githubClientSecret.includes('****')) {
+      config.github.clientSecret = githubClientSecret;
+    }
+    if (githubEnabled !== undefined) config.github.enabled = githubEnabled === 'true';
+    if (githubUseSharedKeys !== undefined) config.github.useSharedKeys = githubUseSharedKeys === 'true';
     
     // If useSharedKeys is true, use Insforge's shared credentials
     if (config.google.useSharedKeys && SHARED_OAUTH_KEYS.google.clientId) {
