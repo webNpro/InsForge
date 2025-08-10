@@ -337,7 +337,7 @@ export class DatabaseManager {
       -- JWT plugin tables (no underscore prefix for Better Auth compatibility)
       -- Although better auth allows us to use underscore prefix rename, there is a bug where it's /token endpoint still uses old name
       CREATE TABLE IF NOT EXISTS jwks (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "id" TEXTi PRIMARY KEY DEFAULT gen_random_uuid()::text,
         "publicKey" TEXT NOT NULL,
         "privateKey" TEXT NOT NULL,
         "createdAt" TIMESTAMPTZ DEFAULT NOW()

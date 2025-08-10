@@ -61,7 +61,10 @@ export async function createApp() {
   });
 
   // Basic middleware
-  app.use(cors());
+  app.use(cors({
+    origin: true, // Allow all origins (matches Better Auth's trustedOrigins: ['*'])
+    credentials: true // Allow cookies/credentials
+  }));
   app.use(limiter);
   app.use((req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
