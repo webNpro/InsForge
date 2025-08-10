@@ -32,7 +32,7 @@ interface BucketFormState {
 export default function StoragePage() {
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [_isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -444,9 +444,11 @@ export default function StoragePage() {
               </div>
             </div>
 
-            {/* Content */}
+            {/* Content (supports drag-and-drop file upload) */}
             <div
-              className="relative flex-1 flex flex-col overflow-hidden"
+              className={
+                'relative flex-1 flex flex-col overflow-hidden' + (isDragging ? ' opacity-25' : '')
+              }
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
