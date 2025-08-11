@@ -354,46 +354,21 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, next
       result = await authService.findOrCreateGitHubUser(githubUserInfo);
     }
     
-    // Create an HTML page that posts the OAuth data to the frontend
-    const htmlResponse = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>OAuth Success</title>
-      </head>
-      <body>
-        <h2>Authentication successful!</h2>
-        <p>Redirecting to application...</p>
-        <script>
-          console.log('OAuth HTML page executing...');
-          try {
-            // Store OAuth data in localStorage
-            localStorage.setItem('accessToken', '${result!.accessToken}');
-            localStorage.setItem('user_id', '${result!.user.id}');
-            localStorage.setItem('oauth_success', 'true');
-            console.log('OAuth data stored in localStorage');
-            
-            // Redirect to the app after a brief delay to ensure storage
-            setTimeout(function() {
-              console.log('Redirecting to: ${redirectUrl}');
-              window.location.href = '${redirectUrl}';
-            }, 100);
-          } catch(e) {
-            console.error('OAuth storage error:', e);
-            document.body.innerHTML += '<p style="color:red">Error: ' + e.message + '</p>';
-          }
-        </script>
-      </body>
-      </html>
-    `;
+    // Create URL with JWT token and user info (like the working example)
+    const finalRedirectUrl = new URL(redirectUrl);
+    finalRedirectUrl.searchParams.set('access_token', result!.accessToken);
+    finalRedirectUrl.searchParams.set('user_id', result!.user.id);
+    finalRedirectUrl.searchParams.set('email', result!.user.email);
+    finalRedirectUrl.searchParams.set('name', result!.user.name || '');
     
-    logger.info('OAuth callback successful, sending HTML redirect', { 
-      redirectUrl,
+    logger.info('OAuth callback successful, redirecting with token', { 
+      redirectUrl: finalRedirectUrl.toString(),
       hasAccessToken: !!result!.accessToken,
       userId: result!.user.id
     });
     
-    res.send(htmlResponse);
+    // Redirect directly to the app with token in URL
+    return res.redirect(finalRedirectUrl.toString());
     
   } catch (error) {
     logger.error('OAuth callback error', { 
@@ -418,29 +393,11 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, next
     
     const errorMessage = error instanceof Error ? error.message : 'OAuth authentication failed';
     
-    // Send HTML page for errors too
-    const errorHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>OAuth Error</title>
-      </head>
-      <body>
-        <h2>Authentication Failed</h2>
-        <p style="color: red;">${errorMessage}</p>
-        <p>You will be redirected back to the application...</p>
-        <script>
-          console.error('OAuth failed:', '${errorMessage}');
-          localStorage.setItem('oauth_error', '${errorMessage}');
-          setTimeout(function() {
-            window.location.href = '${redirectUrl}';
-          }, 2000);
-        </script>
-      </body>
-      </html>
-    `;
+    // Redirect with error in URL parameters
+    const errorRedirectUrl = new URL(redirectUrl);
+    errorRedirectUrl.searchParams.set('error', errorMessage);
     
-    res.send(errorHtml);
+    return res.redirect(errorRedirectUrl.toString());
   }
 });
 

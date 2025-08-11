@@ -114,16 +114,23 @@ Prerequisites:
 
 Parameters:
 - `provider`: "google" or "github" in the URL path
-- Query params: `?redirect_uri=http://localhost:7131/dashboard`
+- Query params: `?redirectUrl=http://localhost:3000/dashboard`
 
-Returns authorization URL to redirect user to provider's OAuth page.
+Returns: `{"authUrl": "https://accounts.google.com/..."}` - URL to redirect user to provider's OAuth page.
 
 ```bash
 # Mac/Linux
-curl -X GET "http://localhost:7130/api/auth/oauth/google?redirect_uri=http://localhost:7131/dashboard"
+curl -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
 
 # Windows PowerShell (use curl.exe)
-curl.exe -X GET "http://localhost:7130/api/auth/oauth/google?redirect_uri=http://localhost:7131/dashboard"
+curl.exe -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
+```
+
+Example response:
+```json
+{
+  "authUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=..."
+}
 ```
 
 #### OAuth Callback
@@ -131,7 +138,11 @@ The OAuth provider will redirect to:
 - Google: `http://localhost:7130/api/auth/oauth/google/callback`
 - GitHub: `http://localhost:7130/api/auth/oauth/github/callback`
 
-After processing, backend redirects to your specified `redirect_uri` with JWT token.
+After processing, backend redirects to your specified `redirectUrl` with JWT token in URL parameters:
+- `access_token` - JWT authentication token
+- `user_id` - User's unique ID  
+- `email` - User's email address
+- `name` - User's display name
 
 ## Built-in Auth Tables
 
@@ -184,8 +195,8 @@ The authentication system manages:
 
 ## Critical Notes
 
-1. `/api/auth/me` returns `{"user": {...}}` - nested, not root level
-2. `/api/auth/me` only has: id, email, role (limited fields)
+1. `/api/auth/sessions/current` returns `{"user": {...}}` - nested, not root level
+2. `/api/auth/sessions/current` only has: id, email, role (limited fields)
 3. Full user data: `GET /api/database/records/user?id=eq.<id>`
 4. POST to database requires `[{...}]` array format always
 5. Auth endpoints (register/login): no headers needed

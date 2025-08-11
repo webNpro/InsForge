@@ -71,11 +71,11 @@ The `_user` table is **protected** by the JWT authentication system:
 ## Auth Operations:
 
 ### 🚨 IMPORTANT: Correct Auth Endpoints
-- **Register**: `POST /api/auth/register` - Create new user account
-- **Login**: `POST /api/auth/login` - Authenticate existing user
-- **Admin Login**: `POST /api/auth/admin/login` - Admin authentication
-- **Current User**: `GET /api/auth/me` - Get authenticated user info
-- `/api/auth/me` returns `{"user": {...}}` - nested structure
+- **Register**: `POST /api/auth/users` - Create new user account
+- **Login**: `POST /api/auth/sessions` - Authenticate existing user
+- **Admin Login**: `POST /api/auth/admin/sessions` - Admin authentication
+- **Current User**: `GET /api/auth/sessions/current` - Get authenticated user info
+- `/api/auth/sessions/current` returns `{"user": {...}}` - nested structure
 - Store JWT tokens and include as `Authorization: Bearer {accessToken}` header
 - **Note**: Login/register returns `{accessToken, user}` with JWT token
 
