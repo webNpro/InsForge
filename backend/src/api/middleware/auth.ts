@@ -129,7 +129,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 
 /**
  * Core token verification middleware that handles JWT token extraction and verification
- * Sets req.user and generates PostgREST-compatible tokens
+ * Sets req.user with the authenticated user information
  */
 export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
@@ -158,9 +158,6 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
 
     // Set user info on request
     setRequestUser(req, payload);
-
-    // JWT tokens are already HS256-signed, use as-is for PostgREST
-    (req as Request & { postgrestToken: string }).postgrestToken = token;
 
     next();
   } catch (error) {

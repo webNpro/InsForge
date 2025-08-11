@@ -150,8 +150,12 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     
     const dbUsers = await db.prepare(query).all(...params);
     
-    // Transform and add provider type
+    // Simple transformation - just format the provider as identities
     const users = dbUsers.map((dbUser: any) => {
+      // If provider exists from _account table, use it; otherwise check if they have email auth
+      const provider = dbUser.provider || (dbUser.password ? 'email' : null);
+      const identities = provider ? [{ provider }] : [];
+      
       // Return snake_case for frontend compatibility
       return {
         id: dbUser.id,
@@ -160,7 +164,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         email_verified: dbUser.email_verified,
         created_at: dbUser.created_at,
         updated_at: dbUser.updated_at,
-        identities: dbUser.provider || 'email',  // Show 'email' or 'google'/'github'
+        identities: identities,
         provider_type: dbUser.provider ? 'social' : 'email'
       };
     });
@@ -350,19 +354,93 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, next
       result = await authService.findOrCreateGitHubUser(githubUserInfo);
     }
     
-    const params = new URLSearchParams({
-      accessToken: result!.accessToken,
-      user_id: result!.user.id,
-      email: result!.user.email,
-      name: result!.user.name || ''
+    // Create an HTML page that posts the OAuth data to the frontend
+    const htmlResponse = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>OAuth Success</title>
+      </head>
+      <body>
+        <h2>Authentication successful!</h2>
+        <p>Redirecting to application...</p>
+        <script>
+          console.log('OAuth HTML page executing...');
+          try {
+            // Store OAuth data in localStorage
+            localStorage.setItem('accessToken', '${result!.accessToken}');
+            localStorage.setItem('user_id', '${result!.user.id}');
+            localStorage.setItem('oauth_success', 'true');
+            console.log('OAuth data stored in localStorage');
+            
+            // Redirect to the app after a brief delay to ensure storage
+            setTimeout(function() {
+              console.log('Redirecting to: ${redirectUrl}');
+              window.location.href = '${redirectUrl}';
+            }, 100);
+          } catch(e) {
+            console.error('OAuth storage error:', e);
+            document.body.innerHTML += '<p style="color:red">Error: ' + e.message + '</p>';
+          }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    logger.info('OAuth callback successful, sending HTML redirect', { 
+      redirectUrl,
+      hasAccessToken: !!result!.accessToken,
+      userId: result!.user.id
     });
     
-    const separator = redirectUrl.includes('?') ? '&' : '?';
-    res.redirect(`${redirectUrl}${separator}${params.toString()}`);
+    res.send(htmlResponse);
     
   } catch (error) {
-    logger.error('OAuth callback error', { error });
-    next(error);
+    logger.error('OAuth callback error', { 
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      provider: req.params.provider,
+      hasCode: !!req.query.code,
+      hasState: !!req.query.state,
+      hasToken: !!req.query.token
+    });
+    
+    // Redirect to app with error message
+    const { state } = req.query;
+    const redirectUrl = state ? (() => {
+      try {
+        const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+        return stateData.redirectUrl || '/';
+      } catch {
+        return '/';
+      }
+    })() : '/';
+    
+    const errorMessage = error instanceof Error ? error.message : 'OAuth authentication failed';
+    
+    // Send HTML page for errors too
+    const errorHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>OAuth Error</title>
+      </head>
+      <body>
+        <h2>Authentication Failed</h2>
+        <p style="color: red;">${errorMessage}</p>
+        <p>You will be redirected back to the application...</p>
+        <script>
+          console.error('OAuth failed:', '${errorMessage}');
+          localStorage.setItem('oauth_error', '${errorMessage}');
+          setTimeout(function() {
+            window.location.href = '${redirectUrl}';
+          }, 2000);
+        </script>
+      </body>
+      </html>
+    `;
+    
+    res.send(errorHtml);
   }
 });
 

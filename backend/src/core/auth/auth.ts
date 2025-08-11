@@ -46,10 +46,10 @@ export class AuthService {
     // OAuth configuration
     this.googleClientId = process.env.GOOGLE_CLIENT_ID;
     this.googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    this.googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/v1/callback';
+    this.googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
     this.githubClientId = process.env.GITHUB_CLIENT_ID;
     this.githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
-    this.githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/v1/callback';
+    this.githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
     
     const dbManager = DatabaseManager.getInstance();
     this.db = dbManager.getDb();
@@ -179,8 +179,8 @@ export class AuthService {
       throw new Error('Invalid admin credentials');
     }
 
-    // Generate a consistent admin ID based on email (so it's always the same)
-    const adminId = crypto.createHash('sha256').update(email).digest('hex').substring(0, 36);
+    // Use a fixed admin ID for the system administrator
+    const adminId = '00000000-0000-0000-0000-000000000001';
     
     // Return admin user with JWT token - no database interaction
     const accessToken = this.generateToken({ sub: adminId, email, role: 'project_admin' });
@@ -374,22 +374,40 @@ export class AuthService {
       throw new Error('Google OAuth not configured');
     }
     
-    const response = await axios.post('https://oauth2.googleapis.com/token', {
-      code,
-      client_id: this.googleClientId,
-      client_secret: this.googleClientSecret,
-      redirect_uri: this.googleRedirectUri,
-      grant_type: 'authorization_code'
-    });
-    
-    if (!response.data.access_token || !response.data.id_token) {
-      throw new Error('Failed to get tokens from Google');
+    try {
+      logger.info('Exchanging Google code for tokens', {
+        hasCode: !!code,
+        redirectUri: this.googleRedirectUri,
+        clientId: this.googleClientId?.substring(0, 10) + '...'
+      });
+      
+      const response = await axios.post('https://oauth2.googleapis.com/token', {
+        code,
+        client_id: this.googleClientId,
+        client_secret: this.googleClientSecret,
+        redirect_uri: this.googleRedirectUri,
+        grant_type: 'authorization_code'
+      });
+      
+      if (!response.data.access_token || !response.data.id_token) {
+        throw new Error('Failed to get tokens from Google');
+      }
+      
+      return {
+        access_token: response.data.access_token,
+        id_token: response.data.id_token
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        logger.error('Google token exchange failed', {
+          status: error.response.status,
+          error: error.response.data,
+          redirectUri: this.googleRedirectUri
+        });
+        throw new Error(`Google OAuth error: ${JSON.stringify(error.response.data)}`);
+      }
+      throw error;
     }
-    
-    return {
-      access_token: response.data.access_token,
-      id_token: response.data.id_token
-    };
   }
 
   /**

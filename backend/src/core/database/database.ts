@@ -294,17 +294,18 @@ export class DatabaseManager {
       );
 
       -- Account table (for OAuth connections)
+      -- Links OAuth provider accounts to local users
       CREATE TABLE IF NOT EXISTS _account (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES _user(id) ON DELETE CASCADE,
-        provider TEXT NOT NULL,
-        provider_account_id TEXT NOT NULL,
-        access_token TEXT,
-        refresh_token TEXT,
-        provider_data JSONB,
+        provider TEXT NOT NULL, -- OAuth provider name: 'google', 'github', etc.
+        provider_account_id TEXT NOT NULL, -- User's unique ID on the provider's system (e.g., Google's sub, GitHub's id)
+        access_token TEXT, -- OAuth access token for making API calls to provider
+        refresh_token TEXT, -- OAuth refresh token for renewing access
+        provider_data JSONB, -- OAuth provider's user profile (Google: sub/email/name/picture, GitHub: id/login/email/avatar_url)
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(provider, provider_account_id)
+        UNIQUE(provider, provider_account_id) -- Ensures one account per provider per user
       );
 
     `);
@@ -349,24 +350,6 @@ export class DatabaseManager {
       client.release();
     }
     
-    // Create indexes after tables are committed (outside of transaction)
-    const indexClient = await this.pool.connect();
-    try {
-      await indexClient.query(`
-        CREATE INDEX IF NOT EXISTS idx_edge_functions_slug ON _edge_functions(slug);
-        CREATE INDEX IF NOT EXISTS idx_edge_functions_status ON _edge_functions(status);
-        
-        -- Auth indexes for our 2-table structure
-        CREATE INDEX IF NOT EXISTS idx_user_email ON _user(email);
-        CREATE INDEX IF NOT EXISTS idx_account_user_id ON _account(user_id);
-        CREATE INDEX IF NOT EXISTS idx_account_provider ON _account(provider, provider_account_id);
-      `);
-    } catch (error) {
-      // Log but don't fail if indexes already exist
-      logger.warn('Failed to create some indexes', { error });
-    } finally {
-      indexClient.release();
-    }
   }
 
   // PostgreSQL-specific prepare method that returns a query object similar to better-sqlite3
