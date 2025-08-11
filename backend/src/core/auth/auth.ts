@@ -4,15 +4,16 @@ import crypto from 'crypto';
 import axios from 'axios';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
+import type {
+  User,
+  CreateUserResponse,
+  CreateSessionResponse,
+  CreateAdminSessionResponse,
+  TokenPayload,
+} from '@insforge/shared-schemas';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
-
-export interface TokenPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
 
 /**
  * Simplified JWT-based auth service
@@ -68,6 +69,36 @@ export class AuthService {
   }
 
   /**
+   * Transform database user to API format (snake_case to camelCase)
+   */
+  private dbUserToApiUser(dbUser: any): User {
+    return {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      emailVerified: dbUser.email_verified,
+      createdAt: dbUser.created_at,
+      updatedAt: dbUser.updated_at
+    };
+  }
+
+  /**
+   * Transform multiple database users to API format
+   * Public method for use in auth routes
+   */
+  public transformUsers(dbUsers: any[]): User[] {
+    return dbUsers.map(user => this.dbUserToApiUser(user));
+  }
+
+  /**
+   * Transform single database user to API format
+   * Public method for use in auth routes
+   */
+  public transformUser(dbUser: any): User {
+    return this.dbUserToApiUser(dbUser);
+  }
+
+  /**
    * Generate JWT token for users and admins
    */
   generateToken(payload: TokenPayload): string {
@@ -96,7 +127,7 @@ export class AuthService {
   /**
    * User registration
    */
-  async register(email: string, password: string, name?: string): Promise<{ user: any; token: string }> {
+  async register(email: string, password: string, name?: string): Promise<CreateUserResponse> {
     const existingUser = await this.db.prepare('SELECT id FROM _user WHERE email = ?').get(email);
     
     if (existingUser) {
@@ -108,40 +139,41 @@ export class AuthService {
     
     await this.db.prepare(`
       INSERT INTO _user (id, email, password, name, email_verified, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime("now"), datetime("now"))
-    `).run(userId, email, hashedPassword, name || null, 0);
+      VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+    `).run(userId, email, hashedPassword, name || null, false);
     
-    const user = await this.db.prepare('SELECT id, email, name, email_verified FROM _user WHERE id = ?').get(userId);
-    const token = this.generateToken({ sub: userId, email, role: 'authenticated' });
+    const dbUser = await this.db.prepare('SELECT id, email, name, email_verified, created_at, updated_at FROM _user WHERE id = ?').get(userId);
+    const user = this.dbUserToApiUser(dbUser);
+    const accessToken = this.generateToken({ sub: userId, email, role: 'authenticated' });
     
-    return { user, token };
+    return { user, accessToken };
   }
 
   /**
    * User login
    */
-  async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    const user = await this.db.prepare('SELECT * FROM _user WHERE email = ?').get(email);
+  async login(email: string, password: string): Promise<CreateSessionResponse> {
+    const dbUser = await this.db.prepare('SELECT * FROM _user WHERE email = ?').get(email);
     
-    if (!user || !user.password) {
+    if (!dbUser || !dbUser.password) {
       throw new Error('Invalid credentials');
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, dbUser.password);
     if (!validPassword) {
       throw new Error('Invalid credentials');
     }
 
-    const token = this.generateToken({ sub: user.id, email: user.email, role: 'authenticated' });
-    delete user.password;
+    const user = this.dbUserToApiUser(dbUser);
+    const accessToken = this.generateToken({ sub: dbUser.id, email: dbUser.email, role: 'authenticated' });
     
-    return { user, token };
+    return { user, accessToken };
   }
 
   /**
    * Admin login (validates against env variables only)
    */
-  async adminLogin(email: string, password: string): Promise<{ user: any; token: string }> {
+  async adminLogin(email: string, password: string): Promise<CreateAdminSessionResponse> {
     // Simply validate against environment variables
     if (email !== this.adminEmail || password !== this.adminPassword) {
       throw new Error('Invalid admin credentials');
@@ -151,16 +183,18 @@ export class AuthService {
     const adminId = crypto.createHash('sha256').update(email).digest('hex').substring(0, 36);
     
     // Return admin user with JWT token - no database interaction
-    const token = this.generateToken({ sub: adminId, email, role: 'project_admin' });
+    const accessToken = this.generateToken({ sub: adminId, email, role: 'project_admin' });
     
     return {
       user: {
         id: adminId,
         email: email,
         name: 'Administrator',
-        role: 'project_admin'
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
-      token
+      accessToken
     };
   }
 
@@ -175,7 +209,7 @@ export class AuthService {
     userName: string,
     avatarUrl: string,
     identityData: any
-  ): Promise<{ user: any; token: string }> {
+  ): Promise<CreateSessionResponse> {
     // First, try to find existing user by provider ID in _account table
     const account = await this.db.prepare(
       'SELECT * FROM _account WHERE provider = ? AND provider_account_id = ?'
@@ -184,20 +218,21 @@ export class AuthService {
     if (account) {
       // Found existing OAuth user, update last login time
       await this.db.prepare(
-        'UPDATE _account SET updated_at = datetime("now") WHERE provider = ? AND provider_account_id = ?'
+        'UPDATE _account SET updated_at = CURRENT_TIMESTAMP WHERE provider = ? AND provider_account_id = ?'
       ).run(provider, providerId);
       
-      const user = await this.db.prepare(
-        'SELECT id, email, name, email_verified FROM _user WHERE id = ?'
+      const dbUser = await this.db.prepare(
+        'SELECT id, email, name, email_verified, created_at, updated_at FROM _user WHERE id = ?'
       ).get(account.user_id);
       
-      const token = this.generateToken({ 
+      const user = this.dbUserToApiUser(dbUser);
+      const accessToken = this.generateToken({ 
         sub: user.id, 
         email: user.email, 
         role: 'authenticated' 
       });
       
-      return { user, token };
+      return { user, accessToken };
     }
     
     // If not found by provider_id, try to find by email in _user table
@@ -212,16 +247,17 @@ export class AuthService {
           user_id, provider, provider_account_id, 
           provider_data, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(existingUser.id, provider, providerId, JSON.stringify(identityData));
       
-      const token = this.generateToken({ 
+      const user = this.dbUserToApiUser(existingUser);
+      const accessToken = this.generateToken({ 
         sub: existingUser.id, 
         email: existingUser.email, 
         role: 'authenticated' 
       });
       
-      return { user: existingUser, token };
+      return { user, accessToken };
     }
     
     // Create new user with OAuth data
@@ -245,7 +281,7 @@ export class AuthService {
     providerId: string,
     identityData: any,
     avatarUrl: string
-  ): Promise<{ user: any; token: string }> {
+  ): Promise<CreateSessionResponse> {
     const userId = crypto.randomUUID();
     
     await this.db.exec('BEGIN');
@@ -254,7 +290,7 @@ export class AuthService {
       // Create user record (without password for OAuth users)
       await this.db.prepare(`
         INSERT INTO _user (id, email, name, email_verified, created_at, updated_at)
-        VALUES (?, ?, ?, 1, datetime("now"), datetime("now"))
+        VALUES (?, ?, ?, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(userId, email, userName);
       
       // Create _account record
@@ -263,25 +299,27 @@ export class AuthService {
           user_id, provider, provider_account_id,
           provider_data, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(userId, provider, providerId, JSON.stringify({ ...identityData, avatar_url: avatarUrl }));
       
       await this.db.exec('COMMIT');
       
-      const user = {
+      const user: User = {
         id: userId,
         email,
         name: userName,
-        email_verified: true
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       
-      const token = this.generateToken({ 
+      const accessToken = this.generateToken({ 
         sub: userId, 
         email, 
         role: 'authenticated' 
       });
       
-      return { user, token };
+      return { user, accessToken };
     } catch (error) {
       await this.db.exec('ROLLBACK');
       throw error;
@@ -377,7 +415,7 @@ export class AuthService {
   /**
    * Find or create Google user
    */
-  async findOrCreateGoogleUser(googleUserInfo: any): Promise<{ user: any; token: string }> {
+  async findOrCreateGoogleUser(googleUserInfo: any): Promise<CreateSessionResponse> {
     const userName = googleUserInfo.name || googleUserInfo.email.split('@')[0];
     return this.findOrCreateThirdPartyUser(
       'google',
@@ -455,7 +493,7 @@ export class AuthService {
   /**
    * Find or create GitHub user
    */
-  async findOrCreateGitHubUser(githubUserInfo: any): Promise<{ user: any; token: string }> {
+  async findOrCreateGitHubUser(githubUserInfo: any): Promise<CreateSessionResponse> {
     const userName = githubUserInfo.name || githubUserInfo.login;
     const email = githubUserInfo.email || `${githubUserInfo.login}@users.noreply.github.com`;
     

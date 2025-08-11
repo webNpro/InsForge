@@ -280,7 +280,7 @@ Without `Prefer: count=exact`, you get: `Content-Range: 0-9/*` (no total count)
 
 ## 🚨 Critical: User Table is Read-Only
 
-**The `_user` table is managed by Better Auth:**
+**The `_user` table is managed by the JWT authentication system:**
 - **✅ READ**: `GET /api/database/records/user` - Works!
 - **❌ WRITE**: POST/PUT/PATCH/DELETE returns `403 FORBIDDEN`
 - **Solution**: For additional user data, create `user_profiles` table:
@@ -348,8 +348,8 @@ curl.exe -X POST http://localhost:7130/api/database/records/comments \
 
 2. **System Tables**
    - Tables prefixed with `_` are system tables
-   - Better Auth tables (`user`, `session`, `account`) - use Auth API only
-   - **`user` table is PROTECTED** - cannot query via database API
+   - Authentication tables (`_user`) - use Auth API only for modifications
+   - **`_user` table is PROTECTED** - read-only via database API
 
 3. **Common PostgREST Errors**:
    ```json

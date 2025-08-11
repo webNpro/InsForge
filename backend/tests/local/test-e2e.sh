@@ -57,7 +57,7 @@ test_endpoint "User registration" "$response_with_code" "201"
 
 # Extract token from response
 response=$(echo "$response_with_code" | sed '$d')
-USER_TOKEN=$(echo "$response" | grep -o '"token":"[^"]*' | grep -o '[^"]*$')
+USER_TOKEN=$(echo "$response" | grep -o '"accessToken":"[^"]*' | grep -o '[^"]*$')
 USER_ID=$(echo "$response" | grep -o '"user":{[^}]*' | grep -o '"id":"[^"]*' | grep -o '[^"]*$')
 
 if [ -z "$USER_TOKEN" ]; then

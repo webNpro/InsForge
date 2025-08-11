@@ -65,11 +65,11 @@ Without the Bearer token, you'll get "permission denied" errors when trying to i
 ```bash
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # 1. First login to get JWT token
-curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
+curl -X POST http://localhost:7130/api/auth/admin/sessions \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"admin@example.com\",\"password\":\"your-password\"}"
 
-# Response includes token: {"token": "eyJ...", "user": {...}}
+# Response includes token: {"accessToken": "eyJ...", "user": {...}}
 
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # 2. Use the auth token for database operations
@@ -81,14 +81,15 @@ curl -X POST http://localhost:7130/api/database/records/products \
 ## System Tables
 
 ### User Table (Read-Only Access)
-The `user` table is a **system-managed table** from Better Auth:
+The `_user` table is a **system-managed table** from the JWT authentication system:
 - **✅ CAN READ** via `GET /api/database/records/user`
 - **❌ CANNOT MODIFY** through database API - use Auth API instead
 - **✅ CAN REFERENCE** by other tables using `user_id` foreign keys
 
 To work with users:
 - Read users: `GET /api/database/records/user`
-- Create/update users: Use `/api/auth/v2/*` endpoints
+- Create users: Use `POST /api/auth/users`
+- Authenticate: Use `POST /api/auth/sessions`
 - Store additional data: Create your own `user_profiles` table
 
 ## Example: Comment Upvoting Feature
@@ -121,7 +122,7 @@ curl http://localhost:7130/api/database/records/posts?id=eq.123 \
 
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
 # Example: Test authentication
-curl -X POST http://localhost:7130/api/auth/register \
+curl -X POST http://localhost:7130/api/auth/users \
   -H "Content-Type: application/json" \
   -d '{\"email\": \"test@example.com\", \"password\": \"testpass123\"}'
 ```

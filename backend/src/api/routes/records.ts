@@ -1,6 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
 import { AuthRequest } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
@@ -98,38 +97,10 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     };
 
     // Use PostgREST-compatible token if available
-    // This is set by the auth middleware for Better Auth tokens
+    // This is set by the auth middleware for JWT tokens
     const postgrestToken = (req as AuthRequest & { postgrestToken?: string }).postgrestToken;
     if (postgrestToken) {
       axiosConfig.headers.authorization = `Bearer ${postgrestToken}`;
-    }
-
-    // Handle Better Auth session tokens
-    if (!postgrestToken && req.headers.authorization) {
-      const token = req.headers.authorization.startsWith('Bearer ')
-        ? req.headers.authorization.substring(7)
-        : req.headers.authorization;
-
-      try {
-        // Try to verify as Better Auth session token
-        const payload = await authService.verifyBetterAuthUserSessionToken(token);
-
-        // Generate PostgREST-compatible JWT token
-        const postgrestJwt = jwt.sign(
-          {
-            sub: payload.sub,
-            email: payload.email,
-            role: payload.role,
-          },
-          process.env.JWT_SECRET || '',
-          { algorithm: 'HS256', expiresIn: '7d' }
-        );
-
-        axiosConfig.headers.authorization = `Bearer ${postgrestJwt}`;
-      } catch {
-        // If it's not a valid Better Auth token, pass it through as-is
-        // It might be a JWT token
-      }
     }
 
     // If no authorization header, check api key

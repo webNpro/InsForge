@@ -3,115 +3,87 @@ import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
-import { validateEmail } from '@/utils/validations.js';
 import { verifyAdmin } from '@/api/middleware/auth.js';
 import logger from '@/utils/logger.js';
+import {
+  createUserRequestSchema,
+  createSessionRequestSchema,
+  createAdminSessionRequestSchema,
+  deleteUsersRequestSchema,
+  listUsersRequestSchema,
+  type ListUsersResponse,
+  type DeleteUsersResponse,
+  type GetCurrentSessionResponse,
+} from '@insforge/shared-schemas';
 
 const router = Router();
 const authService = AuthService.getInstance();
 
-/**
- * User registration
- */
-router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/auth/users - Create a new user (registration)
+router.post('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, name } = req.body;
-    
-    if (!email || !password) {
+    const validationResult = createUserRequestSchema.safeParse(req.body);
+    if (!validationResult.success) {
       throw new AppError(
-        'Email and password are required',
+        validationResult.error.errors[0]?.message || 'Invalid input',
         400,
         ERROR_CODES.INVALID_INPUT
       );
     }
     
-    if (!validateEmail(email)) {
-      throw new AppError(
-        'Invalid email format',
-        400,
-        ERROR_CODES.INVALID_INPUT
-      );
-    }
-    
+    const { email, password, name } = validationResult.data;
     const result = await authService.register(email, password, name);
     
-    res.json(successResponse(
-      {
-        user: result.user,
-        accessToken: result.token
-      },
-      'User registered successfully',
-      'You can use this token to access other endpoints (always add it to HTTP Header "Authorization", then send requests). Please keep it safe.'
-    ));
+    successResponse(res, result);
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * User login
- */
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/auth/sessions - Create a new session (login)
+router.post('/sessions', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
+    const validationResult = createSessionRequestSchema.safeParse(req.body);
+    if (!validationResult.success) {
       throw new AppError(
-        'Email and password are required',
+        validationResult.error.errors[0]?.message || 'Invalid input',
         400,
         ERROR_CODES.INVALID_INPUT
       );
     }
     
+    const { email, password } = validationResult.data;
     const result = await authService.login(email, password);
     
-    res.json(successResponse(
-      {
-        user: result.user,
-        accessToken: result.token
-      },
-      'Login successful',
-      'You can use this token to access other endpoints (always add it to HTTP Header "Authorization", then send requests). Please keep it safe.'
-    ));
+    successResponse(res, result);
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * Admin login
- */
-router.post('/admin/login', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/auth/admin/sessions - Create admin session  
+router.post('/admin/sessions', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
+    const validationResult = createAdminSessionRequestSchema.safeParse(req.body);
+    if (!validationResult.success) {
       throw new AppError(
-        'Email and password are required',
+        validationResult.error.errors[0]?.message || 'Invalid input',
         400,
         ERROR_CODES.INVALID_INPUT
       );
     }
     
+    const { email, password } = validationResult.data;
     const result = await authService.adminLogin(email, password);
     
-    res.json(successResponse(
-      {
-        user: result.user,
-        accessToken: result.token
-      },
-      'Admin login successful',
-      'You can use this token to access admin endpoints (always add it to HTTP Header "Authorization", then send requests). Please keep it safe.'
-    ));
+    successResponse(res, result);
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * Get current user
- */
-router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
+// GET /api/auth/sessions/current - Get current session user
+router.get('/sessions/current', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -125,13 +97,15 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
     const token = authHeader.substring(7);
     const payload = authService.verifyToken(token);
     
-    res.json({
+    const response: GetCurrentSessionResponse = {
       user: {
         id: payload.sub,
         email: payload.email,
         role: payload.role
       }
-    });
+    };
+    
+    res.json(response);
   } catch (error) {
     next(new AppError(
       'Invalid token',
@@ -141,28 +115,56 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-/**
- * Get all users (admin only)
- */
+// GET /api/auth/users - List all users (admin only)
 router.get('/users', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { limit = '10', offset = '0', search } = req.query;
+    const queryValidation = listUsersRequestSchema.safeParse(req.query);
+    const queryParams = queryValidation.success 
+      ? queryValidation.data 
+      : req.query;
+    const { limit = '10', offset = '0', search } = queryParams || {};
     const db = authService.getDb();
     
-    let query = 'SELECT id, email, name, email_verified, created_at, updated_at FROM _user';
+    let query = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.email_verified, 
+        u.created_at, 
+        u.updated_at,
+        u.password,
+        a.provider
+      FROM _user u
+      LEFT JOIN _account a ON u.id = a.user_id
+    `;
     const params: any[] = [];
     
     if (search) {
-      query += ' WHERE email LIKE ? OR name LIKE ?';
+      query += ' WHERE u.email LIKE ? OR u.name LIKE ?';
       params.push(`%${search}%`, `%${search}%`);
     }
     
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit as string), parseInt(offset as string));
     
-    const users = await db.prepare(query).all(...params);
+    const dbUsers = await db.prepare(query).all(...params);
     
-    // Get total count
+    // Transform and add provider type
+    const users = dbUsers.map((dbUser: any) => {
+      // Return snake_case for frontend compatibility
+      return {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        email_verified: dbUser.email_verified,
+        created_at: dbUser.created_at,
+        updated_at: dbUser.updated_at,
+        identities: dbUser.provider || 'email',  // Show 'email' or 'google'/'github'
+        provider_type: dbUser.provider ? 'social' : 'email'
+      };
+    });
+    
     let countQuery = 'SELECT COUNT(*) as count FROM _user';
     const countParams: any[] = [];
     if (search) {
@@ -171,30 +173,52 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     }
     const { count } = await db.prepare(countQuery).get(...countParams);
     
-    res.json({
+    const response: ListUsersResponse = {
       users,
       total: count
-    });
+    };
+    
+    res.json(response);
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * Get single user (admin only)
- */
+// GET /api/auth/users/:id - Get specific user (admin only)
 router.get('/users/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const db = authService.getDb();
     
-    const user = await db.prepare(
-      'SELECT id, email, name, email_verified, created_at, updated_at FROM _user WHERE id = ?'
-    ).get(id);
+    const dbUser = await db.prepare(`
+      SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.email_verified, 
+        u.created_at, 
+        u.updated_at,
+        a.provider
+      FROM _user u
+      LEFT JOIN _account a ON u.id = a.user_id
+      WHERE u.id = ?
+    `).get(id);
     
-    if (!user) {
+    if (!dbUser) {
       throw new AppError('User not found', 404, ERROR_CODES.NOT_FOUND);
     }
+    
+    // Return snake_case for frontend compatibility
+    const user = {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      email_verified: dbUser.email_verified,
+      created_at: dbUser.created_at,
+      updated_at: dbUser.updated_at,
+      identities: dbUser.provider || 'email',  // Show 'email' or 'google'/'github'
+      provider_type: dbUser.provider ? 'social' : 'email'
+    };
     
     res.json(user);
   } catch (error) {
@@ -202,16 +226,19 @@ router.get('/users/:id', verifyAdmin, async (req: Request, res: Response, next: 
   }
 });
 
-/**
- * Delete users (admin only)
- */
+// DELETE /api/auth/users - Delete users (batch operation, admin only)
 router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userIds } = req.body;
-    
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      throw new AppError('userIds must be a non-empty array', 400, ERROR_CODES.INVALID_INPUT);
+    const validationResult = deleteUsersRequestSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new AppError(
+        validationResult.error.errors[0]?.message || 'Invalid input',
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
     }
+    
+    const { userIds } = validationResult.data;
     
     const db = authService.getDb();
     const placeholders = userIds.map(() => '?').join(',');
@@ -220,19 +247,19 @@ router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: N
       `DELETE FROM _user WHERE id IN (${placeholders})`
     ).run(...userIds);
     
-    res.json({ 
+    const response: DeleteUsersResponse = {
       message: 'Users deleted successfully',
-      deletedCount: userIds.length 
-    });
+      deletedCount: userIds.length
+    };
+    
+    res.json(response);
   } catch (error) {
     next(error);
   }
 });
 
-/**
- * Get Google OAuth authorization URL
- */
-router.get('/v1/google-auth', async (req: Request, res: Response, next: NextFunction) => {
+// OAuth endpoints following naming convention: /oauth/:provider and /oauth/:provider/callback
+router.get('/oauth/google', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirectUrl } = req.query;
     
@@ -254,10 +281,7 @@ router.get('/v1/google-auth', async (req: Request, res: Response, next: NextFunc
   }
 });
 
-/**
- * Get GitHub OAuth authorization URL
- */
-router.get('/v1/github-auth', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirectUrl } = req.query;
     
@@ -279,60 +303,32 @@ router.get('/v1/github-auth', async (req: Request, res: Response, next: NextFunc
   }
 });
 
-/**
- * OAuth callback handler (unified for Google and GitHub)
- */
-router.get('/v1/callback', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oauth/:provider/callback', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { provider } = req.params;
     const { code, state, token } = req.query;
     
-    // Determine provider from state or other means
-    let provider: string | undefined;
     let redirectUrl = '/';
     
     if (state) {
       try {
         const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-        provider = stateData.provider;
         redirectUrl = stateData.redirectUrl || '/';
       } catch {
         // Invalid state
       }
     }
     
-    // If no provider from state, try to determine from referer
-    if (!provider) {
-      const referer = req.headers.referer;
-      if (referer) {
-        if (referer.includes('accounts.google.com')) {
-          provider = 'google';
-        } else if (referer.includes('github.com')) {
-          provider = 'github';
-        }
-      }
-    }
-    
-    // If still no provider, check if we have a token parameter (Google specific)
-    if (!provider && token) {
-      provider = 'google';
-    }
-    
-    if (!provider) {
-      throw new AppError(
-        'Callback state is invalid. You can retrieve the auth url with /api/auth/v1/google-auth or /api/auth/v1/github-auth endpoint and try again.',
-        400,
-        ERROR_CODES.INVALID_INPUT
-      );
+    if (!['google', 'github'].includes(provider)) {
+      throw new AppError('Invalid provider', 400, ERROR_CODES.INVALID_INPUT);
     }
     
     let result;
     
     if (provider === 'google') {
-      // Handle Google OAuth
       let id_token: string;
       
       if (token) {
-        // Direct callback with Google token
         id_token = token as string;
       } else if (code) {
         const tokens = await authService.exchangeCodeToTokenByGoogle(code as string);
@@ -341,12 +337,10 @@ router.get('/v1/callback', async (req: Request, res: Response, next: NextFunctio
         throw new AppError('No authorization code or token provided', 400, ERROR_CODES.INVALID_INPUT);
       }
       
-      // Verify the Google token and get user info
       const googleUserInfo = await authService.verifyGoogleToken(id_token);
       result = await authService.findOrCreateGoogleUser(googleUserInfo);
       
     } else if (provider === 'github') {
-      // Handle GitHub OAuth
       if (!code) {
         throw new AppError('No authorization code provided', 400, ERROR_CODES.INVALID_INPUT);
       }
@@ -354,17 +348,13 @@ router.get('/v1/callback', async (req: Request, res: Response, next: NextFunctio
       const accessToken = await authService.exchangeGitHubCodeForToken(code as string);
       const githubUserInfo = await authService.getGitHubUserInfo(accessToken);
       result = await authService.findOrCreateGitHubUser(githubUserInfo);
-      
-    } else {
-      throw new AppError('Invalid provider', 400, ERROR_CODES.INVALID_INPUT);
     }
     
-    // Redirect to client with token and user info
     const params = new URLSearchParams({
-      accessToken: result.token,
-      user_id: result.user.id,
-      email: result.user.email,
-      name: result.user.name || ''
+      accessToken: result!.accessToken,
+      user_id: result!.user.id,
+      email: result!.user.email,
+      name: result!.user.name || ''
     });
     
     const separator = redirectUrl.includes('?') ? '&' : '?';

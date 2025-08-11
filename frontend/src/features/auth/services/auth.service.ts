@@ -11,25 +11,25 @@ export interface User {
 
 export class AuthService {
   async login(email: string, password: string) {
-    const data = await apiClient.request('/auth/admin/login', {
+    const data = await apiClient.request('/auth/admin/sessions', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
 
     // Set token in apiClient
-    if (data.data?.accessToken) {
-      apiClient.setToken(data.data.accessToken);
+    if (data.accessToken) {
+      apiClient.setToken(data.accessToken);
     }
 
     // Return unified format
     return {
-      accessToken: data.data?.accessToken,
-      user: data.data?.user,
+      accessToken: data.accessToken,
+      user: data.user,
     };
   }
 
   async getCurrentUser() {
-    const response = await apiClient.request('/auth/me');
+    const response = await apiClient.request('/auth/sessions/current');
     return response.user;
   }
 
@@ -68,12 +68,12 @@ export class AuthService {
   }
 
   async register(email: string, password: string, name?: string) {
-    const response = await apiClient.request('/auth/register', {
+    const response = await apiClient.request('/auth/users', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
     
-    return response.data;
+    return response;
   }
 
   async deleteUsers(userIds: string[]) {
