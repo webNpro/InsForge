@@ -2,14 +2,15 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import axios from 'axios';
+import { OAuth2Client } from 'google-auth-library';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
 import type {
-  User,
+  UserSchema,
   CreateUserResponse,
   CreateSessionResponse,
   CreateAdminSessionResponse,
-  TokenPayload,
+  TokenPayloadSchema,
 } from '@insforge/shared-schemas';
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -27,6 +28,7 @@ export class AuthService {
   private googleClientId: string | undefined;
   private googleClientSecret: string | undefined;
   private googleRedirectUri: string | undefined;
+  private googleClient: OAuth2Client | undefined;
   private githubClientId: string | undefined;
   private githubClientSecret: string | undefined;
   private githubRedirectUri: string | undefined;
@@ -47,6 +49,15 @@ export class AuthService {
     this.googleClientId = process.env.GOOGLE_CLIENT_ID;
     this.googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
     this.googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
+    
+    // Initialize Google OAuth2 client if credentials are provided
+    if (this.googleClientId) {
+      this.googleClient = new OAuth2Client(
+        this.googleClientId,
+        this.googleClientSecret,
+        this.googleRedirectUri
+      );
+    }
     this.githubClientId = process.env.GITHUB_CLIENT_ID;
     this.githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
     this.githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
@@ -71,7 +82,7 @@ export class AuthService {
   /**
    * Transform database user to API format (snake_case to camelCase)
    */
-  private dbUserToApiUser(dbUser: any): User {
+  private dbUserToApiUser(dbUser: any): UserSchema {
     return {
       id: dbUser.id,
       email: dbUser.email,
@@ -86,7 +97,7 @@ export class AuthService {
    * Transform multiple database users to API format
    * Public method for use in auth routes
    */
-  public transformUsers(dbUsers: any[]): User[] {
+  public transformUsers(dbUsers: any[]): UserSchema[] {
     return dbUsers.map(user => this.dbUserToApiUser(user));
   }
 
@@ -94,14 +105,14 @@ export class AuthService {
    * Transform single database user to API format
    * Public method for use in auth routes
    */
-  public transformUser(dbUser: any): User {
+  public transformUser(dbUser: any): UserSchema {
     return this.dbUserToApiUser(dbUser);
   }
 
   /**
    * Generate JWT token for users and admins
    */
-  generateToken(payload: TokenPayload): string {
+  generateToken(payload: TokenPayloadSchema): string {
     return jwt.sign(payload, JWT_SECRET!, {
       algorithm: 'HS256',
       expiresIn: JWT_EXPIRES_IN,
@@ -111,9 +122,9 @@ export class AuthService {
   /**
    * Verify JWT token
    */
-  verifyToken(token: string): TokenPayload {
+  verifyToken(token: string): TokenPayloadSchema {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET!) as TokenPayload;
+      const decoded = jwt.verify(token, JWT_SECRET!) as TokenPayloadSchema;
       return {
         sub: decoded.sub,
         email: decoded.email,
@@ -304,7 +315,7 @@ export class AuthService {
       
       await this.db.exec('COMMIT');
       
-      const user: User = {
+      const user: UserSchema = {
         id: userId,
         email,
         name: userName,
@@ -414,20 +425,36 @@ export class AuthService {
    * Verify Google ID token and get user info
    */
   async verifyGoogleToken(idToken: string): Promise<any> {
-    // Decode and verify Google ID token
-    // In production, should verify signature properly
-    const decoded = jwt.decode(idToken) as any;
-    if (!decoded) {
-      throw new Error('Invalid Google ID token');
+    if (!this.googleClient) {
+      throw new Error('Google OAuth client not initialized');
     }
-    
-    return {
-      sub: decoded.sub,
-      email: decoded.email,
-      email_verified: decoded.email_verified,
-      name: decoded.name,
-      picture: decoded.picture
-    };
+
+    try {
+      // Properly verify the ID token with Google's servers
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: this.googleClientId,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new Error('Invalid Google token payload');
+      }
+
+      return {
+        sub: payload.sub,
+        email: payload.email || '',
+        email_verified: payload.email_verified || false,
+        name: payload.name || '',
+        picture: payload.picture || '',
+        given_name: payload.given_name || '',
+        family_name: payload.family_name || '',
+        locale: payload.locale || '',
+      };
+    } catch (error) {
+      logger.error('Google token verification failed:', error);
+      throw new Error(`Google token verification failed: ${error}`);
+    }
   }
 
   /**

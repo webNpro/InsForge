@@ -20,7 +20,7 @@ export const emailSchema = z
 export const passwordSchema = z
   .string()
   .min(6, 'Password must be at least 6 characters')
-  .max(100, 'Password must be less than 100 characters');
+  .max(32, 'Password must be less than 32 characters');
 
 export const nameSchema = z
   .string()
@@ -42,36 +42,10 @@ export const oauthProviderSchema = z.enum(['google', 'github']);
 export const userSchema = z.object({
   id: userIdSchema,
   email: emailSchema,
-  name: z.string().nullable(),
+  name: nameSchema,
   emailVerified: z.boolean(),
   createdAt: z.string(), // PostgreSQL timestamp
   updatedAt: z.string(), // PostgreSQL timestamp
-});
-
-/**
- * Session entity schema - represents user sessions
- */
-export const sessionSchema = z.object({
-  id: z.string(),
-  userId: userIdSchema,
-  token: z.string(),
-  expiresAt: z.string(),
-  createdAt: z.string(),
-});
-
-/**
- * OAuth account entity schema - represents OAuth provider connections
- */
-export const oauthAccountSchema = z.object({
-  id: z.string(),
-  userId: userIdSchema,
-  provider: oauthProviderSchema,
-  providerUserId: z.string(),
-  accessToken: z.string().optional(),
-  refreshToken: z.string().optional(),
-  expiresAt: z.string().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
 });
 
 /**
@@ -97,14 +71,9 @@ export const tokenPayloadSchema = z.object({
 // Type exports
 // ============================================================================
 
-export type UserId = z.infer<typeof userIdSchema>;
-export type Email = z.infer<typeof emailSchema>;
-export type Password = z.infer<typeof passwordSchema>;
-export type Role = z.infer<typeof roleSchema>;
-export type OauthProvider = z.infer<typeof oauthProviderSchema>;
-
-export type User = z.infer<typeof userSchema>;
-export type Session = z.infer<typeof sessionSchema>;
-export type OauthAccount = z.infer<typeof oauthAccountSchema>;
-export type OauthState = z.infer<typeof oauthStateSchema>;
-export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
+export type UserIdSchema = z.infer<typeof userIdSchema>;
+export type EmailSchema = z.infer<typeof emailSchema>;
+export type PasswordSchema = z.infer<typeof passwordSchema>;
+export type RoleSchema = z.infer<typeof roleSchema>;
+export type UserSchema = z.infer<typeof userSchema>;
+export type TokenPayloadSchema = z.infer<typeof tokenPayloadSchema>;  

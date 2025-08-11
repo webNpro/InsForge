@@ -6,14 +6,18 @@ import { successResponse } from '@/utils/response.js';
 import { verifyAdmin } from '@/api/middleware/auth.js';
 import logger from '@/utils/logger.js';
 import {
+  userIdSchema,
   createUserRequestSchema,
   createSessionRequestSchema,
   createAdminSessionRequestSchema,
   deleteUsersRequestSchema,
   listUsersRequestSchema,
+  type CreateUserResponse,
+  type CreateSessionResponse,
+  type CreateAdminSessionResponse,
+  type GetCurrentSessionResponse,
   type ListUsersResponse,
   type DeleteUsersResponse,
-  type GetCurrentSessionResponse,
 } from '@insforge/shared-schemas';
 
 const router = Router();
@@ -32,7 +36,7 @@ router.post('/users', async (req: Request, res: Response, next: NextFunction) =>
     }
     
     const { email, password, name } = validationResult.data;
-    const result = await authService.register(email, password, name);
+    const result: CreateUserResponse = await authService.register(email, password, name);
     
     successResponse(res, result);
   } catch (error) {
@@ -53,7 +57,7 @@ router.post('/sessions', async (req: Request, res: Response, next: NextFunction)
     }
     
     const { email, password } = validationResult.data;
-    const result = await authService.login(email, password);
+    const result: CreateSessionResponse = await authService.login(email, password);
     
     successResponse(res, result);
   } catch (error) {
@@ -74,7 +78,7 @@ router.post('/admin/sessions', async (req: Request, res: Response, next: NextFun
     }
     
     const { email, password } = validationResult.data;
-    const result = await authService.adminLogin(email, password);
+    const result: CreateAdminSessionResponse = await authService.adminLogin(email, password);
     
     successResponse(res, result);
   } catch (error) {
@@ -189,9 +193,19 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
 });
 
 // GET /api/auth/users/:id - Get specific user (admin only)
-router.get('/users/:id', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/users/:userId', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    // Validate userId path parameter directly
+    const userIdValidation = userIdSchema.safeParse(req.params.userId);
+    if (!userIdValidation.success) {
+      throw new AppError(
+        'Invalid user ID format',
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+    
+    const userId = userIdValidation.data;
     const db = authService.getDb();
     
     const dbUser = await db.prepare(`
@@ -206,7 +220,7 @@ router.get('/users/:id', verifyAdmin, async (req: Request, res: Response, next: 
       FROM _user u
       LEFT JOIN _account a ON u.id = a.user_id
       WHERE u.id = ?
-    `).get(id);
+    `).get(userId);
     
     if (!dbUser) {
       throw new AppError('User not found', 404, ERROR_CODES.NOT_FOUND);

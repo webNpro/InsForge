@@ -6,8 +6,19 @@ import {
   userIdSchema,
   roleSchema,
   userSchema,
-  oauthProviderSchema,
 } from './auth.schema';
+
+// ============================================================================
+// Common schemas
+// ============================================================================
+
+/**
+ * Pagination parameters shared across list endpoints
+ */
+export const paginationSchema = z.object({
+  limit: z.string().optional(),
+  offset: z.string().optional(),
+});
 
 /**
  * POST /api/auth/users - Create user
@@ -34,18 +45,9 @@ export const createAdminSessionRequestSchema = createSessionRequestSchema;
 /**
  * GET /api/auth/users - List users (query parameters)
  */
-export const listUsersRequestSchema = z.object({
-  limit: z.string().optional(),
-  offset: z.string().optional(),
+export const listUsersRequestSchema = paginationSchema.extend({
   search: z.string().optional(),
 }).optional();
-
-/**
- * GET /api/auth/users/:id - Get user (path parameters)
- */
-export const getUserRequestSchema = z.object({
-  id: userIdSchema,
-});
 
 /**
  * DELETE /api/auth/users - Delete users (batch)
@@ -128,13 +130,14 @@ export const authErrorResponseSchema = z.object({
 // Type exports
 // ============================================================================
 
+// Request types for type-safe request handling
 export type CreateUserRequest = z.infer<typeof createUserRequestSchema>;
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>;
 export type CreateAdminSessionRequest = z.infer<typeof createAdminSessionRequestSchema>;
 export type ListUsersRequest = z.infer<typeof listUsersRequestSchema>;
-export type GetUserRequest = z.infer<typeof getUserRequestSchema>;
 export type DeleteUsersRequest = z.infer<typeof deleteUsersRequestSchema>;
 
+// Response types for type-safe responses
 export type CreateUserResponse = z.infer<typeof createUserResponseSchema>;
 export type CreateSessionResponse = z.infer<typeof createSessionResponseSchema>;
 export type CreateAdminSessionResponse = z.infer<typeof createAdminSessionResponseSchema>;
