@@ -102,52 +102,46 @@ export class DatabaseManager {
     await client.query('COMMIT');
   }
 
-  // Migrate OAuth configuration from environment variables to database
+  // Initialize OAuth configuration from environment variables to database
   private async migrateOAuthConfig(client: import('pg').PoolClient): Promise<void> {
     // Google OAuth configuration
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
     const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
 
     if (googleClientId && googleClientSecret) {
-      const googleConfigKey = 'auth.oauth.provider.google';
-      const googleConfigValue = JSON.stringify({
+      const googleConfig = {
         enabled: true,
         clientId: googleClientId,
         clientSecret: googleClientSecret,
-      });
+        redirectUri: googleRedirectUri // THIS WAS MISSING - CRITICAL!
+      };
 
       // Check if config already exists
-      const existingGoogleConfig = await client.query(
-        'SELECT key, value FROM _config WHERE key = $1',
-        [googleConfigKey]
+      const existing = await client.query(
+        'SELECT value FROM _config WHERE key = $1',
+        ['auth.oauth.provider.google']
       );
 
-      if (existingGoogleConfig.rows.length === 0) {
+      if (existing.rows.length === 0) {
         // Insert new config if it doesn't exist
         await client.query(
-          `
-          INSERT INTO _config (key, value, created_at, updated_at)
-          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `,
-          [googleConfigKey, googleConfigValue]
+          `INSERT INTO _config (key, value, created_at, updated_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          ['auth.oauth.provider.google', JSON.stringify(googleConfig)]
         );
       } else {
-        // Check if existing config is empty/disabled and environment variables have values
+        // Update if existing config is incomplete
         try {
-          const existingValue = JSON.parse(existingGoogleConfig.rows[0].value);
-          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.enabled) {
-            // Update with environment variables if existing config is incomplete
+          const existingValue = JSON.parse(existing.rows[0].value);
+          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.redirectUri) {
             await client.query(
-              `
-              UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2
-            `,
-              [googleConfigValue, googleConfigKey]
+              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
+              [JSON.stringify(googleConfig), 'auth.oauth.provider.google']
             );
           }
         } catch (e) {
-          logger.error('Failed to parse existing Google OAuth config', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          logger.error('Failed to parse existing Google OAuth config:', e);
         }
       }
     }
@@ -155,50 +149,46 @@ export class DatabaseManager {
     // GitHub OAuth configuration
     const githubClientId = process.env.GITHUB_CLIENT_ID;
     const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+    const githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
 
     if (githubClientId && githubClientSecret) {
-      const githubConfigKey = 'auth.oauth.provider.github';
-      const githubConfigValue = JSON.stringify({
+      const githubConfig = {
         enabled: true,
         clientId: githubClientId,
         clientSecret: githubClientSecret,
-      });
+        redirectUri: githubRedirectUri // THIS WAS MISSING - CRITICAL!
+      };
 
       // Check if config already exists
-      const existingGithubConfig = await client.query(
-        'SELECT key, value FROM _config WHERE key = $1',
-        [githubConfigKey]
+      const existing = await client.query(
+        'SELECT value FROM _config WHERE key = $1',
+        ['auth.oauth.provider.github']
       );
 
-      if (existingGithubConfig.rows.length === 0) {
+      if (existing.rows.length === 0) {
         // Insert new config if it doesn't exist
         await client.query(
-          `
-          INSERT INTO _config (key, value, created_at, updated_at)
-          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `,
-          [githubConfigKey, githubConfigValue]
+          `INSERT INTO _config (key, value, created_at, updated_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          ['auth.oauth.provider.github', JSON.stringify(githubConfig)]
         );
       } else {
-        // Check if existing config is empty/disabled and environment variables have values
+        // Update if existing config is incomplete
         try {
-          const existingValue = JSON.parse(existingGithubConfig.rows[0].value);
-          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.enabled) {
-            // Update with environment variables if existing config is incomplete
+          const existingValue = JSON.parse(existing.rows[0].value);
+          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.redirectUri) {
             await client.query(
-              `
-              UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2
-            `,
-              [githubConfigValue, githubConfigKey]
+              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
+              [JSON.stringify(githubConfig), 'auth.oauth.provider.github']
             );
           }
         } catch (e) {
-          logger.error('Failed to parse existing GitHub OAuth config', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          logger.error('Failed to parse existing GitHub OAuth config:', e);
         }
       }
     }
+
+    logger.info('OAuth configuration initialized in database');
   }
 
   private async initializeDb(): Promise<void> {

@@ -25,13 +25,8 @@ export class AuthService {
   private adminEmail: string;
   private adminPassword: string;
   private db: any;
-  private googleClientId: string | undefined;
-  private googleClientSecret: string | undefined;
-  private googleRedirectUri: string | undefined;
-  private googleClient: OAuth2Client | undefined;
-  private githubClientId: string | undefined;
-  private githubClientSecret: string | undefined;
-  private githubRedirectUri: string | undefined;
+  private processedCodes: Set<string>;
+  private tokenCache: Map<string, { access_token: string; id_token: string }>;
 
   private constructor() {
     if (!JWT_SECRET) {
@@ -45,31 +40,14 @@ export class AuthService {
       throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required');
     }
     
-    // OAuth configuration
-    this.googleClientId = process.env.GOOGLE_CLIENT_ID;
-    this.googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    this.googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
-    
-    // Initialize Google OAuth2 client if credentials are provided
-    if (this.googleClientId) {
-      this.googleClient = new OAuth2Client(
-        this.googleClientId,
-        this.googleClientSecret,
-        this.googleRedirectUri
-      );
-    }
-    this.githubClientId = process.env.GITHUB_CLIENT_ID;
-    this.githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
-    this.githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
-    
     const dbManager = DatabaseManager.getInstance();
     this.db = dbManager.getDb();
     
-    // Log OAuth configuration status
-    logger.info('AuthService initialized - OAuth configuration', {
-      googleOAuth: this.googleClientId ? 'Configured' : 'Not configured',
-      githubOAuth: this.githubClientId ? 'Configured' : 'Not configured'
-    });
+    // Initialize OAuth helpers
+    this.processedCodes = new Set();
+    this.tokenCache = new Map();
+    
+    logger.info('AuthService initialized');
   }
 
   public static getInstance(): AuthService {
@@ -77,6 +55,65 @@ export class AuthService {
       AuthService.instance = new AuthService();
     }
     return AuthService.instance;
+  }
+
+  /**
+   * Load OAuth configuration from database - NO CACHING, always fresh
+   */
+  private async loadOAuthConfig(): Promise<{
+    google: { clientId: string; clientSecret: string; redirectUri: string; enabled: boolean };
+    github: { clientId: string; clientSecret: string; redirectUri: string; enabled: boolean };
+  }> {
+    let configRows: any[];
+    try {
+      const rows = await this.db.prepare(
+        `SELECT key, value FROM _config WHERE key LIKE 'auth.oauth.provider.%'`
+      ).all();
+      configRows = rows || [];
+    } catch (error) {
+      logger.error('Failed to load OAuth config from database:', error);
+      configRows = [];
+    }
+
+    const config = {
+      google: {
+        clientId: '',
+        clientSecret: '',
+        redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
+        enabled: false,
+      },
+      github: {
+        clientId: '',
+        clientSecret: '',
+        redirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
+        enabled: false,
+      },
+    };
+
+    // Load from database values
+    for (const row of configRows) {
+      try {
+        const provider = row.key === 'auth.oauth.provider.google' ? 'google' :
+                        row.key === 'auth.oauth.provider.github' ? 'github' : null;
+
+        if (provider && config[provider]) {
+          const value = JSON.parse(row.value);
+          config[provider].clientId = value.clientId || '';
+          config[provider].clientSecret = value.clientSecret || '';
+          config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
+          config[provider].enabled = value.enabled || false;
+        }
+      } catch (e) {
+        logger.error('Failed to parse OAuth config', { key: row.key, error: e });
+      }
+    }
+
+    logger.debug('OAuth config loaded from database', {
+      google: { enabled: config.google.enabled, hasClientId: !!config.google.clientId },
+      github: { enabled: config.github.enabled, hasClientId: !!config.github.clientId }
+    });
+
+    return config;
   }
 
   /**
@@ -338,16 +375,23 @@ export class AuthService {
   }
 
   /**
-   * Generate Google OAuth authorization URL
+   * Generate Google OAuth authorization URL - ALWAYS reads fresh from DB
    */
   async generateGoogleAuthUrl(state?: string): Promise<string> {
-    if (!this.googleClientId || !this.googleClientSecret) {
+    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    
+    if (!config.google.clientId || !config.google.clientSecret) {
       throw new Error('Google OAuth not configured');
     }
     
+    logger.debug('Google OAuth Config (fresh from DB):', {
+      clientId: config.google.clientId ? 'SET' : 'NOT SET',
+      enabled: config.google.enabled,
+    });
+    
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    authUrl.searchParams.set('client_id', this.googleClientId);
-    authUrl.searchParams.set('redirect_uri', this.googleRedirectUri!);
+    authUrl.searchParams.set('client_id', config.google.clientId);
+    authUrl.searchParams.set('redirect_uri', config.google.redirectUri);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'openid email profile');
     authUrl.searchParams.set('access_type', 'offline');
@@ -359,16 +403,18 @@ export class AuthService {
   }
 
   /**
-   * Generate GitHub OAuth authorization URL
+   * Generate GitHub OAuth authorization URL - ALWAYS reads fresh from DB
    */
   async generateGitHubAuthUrl(state?: string): Promise<string> {
-    if (!this.githubClientId || !this.githubClientSecret) {
+    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    
+    if (!config.github.clientId || !config.github.clientSecret) {
       throw new Error('GitHub OAuth not configured');
     }
     
     const authUrl = new URL('https://github.com/login/oauth/authorize');
-    authUrl.searchParams.set('client_id', this.githubClientId);
-    authUrl.searchParams.set('redirect_uri', this.githubRedirectUri!);
+    authUrl.searchParams.set('client_id', config.github.clientId);
+    authUrl.searchParams.set('redirect_uri', config.github.redirectUri);
     authUrl.searchParams.set('scope', 'user:email');
     if (state) {
       authUrl.searchParams.set('state', state);
@@ -381,22 +427,36 @@ export class AuthService {
    * Exchange Google code for tokens
    */
   async exchangeCodeToTokenByGoogle(code: string): Promise<{ access_token: string; id_token: string }> {
-    if (!this.googleClientId || !this.googleClientSecret) {
+    // Check cache first
+    if (this.processedCodes.has(code)) {
+      const cachedTokens = this.tokenCache.get(code);
+      if (cachedTokens) {
+        logger.debug('Returning cached tokens for already processed code.');
+        return cachedTokens;
+      }
+      throw new Error('Authorization code is currently being processed.');
+    }
+    
+    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    
+    if (!config.google.clientId || !config.google.clientSecret) {
       throw new Error('Google OAuth not configured');
     }
     
     try {
+      this.processedCodes.add(code);
+      
       logger.info('Exchanging Google code for tokens', {
         hasCode: !!code,
-        redirectUri: this.googleRedirectUri,
-        clientId: this.googleClientId?.substring(0, 10) + '...'
+        redirectUri: config.google.redirectUri,
+        clientId: config.google.clientId?.substring(0, 10) + '...'
       });
       
       const response = await axios.post('https://oauth2.googleapis.com/token', {
         code,
-        client_id: this.googleClientId,
-        client_secret: this.googleClientSecret,
-        redirect_uri: this.googleRedirectUri,
+        client_id: config.google.clientId,
+        client_secret: config.google.clientSecret,
+        redirect_uri: config.google.redirectUri,
         grant_type: 'authorization_code'
       });
       
@@ -404,16 +464,30 @@ export class AuthService {
         throw new Error('Failed to get tokens from Google');
       }
       
-      return {
+      const result = {
         access_token: response.data.access_token,
         id_token: response.data.id_token
       };
+      
+      // Cache the successful token exchange
+      this.tokenCache.set(code, result);
+      
+      // Set a timeout to clear the code and cache to prevent memory leaks
+      setTimeout(() => {
+        this.processedCodes.delete(code);
+        this.tokenCache.delete(code);
+      }, 60000); // 1 minute timeout
+      
+      return result;
     } catch (error) {
+      // If the request fails, remove the code immediately to allow for a retry
+      this.processedCodes.delete(code);
+      
       if (axios.isAxiosError(error) && error.response) {
         logger.error('Google token exchange failed', {
           status: error.response.status,
           error: error.response.data,
-          redirectUri: this.googleRedirectUri
+          redirectUri: config.google.redirectUri
         });
         throw new Error(`Google OAuth error: ${JSON.stringify(error.response.data)}`);
       }
@@ -425,15 +499,24 @@ export class AuthService {
    * Verify Google ID token and get user info
    */
   async verifyGoogleToken(idToken: string): Promise<any> {
-    if (!this.googleClient) {
-      throw new Error('Google OAuth client not initialized');
+    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    
+    if (!config.google.clientId || !config.google.clientSecret) {
+      throw new Error('Google OAuth not configured');
     }
+
+    // Create OAuth2Client with fresh config
+    const googleClient = new OAuth2Client(
+      config.google.clientId,
+      config.google.clientSecret,
+      config.google.redirectUri
+    );
 
     try {
       // Properly verify the ID token with Google's servers
-      const ticket = await this.googleClient.verifyIdToken({
+      const ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: this.googleClientId,
+        audience: config.google.clientId,
       });
 
       const payload = ticket.getPayload();
@@ -476,17 +559,19 @@ export class AuthService {
    * Exchange GitHub code for access token
    */
   async exchangeGitHubCodeForToken(code: string): Promise<string> {
-    if (!this.githubClientId || !this.githubClientSecret) {
+    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    
+    if (!config.github.clientId || !config.github.clientSecret) {
       throw new Error('GitHub OAuth not configured');
     }
     
     const response = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
-        client_id: this.githubClientId,
-        client_secret: this.githubClientSecret,
+        client_id: config.github.clientId,
+        client_secret: config.github.clientSecret,
         code,
-        redirect_uri: this.githubRedirectUri
+        redirect_uri: config.github.redirectUri
       },
       {
         headers: {
