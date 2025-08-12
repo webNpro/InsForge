@@ -65,7 +65,7 @@ export function isValidIdentifier(identifier: string): boolean {
 export function validateTableName(tableName: string, operation?: 'READ' | 'WRITE'): boolean {
   validateIdentifier(tableName, 'table');
 
-  // Special handling for _user table (Better Auth) - check this BEFORE general _ check
+  // Special handling for _user table - check this BEFORE general _ check
   if (tableName.toLowerCase() === '_user') {
     // _user table allows read-only access for foreign key references
     if (operation === 'READ') {
@@ -78,19 +78,9 @@ export function validateTableName(tableName: string, operation?: 'READ' | 'WRITE
         'Cannot modify _user table - use Auth API instead',
         403,
         ERROR_CODES.FORBIDDEN,
-        'Use /api/auth/v2/* endpoints to create or update users'
+        'Use /api/auth/* endpoints to create or update users'
       );
     }
-  }
-
-  // Prevent access to jwks table (Better Auth JWT keys)
-  if (tableName.toLowerCase() === 'jwks') {
-    throw new AppError(
-      'Access to jwks table is not allowed',
-      403,
-      ERROR_CODES.FORBIDDEN,
-      'The jwks table is a system table for JWT key management'
-    );
   }
 
   // Prevent access to all other system tables (starting with _)

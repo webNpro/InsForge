@@ -25,30 +25,30 @@ echo "Creating test user: $EMAIL"
 
 # Register
 echo -e "\n${BLUE}2a. Register (Object Response)${NC}"
-REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/v2/sign-up/email" \
+REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/users" \
   -H "Content-Type: application/json" \
   -d "{\"email\": \"$EMAIL\", \"password\": \"Test123!\", \"name\": \"Test User\"}")
 echo "$REGISTER_RESPONSE" | jq '.'
-TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.token')
+TOKEN=$(echo "$REGISTER_RESPONSE" | jq -r '.accessToken')
 echo -e "${GREEN}✓ Returns user object with token (no wrapper)${NC}"
 
 # Login
 echo -e "\n${BLUE}2b. Login (Object Response)${NC}"
-curl -s -X POST "$BASE_URL/auth/v2/sign-in/email" \
+curl -s -X POST "$BASE_URL/auth/sessions" \
   -H "Content-Type: application/json" \
   -d "{\"email\": \"$EMAIL\", \"password\": \"Test123!\"}" | jq '.'
 echo -e "${GREEN}✓ Returns user object with token (no wrapper)${NC}"
 
 # Get current user
 echo -e "\n${BLUE}2c. Get Current User (Object Response)${NC}"
-curl -s "$BASE_URL/auth/v2/me" \
+curl -s "$BASE_URL/auth/sessions/current" \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 echo -e "${GREEN}✓ Returns user object directly${NC}"
 
 # 3. Error Response
 echo -e "\n${BLUE}3. Error Response Format${NC}"
 echo "Testing with invalid credentials:"
-curl -s -X POST "$BASE_URL/auth/v2/sign-in/email" \
+curl -s -X POST "$BASE_URL/auth/sessions" \
   -H "Content-Type: application/json" \
   -d '{"email": "nonexistent@example.com", "password": "wrong"}' | jq '.'
 echo -e "${GREEN}✓ Error format: {error, message, statusCode, nextActions}${NC}"

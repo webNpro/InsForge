@@ -60,18 +60,18 @@ test_response_format "No data wrapper" "$response" '"data":{' "true"
 
 # 2. Test Authentication Errors
 print_info "2. Testing Authentication Errors"
-response=$(curl -s "$API_BASE/auth/v2/me")
-test_response_format "Error format" "$response" '"code":"MISSING_AUTHORIZATION_HEADER"'
-test_response_format "Message field" "$response" '"message":"Missing authorization header"'
-# Better Auth doesn't include statusCode or nextActions in response body
+response=$(curl -s "$API_BASE/auth/sessions/current")
+test_response_format "Error format" "$response" '"error":"AUTH_INVALID_CREDENTIALS"'
+test_response_format "Message field" "$response" '"message":"Invalid token"'
+# JWT auth includes error and message fields
 
 # 3. Test Login Endpoint (Missing Credentials)
 print_info "3. Testing Login Endpoint (Missing Credentials)"
-response=$(curl -s -X POST "$API_BASE/auth/v2/sign-in/email" \
+response=$(curl -s -X POST "$API_BASE/auth/sessions" \
     -H "Content-Type: application/json" \
     -d '{}')
-test_response_format "Error response" "$response" '"code":"VALIDATION_ERROR"'
-test_response_format "Message field" "$response" '"message":"Invalid body parameters"'
+test_response_format "Error response" "$response" '"error":"INVALID_INPUT"'
+test_response_format "Message field" "$response" '"message":"Email and password are required"'
 
 # 4. Test Invalid Endpoint (404)
 print_info "4. Testing Invalid Endpoint (404)"
@@ -83,7 +83,7 @@ ADMIN_TOKEN=$(get_admin_token)
 
 # 5. Test with Authentication
 print_info "5. Creating test user for authenticated tests"
-auth_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-up/email" \
+auth_response=$(curl -s -X POST "$API_BASE/auth/users" \
     -H "Content-Type: application/json" \
     -d "{
         \"email\": \"$TEST_USER_EMAIL\",
@@ -92,8 +92,8 @@ auth_response=$(curl -s -X POST "$API_BASE/auth/v2/sign-up/email" \
     }")
 
 # Check if registration was successful
-if echo "$auth_response" | grep -q '"token"'; then
-    AUTH_TOKEN=$(echo "$auth_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+if echo "$auth_response" | grep -q '"accessToken"'; then
+    AUTH_TOKEN=$(echo "$auth_response" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
     print_success "User registered successfully"
     register_test_user "$TEST_USER_EMAIL"
     

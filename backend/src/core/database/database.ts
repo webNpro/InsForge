@@ -102,52 +102,46 @@ export class DatabaseManager {
     await client.query('COMMIT');
   }
 
-  // Migrate OAuth configuration from environment variables to database
+  // Initialize OAuth configuration from environment variables to database
   private async migrateOAuthConfig(client: import('pg').PoolClient): Promise<void> {
     // Google OAuth configuration
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
     const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
 
     if (googleClientId && googleClientSecret) {
-      const googleConfigKey = 'auth.oauth.provider.google';
-      const googleConfigValue = JSON.stringify({
+      const googleConfig = {
         enabled: true,
         clientId: googleClientId,
         clientSecret: googleClientSecret,
-      });
+        redirectUri: googleRedirectUri // THIS WAS MISSING - CRITICAL!
+      };
 
       // Check if config already exists
-      const existingGoogleConfig = await client.query(
-        'SELECT key, value FROM _config WHERE key = $1',
-        [googleConfigKey]
+      const existing = await client.query(
+        'SELECT value FROM _config WHERE key = $1',
+        ['auth.oauth.provider.google']
       );
 
-      if (existingGoogleConfig.rows.length === 0) {
+      if (existing.rows.length === 0) {
         // Insert new config if it doesn't exist
         await client.query(
-          `
-          INSERT INTO _config (key, value, created_at, updated_at)
-          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `,
-          [googleConfigKey, googleConfigValue]
+          `INSERT INTO _config (key, value, created_at, updated_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          ['auth.oauth.provider.google', JSON.stringify(googleConfig)]
         );
       } else {
-        // Check if existing config is empty/disabled and environment variables have values
+        // Update if existing config is incomplete
         try {
-          const existingValue = JSON.parse(existingGoogleConfig.rows[0].value);
-          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.enabled) {
-            // Update with environment variables if existing config is incomplete
+          const existingValue = JSON.parse(existing.rows[0].value);
+          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.redirectUri) {
             await client.query(
-              `
-              UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2
-            `,
-              [googleConfigValue, googleConfigKey]
+              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
+              [JSON.stringify(googleConfig), 'auth.oauth.provider.google']
             );
           }
         } catch (e) {
-          logger.error('Failed to parse existing Google OAuth config', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          logger.error('Failed to parse existing Google OAuth config:', e);
         }
       }
     }
@@ -155,50 +149,46 @@ export class DatabaseManager {
     // GitHub OAuth configuration
     const githubClientId = process.env.GITHUB_CLIENT_ID;
     const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+    const githubRedirectUri = process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
 
     if (githubClientId && githubClientSecret) {
-      const githubConfigKey = 'auth.oauth.provider.github';
-      const githubConfigValue = JSON.stringify({
+      const githubConfig = {
         enabled: true,
         clientId: githubClientId,
         clientSecret: githubClientSecret,
-      });
+        redirectUri: githubRedirectUri // THIS WAS MISSING - CRITICAL!
+      };
 
       // Check if config already exists
-      const existingGithubConfig = await client.query(
-        'SELECT key, value FROM _config WHERE key = $1',
-        [githubConfigKey]
+      const existing = await client.query(
+        'SELECT value FROM _config WHERE key = $1',
+        ['auth.oauth.provider.github']
       );
 
-      if (existingGithubConfig.rows.length === 0) {
+      if (existing.rows.length === 0) {
         // Insert new config if it doesn't exist
         await client.query(
-          `
-          INSERT INTO _config (key, value, created_at, updated_at)
-          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `,
-          [githubConfigKey, githubConfigValue]
+          `INSERT INTO _config (key, value, created_at, updated_at)
+           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          ['auth.oauth.provider.github', JSON.stringify(githubConfig)]
         );
       } else {
-        // Check if existing config is empty/disabled and environment variables have values
+        // Update if existing config is incomplete
         try {
-          const existingValue = JSON.parse(existingGithubConfig.rows[0].value);
-          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.enabled) {
-            // Update with environment variables if existing config is incomplete
+          const existingValue = JSON.parse(existing.rows[0].value);
+          if (!existingValue.clientId || !existingValue.clientSecret || !existingValue.redirectUri) {
             await client.query(
-              `
-              UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2
-            `,
-              [githubConfigValue, githubConfigKey]
+              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
+              [JSON.stringify(githubConfig), 'auth.oauth.provider.github']
             );
           }
         } catch (e) {
-          logger.error('Failed to parse existing GitHub OAuth config', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          logger.error('Failed to parse existing GitHub OAuth config:', e);
         }
       }
     }
+
+    logger.info('OAuth configuration initialized in database');
   }
 
   private async initializeDb(): Promise<void> {
@@ -267,7 +257,6 @@ export class DatabaseManager {
         FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
       );
 
-      -- Better Auth uses _account table for OAuth
 
       -- Edge functions
       CREATE TABLE IF NOT EXISTS _edge_functions (
@@ -282,65 +271,31 @@ export class DatabaseManager {
         deployed_at TIMESTAMPTZ
       );
 
-      -- Better Auth Tables
+      -- Auth Tables (2-table structure)
       -- User table
       CREATE TABLE IF NOT EXISTS _user (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "email" TEXT UNIQUE NOT NULL,
-        "emailVerified" BOOLEAN DEFAULT false,
-        "name" TEXT,
-        "image" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE NOT NULL,
+        password TEXT, -- NULL for OAuth-only users
+        name TEXT,
+        email_verified BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
-      -- Session table
-      CREATE TABLE IF NOT EXISTS _session (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
-        "expiresAt" TIMESTAMPTZ NOT NULL,
-        "token" TEXT UNIQUE NOT NULL,
-        "ipAddress" TEXT,
-        "userAgent" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- Account table (for OAuth and credentials)
+      -- Account table (for OAuth connections)
+      -- Links OAuth provider accounts to local users
       CREATE TABLE IF NOT EXISTS _account (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "userId" UUID NOT NULL REFERENCES _user("id") ON DELETE CASCADE,
-        "accountId" TEXT NOT NULL,
-        "providerId" TEXT NOT NULL,
-        "accessToken" TEXT,
-        "refreshToken" TEXT,
-        "idToken" TEXT,
-        "accessTokenExpiresAt" TIMESTAMPTZ,
-        "refreshTokenExpiresAt" TIMESTAMPTZ,
-        "scope" TEXT,
-        "password" TEXT,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE("providerId", "accountId")
-      );
-
-      -- Verification table
-      CREATE TABLE IF NOT EXISTS _verification (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "identifier" TEXT NOT NULL,
-        "value" TEXT NOT NULL,
-        "expiresAt" TIMESTAMPTZ NOT NULL,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
-        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- JWT plugin tables (no underscore prefix for Better Auth compatibility)
-      -- Although better auth allows us to use underscore prefix rename, there is a bug where it's /token endpoint still uses old name
-      CREATE TABLE IF NOT EXISTS jwks (
-        "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-        "publicKey" TEXT NOT NULL,
-        "privateKey" TEXT NOT NULL,
-        "createdAt" TIMESTAMPTZ DEFAULT NOW()
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES _user(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL, -- OAuth provider name: 'google', 'github', etc.
+        provider_account_id TEXT NOT NULL, -- User's unique ID on the provider's system (e.g., Google's sub, GitHub's id)
+        access_token TEXT, -- OAuth access token for making API calls to provider
+        refresh_token TEXT, -- OAuth refresh token for renewing access
+        provider_data JSONB, -- OAuth provider's user profile (Google: sub/email/name/picture, GitHub: id/login/email/avatar_url)
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(provider, provider_account_id) -- Ensures one account per provider per user
       );
 
     `);
@@ -366,19 +321,6 @@ export class DatabaseManager {
         `);
       }
 
-      // Create indexes for better performance
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_edge_functions_slug ON _edge_functions(slug);
-        CREATE INDEX IF NOT EXISTS idx_edge_functions_status ON _edge_functions(status);
-        
-        -- Better Auth indexes
-        CREATE INDEX IF NOT EXISTS idx_user_email ON _user("email");
-        CREATE INDEX IF NOT EXISTS idx_session_userId ON _session("userId");
-        CREATE INDEX IF NOT EXISTS idx_session_token ON _session("token");
-        CREATE INDEX IF NOT EXISTS idx_account_userId ON _account("userId");
-        CREATE INDEX IF NOT EXISTS idx_verification_identifier ON _verification("identifier");
-      `);
-
       // Insert initial metadata
       await client.query(`
         INSERT INTO _metadata (key, value) VALUES ('version', '1.0.0')
@@ -397,6 +339,7 @@ export class DatabaseManager {
     } finally {
       client.release();
     }
+    
   }
 
   // PostgreSQL-specific prepare method that returns a query object similar to better-sqlite3

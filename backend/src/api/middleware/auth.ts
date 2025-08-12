@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from './error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
@@ -129,9 +128,8 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 }
 
 /**
- * Core token verification middleware that handles all token extraction and verification
- * Automatically detects Better Auth session tokens vs JWT tokens
- * Sets req.user and generates PostgREST-compatible tokens
+ * Core token verification middleware that handles JWT token extraction and verification
+ * Sets req.user with the authenticated user information
  */
 export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
@@ -145,18 +143,8 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
       );
     }
 
-    let payload;
-    let isBetterAuthToken = false;
-
-    // Try Better Auth first (session token -> JWT exchange)
-    try {
-      payload = await authService.verifyBetterAuthUserSessionToken(token);
-      isBetterAuthToken = true;
-    } catch {
-      // Fall back to JWT verification
-      // This is used for admin tokens
-      payload = authService.verifyToken(token);
-    }
+    // Verify JWT token
+    const payload = authService.verifyToken(token);
 
     // Validate token has a role
     if (!payload.role) {
@@ -170,24 +158,6 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
 
     // Set user info on request
     setRequestUser(req, payload);
-
-    // Generate PostgREST-compatible token if needed
-    // Better Auth tokens are EdDSA-signed; PostgREST needs HS256
-    if (isBetterAuthToken) {
-      const postgrestToken = jwt.sign(
-        {
-          sub: payload.sub,
-          email: payload.email,
-          role: payload.role,
-        },
-        process.env.JWT_SECRET || '',
-        { algorithm: 'HS256', expiresIn: '7d' }
-      );
-      (req as Request & { postgrestToken: string }).postgrestToken = postgrestToken;
-    } else {
-      // JWT tokens are already HS256-signed, use as-is
-      (req as Request & { postgrestToken: string }).postgrestToken = token;
-    }
 
     next();
   } catch (error) {

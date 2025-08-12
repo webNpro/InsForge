@@ -12,25 +12,25 @@ Insforge uses JWT tokens for authentication. Store tokens in localStorage after 
 ## User Authentication
 
 ### Register New User
-**POST** `/api/auth/v2/sign-up/email`
+**POST** `/api/auth/users`
 
 Body: `{"email": "user@example.com", "password": "password", "name": "User Name"}`
 
-Returns: `{"token": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
+Returns: `{"accessToken": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
 
 ### Login User  
-**POST** `/api/auth/v2/sign-in/email`
+**POST** `/api/auth/sessions`
 
 Body: `{"email": "user@example.com", "password": "password"}`
 
-Returns: `{"token": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
+Returns: `{"accessToken": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
 
 ### Get Current User
-**GET** `/api/auth/v2/me` 
+**GET** `/api/auth/sessions/current` 
 
-Headers: `Authorization: Bearer <token>`
+Headers: `Authorization: Bearer <accessToken>`
 
-Returns: `{"user": {"id": "...", "email": "...", "type": "user", "role": "authenticated"}}`
+Returns: `{"user": {"id": "...", "email": "...", "role": "authenticated"}}`
 
 **Note**: Returns LIMITED fields (id, email, type, role). For full user data including name/image, query `/api/database/records/user?id=eq.<user_id>`
 
@@ -41,7 +41,7 @@ Returns: `{"user": {"id": "...", "email": "...", "type": "user", "role": "authen
 ## Admin Authentication
 
 ### Admin Login
-**POST** `/api/auth/v2/admin/sign-in`
+**POST** `/api/auth/admin/sessions`
 
 Request:
 ```json
@@ -54,7 +54,7 @@ Request:
 Response:
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "admin-id",
     "email": "admin@example.com",
@@ -66,12 +66,12 @@ Response:
 
 ```bash
 # Mac/Linux
-curl -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
+curl -X POST http://localhost:7130/api/auth/admin/sessions \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@example.com","password":"change-this-password"}'
 
 # Windows PowerShell (use curl.exe)
-curl.exe -X POST http://localhost:7130/api/auth/v2/admin/sign-in \
+curl.exe -X POST http://localhost:7130/api/auth/admin/sessions \
   -H "Content-Type: application/json" \
   -d '{\"email\":\"admin@example.com\",\"password\":\"change-this-password\"}'
 ```
@@ -99,9 +99,9 @@ Example error:
 Insforge supports Google and GitHub OAuth when configured with environment variables.
 
 OAuth workflow:
-1. End user clicks the OAuth login button and gets redirect URL from InsForge backend
-2. After successful user authorization, Google/GitHub redirects to InsForge backend
-3. InsForge backend generates session token and redirects to the application page
+1. End user initiates OAuth login and receives authorization URL from backend
+2. After successful user authorization, Google/GitHub redirects to backend callback
+3. Backend generates JWT token and redirects to the application page
 
 Prerequisites:
 1. Create Google or GitHub OAuth Application and obtain Client ID and Client Secret
@@ -109,51 +109,40 @@ Prerequisites:
 
 ### OAuth Endpoints
 
-#### Social Login (Google/GitHub)
-**POST** `/api/auth/v2/sign-in/social`
-
-Request:
-```json
-{
-  "provider": "google",
-  "callbackURL": "http://localhost:7131/dashboard",
-  "errorCallbackURL": "http://localhost:7131/login?error=oauth",
-  "disableRedirect": true
-}
-```
+#### Get OAuth URL (Google/GitHub)
+**GET** `/api/auth/oauth/:provider`
 
 Parameters:
-- `provider`: "google" or "github" (required)
-- `callbackURL`: Where to redirect after successful login (required)
-- `errorCallbackURL`: Where to redirect on error (optional)
-- `disableRedirect`: Return URL instead of auto-redirecting (optional)
+- `provider`: "google" or "github" in the URL path
+- Query params: `?redirectUrl=http://localhost:3000/dashboard`
 
-Response (when disableRedirect: true):
-```json
-{
-  "url": "https://accounts.google.com/o/oauth2/auth?client_id=...",
-  "redirect": false
-}
-```
+Returns: `{"authUrl": "https://accounts.google.com/..."}` - URL to redirect user to provider's OAuth page.
 
 ```bash
 # Mac/Linux
-curl -X POST http://localhost:7130/api/auth/v2/sign-in/social \
-  -H 'Content-Type: application/json' \
-  -d '{"provider":"google","callbackURL":"http://localhost:7131/dashboard","disableRedirect":true}'
+curl -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
 
 # Windows PowerShell (use curl.exe)
-curl.exe -X POST http://localhost:7130/api/auth/v2/sign-in/social \
-  -H "Content-Type: application/json" \
-  -d '{\"provider\":\"google\",\"callbackURL\":\"http://localhost:7131/dashboard\",\"disableRedirect\":true}'
+curl.exe -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
+```
+
+Example response:
+```json
+{
+  "authUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=..."
+}
 ```
 
 #### OAuth Callback
 The OAuth provider will redirect to:
-- Google: `http://localhost:7130/api/auth/v2/callback/google`
-- GitHub: `http://localhost:7130/api/auth/v2/callback/github`
+- Google: `http://localhost:7130/api/auth/oauth/google/callback`
+- GitHub: `http://localhost:7130/api/auth/oauth/github/callback`
 
-After processing, Better Auth redirects to your specified `callbackURL` with the user session.
+After processing, backend redirects to your specified `redirectUrl` with JWT token in URL parameters:
+- `access_token` - JWT authentication token
+- `user_id` - User's unique ID  
+- `email` - User's email address
+- `name` - User's display name
 
 ## Built-in Auth Tables
 
@@ -162,7 +151,7 @@ The `user` table is **system-managed**:
 - **✅ READ** via: `GET /api/database/records/user`
 - **❌ NO WRITE** - use Auth API instead
 - **✅ Foreign keys allowed**
-- Schema: `id`, `email`, `name`, `image`, `emailVerified`, `createdAt`, `updatedAt`
+- Schema: `id`, `email`, `name`, `image`, `email_verified`, `created_at`, `updated_at`
 
 Example - Create table with user reference:
 ```json
@@ -191,26 +180,24 @@ Example - Create table with user reference:
 }
 ```
 
-### Hidden System Tables
-These tables are managed by Better Auth and not visible in metadata:
-- **session** - Active user sessions
-- **account** - OAuth provider connections
-- **verification** - Email verification tokens
-- **jwks** - JSON Web Key Sets
+### System Tables
+The authentication system manages:
+- **_user** - User accounts (read-only via database API)
+- OAuth provider data stored internally
 
 ## Headers Summary
 
 | API Type | Header Required |
 |----------|----------------|
 | Auth endpoints | None |
-| Database/Storage | `Authorization: Bearer <token>` |
+| Database/Storage | `Authorization: Bearer <accessToken>` |
 | MCP testing only | `x-api-key: <key>` |
 
 ## Critical Notes
 
-1. `/api/auth/v2/me` returns `{"user": {...}}` - nested, not root level
-2. `/api/auth/v2/me` only has: id, email, type, role (no name/image)
+1. `/api/auth/sessions/current` returns `{"user": {...}}` - nested, not root level
+2. `/api/auth/sessions/current` only has: id, email, role (limited fields)
 3. Full user data: `GET /api/database/records/user?id=eq.<id>`
-4. POST requires `[{...}]` array format always
-5. Auth endpoints: no headers needed
-6. Database/Storage: `Authorization: Bearer <token>`
+4. POST to database requires `[{...}]` array format always
+5. Auth endpoints (register/login): no headers needed
+6. Protected endpoints: `Authorization: Bearer <accessToken>`

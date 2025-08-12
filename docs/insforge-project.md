@@ -39,7 +39,7 @@ When in doubt, read instructions documents again.
 ## 🚨 System Tables
 
 ### User Table (Read-Only)
-The `user` table is **protected** by Better Auth:
+The `_user` table is **protected** by the JWT authentication system:
 - **✅ CAN READ** via `GET /api/database/records/user`
 - **❌ CANNOT MODIFY** (POST/PUT/PATCH/DELETE) - use Auth API instead
 - **✅ CAN reference** with foreign keys
@@ -71,12 +71,13 @@ The `user` table is **protected** by Better Auth:
 ## Auth Operations:
 
 ### 🚨 IMPORTANT: Correct Auth Endpoints
-- **Register**: `POST /api/auth/v2/sign-up/email` - Create new user account
-- **Login**: `POST /api/auth/v2/sign-in/email` - Authenticate existing user
-- **Current User**: `GET /api/auth/v2/me` - Get authenticated user info
-- `/api/auth/v2/me` returns `{"user": {...}}` - nested structure
-- Store tokens and include as `Authorization: Bearer {session-token}` header
-- **Note**: Login returns a session token (not JWT) - backend converts it automatically
+- **Register**: `POST /api/auth/users` - Create new user account
+- **Login**: `POST /api/auth/sessions` - Authenticate existing user
+- **Admin Login**: `POST /api/auth/admin/sessions` - Admin authentication
+- **Current User**: `GET /api/auth/sessions/current` - Get authenticated user info
+- `/api/auth/sessions/current` returns `{"user": {...}}` - nested structure
+- Store JWT tokens and include as `Authorization: Bearer {accessToken}` header
+- **Note**: Login/register returns `{accessToken, user}` with JWT token
 
 ### Regular API Response Format
 
@@ -93,7 +94,7 @@ The `user` table is **protected** by Better Auth:
 - **Upload Methods**: 
   - **PUT** `/api/storage/buckets/{bucket}/objects/{filename}` - Upload with specific key
   - **POST** `/api/storage/buckets/{bucket}/objects` - Upload with auto-generated key
-- **Authentication**: Upload operations require `Authorization: Bearer {session-token}`
+- **Authentication**: Upload operations require `Authorization: Bearer {accessToken}`
 - **Generate Unique Filenames**: Use POST for auto-generated keys to prevent overwrites
 - **Multipart Form**: Use FormData for file uploads
 - **URL Format**: Response `url` field now contains correct format `/api/storage/buckets/{bucket}/objects/{filename}`
@@ -103,7 +104,7 @@ The `user` table is **protected** by Better Auth:
 **Backend runs on port 7130**
 
 Always test with cURL before UI integration:
-- Include `Authorization: Bearer TOKEN` for auth
+- Include `Authorization: Bearer {accessToken}` for auth
 - Add `Prefer: return=representation` to see created data
 - Windows PowerShell: use curl.exe
 

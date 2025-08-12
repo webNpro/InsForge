@@ -40,13 +40,13 @@ print_blue() {
 
 # Function to login as admin and get token
 get_admin_token() {
-    # Use Better Auth admin endpoint
-    local response=$(curl -s -X POST "$TEST_API_BASE/auth/v2/admin/sign-in" \
+    # Use JWT admin endpoint
+    local response=$(curl -s -X POST "$TEST_API_BASE/auth/admin/sessions" \
         -H "Content-Type: application/json" \
         -d "{\"email\":\"$TEST_ADMIN_EMAIL\",\"password\":\"$TEST_ADMIN_PASSWORD\"}")
     
-    if echo "$response" | grep -q '"token"'; then
-            echo "$response" | grep -o '"token":"[^"]*"' | cut -d'"' -f4
+    if echo "$response" | grep -q '"accessToken"'; then
+            echo "$response" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4
         else
             echo ""
         fi
@@ -118,8 +118,8 @@ register_user() {
     local password=$2
     local name=${3:-"Test User"}
     
-    # Use Better Auth registration
-    curl -s -X POST "$TEST_API_BASE/auth/v2/sign-up/email" \
+    # Use JWT registration
+    curl -s -X POST "$TEST_API_BASE/auth/users" \
         -H "Content-Type: application/json" \
         -d "{\"email\":\"$email\",\"password\":\"$password\",\"name\":\"$name\"}"
 }
@@ -129,8 +129,8 @@ login_user() {
     local email=$1
     local password=$2
     
-    # Use Better Auth login
-    curl -s -X POST "$TEST_API_BASE/auth/v2/sign-in/email" \
+    # Use JWT login
+    curl -s -X POST "$TEST_API_BASE/auth/sessions" \
         -H "Content-Type: application/json" \
         -d "{\"email\":\"$email\",\"password\":\"$password\"}"
 }
@@ -139,8 +139,8 @@ login_user() {
 get_user_profile() {
     local token=$1
     
-    # Use Better Auth profile endpoint
-    curl -s -X GET "$TEST_API_BASE/auth/v2/me" \
+    # Use JWT profile endpoint
+    curl -s -X GET "$TEST_API_BASE/auth/sessions/current" \
         -H "Authorization: Bearer $token"
 }
 
@@ -201,7 +201,7 @@ cleanup_test_data() {
         print_info "Deleting test users..."
         
         # Get all users to find IDs of test users
-        local users_response=$(curl -s -X GET "$TEST_API_BASE/auth/v2/admin/users?limit=100" \
+        local users_response=$(curl -s -X GET "$TEST_API_BASE/auth/users?limit=100" \
             -H "Authorization: Bearer $admin_token" \
             -H "Content-Type: application/json" 2>/dev/null || echo "")
         
@@ -222,7 +222,7 @@ cleanup_test_data() {
             
             # Bulk delete test users
             if [ ${#user_ids[@]} -gt 0 ]; then
-                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/v2/admin/users" \
+                local delete_response=$(curl -s -X DELETE "$TEST_API_BASE/auth/users" \
                     -H "Authorization: Bearer $admin_token" \
                     -H "Content-Type: application/json" \
                     -d "{\"userIds\": [$(printf '"%s",' "${user_ids[@]}" | sed 's/,$//' )]}")

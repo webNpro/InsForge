@@ -1,37 +1,16 @@
 import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
-import { BetterAuthAdminService } from '@/core/auth/better-auth-admin-service.js';
 
 /**
- * Ensures the first admin exists in Better Auth
- * Creates admin user if not exists, skips if already exists
+ * Validates admin credentials are configured
+ * Admin is authenticated via environment variables, not stored in DB
  */
 async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Promise<void> {
-  const betterAuthService = BetterAuthAdminService.getInstance();
-
-  try {
-    // Try to register the admin - this will check if user exists
-    const result = await betterAuthService.registerAdmin({
-      email: adminEmail,
-      password: adminPassword,
-      name: 'Administrator',
-    });
-
-    if (result?.token) {
-      logger.info(`✅ First admin created: ${adminEmail}`);
-    }
-  } catch (error) {
-    // Check if it's just an "already exists" error
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode = (error as { code?: string })?.code;
-
-    if (errorCode === 'CONFLICT' || errorMessage.includes('already exists')) {
-      logger.info(`✅ Admin already exists: ${adminEmail}`);
-    } else {
-      // Non-critical error - admin can be created manually if needed
-      console.warn('Could not verify/create admin user:', errorMessage);
-    }
+  if (adminEmail && adminPassword) {
+    logger.info(`✅ Admin configured: ${adminEmail}`);
+  } else {
+    logger.warn('⚠️ Admin credentials not configured - check ADMIN_EMAIL and ADMIN_PASSWORD');
   }
 }
 
@@ -45,7 +24,7 @@ export async function seedAdmin(): Promise<void> {
   try {
     logger.info(`\n🚀 Insforge Backend Starting...`);
 
-    // Use Better Auth for admin creation
+    // Validate admin credentials are configured
     await ensureFirstAdmin(adminEmail, adminPassword);
 
     // Initialize API key

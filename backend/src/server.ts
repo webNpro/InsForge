@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import authRouter from '@/api/routes/auth.js';
 import { tablesRouter } from '@/api/routes/tables.js';
 import { databaseRouter } from '@/api/routes/records.js';
 import { storageRouter } from '@/api/routes/storage.js';
@@ -112,29 +113,7 @@ export async function createApp() {
     next();
   });
 
-  // Mount Better Auth BEFORE express.json() middleware
-  // This is required as per Better Auth documentation
-  // Use dynamic auth handler that can be reloaded
-  const { dynamicAuthHandler } = await import('@/lib/auth-reloader.js');
-
-  // Wrap to prevent crashes from Better Auth errors
-  app.all('/api/auth/v2/*', async (req, res) => {
-    try {
-      await dynamicAuthHandler(req, res);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Invalid request';
-      logger.error('Better Auth error:', { message: errorMessage });
-      if (!res.headersSent) {
-        res.status(400).json({
-          code: 'BAD_REQUEST',
-          message: errorMessage,
-        });
-      }
-    }
-  });
-  logger.info('Better Auth enabled at /api/auth/v2');
-
-  // Apply JSON middleware after Better Auth
+  // Apply JSON middleware
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -150,7 +129,8 @@ export async function createApp() {
     });
   });
 
-  // Auth is handled by Better Auth at /api/auth/v2/*
+  // Mount auth routes
+  apiRouter.use('/auth', authRouter);
   apiRouter.use('/database/tables', tablesRouter);
   apiRouter.use('/database/records', databaseRouter);
   apiRouter.use('/storage', storageRouter);
