@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image on github container registry
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: insforge/insforge-oss
+  IMAGE_NAME: ${{ github.repository_owner }}/insforge-oss
 
 jobs:
   build-and-push:
@@ -21,6 +21,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
       
     steps:
       - name: Checkout repository
@@ -37,7 +38,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT }}
 
       - name: Extract metadata
         id: meta
