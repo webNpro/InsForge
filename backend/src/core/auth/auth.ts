@@ -3,6 +3,11 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
 import type {
@@ -12,8 +17,10 @@ import type {
   CreateAdminSessionResponse,
   TokenPayloadSchema,
 } from '@insforge/shared-schemas';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = () => process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
 
 /**
@@ -29,7 +36,20 @@ export class AuthService {
   private tokenCache: Map<string, { access_token: string; id_token: string }>;
 
   private constructor() {
-    if (!JWT_SECRET) {
+    // Load .env file if not already loaded
+    if (!process.env.JWT_SECRET) {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      const envPath = path.resolve(__dirname, '../../../../.env');
+      if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+      } else {
+        logger.warn('No .env file found, using default environment variables.');
+        dotenv.config();
+      }
+    }
+
+    if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET environment variable is required');
     }
     
@@ -150,7 +170,7 @@ export class AuthService {
    * Generate JWT token for users and admins
    */
   generateToken(payload: TokenPayloadSchema): string {
-    return jwt.sign(payload, JWT_SECRET!, {
+    return jwt.sign(payload, JWT_SECRET()!, {
       algorithm: 'HS256',
       expiresIn: JWT_EXPIRES_IN,
     });
@@ -161,7 +181,7 @@ export class AuthService {
    */
   verifyToken(token: string): TokenPayloadSchema {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET!) as TokenPayloadSchema;
+      const decoded = jwt.verify(token, JWT_SECRET()!) as TokenPayloadSchema;
       return {
         sub: decoded.sub,
         email: decoded.email,
@@ -244,6 +264,61 @@ export class AuthService {
       },
       accessToken
     };
+  }
+
+  /**
+   * Admin login with authorization token (validates JWT from external issuer)
+   */
+  async adminLoginWithAuthorizationToken(token: string): Promise<CreateAdminSessionResponse> {
+    try {
+      // Create JWKS endpoint for remote key set
+      const JWKS = createRemoteJWKSet(
+        new URL((process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json')
+      );
+
+      // Verify the token with jose
+      const { payload } = await jwtVerify(token, JWKS, {
+        algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+      });
+
+      // If verification succeeds, extract user info and generate internal token
+      const adminId = (payload as any).userId || '00000000-0000-0000-0000-000000000001';
+      const email = (payload as any).email || payload.sub || 'admin@insforge.local';
+
+      if ((payload as any).projectId && process.env.PROJECT_ID && (payload as any).projectId !== process.env.PROJECT_ID) {
+        logger.warn('Invalid project ID in admin token', {
+          tokenProjectId: (payload as any).projectId,
+          expectedProjectId: process.env.PROJECT_ID
+        });
+        throw new AppError(
+          'Invalid project ID in admin token',
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      // Generate internal access token
+      const accessToken = this.generateToken({
+        sub: adminId,
+        email,
+        role: 'project_admin'
+      });
+
+      return {
+        user: {
+          id: adminId,
+          email: email,
+          name: 'Administrator',
+          emailVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        accessToken
+      };
+    } catch (error) {
+      logger.error('Admin token verification failed:', error);
+      throw new Error('Invalid admin credentials');
+    }
   }
 
   /**

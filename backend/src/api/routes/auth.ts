@@ -18,6 +18,7 @@ import {
   type GetCurrentSessionResponse,
   type ListUsersResponse,
   type DeleteUsersResponse,
+  exchangeAdminSessionRequestSchema,
 } from '@insforge/shared-schemas';
 
 const router = Router();
@@ -62,6 +63,36 @@ router.post('/sessions', async (req: Request, res: Response, next: NextFunction)
     successResponse(res, result);
   } catch (error) {
     next(error);
+  }
+});
+
+// POST /api/auth/admin/sessions/exchange - Create admin session
+router.post('/admin/sessions/exchange', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = exchangeAdminSessionRequestSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      throw new AppError(
+        validationResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+
+    const { token } = validationResult.data;
+    const result: CreateAdminSessionResponse = await authService.adminLoginWithAuthorizationToken(token);
+
+    successResponse(res, result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      // Convert other errors (like JWT verification errors) to 400
+      next(new AppError(
+        'Failed to exchange admin session' + (error instanceof Error ? `: ${error.message}` : ''),
+        400,
+        ERROR_CODES.INVALID_INPUT
+      ));
+    }
   }
 });
 
