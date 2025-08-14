@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
-import jwksClient from 'jwks-client';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -17,6 +17,8 @@ import type {
   CreateAdminSessionResponse,
   TokenPayloadSchema,
 } from '@insforge/shared-schemas';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants';
 
 const JWT_SECRET = () => process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
@@ -269,54 +271,30 @@ export class AuthService {
    */
   async adminLoginWithAuthorizationToken(token: string): Promise<CreateAdminSessionResponse> {
     try {
-      // Create JWKS client to fetch public keys
-      const client = jwksClient({
-        jwksUri: (process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json',
-        requestHeaders: {}, // Optional
-        timeout: 30000, // Defaults to 30s
-      });
+      // Create JWKS endpoint for remote key set
+      const JWKS = createRemoteJWKSet(
+        new URL((process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json')
+      );
 
-      // Get signing key function
-      const getKey = (header: any, callback: (err: any, key?: string) => void) => {
-        client.getSigningKey(header.kid, (err: any, key: any) => {
-          if (err) {
-            logger.error('Failed to get signing key:', err);
-            return callback(err);
-          }
-          // Handle different key types from jwks-client
-          let signingKey;
-          if (key.getPublicKey) {
-            signingKey = key.getPublicKey();
-          } else if (key.publicKey) {
-            signingKey = key.publicKey;
-          } else if (key.rsaPublicKey) {
-            signingKey = key.rsaPublicKey;
-          } else {
-            return callback(new Error('Unable to extract public key from JWKS'));
-          }
-          callback(null, signingKey);
-        });
-      };
-
-      // Verify the token with the public key
-      const decoded = await new Promise<any>((resolve, reject) => {
-        jwt.verify(token, getKey, {
-          algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
-        }, (err, decoded) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(decoded);
-          }
-        });
+      // Verify the token with jose
+      const { payload } = await jwtVerify(token, JWKS, {
+        algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
       });
 
       // If verification succeeds, extract user info and generate internal token
-      const adminId = decoded.userId || '00000000-0000-0000-0000-000000000001';
-      const email = decoded.email || decoded.sub || 'admin@insforge.local';
+      const adminId = (payload as any).userId || '00000000-0000-0000-0000-000000000001';
+      const email = (payload as any).email || payload.sub || 'admin@insforge.local';
 
-      if (decoded.projectId && process.env.PROJECT_ID && decoded.projectId !== process.env.PROJECT_ID) {
-        throw new Error('Invalid project ID in token');
+      if ((payload as any).projectId && process.env.PROJECT_ID && (payload as any).projectId !== process.env.PROJECT_ID) {
+        logger.warn('Invalid project ID in admin token', {
+          tokenProjectId: (payload as any).projectId,
+          expectedProjectId: process.env.PROJECT_ID
+        });
+        throw new AppError(
+          'Invalid project ID in admin token',
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
       // Generate internal access token

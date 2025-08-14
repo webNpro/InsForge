@@ -83,7 +83,16 @@ router.post('/admin/sessions/exchange', async (req: Request, res: Response, next
 
     successResponse(res, result);
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      // Convert other errors (like JWT verification errors) to 400
+      next(new AppError(
+        'Failed to exchange admin session' + (error instanceof Error ? `: ${error.message}` : ''),
+        400,
+        ERROR_CODES.INVALID_INPUT
+      ));
+    }
   }
 });
 
