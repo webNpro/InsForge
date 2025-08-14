@@ -315,6 +315,10 @@ export class AuthService {
       const adminId = decoded.userId || '00000000-0000-0000-0000-000000000001';
       const email = decoded.email || decoded.sub || 'admin@insforge.local';
 
+      if (decoded.projectId && process.env.PROJECT_ID && decoded.projectId !== process.env.PROJECT_ID) {
+        throw new Error('Invalid project ID in token');
+      }
+
       // Generate internal access token
       const accessToken = this.generateToken({
         sub: adminId,
