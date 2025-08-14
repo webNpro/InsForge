@@ -271,7 +271,7 @@ export class AuthService {
     try {
       // Create JWKS client to fetch public keys
       const client = jwksClient({
-        jwksUri: 'https://api.insforge.dev/.well-known/jwks.json',
+        jwksUri: (process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json',
         requestHeaders: {}, // Optional
         timeout: 30000, // Defaults to 30s
       });
@@ -312,7 +312,7 @@ export class AuthService {
       });
 
       // If verification succeeds, extract user info and generate internal token
-      const adminId = '00000000-0000-0000-0000-000000000001';
+      const adminId = decoded.userId || '00000000-0000-0000-0000-000000000001';
       const email = decoded.email || decoded.sub || 'admin@insforge.local';
 
       // Generate internal access token
