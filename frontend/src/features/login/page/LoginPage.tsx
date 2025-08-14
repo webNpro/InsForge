@@ -57,9 +57,9 @@ export default function LoginPage() {
 
   // Handle authorization token exchange
   useEffect(() => {
-    const authorizationToken = searchParams.get('authorizationToken');
+    const authorizationCode = searchParams.get('authorizationCode');
 
-    if (authorizationToken && !isAuthenticating && !isAuthenticated) {
+    if (authorizationCode && !isAuthenticating && !isAuthenticated) {
       setIsAuthenticating(true);
       setAuthError(null);
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
       setSearchParams({}, { replace: true });
 
       // Exchange the authorization code for an access token
-      loginWithAuthorizationCode(authorizationToken)
+      loginWithAuthorizationCode(authorizationCode)
         .then((success) => {
           if (success) {
             void navigate(getRedirectPath(), { replace: true });

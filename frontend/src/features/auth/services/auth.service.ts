@@ -28,10 +28,10 @@ export class AuthService {
     };
   }
 
-  async loginWithAuthorizationCode(token: string) {
+  async loginWithAuthorizationCode(code: string) {
     const data = await apiClient.request('/auth/admin/sessions/exchange', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ code }),
     });
 
     // Set token in apiClient

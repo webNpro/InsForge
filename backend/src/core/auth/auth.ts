@@ -287,7 +287,7 @@ export class AuthService {
   /**
    * Admin login with authorization token (validates JWT from external issuer)
    */
-  async adminLoginWithAuthorizationToken(token: string): Promise<CreateAdminSessionResponse> {
+  async adminLoginWithAuthorizationCode(code: string): Promise<CreateAdminSessionResponse> {
     try {
       // Create JWKS endpoint for remote key set
       const JWKS = createRemoteJWKSet(
@@ -297,7 +297,7 @@ export class AuthService {
       );
 
       // Verify the token with jose
-      const { payload } = await jwtVerify(token, JWKS, {
+      const { payload } = await jwtVerify(code, JWKS, {
         algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
       });
 

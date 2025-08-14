@@ -43,15 +43,17 @@ export const createSessionRequestSchema = z.object({
 export const createAdminSessionRequestSchema = createSessionRequestSchema;
 
 export const exchangeAdminSessionRequestSchema = z.object({
-  token: z.string(),
+  code: z.string(),
 });
 
 /**
  * GET /api/auth/users - List users (query parameters)
  */
-export const listUsersRequestSchema = paginationSchema.extend({
-  search: z.string().optional(),
-}).optional();
+export const listUsersRequestSchema = paginationSchema
+  .extend({
+    search: z.string().optional(),
+  })
+  .optional();
 
 /**
  * DELETE /api/auth/users - Delete users (batch)
