@@ -78,9 +78,9 @@ router.post('/admin/sessions/exchange', async (req: Request, res: Response, next
       );
     }
 
-    const { token } = validationResult.data;
+    const { code } = validationResult.data;
     const result: CreateAdminSessionResponse =
-      await authService.adminLoginWithAuthorizationToken(token);
+      await authService.adminLoginWithAuthorizationCode(code);
 
     successResponse(res, result);
   } catch (error) {
