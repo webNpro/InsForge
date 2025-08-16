@@ -162,7 +162,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         u.created_at, 
         u.updated_at,
         u.password,
-        a.provider
+        STRING_AGG(a.provider, ',') as providers
       FROM _user u
       LEFT JOIN _account a ON u.id = a.user_id
     `;
@@ -173,16 +173,38 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
+    query += ' GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit as string), parseInt(offset as string));
 
     const dbUsers = await db.prepare(query).all(...params);
 
     // Simple transformation - just format the provider as identities
     const users = dbUsers.map((dbUser: any) => {
-      // If provider exists from _account table, use it; otherwise check if they have email auth
-      const provider = dbUser.provider || (dbUser.password ? 'email' : null);
-      const identities = provider ? [{ provider }] : [];
+      const identities = [];
+      
+      // Add social providers if any
+      if (dbUser.providers) {
+        dbUser.providers.split(',').forEach((provider: string) => {
+          identities.push({ provider });
+        });
+      }
+      
+      // Add email provider if password exists
+      if (dbUser.password) {
+        identities.push({ provider: 'email' });
+      }
+
+      // Determine provider_type - empty if multiple providers
+      const socialCount = dbUser.providers ? dbUser.providers.split(',').length : 0;
+      const hasEmail = !!dbUser.password;
+      const totalProviders = socialCount + (hasEmail ? 1 : 0);
+      
+      let provider_type: string[] = [];
+      if (totalProviders === 1) {
+        // Single provider: show type
+        provider_type = socialCount > 0 ? ['social'] : ['email'];
+      }
+      // If multiple providers (totalProviders > 1), leave empty
 
       // Return snake_case for frontend compatibility
       return {
@@ -193,7 +215,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         created_at: dbUser.created_at,
         updated_at: dbUser.updated_at,
         identities: identities,
-        provider_type: dbUser.provider ? 'social' : 'email',
+        provider_type: provider_type,
       };
     });
 
