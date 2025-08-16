@@ -81,8 +81,20 @@ export class AuthService {
    * Load OAuth configuration from database - NO CACHING, always fresh
    */
   private async loadOAuthConfig(): Promise<{
-    google: { clientId: string; clientSecret: string; redirectUri: string; enabled: boolean; useSharedKeys: boolean };
-    github: { clientId: string; clientSecret: string; redirectUri: string; enabled: boolean; useSharedKeys: boolean };
+    google: {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      enabled: boolean;
+      useSharedKeys: boolean;
+    };
+    github: {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      enabled: boolean;
+      useSharedKeys: boolean;
+    };
   }> {
     let configRows: any[];
     try {
@@ -95,7 +107,9 @@ export class AuthService {
       configRows = [];
     }
 
-    const enableSharedKeys = process.env.AWS_INSTANCE_PROFILE_NAME ? true : false;
+    const enableSharedKeys =
+      process.env.AWS_INSTANCE_PROFILE_NAME &&
+      process.env.AWS_INSTANCE_PROFILE_NAME.trim().length > 0;
 
     const config = {
       google: {
@@ -140,8 +154,16 @@ export class AuthService {
     }
 
     logger.debug('OAuth config loaded from database', {
-      google: { enabled: config.google.enabled, hasClientId: !!config.google.clientId, useSharedKeys: config.google.useSharedKeys },
-      github: { enabled: config.github.enabled, hasClientId: !!config.github.clientId, useSharedKeys: config.github.useSharedKeys },
+      google: {
+        enabled: config.google.enabled,
+        hasClientId: !!config.google.clientId,
+        useSharedKeys: config.google.useSharedKeys,
+      },
+      github: {
+        enabled: config.github.enabled,
+        hasClientId: !!config.github.clientId,
+        useSharedKeys: config.github.useSharedKeys,
+      },
     });
 
     return config;
@@ -508,12 +530,15 @@ export class AuthService {
       const cloudHost = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const selfHost = process.env.API_BASE_URL || 'http://localhost:7130';
       const redirectUri = `${selfHost}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
-      const authUrl = await fetch(`${cloudHost}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const authUrl = await fetch(
+        `${cloudHost}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       if (!authUrl.ok) {
         logger.error('Failed to fetch Google auth URL:', {
           status: authUrl.status,
@@ -521,7 +546,7 @@ export class AuthService {
         });
         throw new Error(`Failed to fetch Google auth URL: ${authUrl.statusText}`);
       }
-      const responseData = await authUrl.json() as { auth_url?: string; url?: string };
+      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
       return responseData.auth_url || responseData.url || '';
     }
 
@@ -567,12 +592,15 @@ export class AuthService {
       const cloudHost = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const selfHost = process.env.API_BASE_URL || 'http://localhost:7130';
       const redirectUri = `${selfHost}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
-      const authUrl = await fetch(`${cloudHost}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const authUrl = await fetch(
+        `${cloudHost}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
       if (!authUrl.ok) {
         logger.error('Failed to fetch GitHub auth URL:', {
           status: authUrl.status,
@@ -580,7 +608,7 @@ export class AuthService {
         });
         throw new Error(`Failed to fetch GitHub auth URL: ${authUrl.statusText}`);
       }
-      const responseData = await authUrl.json() as { auth_url?: string; url?: string };
+      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
       return responseData.auth_url || responseData.url || '';
     }
 
