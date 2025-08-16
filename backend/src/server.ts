@@ -189,6 +189,9 @@ export async function createApp() {
   // Check if frontend build exists
   if (fs.existsSync(frontendPath)) {
     // Catch all handler for SPA routes
+    app.get('/cloud*', (_req: Request, res: Response) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
     app.get('/dashboard*', (_req: Request, res: Response) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });

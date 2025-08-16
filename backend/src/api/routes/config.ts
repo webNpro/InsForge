@@ -139,7 +139,7 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
           .prepare('SELECT value FROM _config WHERE key = ?')
           .get(key);
 
-        const finalConfig = { ...config };
+        let finalConfig = { ...config };
 
         if (existing && existing.value) {
           try {
