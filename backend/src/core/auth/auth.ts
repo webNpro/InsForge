@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
 import dotenv from 'dotenv';
+import { verifyCloudToken } from '@/utils/cloud-token.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,8 +17,6 @@ import type {
   CreateAdminSessionResponse,
   TokenPayloadSchema,
 } from '@insforge/shared-schemas';
-import { AppError } from '@/api/middleware/error.js';
-import { ERROR_CODES } from '@/types/error-constants';
 
 const JWT_SECRET = () => process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
@@ -289,33 +287,12 @@ export class AuthService {
    */
   async adminLoginWithAuthorizationCode(code: string): Promise<CreateAdminSessionResponse> {
     try {
-      // Create JWKS endpoint for remote key set
-      const JWKS = createRemoteJWKSet(
-        new URL(
-          (process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json'
-        )
-      );
-
-      // Verify the token with jose
-      const { payload } = await jwtVerify(code, JWKS, {
-        algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
-      });
+      // Use the helper function to verify cloud token
+      const { payload } = await verifyCloudToken(code);
 
       // If verification succeeds, extract user info and generate internal token
       const adminId = (payload as any).userId || '00000000-0000-0000-0000-000000000001';
       const email = (payload as any).email || payload.sub || 'admin@insforge.local';
-
-      if (
-        (payload as any).projectId &&
-        process.env.PROJECT_ID &&
-        (payload as any).projectId !== process.env.PROJECT_ID
-      ) {
-        logger.warn('Invalid project ID in admin token', {
-          tokenProjectId: (payload as any).projectId,
-          expectedProjectId: process.env.PROJECT_ID,
-        });
-        throw new AppError('Invalid project ID in admin token', 400, ERROR_CODES.INVALID_INPUT);
-      }
 
       // Generate internal access token
       const accessToken = this.generateToken({
