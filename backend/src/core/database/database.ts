@@ -2,19 +2,10 @@ import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import { DatabaseMetadata, ColumnInfo, PrimaryKeyInfo } from '@/types/database.js';
 import logger from '@/utils/logger.js';
-import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Helper function to quote identifiers for SQL
-function quoteIdentifier(identifier: string): string {
-  return `"${identifier.replace(/"/g, '""')}"`;
-}
-
-// Using Better Auth for authentication
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -548,15 +539,19 @@ export class DatabaseManager {
     const client = await this.pool.connect();
     try {
       // Query for successful calls within date range
+      // Add one day to endDate to include the entire end date
+      const endDatePlusOne = new Date(endDate);
+      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+      
       const query = `
         SELECT COUNT(*) as count 
         FROM _mcp_usage 
         WHERE success = true 
           AND created_at >= $1 
-          AND created_at < $2 + INTERVAL '1 day'
+          AND created_at < $2
       `;
       
-      const result = await client.query(query, [startDate, endDate]);
+      const result = await client.query(query, [startDate, endDatePlusOne]);
       return parseInt(result.rows[0]?.count || '0');
     } finally {
       client.release();

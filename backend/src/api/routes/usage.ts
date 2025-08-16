@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { DatabaseManager } from '@/core/database/database.js';
-import { verifyApiKey } from '@/api/middleware/auth.js';
+import { verifyApiKey, verifyCloudBackend } from '@/api/middleware/auth.js';
 
 export const usageRouter = Router();
 
@@ -25,8 +25,8 @@ usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
   }
 });
 
-// Get MCP usage statistics within date range
-usageRouter.get('/mcp/stats', verifyApiKey, async (req, res, next) => {
+// Get MCP usage statistics within date range (called by cloud backend)
+usageRouter.get('/mcp/stats', verifyCloudBackend, async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query;
     
