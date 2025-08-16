@@ -94,7 +94,7 @@ services:
     restart: unless-stopped
     networks:
       - insforge-network
-  
+
   deno:
     image: denoland/deno:alpine-2.0.6
     container_name: insforge-deno
@@ -128,7 +128,7 @@ services:
     restart: unless-stopped
     networks:
       - insforge-network
-  
+
   analytics:
     container_name: insforge-analytics
     image: supabase/logflare:1.14.2
