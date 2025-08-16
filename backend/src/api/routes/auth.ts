@@ -197,8 +197,9 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         providers.push('email');
       }
       
-      // Convert to comma-separated string
-      const provider_type = providers.join(',');
+      // Use first provider to determine type: 'email' or 'social'
+      const firstProvider = providers[0];
+      const provider_type = firstProvider === 'email' ? 'email' : 'social';
 
       // Return snake_case for frontend compatibility
       return {
@@ -257,10 +258,12 @@ router.get(
         u.email_verified, 
         u.created_at, 
         u.updated_at,
-        a.provider
+        u.password,
+        STRING_AGG(a.provider, ',') as providers
       FROM _user u
       LEFT JOIN _account a ON u.id = a.user_id
       WHERE u.id = ?
+      GROUP BY u.id
     `
         )
         .get(userId);
@@ -268,6 +271,28 @@ router.get(
       if (!dbUser) {
         throw new AppError('User not found', 404, ERROR_CODES.NOT_FOUND);
       }
+
+      // Simple transformation - just format the provider as identities
+      const identities = [];
+      const providers: string[] = [];
+      
+      // Add social providers if any
+      if (dbUser.providers) {
+        dbUser.providers.split(',').forEach((provider: string) => {
+          identities.push({ provider });
+          providers.push(provider);
+        });
+      }
+      
+      // Add email provider if password exists
+      if (dbUser.password) {
+        identities.push({ provider: 'email' });
+        providers.push('email');
+      }
+      
+      // Use first provider to determine type: 'email' or 'social'
+      const firstProvider = providers[0];
+      const provider_type = firstProvider === 'email' ? 'email' : 'social';
 
       // Return snake_case for frontend compatibility
       const user = {
@@ -277,8 +302,8 @@ router.get(
         email_verified: dbUser.email_verified,
         created_at: dbUser.created_at,
         updated_at: dbUser.updated_at,
-        identities: dbUser.provider || 'email', // Show 'email' or 'google'/'github'
-        provider_type: dbUser.provider ? 'social' : 'email',
+        identities: identities,
+        provider_type: provider_type,
       };
 
       res.json(user);
