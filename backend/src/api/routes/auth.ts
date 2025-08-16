@@ -20,7 +20,6 @@ import {
   type DeleteUsersResponse,
   exchangeAdminSessionRequestSchema,
 } from '@insforge/shared-schemas';
-import { log } from 'console';
 
 const router = Router();
 const authService = AuthService.getInstance();
