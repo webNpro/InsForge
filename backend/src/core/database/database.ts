@@ -247,16 +247,16 @@ export class DatabaseManager {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS _storage (
-        bucket TEXT NOT NULL,
-        key TEXT NOT NULL,
-        size INTEGER NOT NULL,
-        mime_type TEXT,
-        uploaded_at TIMESTAMPTZ DEFAULT NOW(),
-        PRIMARY KEY (bucket, key),
-        FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
+      -- MCP usage tracking table
+      CREATE TABLE IF NOT EXISTS _mcp_usage (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tool_name VARCHAR(255) NOT NULL,
+        success BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
-
+      
+      -- Index for efficient date range queries
+      CREATE INDEX IF NOT EXISTS idx_mcp_usage_created_at ON _mcp_usage(created_at DESC);
 
       -- Edge functions
       CREATE TABLE IF NOT EXISTS _edge_functions (
@@ -515,6 +515,38 @@ export class DatabaseManager {
          AND table_name NOT LIKE '\\_%'`
       );
       return parseInt(result.rows[0]?.count || '0', 10);
+    } finally {
+      client.release();
+    }
+  }
+
+  // MCP usage tracking methods
+  async trackMcpUsage(toolName: string, success: boolean = true): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query(
+        'INSERT INTO _mcp_usage (tool_name, success) VALUES ($1, $2)',
+        [toolName, success]
+      );
+    } finally {
+      client.release();
+    }
+  }
+
+  async getMcpUsageCount(startDate: Date, endDate: Date): Promise<number> {
+    const client = await this.pool.connect();
+    try {
+      // Query for successful calls within date range
+      const query = `
+        SELECT COUNT(*) as count 
+        FROM _mcp_usage 
+        WHERE success = true 
+          AND created_at >= $1 
+          AND created_at < $2 + INTERVAL '1 day'
+      `;
+      
+      const result = await client.query(query, [startDate, endDate]);
+      return parseInt(result.rows[0]?.count || '0');
     } finally {
       client.release();
     }

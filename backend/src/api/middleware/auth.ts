@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from './error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -11,9 +12,18 @@ export interface AuthRequest extends Request {
   };
   authenticated?: boolean;
   apiKey?: string;
+  projectId?: string;
 }
 
-const authService = AuthService.getInstance();
+// Lazy initialization to avoid circular dependency
+let authService: AuthService | null = null;
+
+function getAuthService(): AuthService {
+  if (!authService) {
+    authService = AuthService.getInstance();
+  }
+  return authService;
+}
 
 // Helper function to extract Bearer token
 function extractBearerToken(authHeader: string | undefined): string | null {
@@ -29,6 +39,39 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
     id: payload.sub,
     email: payload.email,
     role: payload.role,
+  };
+}
+
+// Helper function to verify cloud backend JWT token
+export async function verifyCloudToken(token: string): Promise<{ projectId: string; payload: any }> {
+  // Create JWKS endpoint for remote key set
+  const JWKS = createRemoteJWKSet(
+    new URL(
+      (process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json'
+    )
+  );
+
+  // Verify the token with jose
+  const { payload } = await jwtVerify(token, JWKS, {
+    algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+  });
+
+  // Verify project_id matches if configured
+  const tokenProjectId = (payload as any).projectId;
+  const expectedProjectId = process.env.PROJECT_ID;
+  
+  if (expectedProjectId && tokenProjectId !== expectedProjectId) {
+    throw new AppError(
+      'Project ID mismatch',
+      403,
+      ERROR_CODES.AUTH_UNAUTHORIZED,
+      NEXT_ACTION.CHECK_TOKEN
+    );
+  }
+
+  return {
+    projectId: tokenProjectId,
+    payload
   };
 }
 
@@ -68,7 +111,7 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
     }
 
     // For admin, we use JWT tokens
-    const payload = authService.verifyToken(token);
+    const payload = getAuthService().verifyToken(token);
 
     if (payload.role !== 'project_admin') {
       throw new AppError(
@@ -109,7 +152,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
       );
     }
 
-    const isValid = await authService.verifyApiKey(apiKey);
+    const isValid = await getAuthService().verifyApiKey(apiKey);
     if (!isValid) {
       throw new AppError(
         'Invalid API key',
@@ -144,7 +187,7 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
     }
 
     // Verify JWT token
-    const payload = authService.verifyToken(token);
+    const payload = getAuthService().verifyToken(token);
 
     // Validate token has a role
     if (!payload.role) {
@@ -167,6 +210,46 @@ export async function verifyToken(req: AuthRequest, _res: Response, next: NextFu
       next(
         new AppError(
           'Invalid token',
+          401,
+          ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+          NEXT_ACTION.CHECK_TOKEN
+        )
+      );
+    }
+  }
+}
+
+/**
+ * Verifies JWT token from cloud backend (api.insforge.dev)
+ * Validates signature using JWKS and checks project_id claim
+ */
+export async function verifyCloudBackend(req: AuthRequest, _res: Response, next: NextFunction) {
+  try {
+    const token = extractBearerToken(req.headers.authorization);
+    if (!token) {
+      throw new AppError(
+        'No authorization token provided',
+        401,
+        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+        NEXT_ACTION.CHECK_TOKEN
+      );
+    }
+
+    // Use helper function to verify cloud token
+    const { projectId } = await verifyCloudToken(token);
+
+    // Set project_id on request for use in route handlers
+    req.projectId = projectId;
+    req.authenticated = true;
+
+    next();
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+    } else {
+      next(
+        new AppError(
+          'Invalid cloud backend token',
           401,
           ERROR_CODES.AUTH_INVALID_CREDENTIALS,
           NEXT_ACTION.CHECK_TOKEN
