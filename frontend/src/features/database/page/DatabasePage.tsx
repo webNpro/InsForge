@@ -429,7 +429,7 @@ export default function DatabasePage() {
   const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-bg-gray">
+    <div className="flex h-full bg-bg-gray">
       {/* Secondary Sidebar - Table List */}
       <TableSidebar
         tables={filteredTables}

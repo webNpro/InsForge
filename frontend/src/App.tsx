@@ -16,6 +16,7 @@ import OnBoardPage from './features/onboard/page/OnBoardPage';
 import VisualizerPage from './features/visualizer/page/VisualizerPage';
 import Layout from './components/layout/Layout';
 import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
+import CloudLayout from './components/layout/CloudLayout';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,16 +52,18 @@ function AppRoutes() {
         path="/cloud/*"
         element={
           <PrivateRoute>
-            <Routes>
-              <Route path="/" element={<Navigate to="/cloud/dashboard" replace />} />
-              <Route path="/visualizer" element={<VisualizerPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/authentication" element={<AuthenticationPage />} />
-              <Route path="/database" element={<DatabasePage />} />
-              <Route path="/storage" element={<StoragePage />} />
-              <Route path="/logs" element={<LogsPage />} />
-              <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
-            </Routes>
+            <CloudLayout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/cloud/dashboard" replace />} />
+                <Route path="/visualizer" element={<VisualizerPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/authentication" element={<AuthenticationPage />} />
+                <Route path="/database" element={<DatabasePage />} />
+                <Route path="/storage" element={<StoragePage />} />
+                <Route path="/logs" element={<LogsPage />} />
+                <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
+              </Routes>
+            </CloudLayout>
           </PrivateRoute>
         }
       />
