@@ -72,19 +72,25 @@ export default function LoginPage() {
           if (success) {
             // Notify parent of success
             if (window.parent !== window) {
-              window.parent.postMessage({
-                type: 'AUTH_SUCCESS',
-              });
+              window.parent.postMessage(
+                {
+                  type: 'AUTH_SUCCESS',
+                },
+                '*'
+              );
             }
           } else {
             setAuthError(
               'Failed to authenticate with authorization code. Please try again or use email/password.'
             );
             if (window.parent !== window) {
-              window.parent.postMessage({
-                type: 'AUTH_ERROR',
-                message: 'Authorization code validation failed',
-              });
+              window.parent.postMessage(
+                {
+                  type: 'AUTH_ERROR',
+                  message: 'Authorization code validation failed',
+                },
+                '*'
+              );
             }
           }
         })
@@ -94,10 +100,13 @@ export default function LoginPage() {
             'Authentication failed. The authorization code may have expired or already been used.'
           );
           if (window.parent !== window) {
-            window.parent.postMessage({
-              type: 'AUTH_ERROR',
-              message: 'Authorization code validation failed',
-            });
+            window.parent.postMessage(
+              {
+                type: 'AUTH_ERROR',
+                message: 'Authorization code validation failed',
+              },
+              '*'
+            );
           }
         })
         .finally(() => {
