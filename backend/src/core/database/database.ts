@@ -522,42 +522,6 @@ export class DatabaseManager {
     }
   }
 
-  // MCP usage tracking methods
-  async trackMcpUsage(toolName: string, success: boolean = true): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      await client.query(
-        'INSERT INTO _mcp_usage (tool_name, success) VALUES ($1, $2)',
-        [toolName, success]
-      );
-    } finally {
-      client.release();
-    }
-  }
-
-  async getMcpUsageCount(startDate: Date, endDate: Date): Promise<number> {
-    const client = await this.pool.connect();
-    try {
-      // Query for successful calls within date range
-      // Add one day to endDate to include the entire end date
-      const endDatePlusOne = new Date(endDate);
-      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-      
-      const query = `
-        SELECT COUNT(*) as count 
-        FROM _mcp_usage 
-        WHERE success = true 
-          AND created_at >= $1 
-          AND created_at < $2
-      `;
-      
-      const result = await client.query(query, [startDate, endDatePlusOne]);
-      return parseInt(result.rows[0]?.count || '0');
-    } finally {
-      client.release();
-    }
-  }
-
   async close(): Promise<void> {
     await this.pool.end();
   }

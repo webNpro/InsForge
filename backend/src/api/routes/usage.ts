@@ -17,7 +17,13 @@ usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
     }
 
     const dbManager = DatabaseManager.getInstance();
-    await dbManager.trackMcpUsage(tool_name, success);
+    const db = dbManager.getDb();
+    
+    // Insert MCP usage record directly
+    await db.prepare(`
+      INSERT INTO _mcp_usage (tool_name, success) 
+      VALUES ($1, $2)
+    `).run(tool_name, success);
 
     res.json({ success: true });
   } catch (error) {
@@ -25,8 +31,8 @@ usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
   }
 });
 
-// Get MCP usage statistics within date range (called by cloud backend)
-usageRouter.get('/mcp/stats', verifyCloudBackend, async (req, res, next) => {
+// Get usage statistics (called by cloud backend)
+usageRouter.get('/stats', verifyCloudBackend, async (req, res, next) => {
   try {
     const { start_date, end_date } = req.query;
     
@@ -38,12 +44,39 @@ usageRouter.get('/mcp/stats', verifyCloudBackend, async (req, res, next) => {
     }
     
     const dbManager = DatabaseManager.getInstance();
-    const count = await dbManager.getMcpUsageCount(
-      new Date(start_date as string),
-      new Date(end_date as string)
-    );
+    const db = dbManager.getDb();
     
-    res.json({ count });
+    // Get MCP tool usage count within date range
+    const endDatePlusOne = new Date(end_date as string);
+    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+    
+    const mcpResult = await db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM _mcp_usage 
+      WHERE success = true 
+        AND created_at >= $1 
+        AND created_at < $2
+    `).get(new Date(start_date as string), endDatePlusOne);
+    const mcpUsageCount = parseInt(mcpResult?.count || '0');
+    
+    // Get database size (in bytes)
+    const dbSizeResult = await db.prepare(`
+      SELECT pg_database_size(current_database()) as size
+    `).get();
+    const databaseSize = parseInt(dbSizeResult?.size || '0');
+    
+    // Get total storage size from _storage table
+    const storageResult = await db.prepare(`
+      SELECT COALESCE(SUM(size), 0) as total_size
+      FROM _storage
+    `).get();
+    const storageSize = parseInt(storageResult?.total_size || '0');
+    
+    res.json({ 
+      mcp_usage_count: mcpUsageCount,
+      database_size_bytes: databaseSize,
+      storage_size_bytes: storageSize
+    });
   } catch (error) {
     next(error);
   }
