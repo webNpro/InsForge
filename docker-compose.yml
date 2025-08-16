@@ -75,8 +75,8 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGREST_BASE_URL=http://postgrest:3000
-      # Deno Runtime URL (disabled)
-      # - DENO_RUNTIME_URL=http://deno:7133
+      # Deno Runtime URL
+      - DENO_RUNTIME_URL=http://deno:7133
       # OAuth Configuration
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -107,7 +107,6 @@ services:
     networks:
       - insforge-network
 
-  Deno service disabled for now
   deno:
     image: denoland/deno:alpine-2.0.6
     container_name: insforge-deno
