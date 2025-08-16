@@ -247,6 +247,17 @@ export class DatabaseManager {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      -- Storage files table
+      CREATE TABLE IF NOT EXISTS _storage (
+        bucket TEXT NOT NULL,
+        key TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        mime_type TEXT,
+        uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (bucket, key),
+        FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
+      );
+
       -- MCP usage tracking table
       CREATE TABLE IF NOT EXISTS _mcp_usage (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
