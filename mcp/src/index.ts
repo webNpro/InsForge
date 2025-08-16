@@ -13,7 +13,7 @@ import {
   createTableRequestSchema,
   updateTableSchemaRequestSchema,
   CreateBucketRequest,
-  createBucketRequestSchema
+  createBucketRequestSchema,
 } from '@insforge/shared-schemas';
 
 // Parse command line arguments

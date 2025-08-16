@@ -70,11 +70,22 @@ export default function LoginPage() {
       loginWithAuthorizationCode(authorizationCode)
         .then((success) => {
           if (success) {
-            void navigate(getRedirectPath(), { replace: true });
+            // Notify parent of success
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: 'AUTH_SUCCESS',
+              });
+            }
           } else {
             setAuthError(
               'Failed to authenticate with authorization code. Please try again or use email/password.'
             );
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: 'AUTH_ERROR',
+                message: 'Authorization code validation failed',
+              });
+            }
           }
         })
         .catch((error) => {
@@ -82,6 +93,12 @@ export default function LoginPage() {
           setAuthError(
             'Authentication failed. The authorization code may have expired or already been used.'
           );
+          if (window.parent !== window) {
+            window.parent.postMessage({
+              type: 'AUTH_ERROR',
+              message: 'Authorization code validation failed',
+            });
+          }
         })
         .finally(() => {
           setIsAuthenticating(false);
