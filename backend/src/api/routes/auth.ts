@@ -181,30 +181,24 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     // Simple transformation - just format the provider as identities
     const users = dbUsers.map((dbUser: any) => {
       const identities = [];
+      const providers: string[] = [];
       
       // Add social providers if any
       if (dbUser.providers) {
         dbUser.providers.split(',').forEach((provider: string) => {
           identities.push({ provider });
+          providers.push(provider);
         });
       }
       
       // Add email provider if password exists
       if (dbUser.password) {
         identities.push({ provider: 'email' });
+        providers.push('email');
       }
-
-      // Determine provider_type - empty if multiple providers
-      const socialCount = dbUser.providers ? dbUser.providers.split(',').length : 0;
-      const hasEmail = !!dbUser.password;
-      const totalProviders = socialCount + (hasEmail ? 1 : 0);
       
-      let provider_type: string[] = [];
-      if (totalProviders === 1) {
-        // Single provider: show type
-        provider_type = socialCount > 0 ? ['social'] : ['email'];
-      }
-      // If multiple providers (totalProviders > 1), leave empty
+      // Convert to comma-separated string
+      const provider_type = providers.join(',');
 
       // Return snake_case for frontend compatibility
       return {
