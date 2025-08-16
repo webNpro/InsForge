@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
-import { verifyCloudToken } from '@/api/middleware/auth.js';
+import { verifyCloudToken } from '@/utils/cloud-token.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
