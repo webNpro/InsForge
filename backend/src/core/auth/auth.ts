@@ -118,7 +118,7 @@ export class AuthService {
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
         enabled: false,
-        useSharedKeys: enableSharedKeys, // Default to true, can be overridden by DB
+        useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
       github: {
         clientId: '',
@@ -126,7 +126,7 @@ export class AuthService {
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
         enabled: false,
-        useSharedKeys: enableSharedKeys, // Default to true, can be overridden by DB
+        useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
     };
 
@@ -146,7 +146,7 @@ export class AuthService {
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
           config[provider].enabled = value.enabled || false;
-          config[provider].useSharedKeys = value.useSharedKeys || enableSharedKeys; // Default to true,just for cloud deployments.
+          config[provider].useSharedKeys = value.useSharedKeys || enableSharedKeys;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
