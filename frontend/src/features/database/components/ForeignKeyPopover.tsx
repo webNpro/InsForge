@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/radix/Select';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 import { databaseService } from '@/features/database/services/database.service';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
@@ -70,7 +70,7 @@ export function ForeignKeyPopover({
   // Get available tables
   const { data: metadata } = useQuery({
     queryKey: ['metadata'],
-    queryFn: () => metadataService.getAppMetadata(),
+    queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: open,
   });
 

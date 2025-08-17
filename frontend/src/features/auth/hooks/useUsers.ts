@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { authService } from '@/features/auth/services/auth.service';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 
 interface UseUsersOptions {
   pageSize?: number;

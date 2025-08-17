@@ -121,7 +121,7 @@ router.post('/admin/sessions', (req: Request, res: Response, next: NextFunction)
 });
 
 // GET /api/auth/sessions/current - Get current session user
-router.get('/sessions/current', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/sessions/current', (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -140,7 +140,7 @@ router.get('/sessions/current', async (req: Request, res: Response, next: NextFu
     };
 
     res.json(response);
-  } catch (error) {
+  } catch {
     next(new AppError('Invalid token', 401, ERROR_CODES.AUTH_INVALID_CREDENTIALS));
   }
 });
@@ -400,7 +400,7 @@ router.get('/oauth/github', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-router.get('/oauth/:provider/callback', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: NextFunction) => {
   try {
     const { provider } = req.params;
     const { code, state, token } = req.query;

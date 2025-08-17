@@ -40,8 +40,17 @@ export interface NotificationPayload {
   message: string;
 }
 
+export enum DataUpdateResourceType {
+  METADATA = 'metadata',
+  DATABASE_SCHEMA = 'database_schema',
+  TABLE_SCHEMA = 'table_schema',
+  STORAGE_SCHEMA = 'storage_schema',
+  BUCKET_SCHEMA = 'bucket_schema',
+  OAUTH_SCHEMA = 'oauth_schmea',
+}
+
 export interface DataUpdatePayload {
-  resource: string;
+  resource: DataUpdateResourceType;
   action: 'created' | 'updated' | 'deleted';
   data: unknown;
 }
