@@ -1,32 +1,25 @@
 import { CodeBlock } from '@/components/CodeBlock';
-import { useWebSocket } from '@/lib/hooks/useWebSocket';
+import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
 import { ClockIcon } from 'lucide-react';
 import CheckedIcon from '@/assets/icons/checked.svg';
 import { useEffect, useState } from 'react';
 
-const httpUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
-const wsUrl = `${httpUrl.replace(/^http/, 'ws')}/ws/onboarding`;
-
 export function TestConnectionStep() {
   const [showSuccess, setShowSuccess] = useState(false);
-  const [waitingForResponse, setWaitingForResponse] = useState(false);
 
-  const { backendConnected, connect, disconnect } = useWebSocket(wsUrl);
+  // Use the Socket hook - it will auto-connect
+  const { socket } = useSocket();
 
-  // Connect to WebSocket on mount
+  // Show success message when mcp connects
   useEffect(() => {
-    connect();
+    const handleMcpConnected = () => setShowSuccess(true);
+
+    socket?.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
+
     return () => {
-      disconnect();
+      socket?.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
     };
-  }, [connect, disconnect]);
-
-  // Show success message when backend connects
-  useEffect(() => {
-    if (backendConnected) {
-      setShowSuccess(true);
-    }
-  }, [backendConnected]);
+  }, [socket]);
 
   return (
     <div className="space-y-6 bg-white py-8 px-6 rounded-xl border border-border-gray">
@@ -39,10 +32,9 @@ export function TestConnectionStep() {
       <CodeBlock
         code="I'm using InsForge as my backend platform, what is my current backend structure?"
         className="bg-slate-50"
-        onCopy={() => setWaitingForResponse(true)}
       />
 
-      {waitingForResponse && !showSuccess && (
+      {!showSuccess && (
         <div className="flex items-center gap-2 text-zinc-500">
           <ClockIcon className="w-5 h-5" />
           <p className="text-sm">Waiting for connection</p>
