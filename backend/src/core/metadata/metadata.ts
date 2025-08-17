@@ -5,10 +5,10 @@ import {
   DatabaseSchema,
   OnDeleteActionSchema,
   OnUpdateActionSchema,
+  AppMetadataSchema,
 } from '@insforge/shared-schemas';
 import { StorageConfig } from '@/types/storage.js';
 import { AuthConfig } from '@/types/auth.js';
-import { AppMetadata } from '@/types/metadata.js';
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
@@ -276,7 +276,7 @@ export class MetadataService {
     await this.setMetadata('storage', storageMetadata);
   }
 
-  async getFullMetadata(): Promise<AppMetadata> {
+  async getFullMetadata(): Promise<AppMetadataSchema> {
     const database = (await this.getMetadata('database')) || {
       tables: [],
     };

@@ -34,7 +34,6 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
   };
 }
 
-
 /**
  * Verifies user authentication (accepts both user and admin tokens)
  */
@@ -134,7 +133,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
  * Core token verification middleware that handles JWT token extraction and verification
  * Sets req.user with the authenticated user information
  */
-export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
+export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {

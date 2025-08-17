@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { AuthErrorBoundary } from '@/features/login/components/AuthErrorBoundary';
 import { PrivateRoute } from '@/features/login/components/PrivateRoute';
 import { ToastProvider } from '@/lib/hooks/useToast';
+import { SocketProvider } from '@/lib/contexts/SocketContext';
 import LoginPage from './features/login/page/LoginPage';
 import DashboardPage from './features/dashboard/page/DashboardPage';
 import DatabasePage from './features/database/page/DatabasePage';
@@ -33,11 +34,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthErrorBoundary>
         <AuthProvider>
-          <ToastProvider>
-            <OnboardStepProvider>
-              <AppRoutes />
-            </OnboardStepProvider>
-          </ToastProvider>
+          <SocketProvider>
+            <ToastProvider>
+              <OnboardStepProvider>
+                <AppRoutes />
+              </OnboardStepProvider>
+            </ToastProvider>
+          </SocketProvider>
         </AuthProvider>
       </AuthErrorBoundary>
     </QueryClientProvider>
