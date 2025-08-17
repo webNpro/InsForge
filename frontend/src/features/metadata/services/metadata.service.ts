@@ -1,12 +1,20 @@
 import { apiClient } from '@/lib/api/client';
 import {
   AppMetadataSchema,
-  AuthConfigSchema,
-  DatabaseSchema,
+  OAuthConfigSchema,
   StorageConfigSchema,
+  DatabaseMetadataSchema,
 } from '@insforge/shared-schemas';
 
 export class MetadataService {
+  async fetchApiKey() {
+    const data = await apiClient.request('/metadata/api-key');
+    // data is already unwrapped by request method
+    if (data.apiKey) {
+      apiClient.setApiKey(data.apiKey);
+    }
+    return data.apiKey;
+  }
   // Get full metadata (complete structured format)
   async getFullMetadata(): Promise<AppMetadataSchema> {
     return apiClient.request('/metadata', {
@@ -15,13 +23,14 @@ export class MetadataService {
   }
 
   // Get database metadata only
-  async getDatabaseMetadata(): Promise<DatabaseSchema> {
-    const fullMetadata = await this.getFullMetadata();
-    return fullMetadata.database;
+  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
+    return apiClient.request('/metadata/database', {
+      headers: apiClient.withApiKey(),
+    });
   }
 
   // Get auth metadata only
-  async getAuthMetadata(): Promise<AuthConfigSchema> {
+  async getAuthMetadata(): Promise<OAuthConfigSchema> {
     const fullMetadata = await this.getFullMetadata();
     return fullMetadata.auth;
   }

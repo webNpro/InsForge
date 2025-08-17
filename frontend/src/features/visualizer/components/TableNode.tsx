@@ -1,10 +1,10 @@
 import { Handle, Position } from 'reactflow';
-import { TableMetadata } from '@/features/metadata/services/metadata.service';
 import { Database, Key, Hash } from 'lucide-react';
+import { TableSchema } from '@insforge/shared-schemas';
 
 interface TableNodeProps {
   data: {
-    table: TableMetadata;
+    table: TableSchema;
   };
 }
 

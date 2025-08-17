@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 import { authService } from '@/features/auth/services/auth.service';
 import { Card, CardContent } from '@/components/radix/Card';
 import { Skeleton } from '@/components/radix/Skeleton';
@@ -12,7 +12,7 @@ export default function DashboardPage() {
     refetch: _refetchMetadata,
   } = useQuery({
     queryKey: ['metadata'],
-    queryFn: () => metadataService.getAppMetadata(),
+    queryFn: () => metadataService.getDatabaseMetadata(),
   });
 
   const { data: apiKey } = useQuery({
@@ -61,7 +61,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-3xl font-bold text-gray-900">
-                  {(metadata?.database_size_gb || 0).toFixed(2)}
+                  {(metadata?.databaseSizeGb || 0).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">GB</p>
               </CardContent>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-3xl font-bold text-gray-900">
-                  {(metadata?.storage_size_gb || 0).toFixed(2)}
+                  {(metadata?.storageSizeGb || 0).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">GB</p>
               </CardContent>

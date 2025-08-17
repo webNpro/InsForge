@@ -13,11 +13,11 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TableNode } from './TableNode';
-import { DatabaseMetadata } from '@/features/metadata/services/metadata.service';
 import dagre from 'dagre';
+import { AppMetadataSchema } from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
-  metadata: DatabaseMetadata;
+  metadata: AppMetadataSchema;
 }
 
 const nodeTypes = {
@@ -55,7 +55,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 
 export function SchemaVisualizer({ metadata }: SchemaVisualizerProps) {
   const initialNodes = useMemo(() => {
-    return metadata.tables.map((table, _) => ({
+    return metadata.database.tables.map((table, _) => ({
       id: table.tableName,
       type: 'tableNode',
       position: { x: 0, y: 0 }, // Will be calculated by dagre
@@ -66,7 +66,7 @@ export function SchemaVisualizer({ metadata }: SchemaVisualizerProps) {
   const initialEdges = useMemo(() => {
     const edges: Edge[] = [];
 
-    metadata.tables.forEach((table) => {
+    metadata.database.tables.forEach((table) => {
       table.columns.forEach((column) => {
         if (column.foreignKey) {
           const edgeId = `${table.tableName}-${column.columnName}-${column.foreignKey.referenceTable}`;

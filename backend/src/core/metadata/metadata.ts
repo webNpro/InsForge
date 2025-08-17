@@ -6,6 +6,7 @@ import {
   OnDeleteActionSchema,
   OnUpdateActionSchema,
   AppMetadataSchema,
+  DatabaseMetadataSchema,
 } from '@insforge/shared-schemas';
 import { StorageConfig } from '@/types/storage.js';
 import { AuthConfig } from '@/types/auth.js';
@@ -300,18 +301,7 @@ export class MetadataService {
     };
   }
 
-  async getDatabaseMetadata(): Promise<{
-    tables: Record<
-      string,
-      {
-        record_count: number;
-        created_at?: string;
-        updated_at?: string;
-      }
-    >;
-    database_size_gb?: number;
-    storage_size_gb?: number;
-  }> {
+  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
     const database = (await this.getMetadata('database')) || {
       tables: [],
     };
@@ -320,19 +310,19 @@ export class MetadataService {
     const tables: Record<
       string,
       {
-        record_count: number;
-        created_at?: string;
-        updated_at?: string;
+        recordCount: number;
+        createdAt?: string;
+        updatedAt?: string;
       }
     > = {};
     for (const table of database.tables) {
       tables[table.tableName] = {
-        record_count:
+        recordCount:
           typeof table.recordCount === 'number'
             ? table.recordCount
             : parseInt(String(table.recordCount || '0'), 10) || 0,
-        created_at: table.createdAt,
-        updated_at: table.updatedAt,
+        createdAt: table.createdAt,
+        updatedAt: table.updatedAt,
       };
     }
 
@@ -340,7 +330,7 @@ export class MetadataService {
     const database_size_gb = await this.getDatabaseSizeInGB();
     const storage_size_gb = await this.getStorageSizeInGB();
 
-    return { tables, database_size_gb, storage_size_gb };
+    return { tables, databaseSizeGb: database_size_gb, storageSizeGb: storage_size_gb };
   }
 
   async getDatabaseSizeInGB(): Promise<number> {

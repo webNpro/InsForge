@@ -1,12 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import { SchemaVisualizer, VisualizerSkeleton } from '../components';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
+import {
+  useSocket,
+  ServerEvents,
+  DataUpdatePayload,
+  DataUpdateResourceType,
+  SocketMessage,
+} from '@/lib/contexts/SocketContext';
 
 const VisualizerPage = () => {
+  const { socket, isConnected } = useSocket();
+  const queryClient = useQueryClient();
+
   const {
     data: metadata,
     isLoading,
@@ -14,7 +24,7 @@ const VisualizerPage = () => {
     refetch: refetchMetadata,
   } = useQuery({
     queryKey: ['database-metadata-visualizer'],
-    queryFn: () => metadataService.getDatabaseMetadata(),
+    queryFn: () => metadataService.getFullMetadata(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
@@ -23,11 +33,35 @@ const VisualizerPage = () => {
     void refetchMetadata();
   }, [refetchMetadata]);
 
+  // Listen for schema change events
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleDataUpdate = (message: SocketMessage<DataUpdatePayload>) => {
+      // Invalidate all metadata caches when any schema-related changes occur
+      if (
+        message.payload?.resource === DataUpdateResourceType.METADATA ||
+        message.payload?.resource === DataUpdateResourceType.DATABASE_SCHEMA
+      ) {
+        // Invalidate all metadata-related queries
+        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+      }
+    };
+
+    socket.on(ServerEvents.DATA_UPDATE, handleDataUpdate);
+
+    return () => {
+      socket.off(ServerEvents.DATA_UPDATE, handleDataUpdate);
+    };
+  }, [socket, isConnected, queryClient, refetchMetadata]);
+
   if (isLoading) {
     return <VisualizerSkeleton />;
   }
 
-  if (error) {
+  if (!metadata || error) {
     return (
       <div className="relative min-h-screen bg-neutral-800 overflow-hidden">
         {/* Dot Matrix Background */}
@@ -50,38 +84,6 @@ const VisualizerPage = () => {
               Retry
             </Button>
           </Alert>
-        </div>
-      </div>
-    );
-  }
-
-  if (!metadata || metadata.tables.length === 0) {
-    return (
-      <div className="relative min-h-screen bg-neutral-800 overflow-hidden">
-        {/* Dot Matrix Background */}
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage: `radial-gradient(circle, #3B3B3B 1px, transparent 1px)`,
-            backgroundSize: '12px 12px',
-          }}
-        />
-
-        <div className="relative z-10 flex items-center justify-center min-h-screen p-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-white mb-4">No Tables Found</h2>
-            <p className="text-gray-400 mb-6">
-              The database schema is empty. Create some tables to visualize them here.
-            </p>
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
         </div>
       </div>
     );

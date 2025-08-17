@@ -7,6 +7,8 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
 import { OAuthConfig, OAuthStatus, ConfigRecord } from '@/types/auth.js';
 import logger from '@/utils/logger.js';
+import { SocketService } from '@/core/socket/socket';
+import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
 
 const router = Router();
 
@@ -139,7 +141,7 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
           .prepare('SELECT value FROM _config WHERE key = ?')
           .get(key);
 
-        let finalConfig = { ...config };
+        const finalConfig = { ...config };
 
         if (existing && existing.value) {
           try {
@@ -148,7 +150,7 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
             if (config.clientSecret && config.clientSecret.includes('****')) {
               finalConfig.clientSecret = existingConfig.clientSecret;
             }
-          } catch (e) {
+          } catch {
             // If parse fails, use new config as-is
           }
         }
@@ -247,11 +249,16 @@ router.get('/oauth/status', async (req: Request, res: Response, next: NextFuncti
           // Only mark as enabled if we have valid credentials
           status[provider].enabled = !!(config.enabled && config.clientId && config.clientSecret);
         }
-      } catch (e) {
+      } catch {
         // Skip invalid configs
         logger.debug('Skipping invalid OAuth config', { key: row.key });
       }
     }
+
+    const socket = SocketService.getInstance();
+    socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+      resource: DataUpdateResourceType.OAUTH_SCHEMA,
+    });
 
     successResponse(res, status);
   } catch (error) {
@@ -261,24 +268,20 @@ router.get('/oauth/status', async (req: Request, res: Response, next: NextFuncti
 
 // Force reload OAuth configuration (admin only)
 // Note: Not really needed since AuthService auto-reloads every minute
-router.post(
-  '/oauth/reload',
-  verifyAdmin,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      logger.info('OAuth reload requested - config will refresh on next request');
+router.post('/oauth/reload', verifyAdmin, (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('OAuth reload requested - config will refresh on next request');
 
-      // AuthService automatically reloads config from DB with 1-minute cache
-      // No action needed here, just inform the admin
+    // AuthService automatically reloads config from DB with 1-minute cache
+    // No action needed here, just inform the admin
 
-      successResponse(res, {
-        message: 'OAuth configuration cache cleared',
-        note: 'New configuration will be loaded on next OAuth request',
-      });
-    } catch (error) {
-      next(error);
-    }
+    successResponse(res, {
+      message: 'OAuth configuration cache cleared',
+      note: 'New configuration will be loaded on next OAuth request',
+    });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 export { router as configRouter };

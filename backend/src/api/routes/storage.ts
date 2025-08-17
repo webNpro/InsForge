@@ -12,6 +12,8 @@ import {
   createBucketRequestSchema,
   updateBucketRequestSchema,
 } from '@insforge/shared-schemas';
+import { SocketService } from '@/core/socket/socket';
+import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
 
 const router = Router();
 
@@ -73,6 +75,11 @@ router.post(
       const storageService = StorageService.getInstance();
       await storageService.createBucket(bucketName, isPublic);
 
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.STORAGE_SCHEMA,
+      });
+
       const accessInfo = isPublic
         ? 'This is a PUBLIC bucket - objects can be accessed without authentication.'
         : 'This is a PRIVATE bucket - authentication is required to access objects.';
@@ -126,6 +133,14 @@ router.patch(
 
       const storageService = StorageService.getInstance();
       await storageService.updateBucketVisibility(bucketName, isPublic);
+
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.BUCKET_SCHEMA,
+        data: {
+          name: bucketName,
+        },
+      });
 
       const accessInfo = isPublic
         ? 'Bucket is now PUBLIC - objects can be accessed without authentication.'
@@ -327,6 +342,11 @@ router.delete(
       if (!deleted) {
         throw new AppError('Bucket not found or already empty', 404, ERROR_CODES.NOT_FOUND);
       }
+
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.STORAGE_SCHEMA,
+      });
 
       successResponse(
         res,
