@@ -283,7 +283,7 @@ export class SocketService {
   /**
    * Broadcast to specific room
    */
-  broadcastToRoom<T>(room: string, event: ServerEvents, payload: T): void {
+  broadcastToRoom<T>(room: string, event: ServerEvents, payload?: T): void {
     if (!this.io) {
       logger.warn('Socket.IO server not initialized');
       return;
