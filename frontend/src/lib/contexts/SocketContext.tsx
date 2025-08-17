@@ -253,14 +253,14 @@ export function SocketProvider({ children }: SocketProviderProps) {
       // Disconnect when not authenticated or no token
       disconnect();
     }
-  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, connect, disconnect]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
       disconnect();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [disconnect]);
 
   // Context value
   const contextValue = useMemo<SocketContextValue>(
