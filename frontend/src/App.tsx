@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { AuthErrorBoundary } from '@/features/login/components/AuthErrorBoundary';
 import { PrivateRoute } from '@/features/login/components/PrivateRoute';
 import { ToastProvider } from '@/lib/hooks/useToast';
+import { SocketProvider } from '@/lib/contexts/SocketContext';
 import LoginPage from './features/login/page/LoginPage';
 import DashboardPage from './features/dashboard/page/DashboardPage';
 import DatabasePage from './features/database/page/DatabasePage';
@@ -13,8 +14,10 @@ import AnalyticsLogsPage from './features/logs/page/AnalyticsLogsPage';
 import StoragePage from './features/storage/page/StoragePage';
 import MetadataPage from './features/metadata/page/MetadataPage';
 import OnBoardPage from './features/onboard/page/OnBoardPage';
+import VisualizerPage from './features/visualizer/page/VisualizerPage';
 import Layout from './components/layout/Layout';
 import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
+import CloudLayout from './components/layout/CloudLayout';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,11 +34,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthErrorBoundary>
         <AuthProvider>
-          <ToastProvider>
-            <OnboardStepProvider>
-              <AppRoutes />
-            </OnboardStepProvider>
-          </ToastProvider>
+          <SocketProvider>
+            <ToastProvider>
+              <OnboardStepProvider>
+                <AppRoutes />
+              </OnboardStepProvider>
+            </ToastProvider>
+          </SocketProvider>
         </AuthProvider>
       </AuthErrorBoundary>
     </QueryClientProvider>
@@ -46,6 +51,25 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/dashboard/login" element={<LoginPage />} />
+      <Route
+        path="/cloud/*"
+        element={
+          <PrivateRoute>
+            <CloudLayout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/cloud/dashboard" replace />} />
+                <Route path="/visualizer" element={<VisualizerPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/authentication" element={<AuthenticationPage />} />
+                <Route path="/database" element={<DatabasePage />} />
+                <Route path="/storage" element={<StoragePage />} />
+                <Route path="/logs" element={<LogsPage />} />
+                <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
+              </Routes>
+            </CloudLayout>
+          </PrivateRoute>
+        }
+      />
       <Route
         path="/*"
         element={

@@ -5,7 +5,7 @@ import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
 import { databaseService } from '@/features/database/services/database.service';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { TableSidebar } from '@/features/database/components/TableSidebar';
@@ -99,7 +99,7 @@ export default function DatabasePage() {
     refetch: refetchMetadata,
   } = useQuery({
     queryKey: ['metadata'],
-    queryFn: () => metadataService.getAppMetadata(),
+    queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: !!apiKey,
   });
 
@@ -298,6 +298,7 @@ export default function DatabasePage() {
         void queryClient.invalidateQueries({ queryKey: ['tables'] });
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
+        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
       } catch (error: any) {
         const errorMessage =
           error.response?.data?.error?.message || error.message || 'Failed to delete table';
@@ -428,7 +429,7 @@ export default function DatabasePage() {
   const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-bg-gray">
+    <div className="flex h-full bg-bg-gray">
       {/* Secondary Sidebar - Table List */}
       <TableSidebar
         tables={filteredTables}
