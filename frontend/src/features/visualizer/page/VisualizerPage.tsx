@@ -55,7 +55,7 @@ const VisualizerPage = () => {
     return () => {
       socket.off(ServerEvents.DATA_UPDATE, handleDataUpdate);
     };
-  }, [socket, isConnected, queryClient, refetchMetadata]);
+  }, [socket, isConnected, queryClient]);
 
   if (isLoading) {
     return <VisualizerSkeleton />;

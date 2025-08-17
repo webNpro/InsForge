@@ -169,6 +169,11 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
 
       await db.getDb().exec('COMMIT');
 
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.OAUTH_SCHEMA,
+      });
+
       // AuthService will automatically reload config within 1 minute due to cache TTL
       successResponse(res, {
         message: 'OAuth configuration updated successfully',
@@ -254,11 +259,6 @@ router.get('/oauth/status', async (req: Request, res: Response, next: NextFuncti
         logger.debug('Skipping invalid OAuth config', { key: row.key });
       }
     }
-
-    const socket = SocketService.getInstance();
-    socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
-      resource: DataUpdateResourceType.OAUTH_SCHEMA,
-    });
 
     successResponse(res, status);
   } catch (error) {
