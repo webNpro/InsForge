@@ -33,7 +33,7 @@ export default function MetadataPage() {
         <div className="px-8 pt-6 pb-4">
           <div className="flex items-center">
             <nav className="flex items-center text-[22px] font-semibold">
-              <span className="text-gray-900">Metadata</span>
+              <span className="text-gray-900 dark:text-white">Metadata</span>
             </nav>
           </div>
         </div>
@@ -53,17 +53,17 @@ export default function MetadataPage() {
   }
 
   return (
-    <main className="h-full bg-bg-gray">
+    <main className="min-h-screen bg-bg-gray dark:bg-neutral-800">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-bg-gray border-b border-gray-200">
+      <div className="sticky top-0 z-30 bg-bg-gray border-b border-gray-200 dark:border-neutral-500 dark:bg-neutral-800">
         <div className="px-8 pt-6 pb-4">
           <div className="flex items-center">
             <nav className="flex items-center text-[22px] font-semibold">
-              <span className="text-gray-900">Metadata</span>
+              <span className="text-gray-900 dark:text-white">Metadata</span>
             </nav>
 
             {/* Separator */}
-            <div className="mx-4 h-6 w-px bg-gray-200" />
+            <div className="mx-4 h-6 w-px bg-gray-200 dark:bg-neutral-500" />
 
             {/* Action buttons group */}
             <div className="flex items-center gap-1">
@@ -71,7 +71,7 @@ export default function MetadataPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleRefresh}>
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4 text-zinc-900 dark:text-white" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -88,15 +88,15 @@ export default function MetadataPage() {
         {/* Metadata Section */}
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">System Metadata</h2>
-            <p className="text-gray-600">Complete metadata information for the InsForge system</p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">System Metadata</h2>
+            <p className="text-gray-600 dark:text-zinc-400">Complete metadata information for the InsForge system</p>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 pt-4 bg-white">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-500 overflow-hidden">
+            <div className="flex items-center justify-between px-6 pt-4 bg-white dark:bg-neutral-800">
               <div className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-gray-700" />
-                <span className="font-medium text-gray-900">Raw JSON Data</span>
+                <Info className="h-5 w-5 text-gray-700 dark:text-white" />
+                <span className="font-medium text-gray-900 dark:text-white">Raw JSON Data</span>
               </div>
             </div>
 

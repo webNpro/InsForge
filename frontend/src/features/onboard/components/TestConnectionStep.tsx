@@ -22,9 +22,9 @@ export function TestConnectionStep() {
   }, [socket]);
 
   return (
-    <div className="space-y-6 bg-white py-8 px-6 rounded-xl border border-border-gray">
+    <div className="space-y-6 border border-transparent dark:border-neutral-500 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6">
       <div>
-        <p className="text-zinc-950 text-sm mb-4">
+        <p className="text-zinc-950 dark:text-white text-sm mb-4">
           Open your agent&apos;s chat interface, copy and send this:
         </p>
       </div>

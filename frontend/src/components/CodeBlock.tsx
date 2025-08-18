@@ -12,7 +12,7 @@ export function CodeBlock({ code, className, showCopy = true, onCopy }: CodeBloc
   return (
     <div
       className={cn(
-        'bg-slate-50 py-4 px-6 flex items-center justify-between text-zinc-950 font-mono text-sm break-all font-semibold',
+        'bg-slate-50 dark:bg-neutral-700 py-4 px-6 flex items-center justify-between text-zinc-950 dark:text-white font-mono text-sm break-all font-semibold',
         className
       )}
     >

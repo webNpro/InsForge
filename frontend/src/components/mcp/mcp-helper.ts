@@ -1,8 +1,8 @@
 import CursorLogoIcon from '@/assets/icons/cursor_logo.svg';
 import ClaudeLogoIcon from '@/assets/icons/claude_code_logo.svg';
-import WindsurfLogoIcon from '@/assets/icons/windsurf_logo.svg';
-import ClineLogoIcon from '@/assets/icons/cline_logo.svg';
-import RooLogoIcon from '@/assets/icons/roo_code_logo.svg';
+// import WindsurfLogoIcon from '@/assets/icons/windsurf_logo.svg';
+// import ClineLogoIcon from '@/assets/icons/cline_logo.svg';
+// import RooLogoIcon from '@/assets/icons/roo_code_logo.svg';
 
 export interface MCPAgent {
   id: string;
@@ -36,19 +36,19 @@ export const MCP_AGENTS: MCPAgent[] = [
   {
     id: 'windsurf',
     displayName: 'Windsurf',
-    logo: WindsurfLogoIcon,
+    logo: "/icons/windsurf_logo.svg",
     description: 'Next-generation AI development environment',
   },
   {
     id: 'cline',
     displayName: 'Cline',
-    logo: ClineLogoIcon,
+    logo: "/icons/cline_logo.svg",
     description: 'Intelligent coding assistant with MCP support',
   },
   {
     id: 'roocode',
     displayName: 'Roo Code',
-    logo: RooLogoIcon,
+    logo: "/icons/roo_code_logo.svg",
     description: 'Smart code completion and assistance tool',
   },
   {

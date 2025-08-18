@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Copy } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { cn } from '@/lib/utils/utils';
-import CheckedIcon from '@/assets/icons/checked.svg';
+import CheckedIcon from '@/assets/icons/checked.svg?react';
 
 interface CopyButtonProps {
   text: string;
@@ -55,18 +55,18 @@ export function CopyButton({
       onClick={() => void handleCopy()}
       disabled={disabled}
       className={cn(
-        'px-3 w-fit h-8 rounded-md bg-zinc-50 hover:bg-bg-gray-hover border-border-gray border shadow gap-1.5 transition-all duration-200',
+        'px-3 w-fit h-8 rounded-md bg-zinc-50 dark:bg-neutral-700 hover:bg-bg-gray-hover dark:hover:bg-neutral-600 border-border-gray border shadow gap-1.5 transition-all duration-200',
         copied && 'bg-transparent cursor-default shadow-none border-none hover:bg-transparent',
         className
       )}
     >
       {copied ? (
-        <img src={CheckedIcon} alt="Checked" className="w-4 h-4" />
+        <CheckedIcon className="w-4 h-4" />
       ) : (
-        <Copy className="w-4 h-4 text-zinc-950" />
+        <Copy className="w-4 h-4 text-zinc-950 dark:text-white" />
       )}
       {showText && (
-        <span className="font-medium text-sm text-zinc-950">{copied ? copiedText : copyText}</span>
+        <span className="font-medium text-sm text-zinc-950 dark:text-white">{copied ? copiedText : copyText}</span>
       )}
     </Button>
   );

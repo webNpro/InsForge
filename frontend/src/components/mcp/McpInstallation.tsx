@@ -43,7 +43,7 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
   return (
     <div
       className={cn(
-        'w-full border border-border-gray rounded-xl bg-slate-100 overflow-hidden',
+        'w-full border border-border-gray dark:border-neutral-500 rounded-xl bg-slate-100 dark:bg-neutral-800 overflow-hidden',
         className
       )}
     >
@@ -54,11 +54,11 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
             key={agent.id}
             onClick={() => setSelectedAgent(agent)}
             className={cn(
-              'w-full px-3 py-2 text-sm font-medium text-zinc-950 transition-all duration-200 border-r border-border-gray last:border-r-0 flex flex-row items-center gap-1',
-              selectedAgent.id === agent.id ? 'bg-white' : 'hover:bg-white/50'
+              'w-full px-3 py-2 text-sm font-medium text-zinc-950 dark:text-white transition-all duration-200 border-r border-border-gray dark:border-neutral-500 last:border-r-0 flex flex-row items-center gap-1',
+              selectedAgent.id === agent.id ? 'bg-white dark:bg-emerald-300 dark:hover:bg-emerald-200 dark:text-black' : 'dark:bg-neutral-700 hover:bg-white/50 dark:hover:bg-neutral-600'
             )}
           >
-            {agent.logo && <img src={agent.logo} alt={agent.displayName} className="w-6 h-6" />}
+            {agent.logo && <img src={agent.logo} alt={agent.displayName} className={`inline-block w-6 h-6 bg-transparent [mask-image:url(${agent.logo})] [mask-size:contain] [mask-position:center] [mask-repeat:no-repeat] text-white dark:text-white`} />}
             {agent.displayName}
           </button>
         ))}
@@ -66,7 +66,7 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
 
       {/* Content */}
       {selectedAgent.id !== 'mcp' ? (
-        <div className="bg-white px-6 py-8 flex flex-col items-start justify-start gap-4">
+        <div className="bg-white dark:bg-neutral-800 px-6 py-8 flex flex-col items-start justify-start gap-4">
           {selectedAgent.id === 'cursor' && (
             <CursorDeeplinkGenerator
               apiKey={apiKey}
@@ -76,7 +76,7 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
           )}
 
           {/* Alternative Installation */}
-          <p className="text-zinc-950 text-sm">
+          <p className="text-zinc-950 dark:text-white text-sm">
             {selectedAgent.id === 'cursor' ? 'or copy' : 'Copy'} the command below and paste it to
             terminal
           </p>
@@ -84,30 +84,30 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
           {/* Command Block */}
           <CodeBlock
             code={GenerateInstallCommand(selectedAgent, apiKey || '')}
-            className="bg-slate-50 w-full font-normal text-blue-800"
+            className="bg-slate-50 dark:bg-neutral-700 w-full font-normal text-blue-800"
           />
         </div>
       ) : (
-        <div className="px-6 py-8 bg-white overflow-hidden">
-          <p className="text-zinc-950 text-sm mb-3">
+        <div className="px-6 py-8 bg-white dark:bg-neutral-800 overflow-hidden">
+          <p className="text-zinc-950 dark:text-white text-sm mb-3">
             Copy the configuration below and add it to your AI assistant.
           </p>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="flex items-center justify-between">
-              <TabsList className="grid w-60 grid-cols-2 bg-gray-100 p-1.5 rounded-md h-fit">
+              <TabsList className="grid w-60 grid-cols-2 bg-gray-100 dark:bg-neutral-700 p-1.5 rounded-md h-fit">
                 <TabsTrigger
                   value="macos-linux"
                   className="h-7 rounded-sm px-3 py-1 text-sm font-medium transition-all duration-200
-                    data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
-                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900"
+                    data-[state=active]:bg-white dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
+                    data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-zinc-400 data-[state=inactive]:hover:text-gray-900"
                 >
                   MacOS/Linux
                 </TabsTrigger>
                 <TabsTrigger
                   value="windows"
                   className="h-7 rounded-sm px-3 py-1 text-sm font-medium transition-all duration-200
-                    data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
-                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-gray-900"
+                    data-[state=active]:bg-white dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
+                    data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-zinc-400 data-[state=inactive]:hover:text-gray-900"
                 >
                   Windows
                 </TabsTrigger>
