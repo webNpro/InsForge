@@ -76,7 +76,6 @@ interface SocketState {
   isConnected: boolean;
   connectionError: string | null;
   socketId: string | null;
-  mcpConnected: boolean;
 }
 
 interface SocketActions {
@@ -112,7 +111,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
     isConnected: false,
     connectionError: null,
     socketId: null,
-    mcpConnected: false,
   });
 
   // Refs
@@ -131,7 +129,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
    */
   const createSocket = useCallback(
     (token: string): Socket => {
-      const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130', {
+      const socket = io('/', {
         auth: {
           token,
         },

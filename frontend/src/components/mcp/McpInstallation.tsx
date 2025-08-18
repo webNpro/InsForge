@@ -37,7 +37,7 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
   };
 
   const mcpConfig = useMemo(() => {
-    return createMCPConfig(apiKey || '', activeTab, import.meta.env.VITE_API_BASE_URL);
+    return createMCPConfig(apiKey || '', activeTab, window.location.origin);
   }, [apiKey, activeTab]);
 
   return (
@@ -70,7 +70,7 @@ export function McpInstallation({ className, defaultAgent = 'cursor' }: McpInsta
           {selectedAgent.id === 'cursor' && (
             <CursorDeeplinkGenerator
               apiKey={apiKey}
-              apiBaseUrl={import.meta.env.VITE_API_BASE_URL}
+              apiBaseUrl={window.location.origin}
               os={activeTab}
             />
           )}

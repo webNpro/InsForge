@@ -16,7 +16,12 @@ export default defineConfig({
     port: 7131,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:7130',
+        target: 'http://localhost:7130',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:7130',
+        ws: true,
         changeOrigin: true,
       },
     },
