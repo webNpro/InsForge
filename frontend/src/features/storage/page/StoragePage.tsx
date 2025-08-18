@@ -317,7 +317,7 @@ export default function StoragePage() {
   const error = bucketsError;
 
   return (
-    <div className="flex h-full bg-bg-gray">
+    <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       {/* Secondary Sidebar - Bucket List */}
       <StorageSidebar
         buckets={bucketInfo}
@@ -341,22 +341,22 @@ export default function StoragePage() {
         {selectedBucket && (
           <>
             {/* Sticky Header Section */}
-            <div className="sticky top-0 z-30 bg-bg-gray">
+            <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
               <div className="px-6 py-3 border-b border-border-gray h-12">
                 {/* Page Header with Breadcrumb */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {selectedBucket && (
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black">{selectedBucket}</span>
+                        <span className="text-black dark:text-zinc-300">{selectedBucket}</span>
                       </nav>
                     )}
 
                     {/* Separator */}
-                    <div className="h-6 w-px bg-gray-200" />
+                    <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
 
                     {/* Action buttons group */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
                       <TooltipProvider>
                         {selectedBucket && (
                           <Tooltip>
@@ -364,7 +364,7 @@ export default function StoragePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-zinc-500 hover:text-black"
+                                className="p-1 h-6 w-6"
                                 onClick={() => handleEditBucket(selectedBucket)}
                               >
                                 <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
@@ -380,7 +380,7 @@ export default function StoragePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5"
+                              className="p-1 h-6 w-6"
                               onClick={() => void handleRefresh()}
                               disabled={isRefreshing}
                             >
@@ -409,7 +409,7 @@ export default function StoragePage() {
                         />
                         <Button
                           variant="outline"
-                          className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0"
+                          className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
                           onClick={() => void handleBulkDeleteFiles(Array.from(selectedFiles))}
                         >
                           Delete {selectedFiles.size} {selectedFiles.size === 1 ? 'File' : 'Files'}
@@ -420,7 +420,7 @@ export default function StoragePage() {
                         value={searchQuery}
                         onChange={setSearchQuery}
                         placeholder="Search Files by Name"
-                        className="flex-1 max-w-80"
+                        className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
                         debounceTime={300}
                       />
                     )}
@@ -438,7 +438,7 @@ export default function StoragePage() {
                             style={{ display: 'none' }}
                           />
                           <Button
-                            className="h-10 px-4 font-medium gap-1.5"
+                            className="h-10 px-4 font-medium gap-1.5 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isUploading}
                           >

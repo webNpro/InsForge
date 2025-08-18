@@ -13,22 +13,22 @@ const ProviderIcon = ({ provider }: { provider: string }) => {
   const getProviderInfo = (provider: string) => {
     switch (provider.toLowerCase()) {
       case 'google':
-        return { label: 'Google', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' };
+        return { label: 'Google', color: 'bg-red-100 text-red-700 dark:bg-neutral-800 dark:text-red-300 dark:border-red-500' };
       case 'github':
-        return { label: 'GitHub', color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300' };
+          return { label: 'GitHub', color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300 dark:border-gray-500' };
       case 'discord':
-        return { label: 'Discord', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' };
+        return { label: 'Discord', color: 'bg-blue-100 text-blue-700 dark:bg-neutral-800 dark:text-blue-300 dark:border-blue-500' };
       case 'email':
-        return { label: 'Email', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' };
+        return { label: 'Email', color: 'bg-green-100 text-green-700 dark:bg-neutral-800 dark:text-green-300 dark:border-green-500' };
       default:
-        return { label: provider, color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300' };
+        return { label: provider, color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300 dark:border-gray-500' };
     }
   };
 
   const { label, color } = getProviderInfo(provider);
 
   return (
-    <Badge variant="secondary" className={cn('text-xs font-medium px-2 py-1', color)}>
+    <Badge variant="secondary" className={cn('text-xs font-medium px-2 py-1 border border-transparent', color)}>
       {label}
     </Badge>
   );
@@ -60,7 +60,7 @@ const IdentitiesCellRenderer = ({ row, column }: any) => {
         <ProviderIcon key={index} provider={provider} />
       ))}
       {uniqueProviders.length > 2 && (
-        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-zinc-300">
+        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500">
           +{uniqueProviders.length - 2}
         </Badge>
       )}

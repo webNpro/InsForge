@@ -442,7 +442,7 @@ export default function DatabasePage() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-l border-border-gray dark:border-neutral-500">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {showTableForm ? (
           // Show TableForm replacing entire main content area
           <TableForm
@@ -487,7 +487,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6 text-zinc-500 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-300"
+                                className="p-1 h-6 w-6"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
                                 <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
@@ -503,7 +503,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6 text-zinc-500 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-300"
+                                className="p-1 h-6 w-6"
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >

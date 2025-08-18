@@ -59,7 +59,7 @@ export function FeatureSidebar<T extends FeatureItem>({
   );
 
   return (
-    <div className="w-70 flex flex-col h-full bg-white dark:bg-neutral-800">
+    <div className="w-70 flex flex-col h-full bg-white dark:bg-neutral-800 border-r border-border-gray dark:border-neutral-500">
       {/* Header */}
       <div className="px-6 py-3 h-12 bg-white border-b border-border-gray dark:bg-neutral-800 dark:border-neutral-500">
         <h2 className="text-base font-semibold text-black dark:text-zinc-300">{title}</h2>

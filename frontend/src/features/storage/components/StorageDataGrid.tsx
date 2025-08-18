@@ -9,7 +9,7 @@ import { StorageFileSchema } from '@insforge/shared-schemas';
 const FileNameRenderer = ({ row, column }: any) => {
   const fileName = row[column.key].split('/').pop() || row[column.key];
   return (
-    <span className="text-sm font-medium text-gray-900 truncate" title={row[column.key]}>
+    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-300 truncate" title={row[column.key]}>
       {fileName}
     </span>
   );
@@ -31,7 +31,7 @@ const FileSizeRenderer = ({ row, column }: any) => {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   };
 
-  return <span className="text-sm text-gray-600">{formatFileSize(bytes)}</span>;
+  return <span className="text-sm text-zinc-600 dark:text-zinc-300">{formatFileSize(bytes)}</span>;
 };
 
 const MimeTypeRenderer = ({ row, column }: any) => {
@@ -42,31 +42,31 @@ const MimeTypeRenderer = ({ row, column }: any) => {
   const getFileIcon = () => {
     switch (category) {
       case 'image':
-        return <Image className="h-4 w-4" />;
+        return <Image className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
       case 'video':
-        return <Video className="h-4 w-4" />;
+        return <Video className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
       case 'audio':
-        return <Music className="h-4 w-4" />;
+        return <Music className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
       case 'text':
-        return <FileText className="h-4 w-4" />;
+        return <FileText className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
       case 'application':
         // Check for specific application types
         if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('rar')) {
-          return <Archive className="h-4 w-4" />;
+          return <Archive className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
         }
         if (mimeType.includes('pdf')) {
-          return <FileText className="h-4 w-4" />;
+          return <FileText className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
         }
-        return <File className="h-4 w-4" />;
+        return <File className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
       default:
-        return <File className="h-4 w-4" />;
+        return <File className="h-4 w-4 text-zinc-950 dark:text-zinc-300" />;
     }
   };
 
   return (
     <div className="flex items-center gap-2.5">
       {getFileIcon()}
-      <span className="text-sm text-gray-500">{mimeType}</span>
+      <span className="text-sm text-zinc-500 dark:text-zinc-300">{mimeType}</span>
     </div>
   );
 };
@@ -74,19 +74,19 @@ const MimeTypeRenderer = ({ row, column }: any) => {
 const UploadedAtRenderer = ({ row, column }: any) => {
   const value = row[column.key];
   if (!value) {
-    return <span className="text-sm text-gray-500">Unknown</span>;
+    return <span className="text-sm text-zinc-500 dark:text-zinc-300">Unknown</span>;
   }
 
   const timestamp = value.includes('Z') || value.includes('+') ? value : value + 'Z';
 
   try {
     return (
-      <span className="text-sm text-gray-600">
+      <span className="text-sm text-zinc-600 dark:text-zinc-300">
         {formatDistance(new Date(timestamp), new Date(), { addSuffix: true })}
       </span>
     );
   } catch {
-    return <span className="text-sm text-red-500">Invalid date</span>;
+    return <span className="text-sm text-red-500 dark:text-red-400">Invalid date</span>;
   }
 };
 
@@ -156,7 +156,7 @@ export function createStorageColumns(
                 }}
                 title="Preview file"
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-4 w-4 text-zinc-500 dark:text-zinc-300" />
               </Button>
             )}
             {onDownload && (
@@ -171,7 +171,7 @@ export function createStorageColumns(
                 disabled={isFileDownloading}
                 title="Download file"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 text-zinc-500 dark:text-zinc-300" />
               </Button>
             )}
             {onDelete && (
@@ -185,7 +185,7 @@ export function createStorageColumns(
                 }}
                 title="Delete file"
               >
-                <Trash2 className="h-4 w-4 text-red-600" />
+                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
               </Button>
             )}
           </div>

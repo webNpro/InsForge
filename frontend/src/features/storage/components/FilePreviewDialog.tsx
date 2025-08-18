@@ -124,7 +124,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     // Show empty preview template for non-previewable files or errors
     if (!isPreviewable(file.mimeType) || error || !previewUrl) {
-      return <div className="bg-gray-200 w-full h-full min-h-[400px] rounded" />;
+      return <div className="bg-neutral-200 dark:bg-neutral-700 w-full h-full min-h-[400px] rounded" />;
     }
 
     const mimeType = file.mimeType || '';
@@ -187,7 +187,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
     }
 
     // Fallback empty preview
-    return <div className="bg-gray-200 w-full h-full min-h-[400px] rounded" />;
+    return <div className="bg-neutral-200 dark:bg-neutral-700 w-full h-full min-h-[400px] rounded" />;
   };
 
   if (!file) {
@@ -199,16 +199,16 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[800px] max-w-[800px] p-0 overflow-hidden flex">
-        <div className="w-[800px] min-h-[500px] max-h-[820px] bg-white rounded-xl shadow-lg border border-zinc-200 flex flex-col">
+        <div className="w-[800px] min-h-[500px] max-h-[820px] bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-zinc-200 dark:border-neutral-500 flex flex-col">
           {/* Header */}
           <div className="px-6 py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-zinc-950 leading-6">{fileName}</h2>
+                <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-300 leading-6">{fileName}</h2>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-sm text-zinc-500">{formatFileSize(file.size)}</span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-300">{formatFileSize(file.size)}</span>
                   {file.mimeType && (
-                    <Badge variant="outline" className="text-xs font-normal px-2.5 py-0.5">
+                    <Badge variant="outline" className="text-xs font-normal px-2.5 py-0.5 dark:bg-neutral-700 dark:text-zinc-300">
                       {file.mimeType}
                     </Badge>
                   )}
@@ -233,13 +233,13 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
-                className="flex-1 h-10 px-3 gap-1.5"
+                className="flex-1 h-10 px-3 gap-1.5 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
                 onClick={handleDownload}
               >
                 <Download className="h-5 w-5" />
                 <span className="text-sm font-medium">Download</span>
               </Button>
-              <Button variant="outline" className="flex-1 h-10 px-3 gap-1.5" onClick={openInNewTab}>
+              <Button variant="outline" className="flex-1 h-10 px-3 gap-1.5 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700" onClick={openInNewTab}>
                 <ExternalLink className="h-5 w-5" />
                 <span className="text-sm font-medium">Open in new tab</span>
               </Button>
@@ -290,7 +290,7 @@ function TextPreview({ url }: { url: string }) {
   }
 
   return (
-    <div className="bg-gray-50 rounded p-4 w-full h-full">
+    <div className="bg-neutral-50 dark:bg-neutral-800 rounded p-4 w-full h-full">
       <pre className="text-sm whitespace-pre-wrap break-words">{content}</pre>
     </div>
   );
