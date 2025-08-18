@@ -503,11 +503,11 @@ export class AuthService {
         throw new Error('State parameter is required for shared Google OAuth');
       }
       // Use shared keys if configured
-      const cloudHost = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
-      const selfHost = process.env.API_BASE_URL || 'http://localhost:7130';
-      const redirectUri = `${selfHost}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
+      const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
+      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
       const authUrl = await fetch(
-        `${cloudHost}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        `${cloudBaseUrl}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
           method: 'GET',
           headers: {
@@ -565,11 +565,11 @@ export class AuthService {
         throw new Error('State parameter is required for shared GitHub OAuth');
       }
       // Use shared keys if configured
-      const cloudHost = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
-      const selfHost = process.env.API_BASE_URL || 'http://localhost:7130';
-      const redirectUri = `${selfHost}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
+      const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
+      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
       const authUrl = await fetch(
-        `${cloudHost}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        `${cloudBaseUrl}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
           method: 'GET',
           headers: {
