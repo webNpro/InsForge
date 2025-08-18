@@ -6,6 +6,7 @@ import { program } from 'commander';
 import { handleApiResponse, formatSuccessMessage } from './response-handler.js';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { UsageTracker } from './usage-tracker.js';
 import {
   ColumnType,
   CreateTableRequest,
@@ -32,6 +33,33 @@ const server = new McpServer({
 });
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:7130';
+
+// Initialize usage tracker
+const usageTracker = new UsageTracker(API_BASE_URL, GLOBAL_API_KEY);
+
+// Helper function to track tool usage
+async function trackToolUsage(toolName: string, success: boolean = true): Promise<void> {
+  if (GLOBAL_API_KEY) {
+    await usageTracker.trackUsage(toolName, success);
+  }
+}
+
+// Wrapper function to add usage tracking to tools
+function withUsageTracking<T extends any[], R>(
+  toolName: string,
+  handler: (...args: T) => Promise<R>
+): (...args: T) => Promise<R> {
+  return async (...args: T): Promise<R> => {
+    try {
+      const result = await handler(...args);
+      await trackToolUsage(toolName, true);
+      return result;
+    } catch (error) {
+      await trackToolUsage(toolName, false);
+      throw error;
+    }
+  };
+}
 
 // Helper function to get API key (use global if provided, otherwise require it in tool calls)
 const getApiKey = (toolApiKey?: string): string => {
@@ -155,7 +183,7 @@ server.tool(
   'get-instructions',
   'Instruction Essential backend setup tool. <critical>MANDATORY: You MUST use this tool FIRST before attempting any backend operations. Contains required API endpoints, authentication details, and setup instructions.</critical>',
   {},
-  async () => {
+  withUsageTracking('get-instructions', async () => {
     try {
       const content = await fetchDocumentation('instructions');
       const response = {
@@ -174,14 +202,14 @@ server.tool(
       };
       return await addBackgroundContext(errorResponse);
     }
-  }
+  })
 );
 
 server.tool(
   'debug-backend',
   'Debug Insforge backend issues requires this tool. <critical>MANDATORY: Always use this tool FIRST when encountering backend errors, API failures, or backend questions. It will diagnose issues by reading all documentation, verifying current state, and testing with curl.</critical>',
   {},
-  async () => {
+  withUsageTracking('debug-backend', async () => {
     try {
       const content = await fetchDocumentation('debug');
       return await addBackgroundContext({
@@ -198,7 +226,7 @@ server.tool(
         content: [{ type: 'text', text: `Error: ${errMsg}` }],
       });
     }
-  }
+  })
 );
 
 server.tool(
@@ -299,7 +327,7 @@ server.tool(
   'download-project-rules',
   'Download project-specific rules (CLAUDE.md and cursor rules) <critical>MANDATORY: You MUST use this tool when starting a new project</critical>',
   {},
-  async () => {
+  withUsageTracking('download-project-rules', async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/docs/project`, {
         method: 'GET',
@@ -351,7 +379,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 // --------------------------------------------------
@@ -367,7 +395,7 @@ server.tool(
       .optional()
       .describe('API key for authentication (optional if provided via --api_key)'),
   },
-  async ({ apiKey, tableName, columns, rlsEnabled }) => {
+  withUsageTracking('create-table', async ({ apiKey, tableName, columns, rlsEnabled }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
 
@@ -411,7 +439,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 server.tool(
@@ -424,7 +452,7 @@ server.tool(
       .describe('API key for authentication (optional if provided via --api_key)'),
     tableName: z.string().describe('Name of the table to delete'),
   },
-  async ({ apiKey, tableName }) => {
+  withUsageTracking('delete-table', async ({ apiKey, tableName }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
       const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}`, {
@@ -457,7 +485,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 server.tool(
@@ -471,73 +499,76 @@ server.tool(
     tableName: z.string().describe('Name of the table to modify'),
     ...updateTableSchemaRequestSchema.shape,
   },
-  async ({
-    apiKey,
-    tableName,
-    addColumns,
-    dropColumns,
-    updateColumns,
-    addForeignKeys,
-    dropForeignKeys,
-    renameTable,
-  }) => {
-    try {
-      const actualApiKey = getApiKey(apiKey);
-      const requestBody: UpdateTableSchemaRequest = {};
+  withUsageTracking(
+    'modify-table',
+    async ({
+      apiKey,
+      tableName,
+      addColumns,
+      dropColumns,
+      updateColumns,
+      addForeignKeys,
+      dropForeignKeys,
+      renameTable,
+    }) => {
+      try {
+        const actualApiKey = getApiKey(apiKey);
+        const requestBody: UpdateTableSchemaRequest = {};
 
-      // Preprocess addColumns to format default values
-      if (addColumns) {
-        requestBody.addColumns = preprocessColumnDefaults(addColumns);
-      }
+        // Preprocess addColumns to format default values
+        if (addColumns) {
+          requestBody.addColumns = preprocessColumnDefaults(addColumns);
+        }
 
-      if (dropColumns) {
-        requestBody.dropColumns = dropColumns;
-      }
-      if (updateColumns) {
-        requestBody.updateColumns = updateColumns;
-      }
-      if (addForeignKeys) {
-        requestBody.addForeignKeys = addForeignKeys;
-      }
-      if (dropForeignKeys) {
-        requestBody.dropForeignKeys = dropForeignKeys;
-      }
-      if (renameTable) {
-        requestBody.renameTable = renameTable;
-      }
+        if (dropColumns) {
+          requestBody.dropColumns = dropColumns;
+        }
+        if (updateColumns) {
+          requestBody.updateColumns = updateColumns;
+        }
+        if (addForeignKeys) {
+          requestBody.addForeignKeys = addForeignKeys;
+        }
+        if (dropForeignKeys) {
+          requestBody.dropForeignKeys = dropForeignKeys;
+        }
+        if (renameTable) {
+          requestBody.renameTable = renameTable;
+        }
 
-      const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {
-        method: 'PATCH',
-        headers: {
-          'x-api-key': actualApiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await handleApiResponse(response);
-
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: formatSuccessMessage('Table modified', result),
+        const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {
+          method: 'PATCH',
+          headers: {
+            'x-api-key': actualApiKey,
+            'Content-Type': 'application/json',
           },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: `Error modifying table: ${errMsg}`,
-          },
-        ],
-        isError: true,
-      });
+          body: JSON.stringify(requestBody),
+        });
+
+        const result = await handleApiResponse(response);
+
+        return await addBackgroundContext({
+          content: [
+            {
+              type: 'text',
+              text: formatSuccessMessage('Table modified', result),
+            },
+          ],
+        });
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+        return await addBackgroundContext({
+          content: [
+            {
+              type: 'text',
+              text: `Error modifying table: ${errMsg}`,
+            },
+          ],
+          isError: true,
+        });
+      }
     }
-  }
+  )
 );
 
 // Get table schema
@@ -551,7 +582,7 @@ server.tool(
       .describe('API key for authentication (optional if provided via --api_key)'),
     tableName: z.string().describe('Name of the table'),
   },
-  async ({ apiKey, tableName }) => {
+  withUsageTracking('get-table-schema', async ({ apiKey, tableName }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
       const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {
@@ -583,7 +614,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 server.tool(
@@ -595,10 +626,10 @@ server.tool(
       .optional()
       .describe('API key for authentication (optional if provided via --api_key)'),
   },
-  async ({ apiKey }) => {
+  withUsageTracking('get-backend-metadata', async ({ apiKey }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
-      const response = await fetch(`${API_BASE_URL}/api/metadata`, {
+      const response = await fetch(`${API_BASE_URL}/api/metadata?mcp=true`, {
         method: 'GET',
         headers: {
           'x-api-key': actualApiKey,
@@ -627,7 +658,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 // --------------------------------------------------
@@ -644,7 +675,7 @@ server.tool(
       .describe('API key for authentication (optional if provided via --api_key)'),
     ...createBucketRequestSchema.shape,
   },
-  async ({ apiKey, bucketName, isPublic }) => {
+  withUsageTracking('create-bucket', async ({ apiKey, bucketName, isPublic }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
       const response = await fetch(`${API_BASE_URL}/api/storage/buckets`, {
@@ -678,43 +709,48 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 // List storage buckets
-server.tool('list-buckets', 'Lists all storage buckets', {}, async () => {
-  try {
-    // This endpoint doesn't require authentication in the current implementation
-    const response = await fetch(`${API_BASE_URL}/api/storage/buckets`, {
-      method: 'GET',
-      headers: {
-        'x-api-key': getApiKey(), // Still need API key for protected endpoint
-      },
-    });
-
-    const result = await handleApiResponse(response);
-
-    return await addBackgroundContext({
-      content: [
-        {
-          type: 'text',
-          text: formatSuccessMessage('Buckets retrieved', result),
+server.tool(
+  'list-buckets',
+  'Lists all storage buckets',
+  {},
+  withUsageTracking('list-buckets', async () => {
+    try {
+      // This endpoint doesn't require authentication in the current implementation
+      const response = await fetch(`${API_BASE_URL}/api/storage/buckets`, {
+        method: 'GET',
+        headers: {
+          'x-api-key': getApiKey(), // Still need API key for protected endpoint
         },
-      ],
-    });
-  } catch (error) {
-    const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-    return await addBackgroundContext({
-      content: [
-        {
-          type: 'text',
-          text: `Error listing buckets: ${errMsg}`,
-        },
-      ],
-      isError: true,
-    });
-  }
-});
+      });
+
+      const result = await handleApiResponse(response);
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage('Buckets retrieved', result),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error listing buckets: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
 
 // Delete storage bucket
 server.tool(
@@ -727,7 +763,7 @@ server.tool(
       .describe('API key for authentication (optional if provided via --api_key)'),
     bucketName: z.string().describe('Name of the bucket to delete'),
   },
-  async ({ apiKey, bucketName }) => {
+  withUsageTracking('delete-bucket', async ({ apiKey, bucketName }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
       const response = await fetch(`${API_BASE_URL}/api/storage/buckets/${bucketName}`, {
@@ -759,7 +795,7 @@ server.tool(
         isError: true,
       });
     }
-  }
+  })
 );
 
 async function main() {

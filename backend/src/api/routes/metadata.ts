@@ -1,9 +1,10 @@
 import { Router, Response, NextFunction } from 'express';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { AuthService } from '@/core/auth/auth.js';
-import { WebSocketService } from '@/core/websocket/websocket.js';
+import { SocketService } from '@/core/socket/socket.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
+import { ServerEvents } from '@/core/socket/types';
 
 const router = Router();
 
@@ -15,9 +16,12 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const metadataService = MetadataService.getInstance();
     const metadata = await metadataService.getFullMetadata();
 
-    // Trigger WebSocket event to notify frontend that MCP is connected
-    const wsService = WebSocketService.getInstance();
-    wsService.broadcastBackendConnectionSuccess();
+    // Trigger Socket.IO event to notify frontend that MCP is connected
+    if (req.query.mcp === 'true') {
+      const socketService = SocketService.getInstance();
+      //Lyu note: this is triggered everytime when a mcp calls get-metadata. Do we have a better solution for this?
+      socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED);
+    }
 
     successResponse(res, metadata);
   } catch (error) {

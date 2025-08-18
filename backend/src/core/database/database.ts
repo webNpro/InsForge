@@ -2,19 +2,10 @@ import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import { DatabaseMetadata, ColumnInfo, PrimaryKeyInfo } from '@/types/database.js';
 import logger from '@/utils/logger.js';
-import { convertSqlTypeToColumnType } from '@/utils/helpers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Helper function to quote identifiers for SQL
-function quoteIdentifier(identifier: string): string {
-  return `"${identifier.replace(/"/g, '""')}"`;
-}
-
-// Using Better Auth for authentication
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -255,6 +246,7 @@ export class DatabaseManager {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      -- Storage files table
       CREATE TABLE IF NOT EXISTS _storage (
         bucket TEXT NOT NULL,
         key TEXT NOT NULL,
@@ -265,6 +257,16 @@ export class DatabaseManager {
         FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
       );
 
+      -- MCP usage tracking table
+      CREATE TABLE IF NOT EXISTS _mcp_usage (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tool_name VARCHAR(255) NOT NULL,
+        success BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      -- Index for efficient date range queries
+      CREATE INDEX IF NOT EXISTS idx_mcp_usage_created_at ON _mcp_usage(created_at DESC);
 
       -- Edge functions
       CREATE TABLE IF NOT EXISTS _edge_functions (

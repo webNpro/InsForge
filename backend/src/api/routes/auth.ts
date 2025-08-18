@@ -121,7 +121,7 @@ router.post('/admin/sessions', (req: Request, res: Response, next: NextFunction)
 });
 
 // GET /api/auth/sessions/current - Get current session user
-router.get('/sessions/current', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/sessions/current', (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -140,7 +140,7 @@ router.get('/sessions/current', async (req: Request, res: Response, next: NextFu
     };
 
     res.json(response);
-  } catch (error) {
+  } catch {
     next(new AppError('Invalid token', 401, ERROR_CODES.AUTH_INVALID_CREDENTIALS));
   }
 });
@@ -162,7 +162,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         u.created_at, 
         u.updated_at,
         u.password,
-        a.provider
+        STRING_AGG(a.provider, ',') as providers
       FROM _user u
       LEFT JOIN _account a ON u.id = a.user_id
     `;
@@ -173,16 +173,33 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
+    query += ' GROUP BY u.id ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit as string), parseInt(offset as string));
 
     const dbUsers = await db.prepare(query).all(...params);
 
     // Simple transformation - just format the provider as identities
     const users = dbUsers.map((dbUser: any) => {
-      // If provider exists from _account table, use it; otherwise check if they have email auth
-      const provider = dbUser.provider || (dbUser.password ? 'email' : null);
-      const identities = provider ? [{ provider }] : [];
+      const identities = [];
+      const providers: string[] = [];
+
+      // Add social providers if any
+      if (dbUser.providers) {
+        dbUser.providers.split(',').forEach((provider: string) => {
+          identities.push({ provider });
+          providers.push(provider);
+        });
+      }
+
+      // Add email provider if password exists
+      if (dbUser.password) {
+        identities.push({ provider: 'email' });
+        providers.push('email');
+      }
+
+      // Use first provider to determine type: 'email' or 'social'
+      const firstProvider = providers[0];
+      const provider_type = firstProvider === 'email' ? 'email' : 'social';
 
       // Return snake_case for frontend compatibility
       return {
@@ -193,7 +210,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         created_at: dbUser.created_at,
         updated_at: dbUser.updated_at,
         identities: identities,
-        provider_type: dbUser.provider ? 'social' : 'email',
+        provider_type: provider_type,
       };
     });
 
@@ -241,10 +258,12 @@ router.get(
         u.email_verified, 
         u.created_at, 
         u.updated_at,
-        a.provider
+        u.password,
+        STRING_AGG(a.provider, ',') as providers
       FROM _user u
       LEFT JOIN _account a ON u.id = a.user_id
       WHERE u.id = ?
+      GROUP BY u.id
     `
         )
         .get(userId);
@@ -252,6 +271,28 @@ router.get(
       if (!dbUser) {
         throw new AppError('User not found', 404, ERROR_CODES.NOT_FOUND);
       }
+
+      // Simple transformation - just format the provider as identities
+      const identities = [];
+      const providers: string[] = [];
+
+      // Add social providers if any
+      if (dbUser.providers) {
+        dbUser.providers.split(',').forEach((provider: string) => {
+          identities.push({ provider });
+          providers.push(provider);
+        });
+      }
+
+      // Add email provider if password exists
+      if (dbUser.password) {
+        identities.push({ provider: 'email' });
+        providers.push('email');
+      }
+
+      // Use first provider to determine type: 'email' or 'social'
+      const firstProvider = providers[0];
+      const provider_type = firstProvider === 'email' ? 'email' : 'social';
 
       // Return snake_case for frontend compatibility
       const user = {
@@ -261,8 +302,8 @@ router.get(
         email_verified: dbUser.email_verified,
         created_at: dbUser.created_at,
         updated_at: dbUser.updated_at,
-        identities: dbUser.provider || 'email', // Show 'email' or 'google'/'github'
-        provider_type: dbUser.provider ? 'social' : 'email',
+        identities: identities,
+        provider_type: provider_type,
       };
 
       res.json(user);
@@ -435,7 +476,7 @@ router.get(
   }
 );
 
-router.get('/oauth/:provider/callback', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: NextFunction) => {
   try {
     const { provider } = req.params;
     const { code, state, token } = req.query;

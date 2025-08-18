@@ -5,6 +5,8 @@ import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { createTableRequestSchema, updateTableSchemaRequestSchema } from '@insforge/shared-schemas';
+import { SocketService } from '@/core/socket/socket';
+import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
 
 const router = Router();
 const tablesController = new TablesController();
@@ -37,6 +39,10 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response, next: Next
 
     const { tableName, columns, rlsEnabled } = validation.data;
     const result = await tablesController.createTable(tableName, columns, rlsEnabled);
+    const socket = SocketService.getInstance();
+    socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+      resource: DataUpdateResourceType.DATABASE_SCHEMA,
+    });
     successResponse(res, result, 201);
   } catch (error) {
     next(error);
@@ -78,6 +84,13 @@ router.patch(
 
       const operations = validation.data;
       const result = await tablesController.updateTableSchema(tableName, operations);
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.TABLE_SCHEMA,
+        data: {
+          name: tableName,
+        },
+      });
       successResponse(res, result);
     } catch (error) {
       next(error);
@@ -93,6 +106,10 @@ router.delete(
     try {
       const { tableName } = req.params;
       const result = await tablesController.deleteTable(tableName);
+      const socket = SocketService.getInstance();
+      socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
+        resource: DataUpdateResourceType.DATABASE_SCHEMA,
+      });
       successResponse(res, result);
     } catch (error) {
       next(error);

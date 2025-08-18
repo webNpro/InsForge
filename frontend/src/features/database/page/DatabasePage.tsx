@@ -5,7 +5,7 @@ import PencilIcon from '@/assets/icons/pencil.svg';
 import RefreshIcon from '@/assets/icons/refresh.svg';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
 import { databaseService } from '@/features/database/services/database.service';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { TableSidebar } from '@/features/database/components/TableSidebar';
@@ -99,7 +99,7 @@ export default function DatabasePage() {
     refetch: refetchMetadata,
   } = useQuery({
     queryKey: ['metadata'],
-    queryFn: () => metadataService.getAppMetadata(),
+    queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: !!apiKey,
   });
 

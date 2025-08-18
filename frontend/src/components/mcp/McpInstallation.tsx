@@ -13,7 +13,7 @@ import {
   type MCPAgent,
   type PlatformType,
 } from '@/components/mcp/mcp-helper';
-import { metadataService } from '@/features/dashboard/services/metadata.service';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 
 interface McpInstallerProps {
   className?: string;

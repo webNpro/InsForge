@@ -14,13 +14,14 @@ import { logsRouter } from '@/api/routes/logs.js';
 import { configRouter } from '@/api/routes/config.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
+import { usageRouter } from '@/api/routes/usage.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
-import { WebSocketService } from '@/core/websocket/websocket.js';
+import { SocketService } from '@/core/socket/socket.js';
 import { seedAdmin } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
 
@@ -141,6 +142,7 @@ export async function createApp() {
   apiRouter.use('/config', configRouter);
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
+  apiRouter.use('/usage', usageRouter);
 
   // Mount all API routes under /api prefix
   app.use('/api', apiRouter);
@@ -224,9 +226,9 @@ async function initializeServer() {
       logger.info(`Backend API service listening on port ${PORT}`);
     });
 
-    // Initialize WebSocket service
-    const wsService = WebSocketService.getInstance();
-    wsService.initialize(server);
+    // Initialize Socket.IO service
+    const socketService = SocketService.getInstance();
+    socketService.initialize(server);
   } catch (error) {
     logger.error('Failed to initialize server', {
       error: error instanceof Error ? error.message : String(error),

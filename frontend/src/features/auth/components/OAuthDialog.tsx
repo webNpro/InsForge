@@ -136,7 +136,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
         showToast(`${provider.name} ${configType} updated and applied successfully!`, 'success');
       } catch (reloadError) {
         // Config was saved but reload failed
-        showToast('Configuration saved but failed to apply. Please try again.', 'warning');
+        showToast('Configuration saved but failed to apply. Please try again.', 'warn');
         console.error('Failed to reload OAuth:', reloadError);
       } finally {
         setReloading(false);

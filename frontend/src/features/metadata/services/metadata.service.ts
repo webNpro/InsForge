@@ -1,75 +1,42 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface ColumnMetadata {
-  columnName: string;
-  type: string;
-  isNullable: boolean;
-  defaultValue?: string;
-  isPrimaryKey?: boolean;
-  isUnique?: boolean;
-  foreignKey?: {
-    referenceTable: string;
-    referenceColumn: string;
-    onDelete?: string;
-    onUpdate?: string;
-  };
-}
-
-export interface TableMetadata {
-  tableName: string;
-  columns: ColumnMetadata[];
-  recordCount?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface DatabaseMetadata {
-  tables: TableMetadata[];
-}
-
-export interface AuthMetadata {
-  enabled: boolean;
-  providers: string[];
-  magicLink: boolean;
-}
-
-export interface StorageMetadata {
-  buckets: Array<{
-    name: string;
-    public: boolean;
-    createdAt?: string;
-  }>;
-}
-
-export interface FullAppMetadata {
-  database: DatabaseMetadata;
-  auth: AuthMetadata;
-  storage: StorageMetadata;
-  version?: string;
-}
+import {
+  AppMetadataSchema,
+  OAuthConfigSchema,
+  StorageConfigSchema,
+  DatabaseMetadataSchema,
+} from '@insforge/shared-schemas';
 
 export class MetadataService {
+  async fetchApiKey() {
+    const data = await apiClient.request('/metadata/api-key');
+    // data is already unwrapped by request method
+    if (data.apiKey) {
+      apiClient.setApiKey(data.apiKey);
+    }
+    return data.apiKey;
+  }
   // Get full metadata (complete structured format)
-  async getFullMetadata(): Promise<FullAppMetadata> {
+  async getFullMetadata(): Promise<AppMetadataSchema> {
     return apiClient.request('/metadata', {
       headers: apiClient.withApiKey(),
     });
   }
 
   // Get database metadata only
-  async getDatabaseMetadata(): Promise<DatabaseMetadata> {
-    const fullMetadata = await this.getFullMetadata();
-    return fullMetadata.database;
+  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
+    return apiClient.request('/metadata/database', {
+      headers: apiClient.withApiKey(),
+    });
   }
 
   // Get auth metadata only
-  async getAuthMetadata(): Promise<AuthMetadata> {
+  async getAuthMetadata(): Promise<OAuthConfigSchema> {
     const fullMetadata = await this.getFullMetadata();
     return fullMetadata.auth;
   }
 
   // Get storage metadata only
-  async getStorageMetadata(): Promise<StorageMetadata> {
+  async getStorageMetadata(): Promise<StorageConfigSchema> {
     const fullMetadata = await this.getFullMetadata();
     return fullMetadata.storage;
   }
