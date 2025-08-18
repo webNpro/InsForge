@@ -63,7 +63,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {(metadata?.database_size_gb || 0).toFixed(2)}
+                  {(metadata?.databaseSizeGb || 0).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">GB</p>
               </CardContent>
@@ -77,7 +77,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {(metadata?.storage_size_gb || 0).toFixed(2)}
+                  {(metadata?.storageSizeGb || 0).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">GB</p>
               </CardContent>

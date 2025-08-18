@@ -124,7 +124,6 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         userData.email,
         userData.password || '',
         userData.name,
-        userData.id
       );
       void refetch();
       onOpenChange(false);
