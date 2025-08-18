@@ -5,6 +5,7 @@ import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import { verifyCloudToken } from '@/utils/cloud-token.js';
+import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -105,9 +106,7 @@ export class AuthService {
       configRows = [];
     }
 
-    const enableSharedKeys =
-      process.env.AWS_INSTANCE_PROFILE_NAME &&
-      process.env.AWS_INSTANCE_PROFILE_NAME.trim().length > 0;
+    const enableSharedKeys = shouldUseSharedOAuthKeys();
 
     const config = {
       google: {
