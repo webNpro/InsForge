@@ -15,6 +15,7 @@ import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
 import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
 import { Checkbox } from './Checkbox';
 import { TypeBadge } from '@/features/database/components/TypeBadge';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 // Types
 export interface DataGridColumn {
@@ -81,7 +82,7 @@ export const DefaultCellRenderers = {
     const value = row[column.key];
     return (
       <div className="w-full h-full flex items-center justify-start">
-        <Badge variant={value ? 'default' : 'secondary'} className="dark:bg-neutral-800 dark:text-zinc-300">
+        <Badge variant={value ? 'default' : 'secondary'} className="border border-transparent dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500">
           {value === null ? 'null' : value ? 'true' : 'false'}
         </Badge>
       </div>
@@ -132,7 +133,7 @@ export const DefaultCellRenderers = {
     return (
       <div className="w-full h-full flex items-center">
         <span
-          className="truncate text-sm text-black max-w-full overflow-hidden whitespace-nowrap"
+          className="truncate text-sm text-black dark:text-zinc-300 max-w-full overflow-hidden whitespace-nowrap"
           title={displayText}
         >
           {displayText}
@@ -295,6 +296,7 @@ export function DataGrid({
   showPagination = true,
   showTypeBadge = true,
 }: DataGridProps) {
+  const { resolvedTheme } = useTheme();
   // Convert columns to react-data-grid format
   const gridColumns = useMemo(() => {
     const cols: Column<any>[] = [];
@@ -422,7 +424,7 @@ export function DataGrid({
           onSelectedRowsChange={onSelectedRowsChange}
           sortColumns={sortColumns || []}
           onSortColumnsChange={onSortColumnsChange}
-          className="h-full fill-grid"
+          className={`h-full fill-grid ${resolvedTheme === 'dark' ? 'rdg-dark' : 'rdg-light'}`}
           headerRowHeight={52}
           rowHeight={52}
           enableVirtualization={true}

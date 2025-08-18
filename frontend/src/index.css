@@ -160,6 +160,9 @@
     --input: 228 228 231; /* zinc-200 */
     --ring: 10 10 10; /* near-black */
     --radius: 0.5rem;
+    --background-color: #ffffff;
+    --border-color: #737373;
+    --border-hover-color: #d4d4d4;
   }
 
   .dark {
@@ -183,6 +186,9 @@
     --border: 64 64 64; /* neutral-700 */
     --input: 64 64 64; /* neutral-700 */
     --ring: 212 212 212; /* zinc-300 */
+    --background-color: #262626;
+    --border-color: #737373;
+    --border-hover-color: #d4d4d4;
   }
 }
 
@@ -225,15 +231,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--secondary));
+  background: var(--background-color);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: var(--border-color);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: var(--border-hover-color);
 }

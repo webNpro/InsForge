@@ -308,8 +308,8 @@ export function ForeignKeyPopover({
               onClick={handleAddForeignKey}
               disabled={!isAddButtonEnabled}
               className={`h-10 px-4 ${
-                !isAddButtonEnabled ? 'bg-zinc-950/40' : 'bg-zinc-950 dark:text-zinc-950 dark:bg-emerald-300 dark:hover:bg-emerald-400'
-              } text-white shadow-sm`}
+                !isAddButtonEnabled ? 'bg-zinc-950/40 dark:bg-emerald-300/40' : 'bg-zinc-950 dark:text-zinc-950 dark:bg-emerald-300 dark:hover:bg-emerald-400'
+              } text-white dark:text-zinc-950 shadow-sm`}
             >
               {initialValue ? 'Update Foreign Key' : 'Add Foreign Key'}
             </Button>

@@ -501,7 +501,7 @@ export function TableForm({
                     type="button"
                     onClick={addField}
                     variant="outline"
-                    className="w-50 h-10 px-3 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:bg-neutral-800 dark:text-zinc-300 dark:hover:text-zinc-300"
+                    className="w-50 h-10 px-3 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:hover:text-zinc-300 dark:border-neutral-500"
                   >
                     <Plus className="w-4 h-4" />
                     Add Column

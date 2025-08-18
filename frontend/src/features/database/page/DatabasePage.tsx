@@ -25,6 +25,7 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -47,7 +48,7 @@ export default function DatabasePage() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-
+  const { resolvedTheme } = useTheme();
   // Persist selected table to localStorage when it changes
   useEffect(() => {
     if (selectedTable) {
@@ -532,8 +533,8 @@ export default function DatabasePage() {
                             onClear={() => setSelectedRows(new Set())}
                           />
                           <Button
-                            variant="outline"
-                            className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-none dark:bg-neutral-800 dark:text-red-400 dark:border-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-red-400"
+                            variant={resolvedTheme === "light" ? "outline" : "default"}
+                            className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
                             onClick={() => void handleBulkDelete(Array.from(selectedRows))}
                           >
                             Delete {selectedRows.size}{' '}

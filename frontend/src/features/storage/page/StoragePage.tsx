@@ -22,6 +22,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
 import { SearchInput, SelectionClearButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -49,7 +50,8 @@ export default function StoragePage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
-
+  const { resolvedTheme } = useTheme();
+  
   // Fetch buckets
   const {
     data: buckets = [],
@@ -408,8 +410,8 @@ export default function StoragePage() {
                           onClear={() => setSelectedFiles(new Set())}
                         />
                         <Button
-                          variant="outline"
-                          className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
+                          variant={resolvedTheme === "light" ? "outline" : "default"}
+                          className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
                           onClick={() => void handleBulkDeleteFiles(Array.from(selectedFiles))}
                         >
                           Delete {selectedFiles.size} {selectedFiles.size === 1 ? 'File' : 'Files'}

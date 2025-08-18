@@ -10,8 +10,10 @@ import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
+import { useTheme } from '@/lib/contexts/ThemeContext';
 
 export default function AuthenticationPage() {
+  const { resolvedTheme } = useTheme();
   const [selectedSection, setSelectedSection] = useState<string>('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -90,8 +92,8 @@ export default function AuthenticationPage() {
                     onClear={() => setSelectedRows(new Set())}
                   />
                   <Button
-                    variant="outline"
-                    className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0"
+                    variant={resolvedTheme === "light" ? "outline" : "default"}
+                    className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
                     onClick={() => setConfirmDeleteOpen(true)}
                   >
                     Delete {selectedRows.size === 1 ? 'User' : 'Users'}

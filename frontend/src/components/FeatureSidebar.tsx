@@ -72,7 +72,7 @@ export function FeatureSidebar<T extends FeatureItem>({
             onClick={onNewItem}
             variant="outline"
             size="sm"
-            className="w-full h-10 text-sm justify-start dark:bg-neutral-800 dark:text-zinc-300"
+            className="w-full h-10 text-sm justify-start dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:border-neutral-500"
           >
             <Plus className="w-5 h-5 mr-1" />
             {newItemTooltip}
