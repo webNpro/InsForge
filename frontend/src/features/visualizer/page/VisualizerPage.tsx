@@ -103,9 +103,6 @@ const VisualizerPage = () => {
       ) {
         // Invalidate all metadata-related queries
         void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
-
-        // Invalidate user stats if users were modified
-        void queryClient.invalidateQueries({ queryKey: ['user-stats-visualizer'] });
       }
     };
 

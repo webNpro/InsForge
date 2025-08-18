@@ -155,14 +155,14 @@ export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) 
     const tableNodes: Node[] = metadata.database.tables.map((table, _) => ({
       id: table.tableName,
       type: 'tableNode',
-      position: { x: 0, y: 0 }, // Will be calculated by dagre
+      position: { x: 0, y: 0 },
       data: { table },
     }));
 
     const bucketNodes: Node[] = metadata.storage.buckets.map((bucket) => ({
       id: `bucket-${bucket.name}`,
       type: 'bucketNode',
-      position: { x: 0, y: 0 }, // Will be calculated by dagre
+      position: { x: 0, y: 0 },
       data: { bucket },
     }));
 
@@ -173,7 +173,7 @@ export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) 
       nodes.push({
         id: 'authentication',
         type: 'authNode',
-        position: { x: 0, y: 0 }, // Will be calculated by dagre
+        position: { x: 0, y: 0 },
         data: authData,
       });
     }
