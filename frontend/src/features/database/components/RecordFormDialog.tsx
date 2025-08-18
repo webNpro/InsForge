@@ -130,7 +130,7 @@ export function RecordFormDialog({
       <DialogContent className="w-[640px] p-0 gap-0 overflow-hidden flex flex-col">
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-base font-semibold text-zinc-950">
+            <DialogTitle className="text-base font-semibold text-zinc-950 dark:text-zinc-300">
               {editingRecord ? `Edit ${tableName} Record` : `Add Record`}
             </DialogTitle>
           </DialogHeader>
@@ -152,12 +152,12 @@ export function RecordFormDialog({
             </div>
           )}
 
-          <DialogFooter className="px-6 py-6 gap-3 sm:justify-end border-t border-zinc-200 shrink-0">
+          <DialogFooter className="px-6 py-6 gap-3 sm:justify-end border-t border-zinc-200 dark:border-neutral-500 shrink-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-10 px-4"
+              className="h-10 px-4 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
@@ -165,7 +165,7 @@ export function RecordFormDialog({
               type="submit"
               disabled={createRecordMutation.isPending || updateRecordMutation.isPending}
               className={cn(
-                'h-10 px-4 bg-zinc-950 text-white hover:bg-zinc-800',
+                'h-10 px-4 bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400',
                 (createRecordMutation.isPending || updateRecordMutation.isPending) && 'opacity-40'
               )}
             >

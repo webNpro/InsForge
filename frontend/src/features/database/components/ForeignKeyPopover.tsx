@@ -126,10 +126,10 @@ export function ForeignKeyPopover({
         <div className="flex flex-col">
           {/* Header */}
           <div className="flex flex-col gap-1.5 px-6 pt-6 pb-0">
-            <DialogTitle className="text-base font-semibold">
+            <DialogTitle className="text-base font-semibold dark:text-zinc-300">
               {initialValue ? 'Edit Foreign Key' : 'Add Foreign Key'}
             </DialogTitle>
-            <DialogDescription className="text-sm text-zinc-500">
+            <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-300">
               {initialValue
                 ? 'Modify the relationship between tables'
                 : 'Create a relationship between this table and another table'}
@@ -140,15 +140,15 @@ export function ForeignKeyPopover({
           <div className="flex flex-col gap-6 px-6 py-6">
             {/* Column selector */}
             <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium">Column</Label>
+              <Label className="text-sm font-medium text-black dark:text-zinc-300">Column</Label>
               <Select
                 value={newForeignKey.columnName}
                 onValueChange={(value) =>
                   setNewForeignKey((prev) => ({ ...prev, columnName: value }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm">
-                  <SelectValue placeholder="Select column" className="text-zinc-500" />
+                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-500 dark:bg-neutral-800 dark:text-zinc-300">
+                  <SelectValue placeholder="Select column" className="text-zinc-500 dark:text-zinc-300" />
                 </SelectTrigger>
                 <SelectContent>
                   {columns
@@ -168,7 +168,7 @@ export function ForeignKeyPopover({
 
             {/* Reference Table selector */}
             <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium">Reference Table</Label>
+              <Label className="text-sm font-medium text-black dark:text-zinc-300">Reference Table</Label>
               <Select
                 value={newForeignKey.referenceTable}
                 onValueChange={(value) => {
@@ -179,8 +179,8 @@ export function ForeignKeyPopover({
                   }));
                 }}
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm">
-                  <SelectValue placeholder="Select table" className="text-zinc-500" />
+                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-500 dark:bg-neutral-800 dark:text-zinc-300">
+                  <SelectValue placeholder="Select table" className="text-zinc-500 dark:text-zinc-300" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTables.map((table) => (
@@ -195,7 +195,7 @@ export function ForeignKeyPopover({
             {/* Reference Column selector - only shown after table is selected */}
             {newForeignKey.referenceTable && (
               <div className="flex flex-col gap-3">
-                <Label className="text-sm font-medium">Reference Column</Label>
+                <Label className="text-sm font-medium text-black dark:text-zinc-300">Reference Column</Label>
                 <Select
                   key={`column-select-${newForeignKey.referenceTable}`}
                   value={newForeignKey.referenceColumn}
@@ -203,8 +203,8 @@ export function ForeignKeyPopover({
                     setNewForeignKey((prev) => ({ ...prev, referenceColumn: value }))
                   }
                 >
-                  <SelectTrigger className="h-10 border-zinc-200 shadow-sm">
-                    <SelectValue placeholder="Select column" className="text-zinc-500" />
+                  <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-500 dark:bg-neutral-800 dark:text-zinc-300">
+                    <SelectValue placeholder="Select column" className="text-zinc-500 dark:text-zinc-300" />
                   </SelectTrigger>
                   <SelectContent>
                     {(() => {
@@ -246,7 +246,7 @@ export function ForeignKeyPopover({
 
             {/* On Update action */}
             <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium">On Update</Label>
+              <Label className="text-sm font-medium text-black dark:text-zinc-300">On Update</Label>
               <Select
                 value={newForeignKey.onUpdate}
                 onValueChange={(value) =>
@@ -256,7 +256,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm">
+                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-500 dark:bg-neutral-800 dark:text-zinc-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,7 +269,7 @@ export function ForeignKeyPopover({
 
             {/* On Delete action */}
             <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium">On Delete</Label>
+              <Label className="text-sm font-medium text-black dark:text-zinc-300">On Delete</Label>
               <Select
                 value={newForeignKey.onDelete}
                 onValueChange={(value) =>
@@ -279,7 +279,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm">
+                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-500 dark:bg-neutral-800 dark:text-zinc-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -299,7 +299,7 @@ export function ForeignKeyPopover({
               type="button"
               variant="outline"
               onClick={handleCancelAddForeignKey}
-              className="h-10 px-4"
+              className="h-10 px-4 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
@@ -308,7 +308,7 @@ export function ForeignKeyPopover({
               onClick={handleAddForeignKey}
               disabled={!isAddButtonEnabled}
               className={`h-10 px-4 ${
-                !isAddButtonEnabled ? 'bg-zinc-950/40' : 'bg-zinc-950'
+                !isAddButtonEnabled ? 'bg-zinc-950/40' : 'bg-zinc-950 dark:text-zinc-950 dark:bg-emerald-300 dark:hover:bg-emerald-400'
               } text-white shadow-sm`}
             >
               {initialValue ? 'Update Foreign Key' : 'Add Foreign Key'}

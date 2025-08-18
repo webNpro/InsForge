@@ -429,7 +429,7 @@ export default function DatabasePage() {
   const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
 
   return (
-    <div className="flex h-full bg-bg-gray">
+    <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       {/* Secondary Sidebar - Table List */}
       <TableSidebar
         tables={filteredTables}
@@ -442,7 +442,7 @@ export default function DatabasePage() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-l border-border-gray dark:border-neutral-500">
         {showTableForm ? (
           // Show TableForm replacing entire main content area
           <TableForm
@@ -467,27 +467,27 @@ export default function DatabasePage() {
           <>
             {/* Sticky Header Section */}
             {selectedTable && (
-              <div className="sticky top-0 z-30 bg-bg-gray">
-                <div className="px-6 py-3 border-b border-border-gray h-12">
+              <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
+                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-500">
                   {/* Page Header with Breadcrumb */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black">{selectedTable}</span>
+                        <span className="text-black dark:text-zinc-300">{selectedTable}</span>
                       </nav>
 
                       {/* Separator */}
-                      <div className="h-6 w-px bg-gray-200" />
+                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
 
                       {/* Action buttons group */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-zinc-500 hover:text-black"
+                                className="p-1 h-6 w-6 text-zinc-500 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-300"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
                                 <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
@@ -503,7 +503,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-zinc-500 hover:text-black"
+                                className="p-1 h-6 w-6 text-zinc-500 hover:text-black dark:text-zinc-300 dark:hover:text-zinc-300"
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
@@ -533,7 +533,7 @@ export default function DatabasePage() {
                           />
                           <Button
                             variant="outline"
-                            className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-none"
+                            className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-none dark:bg-neutral-800 dark:text-red-400 dark:border-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-red-400"
                             onClick={() => void handleBulkDelete(Array.from(selectedRows))}
                           >
                             Delete {selectedRows.size}{' '}
@@ -545,7 +545,7 @@ export default function DatabasePage() {
                           value={searchQuery}
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
-                          className="flex-1 max-w-80"
+                          className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500"
                           debounceTime={300}
                         />
                       )}
@@ -554,7 +554,7 @@ export default function DatabasePage() {
                           <>
                             {/* Add Record Button */}
                             <Button
-                              className="h-10 px-4 font-medium gap-1.5"
+                              className="h-10 px-4 font-medium gap-1.5 dark:bg-emerald-300 dark:hover:bg-emerald-400"
                               onClick={() => setShowRecordForm(true)}
                             >
                               <Plus className="w-5 h-5" />
@@ -586,11 +586,11 @@ export default function DatabasePage() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200">
+                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-500">
                   <DatabaseDataGrid
                     data={tableData?.records || []}
                     schema={tableData?.schema}
-                    loading={isLoadingTable && !tableData} // Only show loading when no data exists
+                    loading={isLoadingTable && !tableData}
                     isSorting={isSorting}
                     isRefreshing={isRefreshing}
                     selectedRows={selectedRows}

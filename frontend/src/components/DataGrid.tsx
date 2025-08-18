@@ -71,7 +71,7 @@ export interface DataGridProps {
 export const DefaultCellRenderers = {
   text: ({ row, column }: any) => (
     <div className="w-full h-full flex items-center">
-      <span className="truncate" title={String(row[column.key] || 'null')}>
+      <span className="truncate dark:text-zinc-300" title={String(row[column.key] || 'null')}>
         {row[column.key] || 'null'}
       </span>
     </div>
@@ -81,7 +81,7 @@ export const DefaultCellRenderers = {
     const value = row[column.key];
     return (
       <div className="w-full h-full flex items-center justify-start">
-        <Badge variant={value ? 'default' : 'secondary'}>
+        <Badge variant={value ? 'default' : 'secondary'} className="dark:bg-neutral-800 dark:text-zinc-300">
           {value === null ? 'null' : value ? 'true' : 'false'}
         </Badge>
       </div>
@@ -91,7 +91,7 @@ export const DefaultCellRenderers = {
   date: ({ row, column }: any) => {
     const value = row[column.key];
     if (!value) {
-      return <span className="text-black">null</span>;
+      return <span className="text-black dark:text-zinc-300">null</span>;
     }
 
     try {
@@ -148,7 +148,7 @@ export const DefaultCellRenderers = {
   },
 
   email: ({ row, column }: any) => (
-    <span className="text-sm text-gray-800 font-medium truncate" title={row[column.key] || 'null'}>
+    <span className="text-sm text-gray-800 font-medium truncate dark:text-zinc-300" title={row[column.key] || 'null'}>
       {row[column.key] || 'null'}
     </span>
   ),
@@ -160,7 +160,7 @@ export const DefaultCellRenderers = {
 
     return (
       <div className="w-full h-full flex items-center">
-        <Badge variant={variant} className="text-xs">
+        <Badge variant={variant} className="text-xs dark:bg-neutral-800 dark:text-zinc-300">
           {label}
         </Badge>
       </div>
@@ -184,13 +184,13 @@ function IdCell({ value }: { value: any }) {
 
   return (
     <div className="w-full h-full flex items-center justify-between group">
-      <span className="font-mono text-sm truncate" title={String(value)}>
+      <span className="font-mono text-sm truncate dark:text-zinc-300" title={String(value)}>
         {value}
       </span>
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 dark:bg-neutral-800 dark:text-zinc-300"
         onClick={(e) => {
           handleCopy(e).catch(() => {
             // Handle copy error silently
@@ -198,9 +198,9 @@ function IdCell({ value }: { value: any }) {
         }}
       >
         {copied ? (
-          <Check className="h-3 w-3 text-green-600" />
+          <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
         ) : (
-          <Copy className="h-3 w-3 text-gray-400" />
+          <Copy className="h-3 w-3 text-gray-400 dark:text-zinc-300" />
         )}
       </Button>
     </div>
@@ -232,7 +232,7 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
-        <span className="truncate text-sm font-medium text-zinc-950">{column.name}</span>
+        <span className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300">{column.name}</span>
 
         {columnType && showTypeBadge && <TypeBadge type={columnType} />}
 
@@ -244,7 +244,7 @@ export function SortableHeaderRenderer({
                 <img
                   src={sortDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
                   alt={`Sorted ${sortDirection.toLowerCase()}`}
-                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0"
+                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0 dark:text-zinc-300"
                 />
               </div>
             )}
@@ -253,7 +253,7 @@ export function SortableHeaderRenderer({
               <img
                 src={nextDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
                 alt={`Sort ${nextDirection.toLowerCase()}`}
-                className="h-4 w-4 text-zinc-500"
+                className="h-4 w-4 text-zinc-500 dark:text-zinc-300"
               />
             </div>
           </div>
@@ -404,14 +404,14 @@ export function DataGrid({
   // Loading state - only show full loading screen if not sorting
   if (loading && !isSorting) {
     return (
-      <div className="h-full flex items-center justify-center bg-white">
-        <div className="text-gray-500">Loading...</div>
+      <div className="h-full flex items-center justify-center bg-white dark:bg-neutral-800">
+        <div className="text-gray-500 dark:text-zinc-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className={cn('h-full flex flex-col bg-white', className)}>
+    <div className={cn('h-full flex flex-col bg-white dark:bg-neutral-800', className)}>
       <div className="flex-1 overflow-hidden relative">
         <ReactDataGrid
           columns={gridColumns}
@@ -422,19 +422,19 @@ export function DataGrid({
           onSelectedRowsChange={onSelectedRowsChange}
           sortColumns={sortColumns || []}
           onSortColumnsChange={onSortColumnsChange}
-          className="h-full rdg-light fill-grid"
+          className="h-full fill-grid"
           headerRowHeight={52}
           rowHeight={52}
           enableVirtualization={true}
           renderers={{
             noRowsFallback: (
-              <div className="absolute inset-x-0 top-0 mt-13 py-8 flex items-center justify-center bg-white">
+              <div className="absolute inset-x-0 top-0 mt-13 py-8 flex items-center justify-center bg-white dark:bg-neutral-800">
                 <div className="flex flex-row gap-2.5 items-center">
-                  <div className="text-sm text-zinc-500">{emptyStateTitle}</div>
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400">{emptyStateTitle}</div>
                   {emptyStateActionText && onEmptyStateAction && (
                     <button
                       onClick={onEmptyStateAction}
-                      className="inline-flex items-center text-sm font-medium text-chart-blue-dark focus:outline-none focus:ring-0"
+                      className="inline-flex items-center text-sm font-medium text-chart-blue-dark focus:outline-none focus:ring-0 dark:text-zinc-400"
                     >
                       {emptyStateActionText}
                     </button>
@@ -447,10 +447,10 @@ export function DataGrid({
 
         {/* Loading mask overlay */}
         {isRefreshing && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-50 mt-13">
+          <div className="absolute inset-0 bg-white/60 dark:bg-neutral-800/60 flex items-center justify-center z-50 mt-13">
             <div className="flex items-center gap-1">
-              <div className="w-5 h-5 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-zinc-500">Loading</span>
+              <div className="w-5 h-5 border-2 border-zinc-500 dark:border-neutral-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading</span>
             </div>
           </div>
         )}

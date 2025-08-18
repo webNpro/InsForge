@@ -45,10 +45,7 @@ export function BooleanCellEditor({
       onOpenChange={handleOpenChange}
     >
       <SelectTrigger
-        className="w-full h-full border-0 focus:ring-0 focus:ring-offset-0 p-0 bg-transparent"
-        style={{
-          fontSize: '14px',
-        }}
+        className="w-full h-full border-0 focus:ring-0 focus:ring-offset-0 p-0 text-black dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
       >
         <SelectValue />
       </SelectTrigger>

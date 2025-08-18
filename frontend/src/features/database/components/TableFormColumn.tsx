@@ -26,7 +26,7 @@ export const TableFormColumn = memo(function TableFormColumn({
   return (
     <div
       className={`flex items-center gap-6 px-4 py-2 border-t border-zinc-200 ${
-        isNewColumn ? 'bg-slate-50' : 'bg-white'
+        isNewColumn ? 'bg-slate-50 dark:bg-neutral-700' : 'bg-white dark:bg-neutral-800'
       }`}
     >
       {/* Name */}
@@ -39,8 +39,8 @@ export const TableFormColumn = memo(function TableFormColumn({
               <Input
                 {...field}
                 placeholder="Enter column name"
-                className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal ${
-                  isSystemColumn ? 'bg-zinc-100 text-zinc-950' : 'bg-white text-zinc-950 shadow-sm'
+                className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal dark:placeholder:text-zinc-300 dark:focus:border-white ${
+                  isSystemColumn ? 'bg-zinc-100 text-zinc-950 dark:bg-neutral-700 dark:text-zinc-300' : 'bg-white text-zinc-950 shadow-sm dark:bg-neutral-800 dark:text-zinc-300'
                 }`}
                 disabled={isSystemColumn}
               />
@@ -59,8 +59,8 @@ export const TableFormColumn = memo(function TableFormColumn({
           control={control}
           name={`columns.${index}.type`}
           disabled={!isNewColumn}
-          className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal ${
-            isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
+          className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal dark:placeholder:text-zinc-300 ${
+            isSystemColumn ? 'bg-zinc-100 dark:bg-neutral-700' : 'bg-white shadow-sm dark:bg-neutral-800'
           }`}
         />
       </div>
@@ -74,8 +74,8 @@ export const TableFormColumn = memo(function TableFormColumn({
             <Input
               {...field}
               placeholder="Enter default value"
-              className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal placeholder:text-zinc-500 ${
-                isSystemColumn ? 'bg-zinc-100' : 'bg-white shadow-sm'
+              className={`w-full h-10 rounded-md border-zinc-200 text-sm font-normal placeholder:text-zinc-500 dark:placeholder:text-zinc-300 dark:focus:border-white ${
+                isSystemColumn ? 'bg-zinc-100 dark:bg-neutral-700 dark:text-zinc-300' : 'bg-white shadow-sm dark:bg-neutral-800 dark:text-zinc-300'
               }`}
               disabled={isSystemColumn}
             />
@@ -93,7 +93,7 @@ export const TableFormColumn = memo(function TableFormColumn({
               checked={field.value}
               onChange={field.onChange}
               disabled={!isNewColumn}
-              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500`}
             />
           )}
         />
@@ -109,7 +109,7 @@ export const TableFormColumn = memo(function TableFormColumn({
               checked={field.value}
               onChange={field.onChange}
               disabled={!isNewColumn}
-              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600`}
+              className={`rounded border-zinc-700 shadow-sm data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500`}
             />
           )}
         />
@@ -121,9 +121,9 @@ export const TableFormColumn = memo(function TableFormColumn({
           <button
             type="button"
             onClick={onRemove}
-            className="hover:bg-gray-100 rounded transition-colors"
+            className="hover:bg-gray-100 rounded transition-colors dark:hover:bg-neutral-700"
           >
-            <X className="w-5 h-5 text-zinc-500" />
+            <X className="w-5 h-5 text-zinc-500 dark:text-zinc-300" />
           </button>
         )}
       </div>

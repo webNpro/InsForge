@@ -13,15 +13,15 @@ const ProviderIcon = ({ provider }: { provider: string }) => {
   const getProviderInfo = (provider: string) => {
     switch (provider.toLowerCase()) {
       case 'google':
-        return { label: 'Google', color: 'bg-red-100 text-red-700' };
+        return { label: 'Google', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' };
       case 'github':
-        return { label: 'GitHub', color: 'bg-gray-100 text-gray-700' };
+        return { label: 'GitHub', color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300' };
       case 'discord':
-        return { label: 'Discord', color: 'bg-blue-100 text-blue-700' };
+        return { label: 'Discord', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' };
       case 'email':
-        return { label: 'Email', color: 'bg-green-100 text-green-700' };
+        return { label: 'Email', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' };
       default:
-        return { label: provider, color: 'bg-gray-100 text-gray-700' };
+        return { label: provider, color: 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-zinc-300' };
     }
   };
 
@@ -36,7 +36,7 @@ const ProviderIcon = ({ provider }: { provider: string }) => {
 
 // Custom cell renderers for users
 const NameCellRenderer = ({ row, column }: any) => (
-  <span className="text-sm text-gray-800 truncate" title={row[column.key] || 'null'}>
+  <span className="text-sm text-gray-800 dark:text-zinc-300 truncate" title={row[column.key] || 'null'}>
     {row[column.key] || 'null'}
   </span>
 );
@@ -45,7 +45,7 @@ const IdentitiesCellRenderer = ({ row, column }: any) => {
   const identities = row[column.key];
 
   if (!identities || !Array.isArray(identities) || identities.length === 0) {
-    return <span className="text-sm text-black">null</span>;
+    return <span className="text-sm text-black dark:text-zinc-300">null</span>;
   }
 
   // Get unique providers to avoid duplicates
@@ -60,7 +60,7 @@ const IdentitiesCellRenderer = ({ row, column }: any) => {
         <ProviderIcon key={index} provider={provider} />
       ))}
       {uniqueProviders.length > 2 && (
-        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-zinc-300">
           +{uniqueProviders.length - 2}
         </Badge>
       )}
@@ -69,7 +69,7 @@ const IdentitiesCellRenderer = ({ row, column }: any) => {
 };
 
 const ProviderTypeCellRenderer = ({ row, column }: any) => (
-  <span className="text-sm text-black truncate" title={row[column.key] || 'null'}>
+  <span className="text-sm text-black dark:text-zinc-300 truncate" title={row[column.key] || 'null'}>
     {row[column.key] || 'null'}
   </span>
 );

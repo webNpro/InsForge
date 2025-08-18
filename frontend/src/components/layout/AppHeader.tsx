@@ -133,7 +133,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           <DropdownMenuContent align="end" className="w-48" sideOffset={8} collisionPadding={16}>
             <DropdownMenuItem
               onClick={onLogout}
-              className="cursor-pointer text-red-600 focus:text-red-600"
+              className="cursor-pointer text-red-600 dark:text-red-400"
             >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sign Out</span>

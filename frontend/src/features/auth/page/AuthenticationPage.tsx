@@ -56,21 +56,21 @@ export default function AuthenticationPage() {
   ];
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col overflow-hidden">
+    <div className="h-full bg-slate-50 dark:bg-neutral-800 flex flex-col overflow-hidden">
       {/* Tab Navigation */}
-      <div className="h-12 flex items-center gap-6 px-6 border-b border-border-gray relative">
+      <div className="h-12 flex items-center gap-6 px-6 border-b border-border-gray dark:border-neutral-500 relative">
         {authSections.map((section) => (
           <button
             key={section.id}
             onClick={() => setSelectedSection(section.id)}
             className={cn(
               'flex h-full items-center gap-2 px-0 text-base font-semibold transition-colors relative',
-              selectedSection === section.id ? 'text-black' : 'text-zinc-500 hover:text-zinc-700'
+              selectedSection === section.id ? 'text-black dark:text-white' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
             )}
           >
             {section.name}
             {selectedSection === section.id && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white" />
             )}
           </button>
         ))}
@@ -80,7 +80,7 @@ export default function AuthenticationPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Users Section Header */}
         {selectedSection === 'users' && (
-          <div className="px-6 py-3">
+          <div className="px-6 py-3 dark:bg-neutral-800">
             <div className="flex items-center justify-between">
               {selectedRows.size > 0 ? (
                 <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export default function AuthenticationPage() {
                   />
                   <Button
                     variant="outline"
-                    className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-0"
+                    className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0"
                     onClick={() => setConfirmDeleteOpen(true)}
                   >
                     Delete {selectedRows.size === 1 ? 'User' : 'Users'}
@@ -102,7 +102,7 @@ export default function AuthenticationPage() {
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Search Users by Name or Email"
-                  className="flex-1 max-w-80"
+                  className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:border-neutral-500"
                   debounceTime={300}
                 />
               )}
@@ -117,7 +117,7 @@ export default function AuthenticationPage() {
                       </Tooltip>
                     </TooltipProvider>
                     <Button
-                      className="h-10 px-4 font-medium"
+                      className="h-10 px-4 font-medium dark:bg-emerald-300 dark:text-black"
                       onClick={() => setAddDialogOpen(true)}
                     >
                       <UserPlus className="h-4 w-4 mr-2" />

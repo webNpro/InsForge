@@ -49,7 +49,7 @@ function FormBooleanEditor({ value, nullable, onChange }: FormBooleanEditorProps
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className="w-full justify-start h-10"
+      className="w-full justify-start h-10 dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
     >
       {value === null ? 'null' : value ? 'true' : 'false'}
     </Button>
@@ -108,7 +108,7 @@ function FormDateEditor({ value, type = 'datetime', nullable, onChange }: FormDa
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className="w-full justify-start h-10"
+      className="w-full justify-start h-10 dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
     >
       <Calendar className="mr-2 h-4 w-4" />
       {formatDisplayValue()}
@@ -174,7 +174,7 @@ function FormJsonEditor({ value, nullable, onChange }: FormJsonEditorProps) {
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className="w-full justify-start h-10"
+      className="w-full justify-start h-10 dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
     >
       {formatDisplayValue()}
     </Button>
@@ -199,10 +199,10 @@ function FieldLabel({
 }) {
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2.5 mb-3">
-      <span>
+      <span className="text-black dark:text-zinc-300">
         {field.columnName}
         {!field.isNullable && field.columnName !== 'id' && (
-          <span className="text-red-500 ml-1">*</span>
+          <span className="text-red-500 dark:text-red-400 ml-1">*</span>
         )}
       </span>
       <TypeBadge type={field.type} />
@@ -269,6 +269,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                     }
                   }}
                   placeholder={field.isNullable ? 'Optional' : 'Required'}
+                  className="dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
                 />
               )}
             />
@@ -321,6 +322,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
               type="text"
               {...register(field.columnName)}
               placeholder="Auto-generated if empty"
+              className="dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
             />
           </>
         );
@@ -335,6 +337,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
               type={field.columnName === 'password' ? 'password' : 'text'}
               {...register(field.columnName)}
               placeholder={field.isNullable ? 'Optional' : 'Required'}
+              className="dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
             />
           </>
         );
@@ -345,7 +348,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
     <div className="space-y-2">
       {renderField()}
       {errors[field.columnName] && (
-        <p className="text-sm text-red-500">
+        <p className="text-sm text-red-500 dark:text-red-400">
           {(errors[field.columnName] as any)?.message || `${field.columnName} is required`}
         </p>
       )}

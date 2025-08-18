@@ -41,7 +41,7 @@ function TimeColumn({ label, value, range, onChange, scrollRef }: TimeColumnProp
             key={i}
             onClick={() => onChange(i)}
             className={cn(
-              'w-full px-1 py-1 text-sm rounded hover:bg-gray-100 text-center',
+              'w-full px-1 py-1 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950 text-center',
               value === i && 'bg-primary text-primary-foreground hover:bg-primary'
             )}
           >
@@ -258,7 +258,7 @@ export function DateCellEditor({
           key={day}
           onClick={() => handleDateClick(day)}
           className={cn(
-            'h-8 w-8 text-sm rounded hover:bg-gray-100',
+            'h-8 w-8 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950',
             isSelected && 'bg-primary text-primary-foreground hover:bg-primary',
             isToday && !isSelected && 'font-bold'
           )}
@@ -279,7 +279,7 @@ export function DateCellEditor({
           key={month}
           onClick={() => handleMonthClick(index)}
           className={cn(
-            'h-12 w-20 text-sm rounded hover:bg-gray-100',
+            'h-12 w-20 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950',
             isSelected && 'bg-primary text-primary-foreground hover:bg-primary'
           )}
         >
