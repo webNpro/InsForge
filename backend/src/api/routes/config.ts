@@ -157,7 +157,6 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
 
       await db.getDb().exec('COMMIT');
 
-      const medataService = MetadataService.getInstance();
       const metadataService = MetadataService.getInstance();
       await metadataService.updateAuthMetadata({
         google: {
