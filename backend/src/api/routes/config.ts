@@ -158,7 +158,8 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
       await db.getDb().exec('COMMIT');
 
       const medataService = MetadataService.getInstance();
-      await medataService.updateAuthMetadata({
+      const metadataService = MetadataService.getInstance();
+      await metadataService.updateAuthMetadata({
         google: {
           enabled: validatedData.google.enabled,
           useSharedKeys: validatedData.google.useSharedKeys,
