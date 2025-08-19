@@ -75,7 +75,7 @@ export function ForeignKeyPopover({
   });
 
   const availableTables = metadata?.tables
-    ? Object.keys(metadata.tables).filter((table) => mode === 'create' || table !== editTableName)
+    ? metadata.tables.filter((table) => mode === 'create' || table.tableName !== editTableName)
     : [];
 
   // Get columns for selected reference table
@@ -184,8 +184,8 @@ export function ForeignKeyPopover({
                 </SelectTrigger>
                 <SelectContent>
                   {availableTables.map((table) => (
-                    <SelectItem key={table} value={table}>
-                      {table}
+                    <SelectItem key={table.tableName} value={table.tableName}>
+                      {table.tableName}
                     </SelectItem>
                   ))}
                 </SelectContent>
