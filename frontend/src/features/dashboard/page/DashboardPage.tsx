@@ -12,7 +12,7 @@ export default function DashboardPage() {
     refetch: _refetchMetadata,
   } = useQuery({
     queryKey: ['metadata'],
-    queryFn: () => metadataService.getDatabaseMetadata(),
+    queryFn: () => metadataService.getDashboardMetadata(),
   });
 
   const { data: apiKey } = useQuery({

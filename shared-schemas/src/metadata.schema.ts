@@ -1,37 +1,45 @@
 import { z } from 'zod';
 import { storageBucketSchema } from './storage.schema';
-import { databaseSchema } from './database.schema';
+import { tableSchema } from './database.schema';
 
-export const oAuthConfigSchema = z.object({
-  enabled: z.boolean(),
-  providers: z.array(z.string()),
-  magicLink: z.boolean(),
-});
-
-export const storageConfigSchema = z.object({
-  buckets: z.array(storageBucketSchema),
+export const oAuthMetadataSchema = z.object({
+  google: z.object({
+    enabled: z.boolean(),
+    useSharedKeys: z.boolean().optional(),
+  }),
+  github: z.object({
+    enabled: z.boolean(),
+    useSharedKeys: z.boolean().optional(),
+  }),
 });
 
 export const databaseMetadataSchema = z.object({
-  tables: z.record(
-    z.object({
-      recordCount: z.number(),
-      createdAt: z.string().optional(),
-      updatedAt: z.string().optional(),
-    })
-  ),
+  tables: z.array(tableSchema),
+});
+
+export const bucketMetadataSchema = storageBucketSchema.extend({
+  objectCount: z.number().optional(),
+});
+
+export const storageMetadataSchema = z.object({
+  buckets: z.array(bucketMetadataSchema),
+});
+
+export const dashboardMetadataSchema = z.object({
   databaseSizeGb: z.number().optional(),
   storageSizeGb: z.number().optional(),
 });
 
 export const appMetaDataSchema = z.object({
-  database: databaseSchema,
-  auth: oAuthConfigSchema,
-  storage: storageConfigSchema,
+  database: databaseMetadataSchema,
+  auth: oAuthMetadataSchema,
+  storage: storageMetadataSchema,
   version: z.string().optional(),
 });
 
-export type OAuthConfigSchema = z.infer<typeof oAuthConfigSchema>;
-export type StorageConfigSchema = z.infer<typeof storageConfigSchema>;
+export type OAuthMetadataSchema = z.infer<typeof oAuthMetadataSchema>;
 export type DatabaseMetadataSchema = z.infer<typeof databaseMetadataSchema>;
+export type BucketMetadataSchema = z.infer<typeof bucketMetadataSchema>;
+export type StorageMetadataSchema = z.infer<typeof storageMetadataSchema>;
+export type DashboardMetadataSchema = z.infer<typeof dashboardMetadataSchema>;
 export type AppMetadataSchema = z.infer<typeof appMetaDataSchema>;

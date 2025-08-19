@@ -2,27 +2,20 @@ import { Handle, Position } from 'reactflow';
 import { Lock, ExternalLink, FormInput, Users } from 'lucide-react';
 import GoogleIcon from '@/assets/icons/google.svg';
 import GithubIcon from '@/assets/icons/github.svg';
-
-export interface AuthProvider {
-  id: string;
-  name: string;
-  icon: string;
-  enabled: boolean;
-}
+import { OAuthMetadataSchema } from '@insforge/shared-schemas';
+import { cn } from '@/lib/utils/utils';
 
 interface AuthNodeProps {
   data: {
-    providers: AuthProvider[];
+    authMetadata: OAuthMetadataSchema;
     userCount?: number;
-    sessionCount?: number;
-    isConfigured: boolean;
   };
 }
 
 export function AuthNode({ data }: AuthNodeProps) {
-  const { providers, userCount } = data;
+  const { authMetadata, userCount } = data;
 
-  const enabledProviders = providers.filter((provider) => provider.enabled);
+  const enabledProviders = Object.values(authMetadata).filter((provider) => provider.enabled);
   const enabledCount = enabledProviders.length;
 
   return (
@@ -38,7 +31,7 @@ export function AuthNode({ data }: AuthNodeProps) {
           <div className="flex-1">
             <h3 className="text-sm font-medium text-white">Authentication</h3>
             <p className="text-xs text-neutral-300">
-              {enabledCount} method{enabledCount !== 1 ? 's' : ''} enabled
+              {enabledCount} provider{enabledCount !== 1 ? 's' : ''} enabled
             </p>
           </div>
         </div>
@@ -55,7 +48,7 @@ export function AuthNode({ data }: AuthNodeProps) {
             <FormInput className="w-5 h-5 text-neutral-300" />
             <span className="text-sm text-neutral-300">Email/Password</span>
           </div>
-          <div className="px-1.5 py-0.5 bg-lime-200 rounded">
+          <div className="px-1.5 py-0.5 bg-lime-200 rounded flex items-center">
             <span className="text-xs font-medium text-lime-900">Enabled</span>
           </div>
         </div>
@@ -66,8 +59,17 @@ export function AuthNode({ data }: AuthNodeProps) {
             <img src={GoogleIcon} alt="google" className="h-5 w-5" />
             <span className="text-sm text-neutral-300">Google OAuth</span>
           </div>
-          <div className="px-1.5 py-0.5 bg-neutral-700 rounded">
-            <span className="text-xs font-medium text-neutral-400">Disabled</span>
+          <div
+            className={cn(
+              'px-1.5 py-0.5 rounded flex items-center',
+              authMetadata.google.enabled
+                ? 'bg-lime-200 text-lime-900'
+                : 'bg-neutral-700 text-neutral-300'
+            )}
+          >
+            <span className="text-xs font-medium">
+              {authMetadata.google.enabled ? 'Enabled' : 'Disabled'}
+            </span>
           </div>
         </div>
 
@@ -77,8 +79,17 @@ export function AuthNode({ data }: AuthNodeProps) {
             <img src={GithubIcon} alt="github" className="h-5 w-5" />
             <span className="text-sm text-neutral-300">GitHub OAuth</span>
           </div>
-          <div className="px-1.5 py-0.5 bg-lime-200 rounded">
-            <span className="text-xs font-medium text-lime-900">Enabled</span>
+          <div
+            className={cn(
+              'px-1.5 py-0.5 rounded flex items-center',
+              authMetadata.github.enabled
+                ? 'bg-lime-200 text-lime-900'
+                : 'bg-neutral-700 text-neutral-300'
+            )}
+          >
+            <span className="text-xs font-medium">
+              {authMetadata.github.enabled ? 'Enabled' : 'Disabled'}
+            </span>
           </div>
         </div>
       </div>

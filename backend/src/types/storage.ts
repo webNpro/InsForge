@@ -7,11 +7,6 @@ export type StorageRecord = Omit<StorageFileSchema, 'url'>;
 // Bucket record from _storage_buckets table
 export type BucketRecord = Omit<StorageBucketSchema, 'created_at'>;
 
-// Storage configuration
-export interface StorageConfig {
-  buckets: StorageBucketSchema[];
-}
-
 // Form field types for file uploads
 export type FormFieldValue = string | string[] | undefined;
 

@@ -60,11 +60,6 @@ export const tableSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export const databaseSchema = z.object({
-  tables: z.array(tableSchema),
-});
-
-export type DatabaseSchema = z.infer<typeof databaseSchema>;
 export type TableSchema = z.infer<typeof tableSchema>;
 export type ColumnSchema = z.infer<typeof columnSchema>;
 export type ForeignKeySchema = z.infer<typeof foreignKeySchema>;

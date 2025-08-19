@@ -67,7 +67,7 @@ export function TableNode({ data }: TableNodeProps) {
               <span className="text-sm text-neutral-300">{column.columnName}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="px-1.5 py-0.5 bg-neutral-800 rounded">
+              <div className="px-1.5 py-0.5 bg-neutral-800 rounded flex items-center">
                 <span className="text-xs font-medium text-neutral-300">{column.type}</span>
               </div>
               <Circle className="w-5 h-5 text-neutral-600 fill-neutral-600" />

@@ -29,12 +29,12 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 });
 
-// Get database metadata for frontend dashboard
-router.get('/database', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Get metadata for frontend dashboard
+router.get('/dashboard', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const metadataService = MetadataService.getInstance();
     await metadataService.updateDatabaseMetadata();
-    const databaseMetadata = await metadataService.getDatabaseMetadata();
+    const databaseMetadata = await metadataService.getDashboardMetadata();
 
     successResponse(res, databaseMetadata);
   } catch (error) {

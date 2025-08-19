@@ -26,8 +26,6 @@ export const nameSchema = z
 
 export const roleSchema = z.enum(['authenticated', 'project_admin']);
 
-export const oauthProviderSchema = z.enum(['google', 'github']);
-
 // ============================================================================
 // Core entity schemas
 // ============================================================================
@@ -47,9 +45,26 @@ export const userSchema = z.object({
 /**
  * OAuth state for redirect handling
  */
-export const oauthStateSchema = z.object({
-  provider: oauthProviderSchema,
+
+export const oAuthProvidersSchema = z.enum(['google', 'github']);
+
+export const oAuthStateSchema = z.object({
+  provider: oAuthProvidersSchema,
   redirectUrl: z.string().url().optional(),
+});
+
+// OAuth provider configuration schema
+export const oAuthProviderConfigSchema = z.object({
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  redirectUri: z.string().url().optional().or(z.literal('')),
+  enabled: z.boolean(),
+  useSharedKeys: z.boolean().optional(),
+});
+
+export const oAuthConfigSchema = z.object({
+  google: oAuthProviderConfigSchema,
+  github: oAuthProviderConfigSchema,
 });
 
 /**
@@ -73,3 +88,5 @@ export type PasswordSchema = z.infer<typeof passwordSchema>;
 export type RoleSchema = z.infer<typeof roleSchema>;
 export type UserSchema = z.infer<typeof userSchema>;
 export type TokenPayloadSchema = z.infer<typeof tokenPayloadSchema>;
+export type OAuthProviderConfigSchema = z.infer<typeof oAuthProviderConfigSchema>;
+export type OAuthConfigSchema = z.infer<typeof oAuthConfigSchema>;
