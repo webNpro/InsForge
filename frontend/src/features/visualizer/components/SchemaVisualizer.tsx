@@ -13,55 +13,173 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TableNode } from './TableNode';
-import dagre from 'dagre';
+import { AuthNode, AuthProvider } from './AuthNode';
+import { BucketNode } from './BucketNode';
 import { AppMetadataSchema } from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
   metadata: AppMetadataSchema;
+  authData?: {
+    providers: AuthProvider[];
+    userCount?: number;
+    sessionCount?: number;
+    isConfigured?: boolean;
+  };
 }
 
 const nodeTypes = {
   tableNode: TableNode,
+  authNode: AuthNode,
+  bucketNode: BucketNode,
 };
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 100 });
+  // Fixed dimensions
+  const nodeWidth = 280;
 
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 280, height: 200 });
-  });
+  // Calculate actual node heights based on content
+  const calculateNodeHeight = (node: Node) => {
+    if (node.type === 'authNode') {
+      // Auth node has fixed content
+      return 150;
+    } else if (node.type === 'tableNode') {
+      // Table node height depends on columns
+      const table = node.data.table;
+      const columnCount = table.columns.length || 0;
+      const headerHeight = 64; // Header with table name
+      const columnHeight = 52; // Each column row height
+      const contentHeight = columnCount > 0 ? columnCount * columnHeight : 100; // Empty state height
+      return headerHeight + contentHeight;
+    } else if (node.type === 'bucketNode') {
+      // Bucket node has relatively fixed height
+      return 200;
+    }
+    return 200; // Default
+  };
 
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
+  // Layout parameters
+  const horizontalGap = 100; // Gap between columns
+  const verticalGap = 80; // Gap between nodes in same column
+  const canvasMargin = 50;
 
-  dagre.layout(dagreGraph);
+  // Group nodes by type
+  const authNodes = nodes.filter((node) => node.type === 'authNode');
+  const tableNodes = nodes.filter((node) => node.type === 'tableNode');
+  const bucketNodes = nodes.filter((node) => node.type === 'bucketNode');
 
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - 140,
-        y: nodeWithPosition.y - 100,
-      },
-    };
-  });
+  // Calculate column X positions
+  const authX = canvasMargin;
+  const tableStartX = authX + nodeWidth + horizontalGap * 2;
+  const bucketX =
+    tableStartX +
+    Math.ceil(Math.sqrt(tableNodes.length)) * (nodeWidth + horizontalGap) +
+    horizontalGap;
+
+  // Helper function to distribute nodes vertically with dynamic heights
+  const distributeVerticallyDynamic = (nodesToPosition: Node[], startY: number = canvasMargin) => {
+    const positions: number[] = [];
+    let currentY = startY;
+
+    nodesToPosition.forEach((node) => {
+      positions.push(currentY);
+      const nodeHeight = calculateNodeHeight(node);
+      currentY += nodeHeight + verticalGap;
+    });
+
+    return positions;
+  };
+
+  // Position auth nodes in left column
+  const authYPositions = distributeVerticallyDynamic(authNodes);
+  const positionedAuthNodes = authNodes.map((node, index) => ({
+    ...node,
+    position: {
+      x: authX,
+      y: authYPositions[index],
+    },
+  }));
+
+  // Position table nodes in a grid in the middle
+  let positionedTableNodes: Node[] = [];
+  if (tableNodes.length > 0) {
+    const cols = Math.ceil(Math.sqrt(tableNodes.length));
+
+    // Group tables by column for better height calculation
+    const tablesByColumn: Node[][] = [];
+    for (let col = 0; col < cols; col++) {
+      tablesByColumn[col] = [];
+    }
+
+    tableNodes.forEach((node, index) => {
+      const col = index % cols;
+      tablesByColumn[col].push(node);
+    });
+
+    // Calculate Y positions for each column independently
+    const columnYPositions: number[][] = tablesByColumn.map((columnNodes) =>
+      distributeVerticallyDynamic(columnNodes)
+    );
+
+    positionedTableNodes = tableNodes.map((node, index) => {
+      const col = index % cols;
+      const rowInColumn = Math.floor(index / cols);
+
+      return {
+        ...node,
+        position: {
+          x: tableStartX + col * (nodeWidth + horizontalGap),
+          y: columnYPositions[col][rowInColumn],
+        },
+      };
+    });
+  }
+
+  // Position bucket nodes in right column
+  const bucketYPositions = distributeVerticallyDynamic(bucketNodes);
+  const positionedBucketNodes = bucketNodes.map((node, index) => ({
+    ...node,
+    position: {
+      x: bucketX,
+      y: bucketYPositions[index],
+    },
+  }));
+
+  // Combine all positioned nodes
+  const layoutedNodes = [...positionedAuthNodes, ...positionedTableNodes, ...positionedBucketNodes];
 
   return { nodes: layoutedNodes, edges };
 };
 
-export function SchemaVisualizer({ metadata }: SchemaVisualizerProps) {
+export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) {
   const initialNodes = useMemo(() => {
-    return metadata.database.tables.map((table, _) => ({
+    const tableNodes: Node[] = metadata.database.tables.map((table, _) => ({
       id: table.tableName,
       type: 'tableNode',
-      position: { x: 0, y: 0 }, // Will be calculated by dagre
+      position: { x: 0, y: 0 },
       data: { table },
     }));
-  }, [metadata]);
+
+    const bucketNodes: Node[] = metadata.storage.buckets.map((bucket) => ({
+      id: `bucket-${bucket.name}`,
+      type: 'bucketNode',
+      position: { x: 0, y: 0 },
+      data: { bucket },
+    }));
+
+    const nodes: Node[] = [...tableNodes, ...bucketNodes];
+
+    // Add authentication node if authData is provided
+    if (authData) {
+      nodes.push({
+        id: 'authentication',
+        type: 'authNode',
+        position: { x: 0, y: 0 },
+        data: authData,
+      });
+    }
+
+    return nodes;
+  }, [metadata, authData]);
 
   const initialEdges = useMemo(() => {
     const edges: Edge[] = [];
@@ -91,8 +209,41 @@ export function SchemaVisualizer({ metadata }: SchemaVisualizerProps) {
       });
     });
 
+    // Add authentication edges if authData exists
+    if (authData) {
+      metadata.database.tables.forEach((table) => {
+        // Check for user_id columns that reference the user table
+        const userColumns = table.columns.filter(
+          (column) =>
+            column.columnName.toLowerCase().includes('user') ||
+            (column.foreignKey && column.foreignKey.referenceTable === 'user')
+        );
+
+        if (userColumns.length > 0) {
+          const edgeId = `authentication-${table.tableName}`;
+          edges.push({
+            id: edgeId,
+            source: 'authentication',
+            target: table.tableName,
+            sourceHandle: null,
+            targetHandle: null,
+            type: 'smoothstep',
+            animated: true,
+            label: 'authenticates',
+            labelStyle: { fontSize: 10, fontWeight: 500 },
+            labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
+            style: { stroke: '#10B981', strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#10B981',
+            },
+          });
+        }
+      });
+    }
+
     return edges;
-  }, [metadata]);
+  }, [metadata, authData]);
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
     () => getLayoutedElements(initialNodes, initialEdges),
