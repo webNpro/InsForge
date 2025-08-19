@@ -24,7 +24,7 @@ export function TableNode({ data }: TableNodeProps) {
       return (
         <div className="w-4 h-4 flex items-center justify-center relative">
           {/* Outer gray diamond */}
-          <div className="w-4 h-4 bg-neutral-800 border border-neutral-700 absolute transform rotate-45" />
+          <div className="w-4 h-4 bg-neutral-800 border border-white absolute transform rotate-45" />
           {/* Inner white diamond */}
           <div className="w-2 h-2 bg-white absolute transform rotate-45" />
         </div>
