@@ -5,13 +5,9 @@ import { Button } from '@/components/radix/Button';
 import { SearchInput } from '@/components/SearchInput';
 import { FeatureSidebarItem } from '@/components/FeatureSidebarItem';
 
-interface FeatureItem {
-  [key: string]: any;
-}
-
-interface FeatureSidebarProps<T extends FeatureItem> {
+interface FeatureSidebarProps {
   title: string;
-  items: Record<string, T>;
+  items: string[];
   selectedItem?: string;
   onItemSelect: (itemName: string) => void;
   loading?: boolean;
@@ -28,7 +24,7 @@ interface FeatureSidebarProps<T extends FeatureItem> {
   renderEmptyState: (searchTerm: string) => ReactNode;
 }
 
-export function FeatureSidebar<T extends FeatureItem>({
+export function FeatureSidebar({
   title,
   items,
   selectedItem,
@@ -45,10 +41,10 @@ export function FeatureSidebar<T extends FeatureItem>({
   filterItems,
   renderSkeleton,
   renderEmptyState,
-}: FeatureSidebarProps<T>) {
+}: FeatureSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  let itemNames = Object.keys(items);
+  let itemNames = items;
   if (filterItems) {
     itemNames = filterItems(itemNames);
   }

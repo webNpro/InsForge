@@ -9,22 +9,10 @@ import { OAuthConfig, OAuthStatus, ConfigRecord } from '@/types/auth.js';
 import logger from '@/utils/logger.js';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
+import { MetadataService } from '@/core/metadata/metadata';
+import { oAuthConfigSchema } from '@insforge/shared-schemas';
 
 const router = Router();
-
-// OAuth provider configuration schema
-const oauthProviderSchema = z.object({
-  clientId: z.string().optional(),
-  clientSecret: z.string().optional(),
-  redirectUri: z.string().url().optional().or(z.literal('')),
-  enabled: z.boolean(),
-  useSharedKeys: z.boolean().optional(),
-});
-
-const oauthConfigSchema = z.object({
-  google: oauthProviderSchema,
-  github: oauthProviderSchema,
-});
 
 // Get OAuth configuration (admin only) - matches auth.ts JSON format
 router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
@@ -124,7 +112,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
 // Update OAuth configuration (admin only) - stores as JSON like auth.ts
 router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = oauthConfigSchema.parse(req.body);
+    const validatedData = oAuthConfigSchema.parse(req.body);
     const db = DatabaseManager.getInstance();
 
     // Start transaction
@@ -168,6 +156,18 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
       }
 
       await db.getDb().exec('COMMIT');
+
+      const medataService = MetadataService.getInstance();
+      await medataService.updateAuthMetadata({
+        google: {
+          enabled: validatedData.google.enabled,
+          useSharedKeys: validatedData.google.useSharedKeys,
+        },
+        github: {
+          enabled: validatedData.github.enabled,
+          useSharedKeys: validatedData.github.useSharedKeys,
+        },
+      });
 
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {

@@ -13,18 +13,13 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TableNode } from './TableNode';
-import { AuthNode, AuthProvider } from './AuthNode';
+import { AuthNode } from './AuthNode';
 import { BucketNode } from './BucketNode';
 import { AppMetadataSchema } from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
   metadata: AppMetadataSchema;
-  authData?: {
-    providers: AuthProvider[];
-    userCount?: number;
-    sessionCount?: number;
-    isConfigured?: boolean;
-  };
+  userCount?: number;
 }
 
 const nodeTypes = {
@@ -47,7 +42,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
       const table = node.data.table;
       const columnCount = table.columns.length || 0;
       const headerHeight = 64; // Header with table name
-      const columnHeight = 52; // Each column row height
+      const columnHeight = 48; // Each column row height
       const contentHeight = columnCount > 0 ? columnCount * columnHeight : 100; // Empty state height
       return headerHeight + contentHeight;
     } else if (node.type === 'bucketNode') {
@@ -150,7 +145,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   return { nodes: layoutedNodes, edges };
 };
 
-export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) {
+export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps) {
   const initialNodes = useMemo(() => {
     const tableNodes: Node[] = metadata.database.tables.map((table, _) => ({
       id: table.tableName,
@@ -169,17 +164,18 @@ export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) 
     const nodes: Node[] = [...tableNodes, ...bucketNodes];
 
     // Add authentication node if authData is provided
-    if (authData) {
-      nodes.push({
-        id: 'authentication',
-        type: 'authNode',
-        position: { x: 0, y: 0 },
-        data: authData,
-      });
-    }
+    nodes.push({
+      id: 'authentication',
+      type: 'authNode',
+      position: { x: 0, y: 0 },
+      data: {
+        authMetadata: metadata.auth,
+        userCount,
+      },
+    });
 
     return nodes;
-  }, [metadata, authData]);
+  }, [metadata, userCount]);
 
   const initialEdges = useMemo(() => {
     const edges: Edge[] = [];
@@ -210,40 +206,39 @@ export function SchemaVisualizer({ metadata, authData }: SchemaVisualizerProps) 
     });
 
     // Add authentication edges if authData exists
-    if (authData) {
-      metadata.database.tables.forEach((table) => {
-        // Check for user_id columns that reference the user table
-        const userColumns = table.columns.filter(
-          (column) =>
-            column.columnName.toLowerCase().includes('user') ||
-            (column.foreignKey && column.foreignKey.referenceTable === 'user')
-        );
 
-        if (userColumns.length > 0) {
-          const edgeId = `authentication-${table.tableName}`;
-          edges.push({
-            id: edgeId,
-            source: 'authentication',
-            target: table.tableName,
-            sourceHandle: null,
-            targetHandle: null,
-            type: 'smoothstep',
-            animated: true,
-            label: 'authenticates',
-            labelStyle: { fontSize: 10, fontWeight: 500 },
-            labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
-            style: { stroke: '#10B981', strokeWidth: 2 },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#10B981',
-            },
-          });
-        }
-      });
-    }
+    metadata.database.tables.forEach((table) => {
+      // Check for user_id columns that reference the user table
+      const userColumns = table.columns.filter(
+        (column) =>
+          column.columnName.toLowerCase().includes('user') ||
+          (column.foreignKey && column.foreignKey.referenceTable === 'user')
+      );
+
+      if (userColumns.length > 0) {
+        const edgeId = `authentication-${table.tableName}`;
+        edges.push({
+          id: edgeId,
+          source: 'authentication',
+          target: table.tableName,
+          sourceHandle: null,
+          targetHandle: null,
+          type: 'smoothstep',
+          animated: true,
+          label: 'authenticates',
+          labelStyle: { fontSize: 10, fontWeight: 500 },
+          labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
+          style: { stroke: '#10B981', strokeWidth: 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#10B981',
+          },
+        });
+      }
+    });
 
     return edges;
-  }, [metadata, authData]);
+  }, [metadata]);
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
     () => getLayoutedElements(initialNodes, initialEdges),

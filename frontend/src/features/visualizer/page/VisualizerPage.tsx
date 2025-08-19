@@ -4,7 +4,6 @@ import { useCallback, useEffect } from 'react';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import { authService } from '@/features/auth/services/auth.service';
 import { SchemaVisualizer, VisualizerSkeleton } from '../components';
-import { AuthProvider } from '../components/AuthNode';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import {
@@ -14,8 +13,6 @@ import {
   DataUpdateResourceType,
   SocketMessage,
 } from '@/lib/contexts/SocketContext';
-import Github from '@/assets/icons/github_dark.svg';
-import Google from '@/assets/icons/google.svg';
 
 const VisualizerPage = () => {
   const { socket, isConnected } = useSocket();
@@ -54,38 +51,6 @@ const VisualizerPage = () => {
     void refetchMetadata();
     void refetchUserStats();
   }, [refetchMetadata, refetchUserStats]);
-
-  // Prepare authentication data for the visualizer
-  const authData = useCallback(() => {
-    if (!metadata?.auth) {
-      return undefined;
-    }
-
-    // Check which providers are enabled from metadata
-    const providers: AuthProvider[] = [
-      {
-        id: 'google',
-        name: 'Google',
-        icon: Google,
-        enabled: metadata.auth.providers.includes('google'),
-      },
-      {
-        id: 'github',
-        name: 'GitHub',
-        icon: Github,
-        enabled: metadata.auth.providers.includes('github'),
-      },
-    ];
-
-    const isConfigured = metadata.auth.enabled && providers.some((provider) => provider.enabled);
-
-    return {
-      providers,
-      userCount: userStats?.userCount,
-      sessionCount: undefined, // Could be added later if needed
-      isConfigured,
-    };
-  }, [metadata, userStats])();
 
   // Listen for schema change events
   useEffect(() => {
@@ -158,7 +123,7 @@ const VisualizerPage = () => {
 
       {/* Schema Visualizer */}
       <div className="relative z-10 w-full h-screen">
-        <SchemaVisualizer metadata={metadata} authData={authData} />
+        <SchemaVisualizer metadata={metadata} userCount={userStats?.userCount} />
       </div>
     </div>
   );

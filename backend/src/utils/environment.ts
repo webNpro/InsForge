@@ -8,8 +8,7 @@
  */
 export function isCloudEnvironment(): boolean {
   return !!(
-    process.env.AWS_INSTANCE_PROFILE_NAME &&
-    process.env.AWS_INSTANCE_PROFILE_NAME.trim().length > 0
+    process.env.AWS_INSTANCE_PROFILE_NAME && process.env.AWS_INSTANCE_PROFILE_NAME.trim().length > 0
   );
 }
 

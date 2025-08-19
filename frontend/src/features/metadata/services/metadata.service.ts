@@ -1,8 +1,9 @@
 import { apiClient } from '@/lib/api/client';
 import {
   AppMetadataSchema,
-  OAuthConfigSchema,
-  StorageConfigSchema,
+  OAuthMetadataSchema,
+  StorageMetadataSchema,
+  DashboardMetadataSchema,
   DatabaseMetadataSchema,
 } from '@insforge/shared-schemas';
 
@@ -22,21 +23,27 @@ export class MetadataService {
     });
   }
 
-  // Get database metadata only
-  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
-    return apiClient.request('/metadata/database', {
+  // Get dashboard metadata only
+  async getDashboardMetadata(): Promise<DashboardMetadataSchema> {
+    return apiClient.request('/metadata/dashboard', {
       headers: apiClient.withApiKey(),
     });
   }
 
   // Get auth metadata only
-  async getAuthMetadata(): Promise<OAuthConfigSchema> {
+  async getAuthMetadata(): Promise<OAuthMetadataSchema> {
     const fullMetadata = await this.getFullMetadata();
     return fullMetadata.auth;
   }
 
+  // Get database metadata only
+  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
+    const fullMetadata = await this.getFullMetadata();
+    return fullMetadata.database;
+  }
+
   // Get storage metadata only
-  async getStorageMetadata(): Promise<StorageConfigSchema> {
+  async getStorageMetadata(): Promise<StorageMetadataSchema> {
     const fullMetadata = await this.getFullMetadata();
     return fullMetadata.storage;
   }

@@ -320,7 +320,7 @@ export default function StoragePage() {
     <div className="flex h-full bg-bg-gray">
       {/* Secondary Sidebar - Bucket List */}
       <StorageSidebar
-        buckets={bucketInfo}
+        buckets={Object.keys(bucketInfo)}
         selectedBucket={selectedBucket || undefined}
         onBucketSelect={setSelectedBucket}
         loading={isLoading}

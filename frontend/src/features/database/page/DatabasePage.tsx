@@ -179,33 +179,32 @@ export default function DatabasePage() {
   const filteredTables = useMemo(
     () =>
       metadata?.tables
-        ? Object.fromEntries(
-            Object.entries(metadata.tables).filter(([name]) => !name.startsWith('_'))
-          )
-        : {},
-    [metadata?.tables]
+        ? metadata.tables
+            .map((table) => table.tableName)
+            .filter((tableName) => !tableName.startsWith('_'))
+        : [],
+    [metadata]
   );
 
   // Auto-select first table (excluding system tables)
   useEffect(() => {
     if (metadata) {
-      const tableNames = Object.keys(metadata.tables).filter((name) => !name.startsWith('_'));
-      if (pendingTableSelection && tableNames.includes(pendingTableSelection)) {
+      if (pendingTableSelection && filteredTables.includes(pendingTableSelection)) {
         setSelectedTable(pendingTableSelection);
         setPendingTableSelection(undefined);
         return;
       }
 
-      if (selectedTable && !tableNames.includes(selectedTable)) {
+      if (selectedTable && !filteredTables.includes(selectedTable)) {
         setSelectedTable(null);
         return;
       }
 
-      if (!selectedTable && tableNames.length > 0 && !showTableForm && !pendingTableSelection) {
-        setSelectedTable(tableNames[0]);
+      if (!selectedTable && filteredTables.length > 0 && !showTableForm && !pendingTableSelection) {
+        setSelectedTable(filteredTables[0]);
       }
     }
-  }, [metadata, pendingTableSelection, selectedTable, showTableForm]);
+  }, [filteredTables, metadata, pendingTableSelection, selectedTable, showTableForm]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

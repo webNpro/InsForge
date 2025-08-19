@@ -3,12 +3,8 @@ import { FeatureSidebar } from '@/components/FeatureSidebar';
 import { TableListSkeleton } from './TableListSkeleton';
 import { TableEmptyState } from './TableEmptyState';
 
-interface TableInfo {
-  recordCount: number;
-}
-
 interface TableSidebarProps {
-  tables: Record<string, TableInfo>;
+  tables: string[];
   selectedTable?: string;
   onTableSelect: (tableName: string) => void;
   loading?: boolean;
