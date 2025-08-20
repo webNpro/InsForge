@@ -69,7 +69,7 @@ export function ForeignKeyPopover({
 
   // Get available tables
   const { data: metadata } = useQuery({
-    queryKey: ['metadata'],
+    queryKey: ['database-metadata'],
     queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: open,
   });

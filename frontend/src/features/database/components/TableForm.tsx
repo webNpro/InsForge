@@ -222,9 +222,9 @@ export function TableForm({
       return databaseService.createTable(data.tableName, columns);
     },
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: ['metadata'] });
+      void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
-      void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+      void queryClient.invalidateQueries({ queryKey: ['metadata'] });
 
       showToast('Table created successfully!', 'success');
 
@@ -353,9 +353,9 @@ export function TableForm({
       return databaseService.updateTableSchema(editTable.tableName, operations);
     },
     onSuccess: (_, data) => {
-      void queryClient.invalidateQueries({ queryKey: ['metadata'] });
+      void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
-      void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+      void queryClient.invalidateQueries({ queryKey: ['metadata'] });
 
       // Invalidate all table data queries for this table (with all parameter combinations)
       void queryClient.invalidateQueries({ queryKey: ['table', editTable?.tableName] });

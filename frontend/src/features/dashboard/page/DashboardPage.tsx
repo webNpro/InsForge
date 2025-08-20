@@ -11,7 +11,7 @@ export default function DashboardPage() {
     isLoading,
     refetch: _refetchMetadata,
   } = useQuery({
-    queryKey: ['metadata'],
+    queryKey: ['dashboard-metadata'],
     queryFn: () => metadataService.getDashboardMetadata(),
   });
 

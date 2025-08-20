@@ -98,7 +98,7 @@ export default function DatabasePage() {
     error: metadataError,
     refetch: refetchMetadata,
   } = useQuery({
-    queryKey: ['metadata'],
+    queryKey: ['database-metadata'],
     queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: !!apiKey,
   });
@@ -293,11 +293,11 @@ export default function DatabasePage() {
         showToast('Table deleted successfully', 'success');
 
         // Invalidate all related queries for the deleted table
-        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
+        void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
         void queryClient.invalidateQueries({ queryKey: ['tables'] });
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
-        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
       } catch (error: any) {
         const errorMessage =
           error.response?.data?.error?.message || error.message || 'Failed to delete table';

@@ -19,7 +19,7 @@ export default function MetadataPage() {
     error,
     refetch: refetchMetadata,
   } = useQuery({
-    queryKey: ['full-metadata'],
+    queryKey: ['metadata'],
     queryFn: () => metadataService.getFullMetadata(),
   });
 
