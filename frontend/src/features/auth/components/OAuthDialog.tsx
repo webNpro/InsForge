@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
@@ -16,28 +15,12 @@ import WarningIcon from '@/assets/icons/warning.svg';
 import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { CopyButton } from '@/components/CopyButton';
+import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
 
 const getCallbackUrl = () => {
   // Use backend API URL for OAuth callback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
-  return `${apiBaseUrl}/api/auth/v1/callback`;
+  return `${window.location.origin}/api/auth/v1/callback`;
 };
-
-// OAuth provider configuration schema
-const oauthProviderSchema = z.object({
-  clientId: z.string().optional(),
-  clientSecret: z.string().optional(),
-  redirectUri: z.string().optional(),
-  enabled: z.boolean(),
-  useSharedKeys: z.boolean(),
-});
-
-const oauthConfigSchema = z.object({
-  google: oauthProviderSchema,
-  github: oauthProviderSchema,
-});
-
-type OAuthConfig = z.infer<typeof oauthConfigSchema>;
 
 interface OAuthDialogProps {
   provider: {
@@ -57,8 +40,8 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  const form = useForm<OAuthConfig>({
-    resolver: zodResolver(oauthConfigSchema),
+  const form = useForm<OAuthConfigSchema>({
+    resolver: zodResolver(oAuthConfigSchema),
     defaultValues: {
       google: {
         clientId: '',
@@ -105,7 +88,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
-  const onSubmit = async (data: OAuthConfig) => {
+  const onSubmit = async (data: OAuthConfigSchema) => {
     if (!provider) {
       return;
     }
@@ -122,10 +105,12 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
           clientId: data[currentProviderKey].clientId || '',
           clientSecret: data[currentProviderKey].clientSecret || '',
           redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(),
+          enabled: !!data[currentProviderKey].clientId,
+          useSharedKeys: data[currentProviderKey].useSharedKeys,
         },
       };
 
-      await configService.updateOAuthConfig(transformedData as OAuthConfig);
+      await configService.updateOAuthConfig(transformedData as OAuthConfigSchema);
 
       // Reload OAuth configuration to apply changes
       setReloading(true);
@@ -160,7 +145,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   };
 
   const handleSubmit = () => {
-    void onSubmit(form.getValues() as OAuthConfig);
+    void onSubmit(form.getValues() as OAuthConfigSchema);
   };
 
   // Determine if the update button should be disabled

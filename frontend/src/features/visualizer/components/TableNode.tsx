@@ -1,6 +1,6 @@
 import { Handle, Position } from 'reactflow';
-import { Database, Key, Hash } from 'lucide-react';
-import { TableSchema } from '@insforge/shared-schemas';
+import { Database, ExternalLink, Circle } from 'lucide-react';
+import { ColumnSchema, TableSchema } from '@insforge/shared-schemas';
 
 interface TableNodeProps {
   data: {
@@ -14,75 +14,79 @@ export function TableNode({ data }: TableNodeProps) {
   const primaryKeys = table.columns.filter((col) => col.isPrimaryKey);
   const foreignKeys = table.columns.filter((col) => col.foreignKey);
   const regularColumns = table.columns.filter((col) => !col.isPrimaryKey && !col.foreignKey);
+  const allColumns = [...primaryKeys, ...foreignKeys, ...regularColumns];
+
+  const getColumnIcon = (column: ColumnSchema) => {
+    if (column.isPrimaryKey) {
+      return <div className="w-5 h-5 bg-neutral-700 rounded" />;
+    }
+    if (column.foreignKey) {
+      return (
+        <div className="w-5 h-5 flex items-center justify-center">
+          <div className="w-2 h-2 bg-teal-300 rounded-full" />
+          <div className="w-2 h-2 bg-teal-300 rounded-full -ml-1" />
+        </div>
+      );
+    }
+    return <div className="w-5 h-5 bg-neutral-700 rounded" />;
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200 min-w-[280px]">
-      <Handle type="target" position={Position.Left} className="!bg-blue-500" />
+    <div className="bg-neutral-900 rounded-lg border border-[#363636] min-w-[320px]">
+      <Handle type="target" position={Position.Left} className="!bg-teal-300" />
 
       {/* Table Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+      <div className="flex items-center justify-between p-2 border-b border-neutral-800">
         <div className="flex items-center gap-2">
-          <Database className="w-4 h-4" />
-          <h3 className="font-semibold text-sm">{table.tableName}</h3>
+          <div className="flex items-center justify-center w-11 h-11 bg-teal-300 rounded p-1.5">
+            <Database className="w-5 h-5 text-neutral-900" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-white">{table.tableName}</h3>
+            <p className="text-xs text-neutral-300">
+              {table.recordCount !== undefined
+                ? `${table.recordCount.toLocaleString()} data`
+                : '0 data'}
+            </p>
+          </div>
         </div>
-        {table.recordCount !== undefined && (
-          <p className="text-xs text-blue-100 mt-1">{table.recordCount} records</p>
-        )}
+        <div className="p-1.5">
+          <ExternalLink className="w-4 h-4 text-neutral-400" />
+        </div>
       </div>
 
       {/* Columns */}
-      <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto">
-        {/* Primary Keys */}
-        {primaryKeys.map((column) => (
+      <div>
+        {allColumns.map((column) => (
           <div
             key={column.columnName}
-            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-yellow-50 transition-colors"
+            className="flex items-center justify-between p-3 border-b border-neutral-800"
           >
-            <Key className="w-3 h-3 text-yellow-600" />
-            <span className="text-xs font-medium text-gray-900">{column.columnName}</span>
-            <span className="text-xs text-gray-500 ml-auto">{column.type}</span>
+            <div className="flex items-center gap-2.5 flex-1">
+              {getColumnIcon(column)}
+              <span className="text-sm text-neutral-300">{column.columnName}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="px-1.5 py-0.5 bg-neutral-800 rounded flex items-center">
+                <span className="text-xs font-medium text-neutral-300">{column.type}</span>
+              </div>
+              <Circle className="w-5 h-5 text-neutral-600 fill-neutral-600" />
+            </div>
           </div>
         ))}
 
-        {/* Foreign Keys */}
-        {foreignKeys.map((column) => (
-          <div
-            key={column.columnName}
-            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-          >
-            <Hash className="w-3 h-3 text-blue-600" />
-            <span className="text-xs font-medium text-gray-900">{column.columnName}</span>
-            <span className="text-xs text-gray-500 ml-auto">{column.type}</span>
-            {column.foreignKey && (
-              <span
-                className="text-xs text-blue-600"
-                title={`→ ${column.foreignKey.referenceTable}.${column.foreignKey.referenceColumn}`}
-              >
-                FK
-              </span>
-            )}
+        {/* Empty state */}
+        {allColumns.length === 0 && (
+          <div className="flex items-center justify-center p-6">
+            <div className="text-center">
+              <Database className="w-6 h-6 text-neutral-600 mx-auto mb-2" />
+              <p className="text-xs text-neutral-500">No columns defined</p>
+            </div>
           </div>
-        ))}
-
-        {/* Regular Columns */}
-        {regularColumns.map((column) => (
-          <div
-            key={column.columnName}
-            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 transition-colors"
-          >
-            <div className="w-3 h-3" />
-            <span className="text-xs text-gray-700">{column.columnName}</span>
-            <span className="text-xs text-gray-500 ml-auto">{column.type}</span>
-            {!column.isNullable && (
-              <span className="text-xs text-red-500" title="Not Null">
-                *
-              </span>
-            )}
-          </div>
-        ))}
+        )}
       </div>
 
-      <Handle type="source" position={Position.Right} className="!bg-blue-500" />
+      <Handle type="source" position={Position.Right} className="!bg-teal-300" />
     </div>
   );
 }

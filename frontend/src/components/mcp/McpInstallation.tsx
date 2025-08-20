@@ -44,7 +44,7 @@ export function McpInstallation({
   };
 
   const mcpConfig = useMemo(() => {
-    return createMCPConfig(apiKey || '', activeTab, import.meta.env.VITE_API_BASE_URL);
+    return createMCPConfig(apiKey || '', activeTab, window.location.origin);
   }, [apiKey, activeTab]);
 
   return (
@@ -97,13 +97,11 @@ export function McpInstallation({
                     os={activeTab}
                   />
                 )}
-
                 {/* Alternative Installation */}
                 <p className="text-zinc-950 dark:text-neutral-300 text-sm">
                   {agent.id === 'cursor' ? 'or copy' : 'Copy'} the command below and paste it to
                   terminal
                 </p>
-
                 {/* Command Block */}
                 <CodeBlock
                   code={GenerateInstallCommand(agent, apiKey || '')}
