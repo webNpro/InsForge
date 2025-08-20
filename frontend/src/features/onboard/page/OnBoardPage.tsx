@@ -42,11 +42,11 @@ export default function OnBoardPage() {
   };
 
   return (
-    <div className="h-full bg-bg-gray">
+    <div className="min-h-screen bg-bg-gray dark:bg-neutral-900">
       <div className="container max-w-[1080px] mx-auto px-6 py-12">
         {/* Header with Linear Stepper */}
         <div className="mb-12 space-y-3">
-          <h1 className="text-2xl font-bold text-black">Get Started</h1>
+          <h1 className="text-2xl font-bold text-black dark:text-white">Get Started</h1>
           <LinearStepper
             currentStep={currentStep}
             totalSteps={totalSteps}
@@ -60,7 +60,9 @@ export default function OnBoardPage() {
           <CompletionCard />
         ) : (
           <div className="space-y-3">
-            <p className="text-black text-lg font-semibold">{STEP_DESCRIPTIONS[currentStep - 1]}</p>
+            <p className="text-black dark:text-white text-lg font-semibold">
+              {STEP_DESCRIPTIONS[currentStep - 1]}
+            </p>
             <StepContent step={currentStep} />
 
             {/* Action Buttons */}
@@ -69,7 +71,7 @@ export default function OnBoardPage() {
               <Button
                 variant="outline"
                 onClick={() => void handleDismiss()}
-                className="h-10 w-30 py-2 text-zinc-950"
+                className="h-10 w-30 py-2 text-zinc-950 dark:text-white dark:border-neutral-700 dark:bg-neutral-700"
               >
                 Dismiss
               </Button>
@@ -80,12 +82,16 @@ export default function OnBoardPage() {
                   <Button
                     variant="outline"
                     onClick={() => void handleBack()}
-                    className="h-10 w-30 text-zinc-950"
+                    className="h-10 w-30 text-zinc-950 dark:text-white dark:border-neutral-700 dark:bg-neutral-700"
                   >
                     Back
                   </Button>
                 )}
-                <Button variant="default" onClick={() => void handleNext()} className="h-10 w-30">
+                <Button
+                  variant="default"
+                  onClick={() => void handleNext()}
+                  className="h-10 w-30 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {currentStep === totalSteps ? 'Complete' : 'Next'}
                 </Button>
               </div>

@@ -247,20 +247,20 @@ export default function AnalyticsLogsPage() {
   };
 
   return (
-    <div className="flex h-full bg-[#f8f9fa]">
+    <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Sticky Header Section */}
-        <div className="sticky top-0 z-30 bg-[#f8f9fa]">
+        <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
           <div className="px-8 pt-6 pb-4">
             {/* Page Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <nav className="flex items-center text-[22px] font-semibold">
-                  <span className="text-gray-900">Analytics Logs</span>
+                  <span className="text-gray-900 dark:text-white">Analytics Logs</span>
                 </nav>
 
                 {/* Separator */}
-                <div className="mx-4 h-6 w-px bg-gray-200" />
+                <div className="mx-4 h-6 w-px bg-gray-200 dark:bg-neutral-500" />
 
                 {/* Action buttons group */}
                 <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function AnalyticsLogsPage() {
                           className="h-9 w-9"
                           onClick={handleRefresh}
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          <RefreshCw className="h-4 w-4 text-zinc-900 dark:text-white" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" align="center">
@@ -290,7 +290,7 @@ export default function AnalyticsLogsPage() {
                           <Button
                             variant={autoRefresh ? 'default' : 'ghost'}
                             size="sm"
-                            className="h-9 px-3"
+                            className="h-9 px-3 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200"
                             onClick={toggleAutoRefresh}
                           >
                             {autoRefresh ? (
@@ -313,7 +313,7 @@ export default function AnalyticsLogsPage() {
                       onValueChange={(value) => setRefreshInterval(parseInt(value))}
                       disabled={autoRefresh}
                     >
-                      <SelectTrigger className="w-16 h-9 text-xs">
+                      <SelectTrigger className="w-16 h-9 text-xs dark:bg-neutral-700 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -333,7 +333,7 @@ export default function AnalyticsLogsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9"
+                            className="h-9 w-9 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200"
                             onClick={scrollToBottom}
                           >
                             <ChevronUp className="h-4 w-4 rotate-180" />
@@ -352,10 +352,10 @@ export default function AnalyticsLogsPage() {
             {/* Tabs */}
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="logs">Logs</TabsTrigger>
-                  <TabsTrigger value="search">Search</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 lg:w-[400px] dark:bg-neutral-700 dark:text-white">
+                  <TabsTrigger value="overview" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Overview</TabsTrigger>
+                  <TabsTrigger value="logs" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Logs</TabsTrigger>
+                  <TabsTrigger value="search" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Search</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -365,7 +365,7 @@ export default function AnalyticsLogsPage() {
         {/* Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {(sourcesError || statsError || logsError || searchError) && (
-            <Alert variant="destructive" className="mb-4 mx-8 mt-4">
+            <Alert variant="destructive" className="mb-4 mx-8 mt-4 dark:bg-neutral-700 dark:text-white">
               <AlertDescription>
                 {String(sourcesError || statsError || logsError || searchError)}
               </AlertDescription>
@@ -373,7 +373,7 @@ export default function AnalyticsLogsPage() {
           )}
 
           {activeTab === 'overview' && (
-            <div className="flex-1 overflow-auto px-8 py-6">
+            <div className="flex-1 overflow-auto px-8 py-6 dark:bg-neutral-800">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
                 {/* Stats Cards - only show sources that are available */}
                 {stats
@@ -381,7 +381,7 @@ export default function AnalyticsLogsPage() {
                   .map((stat) => (
                     <Card
                       key={stat.source}
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="cursor-pointer hover:shadow-md transition-shadow dark:bg-neutral-800 dark:hover:bg-neutral-700"
                       onClick={() => {
                         setSelectedSource(stat.source);
                         setActiveTab('logs');
@@ -400,11 +400,11 @@ export default function AnalyticsLogsPage() {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-2">
-                          <div className="flex items-center text-xs text-gray-600">
-                            <BarChart3 className="h-3 w-3 text-blue-600 mr-1.5" />
+                          <div className="flex items-center text-xs text-gray-600 dark:text-zinc-400">
+                            <BarChart3 className="h-3 w-3 text-blue-600 dark:text-blue-400 mr-1.5" />
                             <span>{stat.count > 0 ? 'Active' : 'No data'}</span>
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-zinc-400">
                             Last: {formatLastActivity(stat.lastActivity)}
                           </div>
                         </div>
@@ -416,8 +416,8 @@ export default function AnalyticsLogsPage() {
               {statsLoading && (
                 <div className="flex justify-center items-center py-12">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
-                    <p className="text-sm text-gray-500">Loading analytics data...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4" />
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Loading analytics data...</p>
                   </div>
                 </div>
               )}
@@ -427,9 +427,9 @@ export default function AnalyticsLogsPage() {
           {activeTab === 'logs' && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Source selector */}
-              <div className="px-8 pb-2 border-b bg-gray-50">
+              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
                 <Select value={selectedSource} onValueChange={setSelectedSource}>
-                  <SelectTrigger className="w-full max-w-sm h-8 text-sm">
+                  <SelectTrigger className="w-full max-w-sm h-8 text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-700">
                     <SelectValue placeholder="Select a log source..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -472,14 +472,14 @@ export default function AnalyticsLogsPage() {
           {activeTab === 'search' && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Search Bar */}
-              <div className="px-8 pb-2 border-b bg-gray-50">
+              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     placeholder="Search across all logs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-8 bg-white border-gray-200 rounded text-sm"
+                    className="pl-9 h-8 bg-white border-gray-200 rounded text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-700"
                   />
                 </div>
               </div>
@@ -488,10 +488,10 @@ export default function AnalyticsLogsPage() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <Search className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-lg font-medium text-zinc-900 dark:text-white mb-2">
                       Search Analytics Logs
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">
                       Enter a search term to find logs across all sources
                     </p>
                   </div>

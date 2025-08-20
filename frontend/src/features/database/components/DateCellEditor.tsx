@@ -34,14 +34,14 @@ function TimeColumn({ label, value, range, onChange, scrollRef }: TimeColumnProp
       <div className="text-xs text-muted-foreground mb-1 text-center">{label}</div>
       <div
         ref={scrollRef}
-        className="h-60 overflow-y-auto border border-border-gray rounded p-1 scrollbar-thin"
+        className="h-60 overflow-y-auto border border-border-gray dark:border-neutral-600 rounded p-1 scrollbar-thin"
       >
         {Array.from({ length: range }, (_, i) => (
           <button
             key={i}
             onClick={() => onChange(i)}
             className={cn(
-              'w-full px-1 py-1 text-sm rounded hover:bg-gray-100 text-center',
+              'w-full px-1 py-1 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950 text-center',
               value === i && 'bg-primary text-primary-foreground hover:bg-primary'
             )}
           >
@@ -258,7 +258,7 @@ export function DateCellEditor({
           key={day}
           onClick={() => handleDateClick(day)}
           className={cn(
-            'h-8 w-8 text-sm rounded hover:bg-gray-100',
+            'h-8 w-8 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950',
             isSelected && 'bg-primary text-primary-foreground hover:bg-primary',
             isToday && !isSelected && 'font-bold'
           )}
@@ -279,7 +279,7 @@ export function DateCellEditor({
           key={month}
           onClick={() => handleMonthClick(index)}
           className={cn(
-            'h-12 w-20 text-sm rounded hover:bg-gray-100',
+            'h-12 w-20 text-sm rounded hover:bg-gray-100 dark:hover:text-zinc-950',
             isSelected && 'bg-primary text-primary-foreground hover:bg-primary'
           )}
         >
@@ -328,7 +328,7 @@ export function DateCellEditor({
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" side="bottom">
+      <PopoverContent className="w-auto p-0 dark:bg-neutral-800" align="start" side="bottom">
         <div className={cn('flex', type === 'datetime' && '')}>
           <div className="p-3">
             {/* Header */}
@@ -349,7 +349,7 @@ export function DateCellEditor({
               </Button>
 
               <button
-                className="text-sm font-medium px-2 py-1 rounded hover:bg-gray-100"
+                className="text-sm font-medium px-2 py-1 rounded hover:bg-gray-100 dark:hover:text-zinc-950"
                 onClick={() => {
                   if (pickerMode === 'day') {
                     setPickerMode('month');
@@ -412,7 +412,7 @@ export function DateCellEditor({
           </div>
 
           {type === 'datetime' && (
-            <div className="border-l border-border-gray bg-muted/30 w-35">
+            <div className="border-l border-border-gray dark:border-neutral-600 bg-muted/30 dark:bg-neutral-800 w-35">
               <div className="p-3">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -441,9 +441,14 @@ export function DateCellEditor({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 p-3 border-t border-border-gray">
+        <div className="flex items-center gap-2 p-3 border-t border-border-gray dark:border-neutral-600">
           {nullable && (
-            <Button variant="outline" size="sm" onClick={handleClear} className="flex-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClear}
+              className="flex-1 dark:bg-neutral-600 dark:text-white dark:hover:bg-neutral-700"
+            >
               Null
             </Button>
           )}
@@ -454,7 +459,7 @@ export function DateCellEditor({
               onCancel();
               setOpen(false);
             }}
-            className="flex-1"
+            className="flex-1 dark:bg-neutral-600 dark:text-white dark:hover:bg-neutral-700"
           >
             Cancel
           </Button>

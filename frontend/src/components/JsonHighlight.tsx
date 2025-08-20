@@ -23,13 +23,13 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
 
         if (isKey) {
           return (
-            <span key={index} className="text-blue-600">
+            <span key={index} className="text-blue-600 dark:text-blue-400">
               {token}
             </span>
           );
         } else {
           return (
-            <span key={index} className="text-green-600">
+            <span key={index} className="text-green-600 dark:text-green-400">
               {token}
             </span>
           );
@@ -39,7 +39,7 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
       // Punctuation
       if (/^[:,{}[\]]$/.test(token)) {
         return (
-          <span key={index} className="text-gray-600">
+          <span key={index} className="text-gray-600 dark:text-gray-400">
             {token}
           </span>
         );
@@ -52,7 +52,7 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
 
   return (
     <div className="relative">
-      <pre className="font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 rounded-md py-4 px-6 pr-16">
+      <pre className="font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 dark:bg-neutral-900 dark:text-white rounded-md py-4 px-6 pr-16">
         {highlightJson(json)}
       </pre>
       <CopyButton text={json} className="absolute top-4 right-4" />

@@ -210,7 +210,7 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
             {formatDisplayValue()}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-125 p-0" align="start" side="bottom">
+        <PopoverContent className="w-125 p-0 dark:bg-neutral-800" align="start" side="bottom">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
                 }}
                 placeholder="Enter JSON here..."
                 className={cn(
-                  'w-full h-75 px-3 py-2 text-sm border border-border-gray rounded-md font-mono resize-none',
+                  'w-full h-75 px-3 py-2 text-sm border border-border-gray dark:border-neutral-600 rounded-md font-mono resize-none',
                   'focus:outline-none focus:ring-2 focus:ring-offset-2',
                   isValid ? 'focus:ring-primary' : 'focus:ring-red-500 border-red-500'
                 )}
@@ -314,9 +314,14 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 p-3 border-t border-border-gray bg-muted/30">
+          <div className="flex items-center gap-2 p-3 border-t border-border-gray dark:border-neutral-600 bg-muted/30 dark:bg-neutral-800">
             {nullable && (
-              <Button variant="outline" size="sm" onClick={handleSetNull} className="flex-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSetNull}
+                className="flex-1 dark:bg-neutral-600 dark:text-white dark:hover:bg-neutral-700"
+              >
                 Null
               </Button>
             )}
@@ -327,7 +332,7 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
                 onCancel();
                 setOpen(false);
               }}
-              className="flex-1"
+              className="flex-1 dark:bg-neutral-600 dark:text-white dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>

@@ -32,11 +32,11 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
             <Button
               variant="ghost"
               className={cn(
-                'absolute w-full h-16 relative transition-all duration-200 ease-in-out border-2 rounded-lg justify-start',
+                'w-full h-16 relative transition-all duration-200 ease-in-out border-2 rounded-lg justify-start',
                 isCollapsed ? 'pl-[11px] pr-2.5' : 'px-3.5',
                 isActive
-                  ? 'border-zinc-900 bg-zinc-900 hover:bg-zinc-900'
-                  : 'border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300'
+                  ? 'border-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-200 bg-zinc-900 hover:bg-zinc-900 '
+                  : 'border-zinc-200 dark:border-neutral-700 hover:bg-zinc-50 dark:hover:bg-neutral-600 hover:border-zinc-300 dark:text-white'
               )}
             >
               <CircularStepper
@@ -50,7 +50,7 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
                   <span
                     className={cn(
                       'font-semibold text-sm transition-colors duration-200',
-                      isActive ? 'text-zinc-50' : 'text-zinc-950'
+                      isActive ? 'text-zinc-50 dark:text-black' : 'text-zinc-950 dark:text-white'
                     )}
                   >
                     Get Started
@@ -58,7 +58,9 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
                   <span
                     className={cn(
                       'text-xs transition-colors duration-200',
-                      isActive ? 'text-text-gray' : 'text-zinc-500'
+                      isActive
+                        ? 'text-text-gray dark:text-zinc-800'
+                        : 'text-zinc-500 dark:text-white'
                     )}
                   >
                     {currentDescription}
@@ -72,7 +74,7 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
           <TooltipContent side="right">
             <div className="text-center">
               <p className="font-semibold">Get Started</p>
-              <p className="text-xs text-text-gray">{currentDescription}</p>
+              <p className="text-xs text-text-gray dark:text-neutural-600">{currentDescription}</p>
             </div>
           </TooltipContent>
         )}

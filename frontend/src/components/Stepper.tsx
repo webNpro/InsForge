@@ -28,7 +28,10 @@ export function CircularStepper({
           stroke="currentColor"
           strokeWidth="2"
           fill="none"
-          className={cn('transition-all duration-300', isActive ? 'text-zinc-50' : 'text-zinc-200')}
+          className={cn(
+            'transition-all duration-300',
+            isActive ? 'text-zinc-50' : 'text-zinc-200 dark:text-zinc-500'
+          )}
         />
         {/* Progress circle */}
         <circle
@@ -42,7 +45,7 @@ export function CircularStepper({
           strokeDashoffset={circumference - progress}
           className={cn(
             'transition-all duration-300',
-            isActive ? 'text-zinc-400' : 'text-zinc-950'
+            isActive ? 'text-zinc-400 dark:text-zinc-800' : 'text-zinc-950 dark:text-emerald-300'
           )}
           strokeLinecap="round"
         />
@@ -52,7 +55,7 @@ export function CircularStepper({
         <span
           className={cn(
             'transition-all duration-300',
-            isActive ? 'text-zinc-200' : 'text-zinc-950'
+            isActive ? 'text-zinc-200 dark:text-zinc-800' : 'text-zinc-950 dark:text-white'
           )}
         >
           {currentStep}/{totalSteps}
@@ -62,9 +65,9 @@ export function CircularStepper({
   );
 }
 
-import activeStep from '@/assets/icons/step_active.svg';
-import inactiveStep from '@/assets/icons/step_inactive.svg';
-import CheckedIcon from '@/assets/icons/checked.svg';
+import ActiveStep from '@/assets/icons/step_active.svg?react';
+import InactiveStep from '@/assets/icons/step_inactive.svg?react';
+import CheckedIcon from '@/assets/icons/checked.svg?react';
 
 interface LinearStepperProps {
   currentStep: number;
@@ -89,9 +92,9 @@ export function LinearStepper({
   return (
     <div className={cn('w-full space-y-3', className)}>
       {/* Progress Bar */}
-      <div className="relative w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+      <div className="relative w-full h-2 bg-zinc-200 dark:bg-zinc-600 rounded-full overflow-hidden">
         <div
-          className="absolute top-0 left-0 h-full bg-zinc-950 transition-all duration-500 ease-in-out"
+          className="absolute top-0 left-0 h-full bg-zinc-950 dark:bg-white transition-all duration-500 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
@@ -108,11 +111,11 @@ export function LinearStepper({
               {/* Step Number */}
               <div className="w-5 h-5 flex items-center justify-center">
                 {stepIsCompleted ? (
-                  <img src={CheckedIcon} alt="checked" className="w-5 h-5" />
+                  <CheckedIcon className="w-5 h-5" />
                 ) : isCurrent ? (
-                  <img src={activeStep} alt="active" className="w-5 h-5" />
+                  <ActiveStep className="w-5 h-5 dark:text-white" />
                 ) : (
-                  <img src={inactiveStep} alt="inactive" className="w-5 h-5" />
+                  <InactiveStep className="w-5 h-5 dark:text-neutral-400" />
                 )}
               </div>
 
@@ -120,7 +123,9 @@ export function LinearStepper({
               <span
                 className={cn(
                   'text-sm text-center transition-colors duration-300',
-                  stepIsCompleted || isCurrent ? 'text-zinc-950' : 'text-zinc-500'
+                  stepIsCompleted || isCurrent
+                    ? 'text-zinc-950 dark:text-white'
+                    : 'text-zinc-500 dark:text-neutral-400'
                 )}
               >
                 {label}

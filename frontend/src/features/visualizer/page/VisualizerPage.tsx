@@ -24,7 +24,7 @@ const VisualizerPage = () => {
     error: metadataError,
     refetch: refetchMetadata,
   } = useQuery({
-    queryKey: ['database-metadata-visualizer'],
+    queryKey: ['metadata'],
     queryFn: () => metadataService.getFullMetadata(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
@@ -67,7 +67,7 @@ const VisualizerPage = () => {
         message.payload?.resource === DataUpdateResourceType.STORAGE_SCHEMA
       ) {
         // Invalidate all metadata-related queries
-        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
       }
     };
 

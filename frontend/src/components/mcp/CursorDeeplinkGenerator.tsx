@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import CursorLogoIcon from '@/assets/icons/cursor_logo.svg';
 import { createMCPServerConfig, type PlatformType } from '@/components/mcp/mcp-helper';
 
 interface CursorDeeplinkGeneratorProps {
@@ -29,7 +28,7 @@ export function CursorDeeplinkGenerator({
       onClick={handleOpenInCursor}
       className="bg-black py-2 px-4 flex items-center justify-center gap-2.5 rounded-md text-white text-sm font-medium"
     >
-      <img src={CursorLogoIcon} alt="Add to Cursor" className="h-6 w-6" />
+      <img src="/icons/cursor_logo.svg" alt="Add to Cursor" className="h-6 w-6" />
       <span>Add to Cursor</span>
     </button>
   );

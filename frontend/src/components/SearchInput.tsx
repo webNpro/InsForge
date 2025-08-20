@@ -64,14 +64,14 @@ export function SearchInput({
   };
 
   return (
-    <div className={`relative bg-white ${className || ''}`}>
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className={`relative bg-white dark:bg-neutral-900 ${className || ''}`}>
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground dark:text-zinc-300" />
       <Input
         type="text"
         placeholder={placeholder}
         value={internalValue}
         onChange={(e) => handleInputChange(e.target.value)}
-        className="pl-9 pr-9 h-10"
+        className="pl-9 pr-9 h-10  dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
       />
       {internalValue && (
         <Button

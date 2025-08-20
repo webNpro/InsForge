@@ -26,13 +26,17 @@ const providers = [
 
 const NotConfirgured = () => {
   return (
-    <p className="bg-zinc-100 text-xs font-medium text-zinc-500 py-2 px-3 rounded-sm">Disabled</p>
+    <p className="bg-zinc-100 text-xs font-medium text-zinc-500 py-2 px-3 rounded-sm dark:bg-neutral-600 dark:text-zinc-50">
+      Disabled
+    </p>
   );
 };
 
 const Configured = () => {
   return (
-    <p className="bg-green-100 text-xs font-medium text-green-700 py-2 px-3 rounded-sm">Enabled</p>
+    <p className="bg-green-100 text-xs font-medium text-green-700 py-2 px-3 rounded-sm dark:bg-neutral-600 dark:text-zinc-50">
+      Enabled
+    </p>
   );
 };
 
@@ -93,7 +97,9 @@ export function OAuthConfiguration() {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="text-sm text-gray-500">Loading OAuth configuration...</div>
+          <div className="text-sm text-gray-500 dark:text-zinc-400">
+            Loading OAuth configuration...
+          </div>
         </div>
       </div>
     );
@@ -103,8 +109,8 @@ export function OAuthConfiguration() {
     <>
       <div className="flex flex-col gap-6 h-full overflow-hidden p-6 w-full max-w-[1080px] mx-auto">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-gray-900">OAuth Providers</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">OAuth Providers</h2>
+          <p className="text-gray-600 dark:text-zinc-300">
             Configure OAuth providers to enable social authentication for your users.
           </p>
         </div>
@@ -113,7 +119,7 @@ export function OAuthConfiguration() {
           <div className="flex flex-col gap-3 w-full">
             {providers.map((provider) => (
               <Button
-                className="h-auto w-full py-4 px-6 flex items-center justify-between bg-white hover:bg-zinc-100 border border-border-gray"
+                className="h-auto w-full py-4 px-6 flex items-center justify-between bg-white hover:bg-zinc-100 border border-border-gray dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-700"
                 key={provider.id}
                 variant="ghost"
                 size="sm"

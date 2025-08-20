@@ -1,6 +1,7 @@
-import CheckedIcon from '@/assets/icons/checkbox_checked.svg';
-import UndeterminedIcon from '@/assets/icons/checkbox_undetermined.svg';
 import { cn } from '@/lib/utils/utils';
+import { useTheme } from '@/lib/contexts/ThemeContext';
+import CheckboxCheckedIcon from '@/assets/icons/checkbox_checked.svg?react';
+import CheckboxUndeterminedIcon from '@/assets/icons/checkbox_undetermined.svg?react';
 
 // Checkbox component with custom design
 interface CheckboxProps {
@@ -20,9 +21,8 @@ export function Checkbox({
   className,
   tabIndex,
 }: CheckboxProps) {
+  const { resolvedTheme } = useTheme();
   const showIcon = checked || indeterminate;
-  const iconSrc = indeterminate ? UndeterminedIcon : CheckedIcon;
-  const iconAlt = indeterminate ? 'Indeterminate' : 'Checked';
 
   return (
     <div className="w-full h-full flex items-center justify-center">
@@ -31,7 +31,7 @@ export function Checkbox({
         <input
           type="checkbox"
           className={cn(
-            'w-4 h-4 bg-white rounded appearance-none border border-zinc-200 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)] cursor-pointer row-start-1 col-start-1 disabled:cursor-not-allowed disabled:opacity-50',
+            'w-4 h-4 bg-white dark:bg-neutral-700 rounded appearance-none border border-zinc-200 dark:border-neutral-600 shadow-[0px_2px_1px_0px_rgba(0,0,0,0.1)] cursor-pointer row-start-1 col-start-1 disabled:cursor-not-allowed disabled:opacity-50',
             className
           )}
           checked={indeterminate ? false : checked}
@@ -40,13 +40,20 @@ export function Checkbox({
           disabled={disabled}
         />
 
-        {/* Overlay icon */}
+        {/* Overlay icon with dynamic background and text color */}
         {showIcon && (
-          <img
-            src={iconSrc}
-            alt={iconAlt}
-            className={`pointer-events-none mx-auto w-4 h-4 bg-white rounded row-start-1 col-start-1 ${disabled ? 'opacity-20' : ''}`}
-          />
+          <div
+            className={cn(
+              'mx-auto w-4 h-4 rounded row-start-1 col-start-1 pointer-events-none',
+              resolvedTheme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
+            )}
+          >
+            {indeterminate ? (
+              <CheckboxUndeterminedIcon className="w-full h-full" />
+            ) : (
+              <CheckboxCheckedIcon className="w-full h-full" />
+            )}
+          </div>
         )}
       </div>
     </div>
