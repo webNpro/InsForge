@@ -62,7 +62,7 @@ export class AnalyticsManager {
 
     if (shouldUseCloudwatch) {
       this.provider = 'cloudwatch';
-      this.cwRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+      this.cwRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-2';
       this.cwLogGroup = process.env.CLOUDWATCH_LOG_GROUP || null;
       if (!this.cwLogGroup) {
         throw new Error('CLOUDWATCH_LOG_GROUP is required when using CloudWatch analytics');
