@@ -52,7 +52,7 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
 
   return (
     <div className="relative">
-      <pre className="font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 dark:bg-neutral-700 dark:text-white rounded-md py-4 px-6 pr-16">
+      <pre className="font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 dark:bg-neutral-900 dark:text-white rounded-md py-4 px-6 pr-16">
         {highlightJson(json)}
       </pre>
       <CopyButton text={json} className="absolute top-4 right-4" />

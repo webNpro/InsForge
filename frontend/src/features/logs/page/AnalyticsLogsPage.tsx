@@ -427,9 +427,9 @@ export default function AnalyticsLogsPage() {
           {activeTab === 'logs' && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Source selector */}
-              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-500 dark:text-white">
+              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
                 <Select value={selectedSource} onValueChange={setSelectedSource}>
-                  <SelectTrigger className="w-full max-w-sm h-8 text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-500">
+                  <SelectTrigger className="w-full max-w-sm h-8 text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-700">
                     <SelectValue placeholder="Select a log source..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -472,14 +472,14 @@ export default function AnalyticsLogsPage() {
           {activeTab === 'search' && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Search Bar */}
-              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-500">
+              <div className="px-8 pb-2 border-b bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     placeholder="Search across all logs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-8 bg-white border-gray-200 rounded text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-500"
+                    className="pl-9 h-8 bg-white border-gray-200 rounded text-sm dark:bg-neutral-800 dark:text-white dark:border-neutral-700"
                   />
                 </div>
               </div>

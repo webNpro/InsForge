@@ -50,7 +50,7 @@ function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) 
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
       onBlur={handleSave}
-      className="w-full border-none outline-none bg-white focus:border-0! focus:ring-0! focus:ring-offset-0! focus:outline-none!"
+      className="w-full border-none outline-none bg-white dark:bg-neutral-800 focus:border-0! focus:ring-0! focus:ring-offset-0! focus:outline-none!"
       autoFocus
     />
   );

@@ -55,7 +55,7 @@ export default function MetadataPage() {
   return (
     <main className="min-h-screen bg-bg-gray dark:bg-neutral-800">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-bg-gray border-b border-gray-200 dark:border-neutral-500 dark:bg-neutral-800">
+      <div className="sticky top-0 z-30 bg-bg-gray border-b border-gray-200 dark:border-neutral-700 dark:bg-neutral-800">
         <div className="px-8 pt-6 pb-4">
           <div className="flex items-center">
             <nav className="flex items-center text-[22px] font-semibold">
@@ -88,11 +88,15 @@ export default function MetadataPage() {
         {/* Metadata Section */}
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">System Metadata</h2>
-            <p className="text-gray-600 dark:text-zinc-400">Complete metadata information for the InsForge system</p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+              System Metadata
+            </h2>
+            <p className="text-gray-600 dark:text-zinc-400">
+              Complete metadata information for the InsForge system
+            </p>
           </div>
 
-          <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-500 overflow-hidden">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700 overflow-hidden">
             <div className="flex items-center justify-between px-6 pt-4 bg-white dark:bg-neutral-800">
               <div className="flex items-center gap-2">
                 <Info className="h-5 w-5 text-gray-700 dark:text-white" />
