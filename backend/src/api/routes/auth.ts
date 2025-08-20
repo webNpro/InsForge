@@ -5,6 +5,7 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
 import { verifyAdmin } from '@/api/middleware/auth.js';
 import logger from '@/utils/logger.js';
+import jwt from 'jsonwebtoken';
 import {
   userIdSchema,
   createUserRequestSchema,
@@ -348,15 +349,15 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
   try {
     const { redirectUrl } = req.query;
 
-    const state = redirectUrl
-      ? Buffer.from(
-          JSON.stringify({
-            provider: 'google',
-            redirectUrl: redirectUrl as string,
-          })
-        ).toString('base64')
-      : undefined;
-
+    const jwtPayload = {
+      provider: 'google',
+      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      createdAt: Date.now(),
+    };
+    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
+      algorithm: 'HS256',
+      expiresIn: '1h', // Set expiration time for the state token
+    });
     const authUrl = await authService.generateGoogleAuthUrl(state);
 
     res.json({ authUrl });
@@ -375,15 +376,15 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
 router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirectUrl } = req.query;
-
-    const state = redirectUrl
-      ? Buffer.from(
-          JSON.stringify({
-            provider: 'github',
-            redirectUrl: redirectUrl as string,
-          })
-        ).toString('base64')
-      : undefined;
+    const jwtPayload = {
+      provider: 'github',
+      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      createdAt: Date.now(),
+    };
+    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
+      algorithm: 'HS256',
+      expiresIn: '1h', // Set expiration time for the state token
+    });
 
     const authUrl = await authService.generateGitHubAuthUrl(state);
 
@@ -415,9 +416,12 @@ router.get(
       let redirectUrl: string;
       let provider: string;
       try {
-        const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-        redirectUrl = stateData.redirectUrl || '/';
-        provider = stateData.provider || '';
+        const decodedState = jwt.verify(state, process.env.JWT_SECRET || 'default_secret') as {
+          provider: string;
+          redirectUrl: string;
+        };
+        redirectUrl = decodedState.redirectUrl || '/';
+        provider = decodedState.provider || '';
       } catch {
         logger.warn('Invalid state parameter', { state });
         throw new AppError('Invalid state parameter', 400, ERROR_CODES.INVALID_INPUT);
@@ -485,7 +489,13 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: N
 
     if (state) {
       try {
-        const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+        const stateData = jwt.verify(
+          state as string,
+          process.env.JWT_SECRET || 'default_secret'
+        ) as {
+          provider: string;
+          redirectUrl: string;
+        };
         redirectUrl = stateData.redirectUrl || '/';
       } catch {
         // Invalid state

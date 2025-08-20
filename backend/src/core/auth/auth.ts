@@ -505,7 +505,7 @@ export class AuthService {
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
-      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
       const authUrl = await fetch(
         `${cloudBaseUrl}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
@@ -567,7 +567,7 @@ export class AuthService {
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
-      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${encodeURIComponent(state)}`;
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
       const authUrl = await fetch(
         `${cloudBaseUrl}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
