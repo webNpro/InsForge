@@ -1,10 +1,22 @@
 import { Pool } from 'pg';
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
+import {
+  CloudWatchLogsClient,
+  DescribeLogStreamsCommand,
+  FilterLogEventsCommand,
+  StartQueryCommand,
+  GetQueryResultsCommand,
+} from '@aws-sdk/client-cloudwatch-logs';
+import { isCloudEnvironment } from '@/utils/environment.js';
 
 export class AnalyticsManager {
   private static instance: AnalyticsManager;
   private pool!: Pool;
+  private provider: 'logflare' | 'cloudwatch' = 'logflare';
+  private cwClient: CloudWatchLogsClient | null = null;
+  private cwLogGroup: string | null = null;
+  private cwRegion: string | null = null;
 
   // Source name mapping for user-friendly display
   private sourceNameMap: Record<string, string> = {
@@ -42,11 +54,33 @@ export class AnalyticsManager {
   }
 
   async initialize(): Promise<void> {
-    // PostgreSQL connection configuration for _insforge database
+    // Decide provider based on explicit override or cloud environment
+    const explicitProvider = (process.env.ANALYTICS_PROVIDER || '').toLowerCase();
+    const shouldUseCloudwatch =
+      explicitProvider === 'cloudwatch' ||
+      (!explicitProvider && isCloudEnvironment() && !!process.env.CLOUDWATCH_LOG_GROUP);
+
+    if (shouldUseCloudwatch) {
+      this.provider = 'cloudwatch';
+      this.cwRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+      this.cwLogGroup = process.env.CLOUDWATCH_LOG_GROUP || null;
+      if (!this.cwLogGroup) {
+        throw new Error('CLOUDWATCH_LOG_GROUP is required when using CloudWatch analytics');
+      }
+      this.cwClient = new CloudWatchLogsClient({ region: this.cwRegion });
+      logger.info('Analytics provider initialized: CloudWatch Logs', {
+        region: this.cwRegion,
+        logGroup: this.cwLogGroup,
+      });
+      return;
+    }
+
+    // Default to Logflare/Postgres
+    this.provider = 'logflare';
     this.pool = new Pool({
       host: process.env.POSTGRES_HOST || 'localhost',
       port: parseInt(process.env.POSTGRES_PORT || '5432'),
-      database: '_insforge', // Analytics database
+      database: '_insforge',
       user: process.env.POSTGRES_USER || 'postgres',
       password: process.env.POSTGRES_PASSWORD || 'postgres',
       max: 10,
@@ -55,7 +89,6 @@ export class AnalyticsManager {
     });
 
     try {
-      // Test connection
       const client = await this.pool.connect();
       client.release();
       logger.info('Analytics database connection established');
@@ -69,6 +102,30 @@ export class AnalyticsManager {
 
   // Get all available log sources (only those with data)
   async getLogSources(): Promise<LogSource[]> {
+    if (this.provider === 'cloudwatch') {
+      const logGroup = this.cwLogGroup!;
+      const client = this.cwClient!;
+      const suffixMapping: Record<string, string> = {
+        'insforge.logs': process.env.CW_SUFFIX_INFORGE || 'insforge-vector',
+        'postgREST.logs': process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector',
+        'postgres.logs': process.env.CW_SUFFIX_POSTGRES || 'postgres-vector',
+      };
+
+      const cmd = new DescribeLogStreamsCommand({ logGroupName: logGroup });
+      const result = await client.send(cmd);
+      const streams = result.logStreams || [];
+
+      const available: LogSource[] = [];
+      let idCounter = 1;
+      for (const [displayName, suffix] of Object.entries(suffixMapping)) {
+        const have = streams.some((s) => (s.logStreamName || '').includes(suffix));
+        if (have) {
+          available.push({ id: idCounter++, name: displayName, token: suffix });
+        }
+      }
+      return available;
+    }
+
     const client = await this.pool.connect();
     try {
       const result = await client.query(`
@@ -77,35 +134,27 @@ export class AnalyticsManager {
         ORDER BY name
       `);
 
-      // Filter out sources that have no data
       const sourcesWithData: LogSource[] = [];
-
       for (const source of result.rows) {
         const tableName = `log_events_${source.token.replace(/-/g, '_')}`;
-
         try {
-          // Check if the table exists and has data
           const countResult = await client.query(`
             SELECT COUNT(*) as count
             FROM _analytics.${tableName}
           `);
-
           const count = parseInt(countResult.rows[0].count);
           if (count > 0) {
-            // Apply name mapping before returning
             sourcesWithData.push({
               ...source,
               name: this.getDisplayName(source.name),
             });
           }
         } catch (error) {
-          // If table doesn't exist or query fails, skip this source
           logger.warn(`Source ${source.name} has no accessible data`, {
             error: error instanceof Error ? error.message : String(error),
           });
         }
       }
-
       return sourcesWithData;
     } finally {
       client.release();
@@ -124,6 +173,51 @@ export class AnalyticsManager {
     total: number;
     tableName: string;
   }> {
+    if (this.provider === 'cloudwatch') {
+      const client = this.cwClient!;
+      const logGroup = this.cwLogGroup!;
+      const suffixMapping: Record<string, string> = {
+        'insforge.logs': process.env.CW_SUFFIX_INFORGE || 'insforge-vector',
+        'postgREST.logs': process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector',
+        'postgres.logs': process.env.CW_SUFFIX_POSTGRES || 'postgres-vector',
+      };
+      const suffix = suffixMapping[sourceName] || suffixMapping[this.getDisplayName(sourceName)] || '';
+      const dls = await client.send(new DescribeLogStreamsCommand({ logGroupName: logGroup }));
+      const streams = (dls.logStreams || [])
+        .map((s) => s.logStreamName || '')
+        .filter((name) => (suffix ? name.includes(suffix) : true));
+
+      const startMs = startTime ? Date.parse(startTime) : undefined;
+      const endMs = (beforeTimestamp ? Date.parse(beforeTimestamp) : undefined) || (endTime ? Date.parse(endTime) : undefined);
+
+      const fle = await client.send(
+        new FilterLogEventsCommand({
+          logGroupName: logGroup,
+          logStreamNames: streams.length > 0 ? streams.slice(0, 100) : undefined,
+          startTime: startMs,
+          endTime: endMs,
+          limit,
+        })
+      );
+      const events = fle.events || [];
+      const logs: AnalyticsLogRecord[] = events.map((e) => {
+        const message = e.message || '';
+        let parsed: Record<string, unknown> = {};
+        try {
+          parsed = JSON.parse(message);
+        } catch {
+          parsed = { message };
+        }
+        return {
+          id: e.eventId || `${e.logStreamName || ''}-${e.timestamp || ''}`,
+          timestamp: new Date((e.timestamp || Date.now())).toISOString(),
+          event_message: typeof parsed === 'object' && parsed && (parsed as any).msg ? (parsed as any).msg : (typeof message === 'string' ? message.slice(0, 500) : String(message)),
+          body: parsed as Record<string, any>,
+        };
+      });
+      return { logs, total: logs.length, tableName: `cloudwatch:${logGroup}` };
+    }
+
     const client = await this.pool.connect();
     try {
       // Convert display name to internal name for query
@@ -208,30 +302,50 @@ export class AnalyticsManager {
 
   // Get statistics for all log sources
   async getLogSourceStats(): Promise<LogSourceStats[]> {
+    if (this.provider === 'cloudwatch') {
+      const client = this.cwClient!;
+      const logGroup = this.cwLogGroup!;
+      const sources = await this.getLogSources();
+      const stats: LogSourceStats[] = [];
+      const dls = await client.send(new DescribeLogStreamsCommand({ logGroupName: logGroup }));
+      const streams = dls.logStreams || [];
+      for (const src of sources) {
+        const last = streams
+          .filter((s) => (s.logStreamName || '').includes(src.token))
+          .reduce<number | null>((acc, s) => {
+            const t = s.lastIngestionTime ?? s.creationTime ?? null;
+            if (t == null) return acc;
+            if (acc == null) return t;
+            return Math.max(acc, t);
+          }, null);
+        stats.push({
+          source: src.name,
+          count: 0,
+          lastActivity: last ? new Date(last).toISOString() : '',
+        });
+      }
+      return stats;
+    }
+
     const client = await this.pool.connect();
     try {
       const sources = await this.getLogSources();
       const stats: LogSourceStats[] = [];
-
       for (const source of sources) {
         const tableName = `log_events_${source.token.replace(/-/g, '_')}`;
-
         try {
-          // Get count and last activity for each source
           const result = await client.query(`
             SELECT 
               COUNT(*) as count,
               MAX(timestamp) as last_activity
             FROM _analytics.${tableName}
           `);
-
           stats.push({
             source: source.name,
             count: parseInt(result.rows[0].count),
             lastActivity: result.rows[0].last_activity || '',
           });
         } catch (error) {
-          // If table doesn't exist or query fails, add with zero count
           logger.warn(`Failed to get stats for source ${source.name}`, {
             error: error instanceof Error ? error.message : String(error),
           });
@@ -242,7 +356,6 @@ export class AnalyticsManager {
           });
         }
       }
-
       return stats.sort((a, b) => b.count - a.count);
     } finally {
       client.release();
@@ -259,6 +372,67 @@ export class AnalyticsManager {
     logs: (AnalyticsLogRecord & { source: string })[];
     total: number;
   }> {
+    if (this.provider === 'cloudwatch') {
+      const client = this.cwClient!;
+      const logGroup = this.cwLogGroup!;
+      const end = Date.now();
+      const start = end - 7 * 24 * 60 * 60 * 1000;
+      const escaped = query.replace(/"/g, '\\"');
+      let insights = `fields @timestamp, @message, @logStream | filter @message like /${escaped}/`;
+      if (sourceName) {
+        const suffix = sourceName === 'insforge.logs'
+          ? (process.env.CW_SUFFIX_INFORGE || 'insforge-vector')
+          : sourceName === 'postgREST.logs'
+          ? (process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector')
+          : sourceName === 'postgres.logs'
+          ? (process.env.CW_SUFFIX_POSTGRES || 'postgres-vector')
+          : (process.env.CW_SUFFIX_FUNCTION || 'function-vector');
+        insights += ` | filter @logStream like /${suffix}/`;
+      }
+      insights += ` | sort @timestamp desc | limit ${limit}`;
+
+      const startQuery = await client.send(new StartQueryCommand({
+        logGroupName: logGroup,
+        startTime: Math.floor(start / 1000),
+        endTime: Math.floor(end / 1000),
+        queryString: insights,
+        limit,
+      }));
+      const qid = startQuery.queryId!;
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let results;
+      for (let i = 0; i < 20; i++) {
+        const r = await client.send(new GetQueryResultsCommand({ queryId: qid }));
+        if (r.status === 'Complete' || r.status === 'Failed' || r.status === 'Cancelled') {
+          results = r.results || [];
+          break;
+        }
+        await sleep(300);
+      }
+      const rows = results || [];
+      const toObj = (row: any[]) => Object.fromEntries(row.map((c: any) => [c.field, c.value]));
+      const mapped: (AnalyticsLogRecord & { source: string })[] = rows.map((r: any) => {
+        const o = toObj(r);
+        const msg = o['@message'] || '';
+        let parsed: Record<string, unknown> = {};
+        try { parsed = JSON.parse(msg); } catch { parsed = { message: msg }; }
+        const logStream: string = o['@logStream'] || '';
+        const source: string = logStream.includes('postgrest')
+          ? 'postgREST.logs'
+          : logStream.includes('postgres')
+          ? 'postgres.logs'
+          : 'insforge.logs';
+        return {
+          id: `${o['@logStream']}-${o['@timestamp']}`,
+          timestamp: new Date(Number(o['@timestamp'] || Date.now())).toISOString(),
+          event_message: typeof parsed === 'object' && (parsed as any).msg ? (parsed as any).msg : (typeof msg === 'string' ? msg.slice(0, 500) : String(msg)),
+          body: parsed as Record<string, any>,
+          source,
+        };
+      });
+      return { logs: mapped, total: mapped.length };
+    }
+
     const client = await this.pool.connect();
     try {
       let sources: LogSource[];
@@ -330,6 +504,8 @@ export class AnalyticsManager {
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.provider === 'logflare' && this.pool) {
+      await this.pool.end();
+    }
   }
 }
