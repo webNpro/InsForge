@@ -40,7 +40,7 @@ export function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-[400px] py-6 px-0 gap-6 bg-white border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] dark:bg-neutral-800 dark:border-neutral-500 dark:text-white">
+      <AlertDialogContent className="max-w-[400px] py-6 px-0 gap-6 bg-white border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
         {/* Header with close button */}
         <div className="flex items-center justify-between px-6">
           <AlertDialogTitle className="text-base font-semibold text-zinc-950 dark:text-white">
@@ -70,7 +70,7 @@ export function ConfirmDialog({
         <AlertDialogFooter className="px-6 flex-row justify-end gap-3">
           <AlertDialogCancel
             disabled={isLoading}
-            className="h-10 w-20 px-4 py-2 text-sm font-medium bg-white border border-zinc-200 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] rounded-md hover:bg-zinc-50 dark:bg-neutral-800 dark:border-neutral-500 dark:text-white dark:hover:bg-neutral-700"
+            className="h-10 w-20 px-4 py-2 text-sm font-medium bg-white border border-zinc-200 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] rounded-md hover:bg-zinc-50 dark:bg-neutral-600 dark:border-neutral-600 dark:text-white dark:hover:bg-neutral-700"
           >
             {cancelText}
           </AlertDialogCancel>
@@ -81,7 +81,7 @@ export function ConfirmDialog({
             disabled={isLoading}
             className={`h-10 w-20 px-4 py-2 text-sm font-medium rounded-md shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] dark:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] ${
               destructive
-                ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600 dark:text-white'
+                ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-200 dark:hover:bg-red-300 dark:text-red-700'
                 : 'bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400'
             }`}
           >

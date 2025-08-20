@@ -30,7 +30,9 @@ export { JsonHighlight } from './JsonHighlight';
 export { SearchInput } from './SearchInput';
 export { PaginationControls } from './PaginationControls';
 export { SelectionClearButton } from './SelectionClearButton';
+export { DeleteActionButton } from './DeleteActionButton';
 export { Checkbox } from './Checkbox';
+export { CheckedIcon, UndeterminedIcon } from './CheckboxIcons';
 
 // Data Grid Components
 export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGrid';

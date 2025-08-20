@@ -150,7 +150,7 @@ export default function AppSidebar({
           <div key={item.name}>
             <Button
               variant="ghost"
-              className="w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 dark:border-neutral-500 rounded-md hover:bg-zinc-100 dark:hover:bg-neutral-600 text-black dark:text-white"
+              className="w-full h-12 relative transition-all duration-200 ease-in-out border border-gray-200 dark:border-neutral-700 rounded-md hover:bg-zinc-100 dark:hover:bg-neutral-600 text-black dark:text-white"
               onClick={() => window.open(item.href, '_blank')}
             >
               <div className="absolute left-3.5 h-5 w-5">

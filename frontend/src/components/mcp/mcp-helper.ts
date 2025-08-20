@@ -8,6 +8,7 @@ export interface MCPAgent {
   id: string;
   displayName: string;
   logo?: string;
+  darkLogo?: string;
   description?: string;
 }
 
@@ -25,30 +26,35 @@ export const MCP_AGENTS: MCPAgent[] = [
     id: 'cursor',
     displayName: 'Cursor',
     logo: CursorLogoIcon,
+    darkLogo: CursorLogoIcon,
     description: 'AI-powered code editor with built-in MCP support',
   },
   {
     id: 'claude-code',
     displayName: 'Claude Code',
     logo: ClaudeLogoIcon,
+    darkLogo: ClaudeLogoIcon,
     description: "Anthropic's Claude with MCP integration",
   },
   {
     id: 'windsurf',
     displayName: 'Windsurf',
-    logo: "/icons/windsurf_logo.svg",
+    logo: '/icons/windsurf_logo.svg',
+    darkLogo: '/icons/windsurf_logo_dark.svg',
     description: 'Next-generation AI development environment',
   },
   {
     id: 'cline',
     displayName: 'Cline',
-    logo: "/icons/cline_logo.svg",
+    logo: '/icons/cline_logo.svg',
+    darkLogo: '/icons/cline_logo_dark.svg',
     description: 'Intelligent coding assistant with MCP support',
   },
   {
     id: 'roocode',
     displayName: 'Roo Code',
-    logo: "/icons/roo_code_logo.svg",
+    logo: '/icons/roo_code_logo.svg',
+    darkLogo: '/icons/roo_code_logo_dark.svg',
     description: 'Smart code completion and assistance tool',
   },
   {

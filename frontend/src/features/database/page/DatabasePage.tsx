@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
-import PencilIcon from '@/assets/icons/pencil.svg';
-import RefreshIcon from '@/assets/icons/refresh.svg';
+import PencilIcon from '@/assets/icons/pencil.svg?react';
+import RefreshIcon from '@/assets/icons/refresh.svg?react';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
 import { databaseService } from '@/features/database/services/database.service';
 import { metadataService } from '@/features/metadata/services/metadata.service';
@@ -22,10 +22,9 @@ import {
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
-import { SearchInput, SelectionClearButton } from '@/components';
+import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -48,7 +47,7 @@ export default function DatabasePage() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const { resolvedTheme } = useTheme();
+
   // Persist selected table to localStorage when it changes
   useEffect(() => {
     if (selectedTable) {
@@ -469,7 +468,7 @@ export default function DatabasePage() {
             {/* Sticky Header Section */}
             {selectedTable && (
               <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
-                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-500">
+                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-700">
                   {/* Page Header with Breadcrumb */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -491,7 +490,7 @@ export default function DatabasePage() {
                                 className="p-1 h-6 w-6"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
-                                <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
+                                <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -508,7 +507,7 @@ export default function DatabasePage() {
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
-                                <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
+                                <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -532,21 +531,18 @@ export default function DatabasePage() {
                             itemType="record"
                             onClear={() => setSelectedRows(new Set())}
                           />
-                          <Button
-                            variant={resolvedTheme === "light" ? "outline" : "default"}
-                            className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
-                            onClick={() => void handleBulkDelete(Array.from(selectedRows))}
-                          >
-                            Delete {selectedRows.size}{' '}
-                            {selectedRows.size === 1 ? 'Record' : 'Records'}
-                          </Button>
+                          <DeleteActionButton
+                            selectedCount={selectedRows.size}
+                            itemType="record"
+                            onDelete={() => void handleBulkDelete(Array.from(selectedRows))}
+                          />
                         </div>
                       ) : (
                         <SearchInput
                           value={searchQuery}
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
-                          className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500"
+                          className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
                           debounceTime={300}
                         />
                       )}
@@ -587,7 +583,7 @@ export default function DatabasePage() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-500">
+                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-700">
                   <DatabaseDataGrid
                     data={tableData?.records || []}
                     schema={tableData?.schema}

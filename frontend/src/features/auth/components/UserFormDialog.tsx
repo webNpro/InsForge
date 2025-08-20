@@ -120,11 +120,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         userData.id = user.id;
       }
 
-      await authService.register(
-        userData.email,
-        userData.password || '',
-        userData.name,
-      );
+      await authService.register(userData.email, userData.password || '', userData.name);
       void refetch();
       onOpenChange(false);
       showToast('User created successfully', 'success');
@@ -149,7 +145,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         >
           {/* Email Field */}
           <div className="flex flex-col gap-3">
-            <Label htmlFor="user-email" className="text-sm font-medium text-zinc-950 dark:text-white">
+            <Label
+              htmlFor="user-email"
+              className="text-sm font-medium text-zinc-950 dark:text-white"
+            >
               Email
             </Label>
             <div className="relative">
@@ -174,7 +173,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
           {/* Password Field */}
           <div className="flex flex-col gap-3">
-            <Label htmlFor="user-password" className="text-sm font-medium text-zinc-950 dark:text-white">
+            <Label
+              htmlFor="user-password"
+              className="text-sm font-medium text-zinc-950 dark:text-white"
+            >
               Password
             </Label>
             <div className="relative">
@@ -211,7 +213,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-10 w-20 px-4 py-2 dark:border-neutral-500 dark:text-white"
+              className="h-10 w-20 px-4 py-2 dark:border-neutral-700 dark:text-white"
             >
               Cancel
             </Button>

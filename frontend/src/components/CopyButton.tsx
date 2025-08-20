@@ -55,7 +55,7 @@ export function CopyButton({
       onClick={() => void handleCopy()}
       disabled={disabled}
       className={cn(
-        'px-3 w-fit h-8 rounded-md bg-zinc-50 dark:bg-neutral-800 hover:bg-bg-gray-hover dark:hover:bg-neutral-600 border-border-gray dark:border-neutral-500 border shadow gap-1.5 transition-all duration-200',
+        'px-3 w-fit h-8 rounded-md bg-zinc-50 dark:bg-neutral-700 hover:bg-bg-gray-hover dark:hover:bg-neutral-700 border-border-gray dark:border-neutral-700 border shadow gap-1.5 transition-all duration-200',
         copied && 'bg-transparent cursor-default shadow-none border-none hover:bg-transparent',
         className
       )}
@@ -66,7 +66,9 @@ export function CopyButton({
         <Copy className="w-4 h-4 text-zinc-950 dark:text-white" />
       )}
       {showText && (
-        <span className="font-medium text-sm text-zinc-950 dark:text-white">{copied ? copiedText : copyText}</span>
+        <span className="font-medium text-sm text-zinc-950 dark:text-white">
+          {copied ? copiedText : copyText}
+        </span>
       )}
     </Button>
   );

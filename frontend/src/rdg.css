@@ -7,13 +7,15 @@
     --rdg-background-color: #f9fafb;
     --rdg-row-hover-color: #f5f5f5;
     --rdg-background-color-edit: #ffffff;
+    --rdg-header-row-background-color: #f9fafb;
   }
 
   .rdg-dark {
-    --rdg-border-color: #737373;
+    --rdg-border-color: #404040;
     --rdg-background-color: #262626;
-    --rdg-row-hover-color: #404040;
+    --rdg-row-hover-color: #171717;
     --rdg-background-color-edit: #262626;
+    --rdg-header-row-background-color: #171717;
   }
 }
 
@@ -40,6 +42,10 @@
   min-width: 45px !important;
   max-width: 45px !important;
   justify-content: center;
+}
+
+.rdg-header-row .rdg-cell {
+  background-color: var(--rdg-header-row-background-color) !important;
 }
 
 .rdg-header-row .rdg-cell[data-column-key='rdg-select-column'],

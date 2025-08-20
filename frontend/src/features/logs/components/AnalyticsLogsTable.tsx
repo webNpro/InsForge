@@ -149,7 +149,7 @@ export function AnalyticsLogsTable({
         <div className="font-mono text-sm">
           {/* Loading indicator at top for older logs */}
           {isLoadingMore && (
-            <div className="px-4 py-2 text-center text-gray-500 dark:text-zinc-400 text-xs bg-gray-50 dark:bg-neutral-700 border-b dark:border-neutral-500">
+            <div className="px-4 py-2 text-center text-gray-500 dark:text-zinc-400 text-xs bg-gray-50 dark:bg-neutral-700 border-b dark:border-neutral-700">
               <div className="inline-flex items-center">
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-400 dark:border-gray-400 mr-2" />
                 Loading older logs...
@@ -163,7 +163,7 @@ export function AnalyticsLogsTable({
             const hasDetails = log.body && Object.keys(log.body).length > 0;
 
             return (
-              <div key={uniqueKey} className="border-b border-gray-100 dark:border-neutral-500 hover:bg-gray-50 dark:hover:bg-neutral-700 dark:hover:text-white">
+              <div key={uniqueKey} className="border-b border-gray-100 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-700 dark:hover:text-white">
                 <div
                   className={cn(
                     'flex items-start px-4 py-2',
@@ -230,7 +230,7 @@ export function AnalyticsLogsTable({
 
                 {/* Expanded details */}
                 {isExpanded && hasDetails && (
-                  <div className="px-4 pb-3 bg-gray-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-t border-gray-200 dark:border-neutral-500">
+                  <div className="px-4 pb-3 bg-gray-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-t border-gray-200 dark:border-neutral-700">
                     <div className="ml-48 pl-3">
                       {/* Request details */}
                       {log.body?.log_type === 'request' && (

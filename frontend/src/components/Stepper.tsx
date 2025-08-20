@@ -94,7 +94,7 @@ export function LinearStepper({
       {/* Progress Bar */}
       <div className="relative w-full h-2 bg-zinc-200 dark:bg-zinc-600 rounded-full overflow-hidden">
         <div
-          className="absolute top-0 left-0 h-full bg-zinc-950 dark:bg-emerald-300 transition-all duration-500 ease-in-out"
+          className="absolute top-0 left-0 h-full bg-zinc-950 dark:bg-white transition-all duration-500 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
@@ -113,9 +113,9 @@ export function LinearStepper({
                 {stepIsCompleted ? (
                   <CheckedIcon className="w-5 h-5" />
                 ) : isCurrent ? (
-                  <ActiveStep className="w-5 h-5 dark:text-emerald-300" />
+                  <ActiveStep className="w-5 h-5 dark:text-white" />
                 ) : (
-                  <InactiveStep className="w-5 h-5 dark:text-zinc-400" />
+                  <InactiveStep className="w-5 h-5 dark:text-neutral-400" />
                 )}
               </div>
 
@@ -123,7 +123,9 @@ export function LinearStepper({
               <span
                 className={cn(
                   'text-sm text-center transition-colors duration-300',
-                  stepIsCompleted || isCurrent ? 'text-zinc-950 dark:text-white' : 'text-zinc-500 dark:text-zinc-400'
+                  stepIsCompleted || isCurrent
+                    ? 'text-zinc-950 dark:text-white'
+                    : 'text-zinc-500 dark:text-neutral-400'
                 )}
               >
                 {label}

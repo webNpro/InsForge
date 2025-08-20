@@ -9,7 +9,10 @@ import { StorageFileSchema } from '@insforge/shared-schemas';
 const FileNameRenderer = ({ row, column }: any) => {
   const fileName = row[column.key].split('/').pop() || row[column.key];
   return (
-    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-300 truncate" title={row[column.key]}>
+    <span
+      className="text-sm font-medium text-zinc-900 dark:text-zinc-300 truncate"
+      title={row[column.key]}
+    >
       {fileName}
     </span>
   );

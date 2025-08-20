@@ -110,7 +110,7 @@ export function UsersManagement({
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-neutral-500">
+      <div className="flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-neutral-700">
         <UsersDataGrid
           data={sortedUsers}
           loading={isLoading}

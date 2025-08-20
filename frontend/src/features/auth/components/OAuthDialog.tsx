@@ -183,13 +183,15 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <div className="text-sm text-gray-500 dark:text-zinc-400">Loading OAuth configuration...</div>
+              <div className="text-sm text-gray-500 dark:text-zinc-400">
+                Loading OAuth configuration...
+              </div>
             </div>
           </div>
         ) : (
           <>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-500 dark:text-white">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
                 <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
               </div>
             )}
@@ -260,7 +262,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
                   <div className="space-y-6">
                     <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">Client ID</label>
+                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
+                        Client ID
+                      </label>
                       <Input
                         type="text"
                         {...form.register(`${currentProviderKey}.clientId`)}
@@ -269,7 +273,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                     </div>
 
                     <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">Client Secret</label>
+                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
+                        Client Secret
+                      </label>
                       <Input
                         type="password"
                         {...form.register(`${currentProviderKey}.clientSecret`)}
@@ -284,7 +290,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
             <DialogFooter>
               <Button
                 type="button"
-                className="py-2 px-4 text-sm font-medium dark:bg-neutral-800 dark:text-white dark:border-neutral-500 dark:hover:bg-neutral-700"
+                className="py-2 px-4 text-sm font-medium dark:bg-neutral-800 dark:text-white dark:border-neutral-700 dark:hover:bg-neutral-700"
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}

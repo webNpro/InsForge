@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, type DragEvent } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Upload } from 'lucide-react';
-import PencilIcon from '@/assets/icons/pencil.svg';
-import RefreshIcon from '@/assets/icons/refresh.svg';
+import PencilIcon from '@/assets/icons/pencil.svg?react';
+import RefreshIcon from '@/assets/icons/refresh.svg?react';
 import { storageService } from '@/features/storage/services/storage.service';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -20,7 +20,7 @@ import {
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
-import { SearchInput, SelectionClearButton } from '@/components';
+import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 
@@ -51,7 +51,7 @@ export default function StoragePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const { resolvedTheme } = useTheme();
-  
+
   // Fetch buckets
   const {
     data: buckets = [],
@@ -344,7 +344,7 @@ export default function StoragePage() {
           <>
             {/* Sticky Header Section */}
             <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
-              <div className="px-6 py-3 border-b border-border-gray h-12">
+              <div className="px-6 py-3 border-b border-border-gray dark:border-neutral-600 h-12">
                 {/* Page Header with Breadcrumb */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -355,7 +355,7 @@ export default function StoragePage() {
                     )}
 
                     {/* Separator */}
-                    <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
+                    <div className="h-6 w-px bg-gray-200" />
 
                     {/* Action buttons group */}
                     <div className="flex items-center gap-1">
@@ -369,7 +369,7 @@ export default function StoragePage() {
                                 className="p-1 h-6 w-6"
                                 onClick={() => handleEditBucket(selectedBucket)}
                               >
-                                <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
+                                <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -386,7 +386,7 @@ export default function StoragePage() {
                               onClick={() => void handleRefresh()}
                               disabled={isRefreshing}
                             >
-                              <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
+                              <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom" align="center">
@@ -398,7 +398,7 @@ export default function StoragePage() {
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-3 border-b border-border-gray">
+              <div className="px-6 py-3 border-b border-border-gray dark:border-neutral-600">
                 {/* Search Bar and Actions - only show when bucket is selected */}
                 {selectedBucket && (
                   <div className="flex items-center justify-between">
@@ -409,20 +409,18 @@ export default function StoragePage() {
                           itemType="file"
                           onClear={() => setSelectedFiles(new Set())}
                         />
-                        <Button
-                          variant={resolvedTheme === "light" ? "outline" : "default"}
-                          className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
-                          onClick={() => void handleBulkDeleteFiles(Array.from(selectedFiles))}
-                        >
-                          Delete {selectedFiles.size} {selectedFiles.size === 1 ? 'File' : 'Files'}
-                        </Button>
+                        <DeleteActionButton
+                          selectedCount={selectedFiles.size}
+                          itemType="file"
+                          onDelete={() => void handleBulkDeleteFiles(Array.from(selectedFiles))}
+                        />
                       </div>
                     ) : (
                       <SearchInput
                         value={searchQuery}
                         onChange={setSearchQuery}
                         placeholder="Search Files by Name"
-                        className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500"
+                        className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
                         debounceTime={300}
                       />
                     )}

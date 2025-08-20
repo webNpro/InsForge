@@ -11,8 +11,8 @@ import { Badge } from '@/components/radix/Badge';
 import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
-import ArrowUpIcon from '@/assets/icons/arrow_up.svg';
-import ArrowDownIcon from '@/assets/icons/arrow_down.svg';
+import ArrowUpIcon from '@/assets/icons/arrow_up.svg?react';
+import ArrowDownIcon from '@/assets/icons/arrow_down.svg?react';
 import { Checkbox } from './Checkbox';
 import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -82,7 +82,10 @@ export const DefaultCellRenderers = {
     const value = row[column.key];
     return (
       <div className="w-full h-full flex items-center justify-start">
-        <Badge variant={value ? 'default' : 'secondary'} className="border border-transparent dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500">
+        <Badge
+          variant={value ? 'default' : 'secondary'}
+          className="border border-transparent dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
+        >
           {value === null ? 'null' : value ? 'true' : 'false'}
         </Badge>
       </div>
@@ -149,7 +152,10 @@ export const DefaultCellRenderers = {
   },
 
   email: ({ row, column }: any) => (
-    <span className="text-sm text-gray-800 font-medium truncate dark:text-zinc-300" title={row[column.key] || 'null'}>
+    <span
+      className="text-sm text-gray-800 font-medium truncate dark:text-zinc-300"
+      title={row[column.key] || 'null'}
+    >
       {row[column.key] || 'null'}
     </span>
   ),
@@ -233,7 +239,9 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
-        <span className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300">{column.name}</span>
+        <span className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300">
+          {column.name}
+        </span>
 
         {columnType && showTypeBadge && <TypeBadge type={columnType} />}
 
@@ -242,20 +250,20 @@ export function SortableHeaderRenderer({
           <div className="relative ml-0.5 w-5 h-5">
             {sortDirection && (
               <div className="bg-transparent p-0.5 rounded">
-                <img
-                  src={sortDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
-                  alt={`Sorted ${sortDirection.toLowerCase()}`}
-                  className="h-4 w-4 text-zinc-500 transition-opacity group-hover:opacity-0 dark:text-zinc-300"
-                />
+                {sortDirection === 'DESC' ? (
+                  <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                ) : (
+                  <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                )}
               </div>
             )}
 
-            <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 p-0.5 rounded w-5 h-5">
-              <img
-                src={nextDirection === 'DESC' ? ArrowDownIcon : ArrowUpIcon}
-                alt={`Sort ${nextDirection.toLowerCase()}`}
-                className="h-4 w-4 text-zinc-500 dark:text-zinc-300"
-              />
+            <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 dark:bg-neutral-800 p-0.5 rounded w-5 h-5">
+              {nextDirection === 'DESC' ? (
+                <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+              ) : (
+                <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+              )}
             </div>
           </div>
         )}
@@ -451,7 +459,7 @@ export function DataGrid({
         {isRefreshing && (
           <div className="absolute inset-0 bg-white/60 dark:bg-neutral-800/60 flex items-center justify-center z-50 mt-13">
             <div className="flex items-center gap-1">
-              <div className="w-5 h-5 border-2 border-zinc-500 dark:border-neutral-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-zinc-500 dark:border-neutral-700 border-t-transparent rounded-full animate-spin" />
               <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading</span>
             </div>
           </div>

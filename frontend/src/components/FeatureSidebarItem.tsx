@@ -39,7 +39,7 @@ export function FeatureSidebarItem({
         className={cn(
           'w-full h-full flex items-center justify-start px-[14px] py-[14px]',
           !isSelected && 'hover:bg-[#F8FAFC] dark:hover:bg-neutral-700',
-          isSelected && 'bg-[#F1F5F9] dark:bg-neutral-700'
+          isSelected && 'bg-[#F1F5F9] dark:bg-neutral-600'
         )}
         onClick={onClick}
       >

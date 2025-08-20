@@ -152,12 +152,12 @@ export function RecordFormDialog({
             </div>
           )}
 
-          <DialogFooter className="px-6 py-6 gap-3 sm:justify-end border-t border-zinc-200 dark:border-neutral-500 shrink-0">
+          <DialogFooter className="px-6 py-6 gap-3 sm:justify-end border-t border-zinc-200 dark:border-neutral-700 shrink-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-10 px-4 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
+              className="h-10 px-4 dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>

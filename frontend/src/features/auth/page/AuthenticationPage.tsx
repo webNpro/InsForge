@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { UserPlus, Users, Key } from 'lucide-react';
-import { Button, SearchInput, SelectionClearButton } from '@/components';
+import { Button, SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { UsersManagement } from '@/features/auth/components/UsersManagement';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/components/radix/Tooltip';
 import { UserFormDialog } from '@/features/auth/components/UserFormDialog';
@@ -10,10 +10,8 @@ import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 
 export default function AuthenticationPage() {
-  const { resolvedTheme } = useTheme();
   const [selectedSection, setSelectedSection] = useState<string>('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -60,14 +58,16 @@ export default function AuthenticationPage() {
   return (
     <div className="h-full bg-slate-50 dark:bg-neutral-800 flex flex-col overflow-hidden">
       {/* Tab Navigation */}
-      <div className="h-12 flex items-center gap-6 px-6 border-b border-border-gray dark:border-neutral-500 relative">
+      <div className="h-12 flex items-center gap-6 px-6 border-b border-border-gray dark:border-neutral-700 relative">
         {authSections.map((section) => (
           <button
             key={section.id}
             onClick={() => setSelectedSection(section.id)}
             className={cn(
               'flex h-full items-center gap-2 px-0 text-base font-semibold transition-colors relative',
-              selectedSection === section.id ? 'text-black dark:text-white' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
+              selectedSection === section.id
+                ? 'text-black dark:text-white'
+                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
             )}
           >
             {section.name}
@@ -91,20 +91,18 @@ export default function AuthenticationPage() {
                     itemType="user"
                     onClear={() => setSelectedRows(new Set())}
                   />
-                  <Button
-                    variant={resolvedTheme === "light" ? "outline" : "default"}
-                    className="h-10 px-3 text-sm text-red-600 hover:text-red-400 hover:bg-zinc-50 border border-border-gray shadow-0 dark:bg-red-600 dark:text-white dark:border-transparent dark:hover:bg-red-700"
-                    onClick={() => setConfirmDeleteOpen(true)}
-                  >
-                    Delete {selectedRows.size === 1 ? 'User' : 'Users'}
-                  </Button>
+                  <DeleteActionButton
+                    selectedCount={selectedRows.size}
+                    itemType="user"
+                    onDelete={() => setConfirmDeleteOpen(true)}
+                  />
                 </div>
               ) : (
                 <SearchInput
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Search Users by Name or Email"
-                  className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:border-neutral-500"
+                  className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-white dark:border-neutral-700"
                   debounceTime={300}
                 />
               )}

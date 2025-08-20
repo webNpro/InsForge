@@ -122,7 +122,10 @@ export function BucketFormDialog({
           <div className="flex flex-col gap-6 px-6">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="bucket-name" className="text-sm font-medium text-zinc-950 dark:text-zinc-300">
+                <Label
+                  htmlFor="bucket-name"
+                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+                >
                   Bucket Name
                 </Label>
                 <Input
@@ -136,7 +139,7 @@ export function BucketFormDialog({
                   }}
                   placeholder={mode === 'create' ? 'Enter a name' : ''}
                   disabled={mode === 'edit'}
-                  className={`h-10 px-3 py-2 text-base ${mode === 'edit' ? 'bg-gray-100 dark:bg-neutral-700 cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-zinc-300 dark:border-neutral-500`}
+                  className={`h-10 px-3 py-2 text-base ${mode === 'edit' ? 'bg-gray-100 dark:bg-neutral-700 cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
                   autoFocus={mode === 'create'}
                 />
                 {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -149,7 +152,10 @@ export function BucketFormDialog({
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <Label htmlFor="bucket-public" className="text-sm font-medium text-zinc-950 dark:text-zinc-300">
+                <Label
+                  htmlFor="bucket-public"
+                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+                >
                   Public
                 </Label>
                 <Switch
@@ -169,7 +175,7 @@ export function BucketFormDialog({
               type="button"
               variant="outline"
               onClick={handleClose}
-              className="h-10 px-4 py-2 text-sm font-medium dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-500 dark:hover:bg-neutral-700"
+              className="h-10 px-4 py-2 text-sm font-medium dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>

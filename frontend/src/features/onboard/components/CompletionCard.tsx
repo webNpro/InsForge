@@ -18,7 +18,7 @@ export function CompletionCard() {
   };
 
   return (
-    <div className="border border-transparent dark:border-neutral-500 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6">
+    <div className="border border-transparent dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6">
       <div className="flex flex-col items-center justify-center gap-8">
         <div className="flex flex-col items-center justify-center gap-4 text-center">
           <img src={CheckedIcon} alt="Checked" className="w-10 h-10" />
@@ -30,7 +30,7 @@ export function CompletionCard() {
         </div>
         <Button
           variant="default"
-          className="px-4 py-2 h-10 text-sm font-medium dark:bg-white dark:text-black dark:hover:bg-neutral-100"
+          className="px-4 py-2 h-10 text-sm font-medium dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200"
           onClick={() => void handleNavigate()}
         >
           Go to Dashboard

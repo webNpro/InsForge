@@ -59,9 +59,9 @@ export function FeatureSidebar<T extends FeatureItem>({
   );
 
   return (
-    <div className="w-70 flex flex-col h-full bg-white dark:bg-neutral-800 border-r border-border-gray dark:border-neutral-500">
+    <div className="w-70 flex flex-col h-full bg-white dark:bg-neutral-800 border-r border-border-gray dark:border-neutral-700">
       {/* Header */}
-      <div className="px-6 py-3 h-12 bg-white border-b border-border-gray dark:bg-neutral-800 dark:border-neutral-500">
+      <div className="px-6 py-3 h-12 bg-white border-b border-border-gray dark:bg-neutral-800 dark:border-neutral-700">
         <h2 className="text-base font-semibold text-black dark:text-zinc-300">{title}</h2>
       </div>
 
@@ -72,7 +72,7 @@ export function FeatureSidebar<T extends FeatureItem>({
             onClick={onNewItem}
             variant="outline"
             size="sm"
-            className="w-full h-10 text-sm justify-start dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:border-neutral-500"
+            className="w-full h-10 text-sm justify-start dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:border-neutral-700"
           >
             <Plus className="w-5 h-5 mr-1" />
             {newItemTooltip}
