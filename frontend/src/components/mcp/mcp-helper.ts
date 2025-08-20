@@ -1,9 +1,3 @@
-import CursorLogoIcon from '@/assets/icons/cursor_logo.svg';
-import ClaudeLogoIcon from '@/assets/icons/claude_code_logo.svg';
-// import WindsurfLogoIcon from '@/assets/icons/windsurf_logo.svg';
-// import ClineLogoIcon from '@/assets/icons/cline_logo.svg';
-// import RooLogoIcon from '@/assets/icons/roo_code_logo.svg';
-
 export interface MCPAgent {
   id: string;
   displayName: string;
@@ -25,15 +19,15 @@ export const MCP_AGENTS: MCPAgent[] = [
   {
     id: 'cursor',
     displayName: 'Cursor',
-    logo: CursorLogoIcon,
-    darkLogo: CursorLogoIcon,
+    logo: '/icons/cursor_logo.svg',
+    darkLogo: '/icons/cursor_logo.svg',
     description: 'AI-powered code editor with built-in MCP support',
   },
   {
     id: 'claude-code',
     displayName: 'Claude Code',
-    logo: ClaudeLogoIcon,
-    darkLogo: ClaudeLogoIcon,
+    logo: '/icons/claude_code_logo.svg',
+    darkLogo: '/icons/claude_code_logo.svg',
     description: "Anthropic's Claude with MCP integration",
   },
   {

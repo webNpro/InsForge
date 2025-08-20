@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils/utils';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { CheckedIcon, UndeterminedIcon } from './CheckboxIcons';
+import CheckboxCheckedIcon from '@/assets/icons/checkbox_checked.svg?react';
+import CheckboxUndeterminedIcon from '@/assets/icons/checkbox_undetermined.svg?react';
 
 // Checkbox component with custom design
 interface CheckboxProps {
@@ -22,7 +23,6 @@ export function Checkbox({
 }: CheckboxProps) {
   const { resolvedTheme } = useTheme();
   const showIcon = checked || indeterminate;
-  const IconComponent = indeterminate ? UndeterminedIcon : CheckedIcon;
 
   return (
     <div className="w-full h-full flex items-center justify-center">
@@ -40,12 +40,20 @@ export function Checkbox({
           disabled={disabled}
         />
 
-        {/* Overlay icon */}
+        {/* Overlay icon with dynamic background and text color */}
         {showIcon && (
-          <IconComponent
-            className={cn('mx-auto w-4 h-4 rounded row-start-1 col-start-1')}
-            theme={resolvedTheme}
-          />
+          <div
+            className={cn(
+              'mx-auto w-4 h-4 rounded row-start-1 col-start-1 pointer-events-none',
+              resolvedTheme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
+            )}
+          >
+            {indeterminate ? (
+              <CheckboxUndeterminedIcon className="w-full h-full" />
+            ) : (
+              <CheckboxCheckedIcon className="w-full h-full" />
+            )}
+          </div>
         )}
       </div>
     </div>

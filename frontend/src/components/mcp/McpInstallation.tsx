@@ -54,7 +54,9 @@ export function McpInstallation({
         value={selectedAgent.id}
         onValueChange={(value) => {
           const agent = MCP_AGENTS.find((a) => a.id === value);
-          if (agent) setSelectedAgent(agent);
+          if (agent) {
+            setSelectedAgent(agent);
+          }
         }}
       >
         <TabsList

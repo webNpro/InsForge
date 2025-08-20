@@ -22,7 +22,6 @@ import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -50,7 +49,6 @@ export default function StoragePage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
-  const { resolvedTheme } = useTheme();
 
   // Fetch buckets
   const {
