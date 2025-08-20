@@ -9,7 +9,6 @@ import ReactFlow, {
   addEdge,
   Connection,
   ConnectionMode,
-  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TableNode } from './TableNode';
@@ -147,11 +146,33 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 
 export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps) {
   const initialNodes = useMemo(() => {
+    // First, collect all referenced columns for each table
+    const referencedColumnsByTable: Record<string, string[]> = {};
+
+    metadata.database.tables.forEach((table) => {
+      table.columns.forEach((column) => {
+        if (column.foreignKey) {
+          const targetTable = column.foreignKey.referenceTable;
+          const targetColumn = column.foreignKey.referenceColumn;
+
+          if (!referencedColumnsByTable[targetTable]) {
+            referencedColumnsByTable[targetTable] = [];
+          }
+          if (!referencedColumnsByTable[targetTable].includes(targetColumn)) {
+            referencedColumnsByTable[targetTable].push(targetColumn);
+          }
+        }
+      });
+    });
+
     const tableNodes: Node[] = metadata.database.tables.map((table, _) => ({
       id: table.tableName,
       type: 'tableNode',
       position: { x: 0, y: 0 },
-      data: { table },
+      data: {
+        table,
+        referencedColumns: referencedColumnsByTable[table.tableName] || [],
+      },
     }));
 
     const bucketNodes: Node[] = metadata.storage.buckets.map((bucket) => ({
@@ -188,17 +209,14 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
             id: edgeId,
             source: table.tableName,
             target: column.foreignKey.referenceTable,
-            sourceHandle: null,
-            targetHandle: null,
+            sourceHandle: `${column.columnName}-source`,
+            targetHandle: `${column.foreignKey.referenceColumn}-target`,
             type: 'smoothstep',
             animated: true,
-            label: column.columnName,
-            labelStyle: { fontSize: 10, fontWeight: 500 },
-            labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
-            style: { stroke: '#3B82F6', strokeWidth: 2 },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#3B82F6',
+            style: { stroke: 'white', strokeWidth: 2, zIndex: 1000 },
+            zIndex: 1000,
+            pathOptions: {
+              offset: 40,
             },
           });
         }
@@ -206,36 +224,6 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
     });
 
     // Add authentication edges if authData exists
-
-    metadata.database.tables.forEach((table) => {
-      // Check for user_id columns that reference the user table
-      const userColumns = table.columns.filter(
-        (column) =>
-          column.columnName.toLowerCase().includes('user') ||
-          (column.foreignKey && column.foreignKey.referenceTable === 'user')
-      );
-
-      if (userColumns.length > 0) {
-        const edgeId = `authentication-${table.tableName}`;
-        edges.push({
-          id: edgeId,
-          source: 'authentication',
-          target: table.tableName,
-          sourceHandle: null,
-          targetHandle: null,
-          type: 'smoothstep',
-          animated: true,
-          label: 'authenticates',
-          labelStyle: { fontSize: 10, fontWeight: 500 },
-          labelBgStyle: { fill: 'white', fillOpacity: 0.8 },
-          style: { stroke: '#10B981', strokeWidth: 2 },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#10B981',
-          },
-        });
-      }
-    });
 
     return edges;
   }, [metadata]);
@@ -273,6 +261,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
+        elevateEdgesOnSelect={true}
       >
         <Controls showInteractive={false} className="!bg-white !border-gray-200 !shadow-md" />
         <MiniMap

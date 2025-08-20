@@ -1,4 +1,3 @@
-import { Handle, Position } from 'reactflow';
 import { HardDrive, ExternalLink, Circle } from 'lucide-react';
 import { BucketMetadataSchema } from '@insforge/shared-schemas';
 
@@ -20,8 +19,6 @@ export function BucketNode({ data }: BucketNodeProps) {
 
   return (
     <div className="bg-neutral-900 rounded-lg border border-[#363636] min-w-[320px]">
-      <Handle type="target" position={Position.Left} className="!bg-blue-300" />
-
       {/* Bucket Header */}
       <div className="flex items-center justify-between p-2 border-b border-neutral-800">
         <div className="flex items-center gap-2">
@@ -60,8 +57,6 @@ export function BucketNode({ data }: BucketNodeProps) {
           </div>
         ))}
       </div>
-
-      <Handle type="source" position={Position.Right} className="!bg-blue-300" />
     </div>
   );
 }

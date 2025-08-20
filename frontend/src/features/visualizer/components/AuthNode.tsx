@@ -1,4 +1,3 @@
-import { Handle, Position } from 'reactflow';
 import { Lock, ExternalLink, FormInput, Users } from 'lucide-react';
 import GoogleIcon from '@/assets/icons/google.svg';
 import GithubIcon from '@/assets/icons/github.svg';
@@ -20,8 +19,6 @@ export function AuthNode({ data }: AuthNodeProps) {
 
   return (
     <div className="bg-neutral-900 rounded-lg border border-[#363636] min-w-[280px]">
-      <Handle type="target" position={Position.Left} className="!bg-lime-300" />
-
       {/* Auth Header */}
       <div className="flex items-center justify-between p-2 border-b border-neutral-800">
         <div className="flex items-center gap-2">
@@ -104,8 +101,6 @@ export function AuthNode({ data }: AuthNodeProps) {
           {userCount !== undefined && <span className="text-xs text-neutral-400">{userCount}</span>}
         </div>
       </div>
-
-      <Handle type="source" position={Position.Right} className="!bg-lime-300" />
     </div>
   );
 }
