@@ -63,7 +63,7 @@ function AppRoutes() {
                 <Route path="/authentication" element={<AuthenticationPage />} />
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/storage" element={<StoragePage />} />
-                <Route path="/logs" element={<LogsPage />} />
+                <Route path="/analytics" element={<AnalyticsLogsPage />} />
                 <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
               </Routes>
             </CloudLayout>
