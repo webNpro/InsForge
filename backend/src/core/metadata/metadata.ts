@@ -13,6 +13,7 @@ import {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
+import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 
 export class MetadataService {
   private static instance: MetadataService;
@@ -247,14 +248,15 @@ export class MetadataService {
   }
 
   async updateAuthMetadata(config?: OAuthConfigSchema): Promise<void> {
+    const useSharedKeys = shouldUseSharedOAuthKeys();
     const currentAuth = (await this.getMetadata('auth')) || {
       google: {
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
       github: {
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
     };
 
@@ -288,17 +290,18 @@ export class MetadataService {
   }
 
   async getFullMetadata(): Promise<AppMetadataSchema> {
+    const useSharedKeys = shouldUseSharedOAuthKeys();
     const database = (await this.getMetadata('database')) || {
       tables: [],
     };
     const auth = (await this.getMetadata('auth')) || {
       google: {
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
       github: {
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
     };
     const storage = (await this.getMetadata('storage')) || {
