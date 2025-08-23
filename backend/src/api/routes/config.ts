@@ -118,7 +118,10 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
     const validatedData = oAuthConfigSchema.parse(req.body);
 
     const useSharedKeys = shouldUseSharedOAuthKeys();
-    if (!useSharedKeys && (validatedData.google.useSharedKeys || validatedData.github.useSharedKeys)) {
+    if (
+      !useSharedKeys &&
+      (validatedData.google.useSharedKeys || validatedData.github.useSharedKeys)
+    ) {
       throw new AppError(
         'Shared OAuth keys are not enabled in this environment',
         400,

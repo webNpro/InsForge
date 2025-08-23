@@ -22,6 +22,13 @@ import { useToast } from '@/lib/hooks/useToast';
 import { useUploadToast } from '@/features/storage/components/UploadToast';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import EmptyBucket from '@/assets/icons/empty_bucket.svg';
+import {
+  DataUpdatePayload,
+  DataUpdateResourceType,
+  ServerEvents,
+  SocketMessage,
+  useSocket,
+} from '@/lib/contexts/SocketContext';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -49,6 +56,8 @@ export default function StoragePage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
+
+  const { socket, isConnected } = useSocket();
 
   // Fetch buckets
   const {
@@ -132,6 +141,28 @@ export default function StoragePage() {
       showToast(errorMessage, 'error');
     },
   });
+
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleDataUpdate = (message: SocketMessage<DataUpdatePayload>) => {
+      if (
+        message.payload?.resource === DataUpdateResourceType.METADATA ||
+        message.payload?.resource === DataUpdateResourceType.STORAGE_SCHEMA
+      ) {
+        // Invalidate all buckets queries
+        void queryClient.invalidateQueries({ queryKey: ['storage'] });
+      }
+    };
+
+    socket.on(ServerEvents.DATA_UPDATE, handleDataUpdate);
+
+    return () => {
+      socket.off(ServerEvents.DATA_UPDATE, handleDataUpdate);
+    };
+  }, [socket, isConnected, queryClient]);
 
   // Auto-select first bucket
   useEffect(() => {
