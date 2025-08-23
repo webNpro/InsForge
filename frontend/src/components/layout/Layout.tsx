@@ -18,7 +18,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <ThemeProvider>
-      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <div className="h-screen bg-gray-50 dark:bg-neutral-800 flex flex-col">
         <AppHeader currentUser={user} onLogout={logout} />
 
         {/* Main content */}

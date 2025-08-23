@@ -181,14 +181,17 @@ export class AnalyticsManager {
         'postgREST.logs': process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector',
         'postgres.logs': process.env.CW_SUFFIX_POSTGRES || 'postgres-vector',
       };
-      const suffix = suffixMapping[sourceName] || suffixMapping[this.getDisplayName(sourceName)] || '';
+      const suffix =
+        suffixMapping[sourceName] || suffixMapping[this.getDisplayName(sourceName)] || '';
       const dls = await client.send(new DescribeLogStreamsCommand({ logGroupName: logGroup }));
       const streams = (dls.logStreams || [])
         .map((s) => s.logStreamName || '')
         .filter((name) => (suffix ? name.includes(suffix) : true));
 
       const startMs = startTime ? Date.parse(startTime) : undefined;
-      const endMs = (beforeTimestamp ? Date.parse(beforeTimestamp) : undefined) || (endTime ? Date.parse(endTime) : undefined);
+      const endMs =
+        (beforeTimestamp ? Date.parse(beforeTimestamp) : undefined) ||
+        (endTime ? Date.parse(endTime) : undefined);
 
       const fle = await client.send(
         new FilterLogEventsCommand({
@@ -210,8 +213,13 @@ export class AnalyticsManager {
         }
         return {
           id: e.eventId || `${e.logStreamName || ''}-${e.timestamp || ''}`,
-          timestamp: new Date((e.timestamp || Date.now())).toISOString(),
-          event_message: typeof parsed === 'object' && parsed && (parsed as any).msg ? (parsed as any).msg : (typeof message === 'string' ? message.slice(0, 500) : String(message)),
+          timestamp: new Date(e.timestamp || Date.now()).toISOString(),
+          event_message:
+            typeof parsed === 'object' && parsed && (parsed as any).msg
+              ? (parsed as any).msg
+              : typeof message === 'string'
+                ? message.slice(0, 500)
+                : String(message),
           body: parsed as Record<string, any>,
         };
       });
@@ -380,24 +388,27 @@ export class AnalyticsManager {
       const escaped = query.replace(/"/g, '\\"');
       let insights = `fields @timestamp, @message, @logStream | filter @message like /${escaped}/`;
       if (sourceName) {
-        const suffix = sourceName === 'insforge.logs'
-          ? (process.env.CW_SUFFIX_INFORGE || 'insforge-vector')
-          : sourceName === 'postgREST.logs'
-          ? (process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector')
-          : sourceName === 'postgres.logs'
-          ? (process.env.CW_SUFFIX_POSTGRES || 'postgres-vector')
-          : (process.env.CW_SUFFIX_FUNCTION || 'function-vector');
+        const suffix =
+          sourceName === 'insforge.logs'
+            ? process.env.CW_SUFFIX_INFORGE || 'insforge-vector'
+            : sourceName === 'postgREST.logs'
+              ? process.env.CW_SUFFIX_POSTGREST || 'postgrest-vector'
+              : sourceName === 'postgres.logs'
+                ? process.env.CW_SUFFIX_POSTGRES || 'postgres-vector'
+                : process.env.CW_SUFFIX_FUNCTION || 'function-vector';
         insights += ` | filter @logStream like /${suffix}/`;
       }
       insights += ` | sort @timestamp desc | limit ${limit}`;
 
-      const startQuery = await client.send(new StartQueryCommand({
-        logGroupName: logGroup,
-        startTime: Math.floor(start / 1000),
-        endTime: Math.floor(end / 1000),
-        queryString: insights,
-        limit,
-      }));
+      const startQuery = await client.send(
+        new StartQueryCommand({
+          logGroupName: logGroup,
+          startTime: Math.floor(start / 1000),
+          endTime: Math.floor(end / 1000),
+          queryString: insights,
+          limit,
+        })
+      );
       const qid = startQuery.queryId!;
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       let results;
@@ -415,17 +426,26 @@ export class AnalyticsManager {
         const o = toObj(r);
         const msg = o['@message'] || '';
         let parsed: Record<string, unknown> = {};
-        try { parsed = JSON.parse(msg); } catch { parsed = { message: msg }; }
+        try {
+          parsed = JSON.parse(msg);
+        } catch {
+          parsed = { message: msg };
+        }
         const logStream: string = o['@logStream'] || '';
         const source: string = logStream.includes('postgrest')
           ? 'postgREST.logs'
           : logStream.includes('postgres')
-          ? 'postgres.logs'
-          : 'insforge.logs';
+            ? 'postgres.logs'
+            : 'insforge.logs';
         return {
           id: `${o['@logStream']}-${o['@timestamp']}`,
           timestamp: new Date(Number(o['@timestamp'] || Date.now())).toISOString(),
-          event_message: typeof parsed === 'object' && (parsed as any).msg ? (parsed as any).msg : (typeof msg === 'string' ? msg.slice(0, 500) : String(msg)),
+          event_message:
+            typeof parsed === 'object' && (parsed as any).msg
+              ? (parsed as any).msg
+              : typeof msg === 'string'
+                ? msg.slice(0, 500)
+                : String(msg),
           body: parsed as Record<string, any>,
           source,
         };
