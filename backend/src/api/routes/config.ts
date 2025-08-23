@@ -11,6 +11,7 @@ import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
 import { MetadataService } from '@/core/metadata/metadata';
 import { oAuthConfigSchema } from '@insforge/shared-schemas';
+import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 
 const router = Router();
 
@@ -54,6 +55,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
     }
 
     // Parse config into structured format
+    const useSharedKeys = shouldUseSharedOAuthKeys();
     const config: OAuthConfig = {
       google: {
         clientId: '',
@@ -61,7 +63,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
       github: {
         clientId: '',
@@ -69,7 +71,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: useSharedKeys,
       },
     };
 
@@ -89,6 +91,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
           config[provider].enabled = value.enabled || false;
+          config[provider].useSharedKeys = value.useSharedKeys || useSharedKeys;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
@@ -113,8 +116,17 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
 router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = oAuthConfigSchema.parse(req.body);
-    const db = DatabaseManager.getInstance();
 
+    const useSharedKeys = shouldUseSharedOAuthKeys();
+    if (!useSharedKeys && (validatedData.google.useSharedKeys || validatedData.github.useSharedKeys)) {
+      throw new AppError(
+        'Shared OAuth keys are not enabled in this environment',
+        400,
+        ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
+      );
+    }
+
+    const db = DatabaseManager.getInstance();
     // Start transaction
     await db.getDb().exec('BEGIN');
 
