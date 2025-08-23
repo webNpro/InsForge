@@ -1,16 +1,5 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface OAuthProviderConfig {
-  clientId?: string;
-  clientSecret?: string;
-  redirectUri?: string;
-  enabled: boolean;
-}
-
-export interface OAuthConfig {
-  google: OAuthProviderConfig;
-  github: OAuthProviderConfig;
-}
+import { OAuthConfigSchema } from '@insforge/shared-schemas';
 
 export interface OAuthStatus {
   google: { enabled: boolean };
@@ -18,11 +7,11 @@ export interface OAuthStatus {
 }
 
 export class ConfigService {
-  async getOAuthConfig(): Promise<OAuthConfig> {
+  async getOAuthConfig(): Promise<OAuthConfigSchema> {
     return apiClient.request('/config/oauth');
   }
 
-  async updateOAuthConfig(config: OAuthConfig): Promise<{ message: string }> {
+  async updateOAuthConfig(config: OAuthConfigSchema): Promise<{ message: string }> {
     // Backend expects the full config object
     return apiClient.request('/config/oauth', {
       method: 'POST',

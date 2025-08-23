@@ -14,7 +14,9 @@ interface AuthNodeProps {
 export function AuthNode({ data }: AuthNodeProps) {
   const { authMetadata, userCount } = data;
 
-  const enabledProviders = Object.values(authMetadata).filter((provider) => provider.enabled);
+  const enabledProviders = Object.values(authMetadata).filter(
+    (provider) => provider.enabled || provider.useSharedKeys
+  );
   const enabledCount = enabledProviders.length;
 
   return (
@@ -59,13 +61,15 @@ export function AuthNode({ data }: AuthNodeProps) {
           <div
             className={cn(
               'px-1.5 py-0.5 rounded flex items-center',
-              authMetadata.google.enabled
+              authMetadata.google.enabled || authMetadata.google.useSharedKeys
                 ? 'bg-lime-200 text-lime-900'
                 : 'bg-neutral-700 text-neutral-300'
             )}
           >
             <span className="text-xs font-medium">
-              {authMetadata.google.enabled ? 'Enabled' : 'Disabled'}
+              {authMetadata.google.enabled || authMetadata.google.useSharedKeys
+                ? 'Enabled'
+                : 'Disabled'}
             </span>
           </div>
         </div>
@@ -79,13 +83,15 @@ export function AuthNode({ data }: AuthNodeProps) {
           <div
             className={cn(
               'px-1.5 py-0.5 rounded flex items-center',
-              authMetadata.github.enabled
+              authMetadata.github.enabled || authMetadata.github.useSharedKeys
                 ? 'bg-lime-200 text-lime-900'
                 : 'bg-neutral-700 text-neutral-300'
             )}
           >
             <span className="text-xs font-medium">
-              {authMetadata.github.enabled ? 'Enabled' : 'Disabled'}
+              {authMetadata.github.enabled || authMetadata.github.useSharedKeys
+                ? 'Enabled'
+                : 'Disabled'}
             </span>
           </div>
         </div>

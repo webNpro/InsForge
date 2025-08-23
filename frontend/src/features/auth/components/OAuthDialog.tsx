@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
+import { Switch } from '@/components/radix/Switch';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
+import { OAuthProviderInfo } from './OAuthConfiguration';
 
 const getCallbackUrl = () => {
   // Use backend API URL for OAuth callback
@@ -23,11 +25,7 @@ const getCallbackUrl = () => {
 };
 
 interface OAuthDialogProps {
-  provider: {
-    id: string;
-    name: string;
-    setupUrl: string;
-  } | null;
+  provider?: OAuthProviderInfo;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -60,7 +58,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     },
   });
 
-  const currentProviderKey = provider?.id as 'google' | 'github';
+  const currentProviderKey = provider?.id || 'google';
   const useSharedKeys = form.watch(`${currentProviderKey}.useSharedKeys`);
   const clientId = form.watch(`${currentProviderKey}.clientId`);
   const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
@@ -183,36 +181,29 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
             <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
               {/* Shared Keys Toggle */}
-              {/* <div className="flex items-center justify-start gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    form.setValue(`${currentProviderKey}.useSharedKeys`, !useSharedKeys)
+              <div className="flex items-center justify-start gap-2">
+                <Switch
+                  checked={useSharedKeys}
+                  onCheckedChange={(checked) =>
+                    form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    useSharedKeys ? 'bg-zinc-950' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      useSharedKeys ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-                <span className="text-sm font-medium text-gray-900">Shared Keys</span>
-              </div> */}
+                />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  Shared Keys
+                </span>
+              </div>
 
               {useSharedKeys ? (
                 /* Shared Keys Enabled */
                 <div className="space-y-6">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-zinc-500 dark:text-neutral-400">
                     Shared keys are created by the InsForge team for development. It helps you get
                     started, but will show a InsForge logo and name on the OAuth screen.
                   </p>
 
                   <div className="flex items-center gap-3">
                     <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
-                    <span className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
+                    <span className="text-sm font-medium text-zinc-950 dark:text-white">
                       Shared keys should never be used in production
                     </span>
                   </div>
@@ -221,12 +212,12 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 /* Shared Keys Disabled */
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-blue-600" />
+                    <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <a
                       href={provider?.setupUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium underline"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
                     >
                       Create a {provider?.name.split(' ')[0]} OAuth App
                     </a>
@@ -238,7 +229,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <code className="py-1 px-3 bg-blue-100 text-blue-800 font-mono break-all rounded-md text-sm">
+                      <code className="py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
                         {getCallbackUrl()}
                       </code>
                       <CopyButton text={getCallbackUrl()} />

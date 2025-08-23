@@ -25,6 +25,13 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
+import {
+  DataUpdatePayload,
+  DataUpdateResourceType,
+  ServerEvents,
+  SocketMessage,
+  useSocket,
+} from '@/lib/contexts/SocketContext';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -47,6 +54,8 @@ export default function DatabasePage() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+
+  const { socket, isConnected } = useSocket();
 
   // Persist selected table to localStorage when it changes
   useEffect(() => {
@@ -168,6 +177,28 @@ export default function DatabasePage() {
     enabled: !!selectedTable && !!apiKey,
     placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
   });
+
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleDataUpdate = (message: SocketMessage<DataUpdatePayload>) => {
+      if (
+        message.payload?.resource === DataUpdateResourceType.METADATA ||
+        message.payload?.resource === DataUpdateResourceType.DATABASE_SCHEMA
+      ) {
+        // Invalidate all tables queries
+        void queryClient.invalidateQueries({ queryKey: ['tables'] });
+      }
+    };
+
+    socket.on(ServerEvents.DATA_UPDATE, handleDataUpdate);
+
+    return () => {
+      socket.off(ServerEvents.DATA_UPDATE, handleDataUpdate);
+    };
+  }, [socket, isConnected, queryClient]);
 
   // Reset sorting flag when loading completes
   useEffect(() => {
