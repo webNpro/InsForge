@@ -1,4 +1,4 @@
-import { HardDrive, ExternalLink, Circle } from 'lucide-react';
+import { HardDrive, Circle } from 'lucide-react';
 import { BucketMetadataSchema } from '@insforge/shared-schemas';
 
 interface BucketNodeProps {
@@ -32,9 +32,9 @@ export function BucketNode({ data }: BucketNodeProps) {
             </p>
           </div>
         </div>
-        <div className="p-1.5">
+        {/* <div className="p-1.5">
           <ExternalLink className="w-4 h-4 text-neutral-400" />
-        </div>
+        </div> */}
       </div>
 
       {/* Fields */}

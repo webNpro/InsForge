@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import ReactFlow, {
+import {
+  ReactFlow,
   Node,
-  Edge,
+  BuiltInEdge,
   Controls,
   MiniMap,
   useNodesState,
@@ -9,17 +10,38 @@ import ReactFlow, {
   addEdge,
   Connection,
   ConnectionMode,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { TableNode } from './TableNode';
 import { AuthNode } from './AuthNode';
 import { BucketNode } from './BucketNode';
-import { AppMetadataSchema } from '@insforge/shared-schemas';
+import {
+  AppMetadataSchema,
+  TableSchema,
+  StorageBucketSchema,
+  OAuthMetadataSchema,
+} from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
   metadata: AppMetadataSchema;
   userCount?: number;
 }
+
+type TableNodeData = {
+  table: TableSchema;
+  referencedColumns: string[];
+};
+
+type BucketNodeData = {
+  bucket: StorageBucketSchema;
+};
+
+type AuthNodeData = {
+  authMetadata: OAuthMetadataSchema;
+  userCount?: number;
+};
+
+type CustomNodeData = TableNodeData | BucketNodeData | AuthNodeData;
 
 const nodeTypes = {
   tableNode: TableNode,
@@ -27,19 +49,19 @@ const nodeTypes = {
   bucketNode: BucketNode,
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+const getLayoutedElements = (nodes: Node<CustomNodeData>[], edges: BuiltInEdge[]) => {
   // Fixed dimensions
   const nodeWidth = 280;
 
   // Calculate actual node heights based on content
-  const calculateNodeHeight = (node: Node) => {
+  const calculateNodeHeight = (node: Node<CustomNodeData>) => {
     if (node.type === 'authNode') {
       // Auth node has fixed content
       return 150;
     } else if (node.type === 'tableNode') {
       // Table node height depends on columns
-      const table = node.data.table;
-      const columnCount = table.columns.length || 0;
+      const tableData = node.data as TableNodeData;
+      const columnCount = tableData.table?.columns?.length || 0;
       const headerHeight = 64; // Header with table name
       const columnHeight = 48; // Each column row height
       const contentHeight = columnCount > 0 ? columnCount * columnHeight : 100; // Empty state height
@@ -70,7 +92,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
     horizontalGap;
 
   // Helper function to distribute nodes vertically with dynamic heights
-  const distributeVerticallyDynamic = (nodesToPosition: Node[], startY: number = canvasMargin) => {
+  const distributeVerticallyDynamic = (
+    nodesToPosition: Node<CustomNodeData>[],
+    startY: number = canvasMargin
+  ) => {
     const positions: number[] = [];
     let currentY = startY;
 
@@ -94,12 +119,12 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   }));
 
   // Position table nodes in a grid in the middle
-  let positionedTableNodes: Node[] = [];
+  let positionedTableNodes: Node<CustomNodeData>[] = [];
   if (tableNodes.length > 0) {
     const cols = Math.ceil(Math.sqrt(tableNodes.length));
 
     // Group tables by column for better height calculation
-    const tablesByColumn: Node[][] = [];
+    const tablesByColumn: Node<CustomNodeData>[][] = [];
     for (let col = 0; col < cols; col++) {
       tablesByColumn[col] = [];
     }
@@ -144,6 +169,17 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   return { nodes: layoutedNodes, edges };
 };
 
+const getNodeColor = (node: Node<CustomNodeData>) => {
+  switch (node.type) {
+    case 'authNode':
+      return '#bef264';
+    case 'bucketNode':
+      return '#93c5fd';
+    default:
+      return '#6ee7b7';
+  }
+};
+
 export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps) {
   const initialNodes = useMemo(() => {
     // First, collect all referenced columns for each table
@@ -165,7 +201,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
       });
     });
 
-    const tableNodes: Node[] = metadata.database.tables.map((table, _) => ({
+    const tableNodes: Node<TableNodeData>[] = metadata.database.tables.map((table, _) => ({
       id: table.tableName,
       type: 'tableNode',
       position: { x: 0, y: 0 },
@@ -175,14 +211,14 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
       },
     }));
 
-    const bucketNodes: Node[] = metadata.storage.buckets.map((bucket) => ({
+    const bucketNodes: Node<BucketNodeData>[] = metadata.storage.buckets.map((bucket) => ({
       id: `bucket-${bucket.name}`,
       type: 'bucketNode',
       position: { x: 0, y: 0 },
       data: { bucket },
     }));
 
-    const nodes: Node[] = [...tableNodes, ...bucketNodes];
+    const nodes: Node<CustomNodeData>[] = [...tableNodes, ...bucketNodes];
 
     // Add authentication node if authData is provided
     nodes.push({
@@ -199,7 +235,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
   }, [metadata, userCount]);
 
   const initialEdges = useMemo(() => {
-    const edges: Edge[] = [];
+    const edges: BuiltInEdge[] = [];
 
     metadata.database.tables.forEach((table) => {
       table.columns.forEach((column) => {
@@ -257,18 +293,20 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.8 }}
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         elevateEdgesOnSelect={true}
+        colorMode="dark"
+        className="!bg-transparent"
       >
-        <Controls showInteractive={false} className="!bg-white !border-gray-200 !shadow-md" />
-        <MiniMap
-          nodeColor={() => '#3B82F6'}
-          className="!bg-white !border-gray-200 !shadow-md"
-          maskColor="rgb(0, 0, 0, 0.1)"
+        <Controls
+          showInteractive={false}
+          className="!border !border-neutral-700 !shadow-lg"
+          fitViewOptions={{ padding: 0.8 }}
         />
+        <MiniMap nodeColor={(node: Node<CustomNodeData>) => getNodeColor(node)} />
       </ReactFlow>
     </div>
   );

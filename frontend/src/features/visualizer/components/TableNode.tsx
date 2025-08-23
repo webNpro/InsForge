@@ -1,5 +1,5 @@
-import { Database, ExternalLink, Circle } from 'lucide-react';
-import { Handle, Position } from 'reactflow';
+import { Database, Circle } from 'lucide-react';
+import { Handle, Position } from '@xyflow/react';
 import { TableSchema } from '@insforge/shared-schemas';
 
 interface TableNodeProps {
@@ -55,9 +55,9 @@ export function TableNode({ data }: TableNodeProps) {
             </p>
           </div>
         </div>
-        <div className="p-1.5">
+        {/* <div className="p-1.5">
           <ExternalLink className="w-4 h-4 text-neutral-400" />
-        </div>
+        </div> */}
       </div>
 
       {/* Columns */}

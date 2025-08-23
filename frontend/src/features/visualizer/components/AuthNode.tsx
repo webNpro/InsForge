@@ -1,4 +1,4 @@
-import { Lock, ExternalLink, FormInput, Users } from 'lucide-react';
+import { Lock, FormInput, Users } from 'lucide-react';
 import GoogleIcon from '@/assets/icons/google.svg';
 import GithubIcon from '@/assets/icons/github.svg';
 import { OAuthMetadataSchema } from '@insforge/shared-schemas';
@@ -32,9 +32,9 @@ export function AuthNode({ data }: AuthNodeProps) {
             </p>
           </div>
         </div>
-        <div className="p-1.5">
+        {/* <div className="p-1.5">
           <ExternalLink className="w-4 h-4 text-neutral-400" />
-        </div>
+        </div> */}
       </div>
 
       {/* Auth Providers */}
