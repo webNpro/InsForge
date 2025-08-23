@@ -56,6 +56,9 @@ export async function createApp() {
 
   const app = express();
 
+  // Enable trust proxy setting for rate limiting behind proxies/load balancers
+  app.set('trust proxy', true);
+
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 1000,
