@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://docs.insforge.dev
+    about: Check our documentation for common questions and setup guides
+  - name: 💬 Discussions
+    url: https://discord.gg/DvBtaEc9Jz
+    about: Ask questions and discuss ideas with the community
+  - name: 🆘 Support
+    url: https://discord.gg/DvBtaEc9Jz
+    about: Get help with installation, configuration, and usage
