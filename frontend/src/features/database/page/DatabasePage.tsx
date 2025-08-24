@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
-import PencilIcon from '@/assets/icons/pencil.svg';
-import RefreshIcon from '@/assets/icons/refresh.svg';
+import PencilIcon from '@/assets/icons/pencil.svg?react';
+import RefreshIcon from '@/assets/icons/refresh.svg?react';
 import EmptyDatabase from '@/assets/icons/empty_table.svg';
 import { databaseService } from '@/features/database/services/database.service';
 import { metadataService } from '@/features/metadata/services/metadata.service';
@@ -22,9 +22,16 @@ import {
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
-import { SearchInput, SelectionClearButton } from '@/components';
+import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/database-utils';
+import {
+  DataUpdatePayload,
+  DataUpdateResourceType,
+  ServerEvents,
+  SocketMessage,
+  useSocket,
+} from '@/lib/contexts/SocketContext';
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -47,6 +54,8 @@ export default function DatabasePage() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+
+  const { socket, isConnected } = useSocket();
 
   // Persist selected table to localStorage when it changes
   useEffect(() => {
@@ -98,7 +107,7 @@ export default function DatabasePage() {
     error: metadataError,
     refetch: refetchMetadata,
   } = useQuery({
-    queryKey: ['metadata'],
+    queryKey: ['database-metadata'],
     queryFn: () => metadataService.getDatabaseMetadata(),
     enabled: !!apiKey,
   });
@@ -169,6 +178,28 @@ export default function DatabasePage() {
     placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
   });
 
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const handleDataUpdate = (message: SocketMessage<DataUpdatePayload>) => {
+      if (
+        message.payload?.resource === DataUpdateResourceType.METADATA ||
+        message.payload?.resource === DataUpdateResourceType.DATABASE_SCHEMA
+      ) {
+        // Invalidate all tables queries
+        void queryClient.invalidateQueries({ queryKey: ['tables'] });
+      }
+    };
+
+    socket.on(ServerEvents.DATA_UPDATE, handleDataUpdate);
+
+    return () => {
+      socket.off(ServerEvents.DATA_UPDATE, handleDataUpdate);
+    };
+  }, [socket, isConnected, queryClient]);
+
   // Reset sorting flag when loading completes
   useEffect(() => {
     if (!isLoadingTable && isSorting) {
@@ -179,33 +210,32 @@ export default function DatabasePage() {
   const filteredTables = useMemo(
     () =>
       metadata?.tables
-        ? Object.fromEntries(
-            Object.entries(metadata.tables).filter(([name]) => !name.startsWith('_'))
-          )
-        : {},
-    [metadata?.tables]
+        ? metadata.tables
+            .map((table) => table.tableName)
+            .filter((tableName) => !tableName.startsWith('_'))
+        : [],
+    [metadata]
   );
 
   // Auto-select first table (excluding system tables)
   useEffect(() => {
     if (metadata) {
-      const tableNames = Object.keys(metadata.tables).filter((name) => !name.startsWith('_'));
-      if (pendingTableSelection && tableNames.includes(pendingTableSelection)) {
+      if (pendingTableSelection && filteredTables.includes(pendingTableSelection)) {
         setSelectedTable(pendingTableSelection);
         setPendingTableSelection(undefined);
         return;
       }
 
-      if (selectedTable && !tableNames.includes(selectedTable)) {
+      if (selectedTable && !filteredTables.includes(selectedTable)) {
         setSelectedTable(null);
         return;
       }
 
-      if (!selectedTable && tableNames.length > 0 && !showTableForm && !pendingTableSelection) {
-        setSelectedTable(tableNames[0]);
+      if (!selectedTable && filteredTables.length > 0 && !showTableForm && !pendingTableSelection) {
+        setSelectedTable(filteredTables[0]);
       }
     }
-  }, [metadata, pendingTableSelection, selectedTable, showTableForm]);
+  }, [filteredTables, metadata, pendingTableSelection, selectedTable, showTableForm]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -294,11 +324,11 @@ export default function DatabasePage() {
         showToast('Table deleted successfully', 'success');
 
         // Invalidate all related queries for the deleted table
-        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
+        void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
         void queryClient.invalidateQueries({ queryKey: ['tables'] });
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
-        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
       } catch (error: any) {
         const errorMessage =
           error.response?.data?.error?.message || error.message || 'Failed to delete table';
@@ -429,7 +459,7 @@ export default function DatabasePage() {
   const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
 
   return (
-    <div className="flex h-full bg-bg-gray">
+    <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       {/* Secondary Sidebar - Table List */}
       <TableSidebar
         tables={filteredTables}
@@ -467,30 +497,30 @@ export default function DatabasePage() {
           <>
             {/* Sticky Header Section */}
             {selectedTable && (
-              <div className="sticky top-0 z-30 bg-bg-gray">
-                <div className="px-6 py-3 border-b border-border-gray h-12">
+              <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
+                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-700">
                   {/* Page Header with Breadcrumb */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black">{selectedTable}</span>
+                        <span className="text-black dark:text-zinc-300">{selectedTable}</span>
                       </nav>
 
                       {/* Separator */}
-                      <div className="h-6 w-px bg-gray-200" />
+                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
 
                       {/* Action buttons group */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-zinc-500 hover:text-black"
+                                className="p-1 h-6 w-6"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
-                                <img src={PencilIcon} alt="Pencil Icon" className="h-5 w-5" />
+                                <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -503,11 +533,11 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-zinc-500 hover:text-black"
+                                className="p-1 h-6 w-6"
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
-                                <img src={RefreshIcon} alt="Refresh Icon" className="h-5 w-5" />
+                                <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="center">
@@ -531,21 +561,18 @@ export default function DatabasePage() {
                             itemType="record"
                             onClear={() => setSelectedRows(new Set())}
                           />
-                          <Button
-                            variant="outline"
-                            className="h-10 px-3 text-sm text-red-600 hover:text-red-600 hover:bg-zinc-50 border border-border-gray shadow-none"
-                            onClick={() => void handleBulkDelete(Array.from(selectedRows))}
-                          >
-                            Delete {selectedRows.size}{' '}
-                            {selectedRows.size === 1 ? 'Record' : 'Records'}
-                          </Button>
+                          <DeleteActionButton
+                            selectedCount={selectedRows.size}
+                            itemType="record"
+                            onDelete={() => void handleBulkDelete(Array.from(selectedRows))}
+                          />
                         </div>
                       ) : (
                         <SearchInput
                           value={searchQuery}
                           onChange={setSearchQuery}
                           placeholder="Search Records by any Text Field"
-                          className="flex-1 max-w-80"
+                          className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
                           debounceTime={300}
                         />
                       )}
@@ -554,7 +581,7 @@ export default function DatabasePage() {
                           <>
                             {/* Add Record Button */}
                             <Button
-                              className="h-10 px-4 font-medium gap-1.5"
+                              className="h-10 px-4 font-medium gap-1.5 dark:bg-emerald-300 dark:hover:bg-emerald-400"
                               onClick={() => setShowRecordForm(true)}
                             >
                               <Plus className="w-5 h-5" />
@@ -586,11 +613,11 @@ export default function DatabasePage() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200">
+                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-700">
                   <DatabaseDataGrid
                     data={tableData?.records || []}
                     schema={tableData?.schema}
-                    loading={isLoadingTable && !tableData} // Only show loading when no data exists
+                    loading={isLoadingTable && !tableData}
                     isSorting={isSorting}
                     isRefreshing={isRefreshing}
                     selectedRows={selectedRows}

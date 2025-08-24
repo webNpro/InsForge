@@ -2,16 +2,18 @@ import { DatabaseManager } from '@/core/database/database.js';
 import {
   ColumnSchema,
   TableSchema,
-  DatabaseSchema,
+  DatabaseMetadataSchema,
   OnDeleteActionSchema,
   OnUpdateActionSchema,
   AppMetadataSchema,
-  DatabaseMetadataSchema,
+  DashboardMetadataSchema,
+  OAuthMetadataSchema,
+  OAuthConfigSchema,
+  StorageMetadataSchema,
 } from '@insforge/shared-schemas';
-import { StorageConfig } from '@/types/storage.js';
-import { AuthConfig } from '@/types/auth.js';
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
+import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 
 export class MetadataService {
   private static instance: MetadataService;
@@ -29,15 +31,15 @@ export class MetadataService {
   }
 
   // Define metadata key types
-  private async getMetadata(key: 'database'): Promise<DatabaseSchema | null>;
-  private async getMetadata(key: 'auth'): Promise<AuthConfig | null>;
-  private async getMetadata(key: 'storage'): Promise<StorageConfig | null>;
+  private async getMetadata(key: 'database'): Promise<DatabaseMetadataSchema | null>;
+  private async getMetadata(key: 'auth'): Promise<OAuthMetadataSchema | null>;
+  private async getMetadata(key: 'storage'): Promise<StorageMetadataSchema | null>;
   private async getMetadata(
     key: string
-  ): Promise<DatabaseSchema | AuthConfig | StorageConfig | string | null>;
+  ): Promise<DatabaseMetadataSchema | OAuthMetadataSchema | StorageMetadataSchema | string | null>;
   private async getMetadata(
     key: string
-  ): Promise<DatabaseSchema | AuthConfig | StorageConfig | string | null> {
+  ): Promise<DatabaseMetadataSchema | OAuthMetadataSchema | StorageMetadataSchema | string | null> {
     const result = (await this.db
       .prepare('SELECT value FROM _metadata WHERE key = ?')
       .get(key)) as { value: string } | null;
@@ -53,7 +55,7 @@ export class MetadataService {
 
   private async setMetadata(
     key: string,
-    value: DatabaseSchema | AuthConfig | StorageConfig | string
+    value: DatabaseMetadataSchema | OAuthMetadataSchema | StorageMetadataSchema | string
   ): Promise<void> {
     const jsonValue = typeof value === 'string' ? value : JSON.stringify(value);
     await this.db
@@ -238,24 +240,36 @@ export class MetadataService {
       });
     }
 
-    const databaseMetadata: DatabaseSchema = {
+    const databaseMetadata: DatabaseMetadataSchema = {
       tables: tableMetadata,
     };
 
     await this.setMetadata('database', databaseMetadata);
   }
 
-  async updateAuthMetadata(config?: Partial<AuthConfig>): Promise<void> {
+  async updateAuthMetadata(config?: OAuthConfigSchema): Promise<void> {
+    const useSharedKeys = shouldUseSharedOAuthKeys();
     const currentAuth = (await this.getMetadata('auth')) || {
-      enabled: true,
-      providers: ['email'],
-      magicLink: false,
+      google: {
+        enabled: false,
+        useSharedKeys: useSharedKeys,
+      },
+      github: {
+        enabled: false,
+        useSharedKeys: useSharedKeys,
+      },
     };
 
-    const authMetadata: AuthConfig = {
-      ...currentAuth,
-      ...config,
-    } as AuthConfig;
+    const authMetadata: OAuthMetadataSchema = {
+      google: {
+        enabled: config?.google.enabled ?? currentAuth.google.enabled,
+        useSharedKeys: config?.google.useSharedKeys ?? currentAuth.google.useSharedKeys,
+      },
+      github: {
+        enabled: config?.github.enabled ?? currentAuth.github.enabled,
+        useSharedKeys: config?.github.useSharedKeys ?? currentAuth.github.useSharedKeys,
+      },
+    };
 
     await this.setMetadata('auth', authMetadata);
   }
@@ -266,29 +280,34 @@ export class MetadataService {
       .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
       .all()) as { name: string; public: boolean; created_at: string }[];
 
-    const buckets = storageBuckets.map((b) => ({
+    const bucketsMetadata = storageBuckets.map((b) => ({
       name: b.name,
       public: b.public,
       createdAt: b.created_at,
     }));
 
-    const storageMetadata: StorageConfig = { buckets };
-
-    await this.setMetadata('storage', storageMetadata);
+    await this.setMetadata('storage', { buckets: bucketsMetadata });
   }
 
   async getFullMetadata(): Promise<AppMetadataSchema> {
+    const useSharedKeys = shouldUseSharedOAuthKeys();
     const database = (await this.getMetadata('database')) || {
       tables: [],
     };
     const auth = (await this.getMetadata('auth')) || {
-      enabled: true,
-      providers: ['email'],
-      magicLink: false,
+      google: {
+        enabled: false,
+        useSharedKeys: useSharedKeys,
+      },
+      github: {
+        enabled: false,
+        useSharedKeys: useSharedKeys,
+      },
     };
     const storage = (await this.getMetadata('storage')) || {
       buckets: [],
     };
+    const bucketsObjectCountMap = await this.getBucketsObjectCount();
 
     // Get version from package.json or default
     const version = process.env.npm_package_version || '1.0.0';
@@ -296,41 +315,22 @@ export class MetadataService {
     return {
       database,
       auth,
-      storage,
+      storage: {
+        buckets: storage.buckets.map((bucket) => ({
+          ...bucket,
+          objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
+        })),
+      },
       version,
     };
   }
 
-  async getDatabaseMetadata(): Promise<DatabaseMetadataSchema> {
-    const database = (await this.getMetadata('database')) || {
-      tables: [],
-    };
-
-    // Convert to format expected by frontend dashboard
-    const tables: Record<
-      string,
-      {
-        recordCount: number;
-        createdAt?: string;
-        updatedAt?: string;
-      }
-    > = {};
-    for (const table of database.tables) {
-      tables[table.tableName] = {
-        recordCount:
-          typeof table.recordCount === 'number'
-            ? table.recordCount
-            : parseInt(String(table.recordCount || '0'), 10) || 0,
-        createdAt: table.createdAt,
-        updatedAt: table.updatedAt,
-      };
-    }
-
+  async getDashboardMetadata(): Promise<DashboardMetadataSchema> {
     // Get database and storage sizes
     const database_size_gb = await this.getDatabaseSizeInGB();
     const storage_size_gb = await this.getStorageSizeInGB();
 
-    return { tables, databaseSizeGb: database_size_gb, storageSizeGb: storage_size_gb };
+    return { databaseSizeGb: database_size_gb, storageSizeGb: storage_size_gb };
   }
 
   async getDatabaseSizeInGB(): Promise<number> {
@@ -373,6 +373,29 @@ export class MetadataService {
         error: error instanceof Error ? error.message : String(error),
       });
       return 0;
+    }
+  }
+
+  async getBucketsObjectCount(): Promise<Map<string, number>> {
+    try {
+      // Query to get object count for each bucket
+      const bucketCounts = (await this.db
+        .prepare('SELECT bucket, COUNT(*) as count FROM _storage GROUP BY bucket')
+        .all()) as { bucket: string; count: number }[];
+
+      // Convert to Map for easy lookup
+      const countMap = new Map<string, number>();
+      bucketCounts.forEach((row) => {
+        countMap.set(row.bucket, row.count);
+      });
+
+      return countMap;
+    } catch (error) {
+      logger.error('Error getting bucket object counts', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Return empty map on error
+      return new Map<string, number>();
     }
   }
 

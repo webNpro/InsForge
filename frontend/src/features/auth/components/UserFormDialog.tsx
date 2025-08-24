@@ -120,12 +120,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         userData.id = user.id;
       }
 
-      await authService.register(
-        userData.email,
-        userData.password || '',
-        userData.name,
-        userData.id
-      );
+      await authService.register(userData.email, userData.password || '', userData.name);
       void refetch();
       onOpenChange(false);
       showToast('User created successfully', 'success');
@@ -138,7 +133,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-[400px] dark:bg-neutral-800 dark:text-white">
         <DialogHeader>
           <DialogTitle>Add User</DialogTitle>
         </DialogHeader>
@@ -150,7 +145,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         >
           {/* Email Field */}
           <div className="flex flex-col gap-3">
-            <Label htmlFor="user-email" className="text-sm font-medium text-zinc-950">
+            <Label
+              htmlFor="user-email"
+              className="text-sm font-medium text-zinc-950 dark:text-white"
+            >
               Email
             </Label>
             <div className="relative">
@@ -175,7 +173,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
           {/* Password Field */}
           <div className="flex flex-col gap-3">
-            <Label htmlFor="user-password" className="text-sm font-medium text-zinc-950">
+            <Label
+              htmlFor="user-password"
+              className="text-sm font-medium text-zinc-950 dark:text-white"
+            >
               Password
             </Label>
             <div className="relative">
@@ -199,7 +200,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
           {/* Error Alert */}
           {error && (
-            <Alert variant="destructive" className="mt-4">
+            <Alert variant="destructive" className="mt-4 dark:bg-red-500 dark:text-white">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -212,14 +213,14 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-10 w-20 px-4 py-2"
+              className="h-10 w-20 px-4 py-2 dark:border-neutral-700 dark:text-white"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading || email === '' || password === ''}
-              className="h-10 w-20 px-4 py-2 bg-zinc-950 hover:bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 w-20 px-4 py-2 bg-zinc-950 hover:bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
             >
               Add
             </Button>

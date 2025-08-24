@@ -33,6 +33,7 @@
     "@tanstack/react-query": "^5.83.0",
     "@types/dagre": "^0.7.53",
     "@types/uuid": "^10.0.0",
+    "@xyflow/react": "^12.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
@@ -43,7 +44,6 @@
     "react-dom": "19.1.1",
     "react-hook-form": "^7.61.1",
     "react-router-dom": "^7.7.0",
-    "reactflow": "^11.11.4",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
@@ -64,6 +64,7 @@
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.8.3",
-    "vite": "^7.0.5"
+    "vite": "^7.0.5",
+    "vite-plugin-svgr": "^4.3.0"
   }
 }

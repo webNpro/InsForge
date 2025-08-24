@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { metadataService } from '@/features/metadata/services/metadata.service';
+import { authService } from '@/features/auth/services/auth.service';
 import { SchemaVisualizer, VisualizerSkeleton } from '../components';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -19,19 +20,37 @@ const VisualizerPage = () => {
 
   const {
     data: metadata,
-    isLoading,
-    error,
+    isLoading: metadataLoading,
+    error: metadataError,
     refetch: refetchMetadata,
   } = useQuery({
-    queryKey: ['database-metadata-visualizer'],
+    queryKey: ['metadata'],
     queryFn: () => metadataService.getFullMetadata(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
+  const {
+    data: userStats,
+    isLoading: userStatsLoading,
+    refetch: refetchUserStats,
+  } = useQuery({
+    queryKey: ['user-stats-visualizer'],
+    queryFn: async () => {
+      const response = await authService.getUsers();
+      return { userCount: response.total };
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const isLoading = metadataLoading || userStatsLoading;
+  const error = metadataError;
+
   const handleRefresh = useCallback(() => {
     void refetchMetadata();
-  }, [refetchMetadata]);
+    void refetchUserStats();
+  }, [refetchMetadata, refetchUserStats]);
 
   // Listen for schema change events
   useEffect(() => {
@@ -40,13 +59,15 @@ const VisualizerPage = () => {
     }
 
     const handleDataUpdate = (message: SocketMessage<DataUpdatePayload>) => {
-      // Invalidate all metadata caches when any schema-related changes occur
       if (
         message.payload?.resource === DataUpdateResourceType.METADATA ||
-        message.payload?.resource === DataUpdateResourceType.DATABASE_SCHEMA
+        message.payload?.resource === DataUpdateResourceType.DATABASE_SCHEMA ||
+        message.payload?.resource === DataUpdateResourceType.TABLE_SCHEMA ||
+        message.payload?.resource === DataUpdateResourceType.OAUTH_SCHEMA ||
+        message.payload?.resource === DataUpdateResourceType.STORAGE_SCHEMA
       ) {
         // Invalidate all metadata-related queries
-        void queryClient.invalidateQueries({ queryKey: ['database-metadata-visualizer'] });
+        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
       }
     };
 
@@ -102,7 +123,7 @@ const VisualizerPage = () => {
 
       {/* Schema Visualizer */}
       <div className="relative z-10 w-full h-screen">
-        <SchemaVisualizer metadata={metadata} />
+        <SchemaVisualizer metadata={metadata} userCount={userStats?.userCount} />
       </div>
     </div>
   );

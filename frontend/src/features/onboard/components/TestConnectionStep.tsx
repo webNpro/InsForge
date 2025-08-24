@@ -22,27 +22,28 @@ export function TestConnectionStep() {
   }, [socket]);
 
   return (
-    <div className="space-y-6 bg-white py-8 px-6 rounded-xl border border-border-gray">
+    <div className="space-y-6 border border-transparent dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6">
       <div>
-        <p className="text-zinc-950 text-sm mb-4">
+        <p className="text-zinc-950 dark:text-white text-sm mb-4">
           Open your agent&apos;s chat interface, copy and send this:
         </p>
       </div>
 
       <CodeBlock
         code="I'm using InsForge as my backend platform, what is my current backend structure?"
-        className="bg-slate-50"
+        className="bg-slate-50 dark:bg-neutral-700 dark:text-white"
+        buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800"
       />
 
       {!showSuccess && (
-        <div className="flex items-center gap-2 text-zinc-500">
+        <div className="flex items-center gap-2 text-zinc-500 dark:text-neutral-400">
           <ClockIcon className="w-5 h-5" />
           <p className="text-sm">Waiting for connection</p>
         </div>
       )}
 
       {showSuccess && (
-        <div className="flex items-center gap-2 text-green-700">
+        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
           <img src={CheckedIcon} alt="Checked" className="w-5 h-5" />
           <p className="text-sm">API Call Detected, Connection Succeeded</p>
         </div>

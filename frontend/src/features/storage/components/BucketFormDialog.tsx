@@ -110,11 +110,11 @@ export function BucketFormDialog({
       <DialogContent className="w-[640px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-base font-semibold text-zinc-950">
+            <DialogTitle className="text-base font-semibold text-zinc-950 dark:text-zinc-300">
               {mode === 'create' ? 'Create New Bucket' : 'Edit Bucket'}
             </DialogTitle>
             {mode === 'create' && (
-              <DialogDescription className="text-sm text-zinc-500">
+              <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-300">
                 Create a new storage bucket to organize your files.
               </DialogDescription>
             )}
@@ -122,7 +122,10 @@ export function BucketFormDialog({
           <div className="flex flex-col gap-6 px-6">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="bucket-name" className="text-sm font-medium text-zinc-950">
+                <Label
+                  htmlFor="bucket-name"
+                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+                >
                   Bucket Name
                 </Label>
                 <Input
@@ -136,12 +139,12 @@ export function BucketFormDialog({
                   }}
                   placeholder={mode === 'create' ? 'Enter a name' : ''}
                   disabled={mode === 'edit'}
-                  className={`h-10 px-3 py-2 text-base ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  className={`h-10 px-3 py-2 text-base ${mode === 'edit' ? 'bg-gray-100 dark:bg-neutral-700 cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
                   autoFocus={mode === 'create'}
                 />
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               </div>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-500 dark:text-zinc-300">
                 {mode === 'create'
                   ? 'Use lowercase letters, numbers, hyphens, and underscores only.'
                   : 'Bucket name cannot be changed.'}
@@ -149,17 +152,20 @@ export function BucketFormDialog({
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <Label htmlFor="bucket-public" className="text-sm font-medium text-zinc-950">
+                <Label
+                  htmlFor="bucket-public"
+                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+                >
                   Public
                 </Label>
                 <Switch
                   id="bucket-public"
                   checked={isPublic}
                   onCheckedChange={setIsPublic}
-                  className="h-6 data-[state=checked]:bg-zinc-950 data-[state=unchecked]:bg-zinc-200"
+                  className="h-6"
                 />
               </div>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-500 dark:text-zinc-300">
                 If enabled, files in this bucket can be accessed without authentication.
               </p>
             </div>
@@ -169,14 +175,14 @@ export function BucketFormDialog({
               type="button"
               variant="outline"
               onClick={handleClose}
-              className="h-10 px-4 py-2 text-sm font-medium"
+              className="h-10 px-4 py-2 text-sm font-medium dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || (mode === 'create' && !bucketName.trim())}
-              className="h-10 px-4 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40"
+              className="h-10 px-4 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
             >
               {submitButtonText}
             </Button>

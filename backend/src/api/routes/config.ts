@@ -9,22 +9,11 @@ import { OAuthConfig, OAuthStatus, ConfigRecord } from '@/types/auth.js';
 import logger from '@/utils/logger.js';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
+import { MetadataService } from '@/core/metadata/metadata';
+import { oAuthConfigSchema } from '@insforge/shared-schemas';
+import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 
 const router = Router();
-
-// OAuth provider configuration schema
-const oauthProviderSchema = z.object({
-  clientId: z.string().optional(),
-  clientSecret: z.string().optional(),
-  redirectUri: z.string().url().optional().or(z.literal('')),
-  enabled: z.boolean(),
-  useSharedKeys: z.boolean().optional(),
-});
-
-const oauthConfigSchema = z.object({
-  google: oauthProviderSchema,
-  github: oauthProviderSchema,
-});
 
 // Get OAuth configuration (admin only) - matches auth.ts JSON format
 router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
@@ -66,6 +55,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
     }
 
     // Parse config into structured format
+    const sharedKeysAvailable = shouldUseSharedOAuthKeys();
     const config: OAuthConfig = {
       google: {
         clientId: '',
@@ -73,7 +63,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: sharedKeysAvailable,
       },
       github: {
         clientId: '',
@@ -81,7 +71,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: sharedKeysAvailable,
       },
     };
 
@@ -101,6 +91,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
           config[provider].enabled = value.enabled || false;
+          config[provider].useSharedKeys = sharedKeysAvailable && value.useSharedKeys === true;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
@@ -124,9 +115,21 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
 // Update OAuth configuration (admin only) - stores as JSON like auth.ts
 router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = oauthConfigSchema.parse(req.body);
-    const db = DatabaseManager.getInstance();
+    const validatedData = oAuthConfigSchema.parse(req.body);
 
+    const useSharedKeys = shouldUseSharedOAuthKeys();
+    if (
+      !useSharedKeys &&
+      (validatedData.google.useSharedKeys || validatedData.github.useSharedKeys)
+    ) {
+      throw new AppError(
+        'Shared OAuth keys are not enabled in this environment',
+        400,
+        ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
+      );
+    }
+
+    const db = DatabaseManager.getInstance();
     // Start transaction
     await db.getDb().exec('BEGIN');
 
@@ -168,6 +171,18 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
       }
 
       await db.getDb().exec('COMMIT');
+
+      const metadataService = MetadataService.getInstance();
+      await metadataService.updateAuthMetadata({
+        google: {
+          enabled: validatedData.google.enabled,
+          useSharedKeys: validatedData.google.useSharedKeys,
+        },
+        github: {
+          enabled: validatedData.github.enabled,
+          useSharedKeys: validatedData.github.useSharedKeys,
+        },
+      });
 
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {

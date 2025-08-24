@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), svgr()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,7 +17,12 @@ export default defineConfig({
     port: 7131,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:7130',
+        target: 'http://localhost:7130',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:7130',
+        ws: true,
         changeOrigin: true,
       },
     },

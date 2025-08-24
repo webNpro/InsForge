@@ -5,6 +5,7 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
 import { verifyAdmin } from '@/api/middleware/auth.js';
 import logger from '@/utils/logger.js';
+import jwt from 'jsonwebtoken';
 import {
   userIdSchema,
   createUserRequestSchema,
@@ -348,15 +349,15 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
   try {
     const { redirectUrl } = req.query;
 
-    const state = redirectUrl
-      ? Buffer.from(
-          JSON.stringify({
-            provider: 'google',
-            redirectUrl: redirectUrl as string,
-          })
-        ).toString('base64')
-      : undefined;
-
+    const jwtPayload = {
+      provider: 'google',
+      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      createdAt: Date.now(),
+    };
+    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
+      algorithm: 'HS256',
+      expiresIn: '1h', // Set expiration time for the state token
+    });
     const authUrl = await authService.generateGoogleAuthUrl(state);
 
     res.json({ authUrl });
@@ -375,15 +376,15 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
 router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirectUrl } = req.query;
-
-    const state = redirectUrl
-      ? Buffer.from(
-          JSON.stringify({
-            provider: 'github',
-            redirectUrl: redirectUrl as string,
-          })
-        ).toString('base64')
-      : undefined;
+    const jwtPayload = {
+      provider: 'github',
+      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      createdAt: Date.now(),
+    };
+    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
+      algorithm: 'HS256',
+      expiresIn: '1h', // Set expiration time for the state token
+    });
 
     const authUrl = await authService.generateGitHubAuthUrl(state);
 
@@ -400,6 +401,85 @@ router.get('/oauth/github', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
+router.get(
+  '/oauth/shared/callback/:state',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { state } = req.params;
+      const { success, error, payload } = req.query;
+
+      if (!state) {
+        logger.warn('Shared OAuth callback called without state parameter');
+        throw new AppError('State parameter is required', 400, ERROR_CODES.INVALID_INPUT);
+      }
+
+      let redirectUrl: string;
+      let provider: string;
+      try {
+        const decodedState = jwt.verify(state, process.env.JWT_SECRET || 'default_secret') as {
+          provider: string;
+          redirectUrl: string;
+        };
+        redirectUrl = decodedState.redirectUrl || '/';
+        provider = decodedState.provider || '';
+      } catch {
+        logger.warn('Invalid state parameter', { state });
+        throw new AppError('Invalid state parameter', 400, ERROR_CODES.INVALID_INPUT);
+      }
+
+      if (!['google', 'github'].includes(provider)) {
+        logger.warn('Invalid provider in state', { provider });
+        throw new AppError('Invalid provider in state', 400, ERROR_CODES.INVALID_INPUT);
+      }
+      if (!redirectUrl) {
+        throw new AppError('Redirect URL is required', 400, ERROR_CODES.INVALID_INPUT);
+      }
+
+      if (success !== 'true') {
+        const errorMessage = error || 'OAuth authentication failed';
+        logger.warn('Shared OAuth callback failed', { error: errorMessage, provider });
+        return res.redirect(`${redirectUrl}?error=${encodeURIComponent(String(errorMessage))}`);
+      }
+      if (!payload) {
+        throw new AppError('No payload provided in callback', 400, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const payloadData = JSON.parse(Buffer.from(payload as string, 'base64').toString('utf8'));
+      let result;
+      if (provider === 'google') {
+        // Handle Google OAuth payload
+        const googleUserInfo = {
+          sub: payloadData.providerId,
+          email: payloadData.email,
+          name: payloadData.name || '',
+          userName: payloadData.userName || '',
+          picture: payloadData.avatar || '',
+        };
+        result = await authService.findOrCreateGoogleUser(googleUserInfo);
+      } else if (provider === 'github') {
+        // Handle GitHub OAuth payload
+        const githubUserInfo = {
+          id: payloadData.providerId,
+          email: payloadData.email,
+          name: payloadData.name || '',
+          avatar_url: payloadData.avatar || '',
+        };
+        result = await authService.findOrCreateGitHubUser(githubUserInfo);
+      }
+
+      const finalRedirectUrl = new URL(redirectUrl);
+      finalRedirectUrl.searchParams.set('access_token', result!.accessToken);
+      finalRedirectUrl.searchParams.set('user_id', result!.user.id);
+      finalRedirectUrl.searchParams.set('email', result!.user.email);
+      finalRedirectUrl.searchParams.set('name', result!.user.name || '');
+      res.redirect(finalRedirectUrl.toString());
+    } catch (error) {
+      logger.error('Shared OAuth callback error', { error });
+      next(error);
+    }
+  }
+);
+
 router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: NextFunction) => {
   try {
     const { provider } = req.params;
@@ -409,7 +489,13 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: N
 
     if (state) {
       try {
-        const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+        const stateData = jwt.verify(
+          state as string,
+          process.env.JWT_SECRET || 'default_secret'
+        ) as {
+          provider: string;
+          redirectUrl: string;
+        };
         redirectUrl = stateData.redirectUrl || '/';
       } catch {
         // Invalid state

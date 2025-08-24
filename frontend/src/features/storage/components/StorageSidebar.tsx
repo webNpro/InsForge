@@ -3,13 +3,8 @@ import { FeatureSidebar } from '@/components/FeatureSidebar';
 import { BucketListSkeleton } from './BucketListSkeleton';
 import { BucketEmptyState } from './BucketEmptyState';
 
-interface BucketInfo {
-  fileCount: number;
-  totalSize: number;
-}
-
 interface StorageSidebarProps {
-  buckets: Record<string, BucketInfo>;
+  buckets: string[];
   selectedBucket?: string;
   onBucketSelect: (bucketName: string) => void;
   loading?: boolean;

@@ -18,6 +18,7 @@ import VisualizerPage from './features/visualizer/page/VisualizerPage';
 import Layout from './components/layout/Layout';
 import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
 import CloudLayout from './components/layout/CloudLayout';
+import CloudLoginPage from './features/login/page/CloudLoginPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/dashboard/login" element={<LoginPage />} />
+      <Route path="/cloud/login" element={<CloudLoginPage />} />
       <Route
         path="/cloud/*"
         element={
@@ -63,7 +65,7 @@ function AppRoutes() {
                 <Route path="/authentication" element={<AuthenticationPage />} />
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/storage" element={<StoragePage />} />
-                <Route path="/logs" element={<LogsPage />} />
+                <Route path="/analytics" element={<AnalyticsLogsPage />} />
                 <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
               </Routes>
             </CloudLayout>

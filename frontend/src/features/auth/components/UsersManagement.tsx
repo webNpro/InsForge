@@ -1,17 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useUsers } from '@/features/auth/hooks/useUsers';
-import { Button } from '@/components/radix/Button';
 import { authService } from '@/features/auth/services/auth.service';
 import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/radix/Dialog';
 
 interface UserManagementProps {
   searchQuery?: string;
@@ -39,10 +30,6 @@ export function UsersManagement({
   // Sorting state
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
 
-  // Confirmation dialog state
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   // Listen for refresh events
   useEffect(() => {
     const handleRefresh = () => {
@@ -61,26 +48,6 @@ export function UsersManagement({
   useEffect(() => {
     setSelectedRows(new Set());
   }, [currentPage, externalSearchQuery, setSelectedRows]);
-
-  const handleDeleteConfirm = async () => {
-    try {
-      setIsDeleting(true);
-      const userIds = Array.from(selectedRows);
-      await authService.deleteUsers(userIds);
-      setSelectedRows(new Set());
-      setShowDeleteDialog(false);
-      void refetch();
-    } catch (error) {
-      console.error('Failed to delete users:', error);
-      throw error;
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteDialog(false);
-  };
 
   // Handle single user deletion
   const handleDeleteSingleUser = async (userId: string) => {
@@ -143,7 +110,7 @@ export function UsersManagement({
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col overflow-hidden border border-gray-200">
+      <div className="flex-1 flex flex-col overflow-hidden border border-gray-200 dark:border-neutral-700">
         <UsersDataGrid
           data={sortedUsers}
           loading={isLoading}
@@ -170,31 +137,6 @@ export function UsersManagement({
           onEmptyStateAction={!externalSearchQuery && onAddUser ? onAddUser : undefined}
         />
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Users</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedRows.size}{' '}
-              {selectedRows.size === 1 ? 'user' : 'users'}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleDeleteCancel} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => void handleDeleteConfirm()}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

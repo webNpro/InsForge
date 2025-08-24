@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
+import { Switch } from '@/components/radix/Switch';
 import {
   Dialog,
   DialogContent,
@@ -16,35 +16,16 @@ import WarningIcon from '@/assets/icons/warning.svg';
 import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { CopyButton } from '@/components/CopyButton';
+import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
+import { OAuthProviderInfo } from './OAuthConfiguration';
 
-const getCallbackUrl = () => {
+const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
-  return `${apiBaseUrl}/api/auth/v1/callback`;
+  return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
 };
 
-// OAuth provider configuration schema
-const oauthProviderSchema = z.object({
-  clientId: z.string().optional(),
-  clientSecret: z.string().optional(),
-  redirectUri: z.string().optional(),
-  enabled: z.boolean(),
-  useSharedKeys: z.boolean(),
-});
-
-const oauthConfigSchema = z.object({
-  google: oauthProviderSchema,
-  github: oauthProviderSchema,
-});
-
-type OAuthConfig = z.infer<typeof oauthConfigSchema>;
-
 interface OAuthDialogProps {
-  provider: {
-    id: string;
-    name: string;
-    setupUrl: string;
-  } | null;
+  provider?: OAuthProviderInfo;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -57,27 +38,27 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  const form = useForm<OAuthConfig>({
-    resolver: zodResolver(oauthConfigSchema),
+  const form = useForm<OAuthConfigSchema>({
+    resolver: zodResolver(oAuthConfigSchema),
     defaultValues: {
       google: {
         clientId: '',
         clientSecret: '',
-        redirectUri: getCallbackUrl(),
+        redirectUri: getCallbackUrl('google'),
         enabled: false,
         useSharedKeys: false,
       },
       github: {
         clientId: '',
         clientSecret: '',
-        redirectUri: getCallbackUrl(),
+        redirectUri: getCallbackUrl('github'),
         enabled: false,
         useSharedKeys: false,
       },
     },
   });
 
-  const currentProviderKey = provider?.id as 'google' | 'github';
+  const currentProviderKey = provider?.id || 'google';
   const useSharedKeys = form.watch(`${currentProviderKey}.useSharedKeys`);
   const clientId = form.watch(`${currentProviderKey}.clientId`);
   const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
@@ -105,7 +86,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
-  const onSubmit = async (data: OAuthConfig) => {
+  const onSubmit = async (data: OAuthConfigSchema) => {
     if (!provider) {
       return;
     }
@@ -121,11 +102,13 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
           ...data[currentProviderKey],
           clientId: data[currentProviderKey].clientId || '',
           clientSecret: data[currentProviderKey].clientSecret || '',
-          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(),
+          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(currentProviderKey),
+          enabled: !!data[currentProviderKey].clientId,
+          useSharedKeys: data[currentProviderKey].useSharedKeys,
         },
       };
 
-      await configService.updateOAuthConfig(transformedData as OAuthConfig);
+      await configService.updateOAuthConfig(transformedData);
 
       // Reload OAuth configuration to apply changes
       setReloading(true);
@@ -160,7 +143,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   };
 
   const handleSubmit = () => {
-    void onSubmit(form.getValues() as OAuthConfig);
+    void onSubmit(form.getValues() as OAuthConfigSchema);
   };
 
   // Determine if the update button should be disabled
@@ -176,56 +159,51 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white">
         <DialogHeader>
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <div className="text-sm text-gray-500">Loading OAuth configuration...</div>
+              <div className="text-sm text-gray-500 dark:text-zinc-400">
+                Loading OAuth configuration...
+              </div>
             </div>
           </div>
         ) : (
           <>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
+                <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
               </div>
             )}
 
             <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
               {/* Shared Keys Toggle */}
-              {/* <div className="flex items-center justify-start gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    form.setValue(`${currentProviderKey}.useSharedKeys`, !useSharedKeys)
+              <div className="flex items-center justify-start gap-2">
+                <Switch
+                  checked={useSharedKeys}
+                  onCheckedChange={(checked) =>
+                    form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
                   }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    useSharedKeys ? 'bg-zinc-950' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      useSharedKeys ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-                <span className="text-sm font-medium text-gray-900">Shared Keys</span>
-              </div> */}
+                />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  Shared Keys
+                </span>
+              </div>
 
               {useSharedKeys ? (
                 /* Shared Keys Enabled */
                 <div className="space-y-6">
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-zinc-500 dark:text-neutral-400">
                     Shared keys are created by the InsForge team for development. It helps you get
                     started, but will show a InsForge logo and name on the OAuth screen.
                   </p>
 
                   <div className="flex items-center gap-3">
                     <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
-                    <span className="text-sm font-medium text-zinc-950">
+                    <span className="text-sm font-medium text-zinc-950 dark:text-white">
                       Shared keys should never be used in production
                     </span>
                   </div>
@@ -234,16 +212,16 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 /* Shared Keys Disabled */
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-blue-600" />
+                    <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <a
                       href={provider?.setupUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium underline"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
                     >
                       Create a {provider?.name.split(' ')[0]} OAuth App
                     </a>
-                    <span className="text-sm font-normal text-zinc-950">
+                    <span className="text-sm font-normal text-zinc-950 dark:text-zinc-400">
                       {' '}
                       and set the callback url to:
                     </span>
@@ -251,16 +229,18 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <code className="py-1 px-3 bg-blue-100 text-blue-800 font-mono break-all rounded-md text-sm">
-                        {getCallbackUrl()}
+                      <code className="py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                        {getCallbackUrl(provider?.id)}
                       </code>
-                      <CopyButton text={getCallbackUrl()} />
+                      <CopyButton text={getCallbackUrl(provider?.id)} />
                     </div>
                   </div>
 
                   <div className="space-y-6">
                     <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950">Client ID</label>
+                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
+                        Client ID
+                      </label>
                       <Input
                         type="text"
                         {...form.register(`${currentProviderKey}.clientId`)}
@@ -269,7 +249,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                     </div>
 
                     <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950">Client Secret</label>
+                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
+                        Client Secret
+                      </label>
                       <Input
                         type="password"
                         {...form.register(`${currentProviderKey}.clientSecret`)}
@@ -284,7 +266,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
             <DialogFooter>
               <Button
                 type="button"
-                className="py-2 px-4 text-sm font-medium"
+                className="py-2 px-4 text-sm font-medium dark:bg-neutral-800 dark:text-white dark:border-neutral-700 dark:hover:bg-neutral-700"
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
@@ -295,7 +277,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 type="button"
                 onClick={handleSubmit}
                 disabled={isUpdateDisabled()}
-                className="py-2 px-4 text-sm font-medium"
+                className="py-2 px-4 text-sm font-medium dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
                 {saving ? 'Saving...' : reloading ? 'Reloading...' : 'Update'}
               </Button>
