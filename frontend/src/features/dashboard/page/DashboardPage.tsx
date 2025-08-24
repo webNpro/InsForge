@@ -73,8 +73,14 @@ export default function DashboardPage() {
                   <p className="text-base text-gray-500 dark:text-neutral-400">
                     {(() => {
                       const authCount =
-                        (fullMetadata?.auth?.google?.enabled ? 1 : 0) +
-                        (fullMetadata?.auth?.github?.enabled ? 1 : 0);
+                        (fullMetadata?.auth?.google?.enabled ||
+                        fullMetadata?.auth?.google?.useSharedKeys
+                          ? 1
+                          : 0) +
+                        (fullMetadata?.auth?.github?.enabled ||
+                        fullMetadata?.auth?.github?.useSharedKeys
+                          ? 1
+                          : 0);
                       return `${authCount} OAuth ${authCount === 1 ? 'provider' : 'providers'} enabled`;
                     })()}
                   </p>
@@ -126,9 +132,11 @@ export default function DashboardPage() {
                     <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
                       {(metadata?.storageSizeGb || 0).toFixed(2)}
                     </span>
-                    <span className="text-sm font-normal text-neutral-400">GB</span>
+                    <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
+                      GB
+                    </span>
                   </div>
-                  <p className="text-base text-neutral-400">
+                  <p className="text-base text-gray-500 dark:text-neutral-400">
                     {fullMetadata?.storage?.buckets?.length || 0}{' '}
                     {fullMetadata?.storage?.buckets?.length === 1 ? 'Bucket' : 'Buckets'}
                   </p>

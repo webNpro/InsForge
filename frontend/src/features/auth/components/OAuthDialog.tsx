@@ -108,7 +108,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
         },
       };
 
-      await configService.updateOAuthConfig(transformedData as OAuthConfigSchema);
+      await configService.updateOAuthConfig(transformedData);
 
       // Reload OAuth configuration to apply changes
       setReloading(true);

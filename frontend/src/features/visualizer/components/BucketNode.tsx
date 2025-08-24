@@ -1,4 +1,4 @@
-import { HardDrive, Circle } from 'lucide-react';
+import { HardDrive } from 'lucide-react';
 import { BucketMetadataSchema } from '@insforge/shared-schemas';
 
 interface BucketNodeProps {
@@ -9,13 +9,6 @@ interface BucketNodeProps {
 
 export function BucketNode({ data }: BucketNodeProps) {
   const { bucket } = data;
-
-  const fields = [
-    { name: 'Name', type: 'string' },
-    { name: 'Size', type: 'int' },
-    { name: 'Type', type: 'string' },
-    { name: 'Uploaded', type: 'timestamp' },
-  ];
 
   return (
     <div className="bg-neutral-900 rounded-lg border border-[#363636] min-w-[320px]">
@@ -35,27 +28,6 @@ export function BucketNode({ data }: BucketNodeProps) {
         {/* <div className="p-1.5">
           <ExternalLink className="w-4 h-4 text-neutral-400" />
         </div> */}
-      </div>
-
-      {/* Fields */}
-      <div className="max-h-[400px] overflow-y-auto">
-        {fields.map((field) => (
-          <div
-            key={field.name}
-            className="flex items-center justify-between p-3 border-b border-neutral-800"
-          >
-            <div className="flex items-center gap-2.5 flex-1">
-              <div className="w-5 h-5 bg-neutral-700 rounded" />
-              <span className="text-sm text-neutral-300">{field.name}</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="px-1.5 py-0.5 bg-neutral-800 rounded flex items-center">
-                <span className="text-xs font-medium text-neutral-300">{field.type}</span>
-              </div>
-              <Circle className="w-5 h-5 text-neutral-600 fill-neutral-600" />
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

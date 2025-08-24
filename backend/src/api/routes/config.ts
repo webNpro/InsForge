@@ -55,7 +55,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
     }
 
     // Parse config into structured format
-    const useSharedKeys = shouldUseSharedOAuthKeys();
+    const sharedKeysAvailable = shouldUseSharedOAuthKeys();
     const config: OAuthConfig = {
       google: {
         clientId: '',
@@ -63,7 +63,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
         enabled: false,
-        useSharedKeys: useSharedKeys,
+        useSharedKeys: sharedKeysAvailable,
       },
       github: {
         clientId: '',
@@ -71,7 +71,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
         enabled: false,
-        useSharedKeys: useSharedKeys,
+        useSharedKeys: sharedKeysAvailable,
       },
     };
 
@@ -91,7 +91,7 @@ router.get('/oauth', verifyAdmin, async (req: Request, res: Response, next: Next
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
           config[provider].enabled = value.enabled || false;
-          config[provider].useSharedKeys = value.useSharedKeys || useSharedKeys;
+          config[provider].useSharedKeys = sharedKeysAvailable && value.useSharedKeys === true;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
