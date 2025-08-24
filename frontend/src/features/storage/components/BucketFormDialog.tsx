@@ -162,7 +162,7 @@ export function BucketFormDialog({
                   id="bucket-public"
                   checked={isPublic}
                   onCheckedChange={setIsPublic}
-                  className="h-6 data-[state=checked]:bg-zinc-950 data-[state=unchecked]:bg-zinc-200 dark:data-[state=checked]:bg-emerald-300 dark:data-[state=unchecked]:bg-neutral-500"
+                  className="h-6"
                 />
               </div>
               <p className="text-sm text-zinc-500 dark:text-zinc-300">

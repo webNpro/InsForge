@@ -9,20 +9,18 @@ export default function CloudLoginPage() {
   const { loginWithAuthorizationCode, isAuthenticated } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      void navigate('/cloud/visualizer', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   // Handle authorization token exchange
   useEffect(() => {
     const authorizationCode = searchParams.get('authorizationCode');
-    if (!authorizationCode) {
-      setAuthError('No authorization code provided.');
-      return;
-    }
 
-    if (authorizationCode && !isAuthenticated) {
+    if (authorizationCode) {
       setAuthError(null);
-
-      // Clear the token from URL to prevent reuse
-      setSearchParams({}, { replace: true });
-
       // Exchange the authorization code for an access token
       loginWithAuthorizationCode(authorizationCode)
         .then((success) => {
@@ -36,7 +34,6 @@ export default function CloudLoginPage() {
                 '*'
               );
             }
-            void navigate('/cloud/visualizer', { replace: true });
           } else {
             setAuthError('The authorization code may have expired or already been used.');
             if (window.parent !== window) {
@@ -63,14 +60,10 @@ export default function CloudLoginPage() {
             );
           }
         });
+    } else {
+      setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      void navigate('/cloud/visualizer', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate]);
 
   // Show error state if authentication failed
   if (authError) {
@@ -87,15 +80,13 @@ export default function CloudLoginPage() {
 
   // Show authenticating state
   return (
-    <div className="min-h-screen bg-neutral-800 items-center justify-center px-4">
-      <div className="bg-gray-800 rounded-lg p-8 shadow-2xl">
-        <div className="text-center space-y-4">
-          <div className="animate-spin">
-            <LockIcon className="h-12 w-12 text-white mx-auto" />
-          </div>
-          <h2 className="text-xl font-semibold text-white">Authenticating...</h2>
-          <p className="text-sm text-gray-400">Please wait while we verify your identity</p>
+    <div className="min-h-screen bg-neutral-800 flex items-center justify-center px-4">
+      <div className="text-center">
+        <div className="animate-spin mb-4">
+          <LockIcon className="h-12 w-12 text-white mx-auto" />
         </div>
+        <h2 className="text-xl font-semibold text-white mb-2">Authenticating...</h2>
+        <p className="text-sm text-gray-400">Please wait while we verify your identity</p>
       </div>
     </div>
   );

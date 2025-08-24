@@ -293,7 +293,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView
-        fitViewOptions={{ padding: 0.2, duration: 300, maxZoom: 2 }}
+        fitViewOptions={{ padding: 1, maxZoom: 2, minZoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
@@ -304,7 +304,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
         <Controls
           showInteractive={false}
           className="!border !border-neutral-700 !shadow-lg"
-          fitViewOptions={{ padding: 0.2, duration: 300, maxZoom: 2 }}
+          fitViewOptions={{ padding: 1, duration: 300, maxZoom: 2, minZoom: 1 }}
         />
         <MiniMap nodeColor={(node: Node<CustomNodeData>) => getNodeColor(node)} />
       </ReactFlow>
