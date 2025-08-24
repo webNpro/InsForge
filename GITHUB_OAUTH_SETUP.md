@@ -20,7 +20,7 @@ On the "Register a new OAuth application" page, you need to fill in the followin
 *   **Application description** (optional): Provide a brief description of your application.
 *   **Authorization callback URL**: This is the URL where GitHub will redirect users after authorization. For local development, make sure to set it to:
     ```
-    http://localhost:7130/api/auth/v1/callback
+    http://localhost:7130/api/auth/oauth/github/callback
     ```
     **Note**: This URL must exactly match the callback URL configured in your backend service, otherwise the OAuth flow will fail.
 
@@ -41,7 +41,7 @@ After obtaining the Client ID and Client Secret, you need to add them to your pr
 ```env
 GITHUB_CLIENT_ID=YOUR_GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET=YOUR_GITHUB_CLIENT_SECRET
-GITHUB_REDIRECT_URI=http://localhost:7130/api/auth/v1/callback
+GITHUB_REDIRECT_URI=http://localhost:7130/api/auth/oauth/github/callback
 ```
 
 Replace `YOUR_GITHUB_CLIENT_ID` and `YOUR_GITHUB_CLIENT_SECRET` with the actual values you obtained in the previous step.

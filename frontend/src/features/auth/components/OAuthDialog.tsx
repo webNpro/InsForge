@@ -19,9 +19,9 @@ import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
 import { OAuthProviderInfo } from './OAuthConfiguration';
 
-const getCallbackUrl = () => {
+const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
-  return `${window.location.origin}/api/auth/v1/callback`;
+  return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
 };
 
 interface OAuthDialogProps {
@@ -44,14 +44,14 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
       google: {
         clientId: '',
         clientSecret: '',
-        redirectUri: getCallbackUrl(),
+        redirectUri: getCallbackUrl('google'),
         enabled: false,
         useSharedKeys: false,
       },
       github: {
         clientId: '',
         clientSecret: '',
-        redirectUri: getCallbackUrl(),
+        redirectUri: getCallbackUrl('github'),
         enabled: false,
         useSharedKeys: false,
       },
@@ -102,7 +102,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
           ...data[currentProviderKey],
           clientId: data[currentProviderKey].clientId || '',
           clientSecret: data[currentProviderKey].clientSecret || '',
-          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(),
+          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(currentProviderKey),
           enabled: !!data[currentProviderKey].clientId,
           useSharedKeys: data[currentProviderKey].useSharedKeys,
         },
@@ -230,9 +230,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <code className="py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
-                        {getCallbackUrl()}
+                        {getCallbackUrl(provider?.id)}
                       </code>
-                      <CopyButton text={getCallbackUrl()} />
+                      <CopyButton text={getCallbackUrl(provider?.id)} />
                     </div>
                   </div>
 
