@@ -12,7 +12,7 @@ Add the following configuration to your `.env` file:
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:7130/api/auth/v1/callback
+GOOGLE_REDIRECT_URI=http://localhost:7130/api/oauth/google/callback
 ```
 
 ## Google Cloud Console Setup
@@ -22,8 +22,8 @@ GOOGLE_REDIRECT_URI=http://localhost:7130/api/auth/v1/callback
 3. Enable Google+ API and Google Identity API
 4. Create an OAuth 2.0 Client ID in the "Credentials" page
 5. Configure authorized redirect URIs:
-       - Development environment: `http://localhost:7130/api/auth/v1/callback`
-    - Production environment: `https://yourdomain.com/api/auth/v1/callback`
+       - Development environment: `http://localhost:7130/api/auth/oauth/google/callback`
+    - Production environment: `https://yourdomain.com/api/auth/oauth/google/callback`
 
 ## API Endpoints
 
@@ -51,7 +51,7 @@ curl "http://localhost:7130/api/auth/v1/google-auth?redirect_url=http://localhos
 
 ### 2. Google OAuth Callback Handling
 
-**Endpoint:** `GET /api/auth/v1/callback`
+**Endpoint:** `GET /api/auth/oauth/google/callback`
 
 **Parameters:**
 - `code`: Authorization code returned by Google
