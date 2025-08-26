@@ -32,7 +32,7 @@ Headers: `Authorization: Bearer <accessToken>`
 
 Returns: `{"user": {"id": "...", "email": "...", "role": "authenticated"}}`
 
-**Note**: Returns LIMITED fields (id, email, type, role). For full user data including name/image, query `/api/database/records/user?id=eq.<user_id>`
+**Note**: Returns LIMITED fields (id, email, type, role). For full user data including name/image, query `/api/database/records/_user?id=eq.<user_id>`
 
 **Common errors:**
 - `401` with `"code": "MISSING_AUTHORIZATION_HEADER"` → No token provided
@@ -148,7 +148,7 @@ After processing, backend redirects to your specified `redirectUrl` with JWT tok
 
 ### User Table (Read-Only)
 The `user` table is **system-managed**:
-- **✅ READ** via: `GET /api/database/records/user`
+- **✅ READ** via: `GET /api/database/records/_user`
 - **❌ NO WRITE** - use Auth API instead
 - **✅ Foreign keys allowed**
 - Schema: `id`, `email`, `name`, `image`, `email_verified`, `created_at`, `updated_at`
@@ -170,7 +170,7 @@ Example - Create table with user reference:
       "nullable": false,
       "is_unique": false,
       "foreign_key": {
-        "reference_table": "user",
+        "reference_table": "_user",
         "reference_column": "id",
         "on_delete": "CASCADE",
         "on_update": "CASCADE"
@@ -197,7 +197,7 @@ The authentication system manages:
 
 1. `/api/auth/sessions/current` returns `{"user": {...}}` - nested, not root level
 2. `/api/auth/sessions/current` only has: id, email, role (limited fields)
-3. Full user data: `GET /api/database/records/user?id=eq.<id>`
+3. Full user data: `GET /api/database/records/_user?id=eq.<id>`
 4. POST to database requires `[{...}]` array format always
 5. Auth endpoints (register/login): no headers needed
 6. Protected endpoints: `Authorization: Bearer <accessToken>`
