@@ -278,21 +278,22 @@ export class AgentAPIDocService {
                 limit: 'number (default: 100)',
                 offset: 'number (default: 0)',
                 // Sorting
-                order: 'columnName.asc or columnName.desc',
+                order: '{columnName}.asc or {columnName}.desc',
                 // Selection
-                select: 'comma-separated column names',
-                // Filtering - any column can be used as filter
-                '{columnName}': 'exact match',
-                '{columnName}.eq': 'equals',
-                '{columnName}.neq': 'not equals',
-                '{columnName}.gt': 'greater than',
-                '{columnName}.gte': 'greater than or equal',
-                '{columnName}.lt': 'less than',
-                '{columnName}.lte': 'less than or equal',
-                '{columnName}.like': 'LIKE pattern (use % for wildcard)',
-                '{columnName}.ilike': 'case insensitive LIKE',
-                '{columnName}.is': 'IS (use for null: is.null, is.notnull)',
-                '{columnName}.in': 'IN (comma-separated values in parentheses)',
+                select: 'comma-separated column names (e.g., id,name,email)',
+                // Filtering - PostgREST operators
+                '{columnName}=eq.{value}': 'equals (exact match)',
+                '{columnName}=neq.{value}': 'not equals',
+                '{columnName}=gt.{value}': 'greater than',
+                '{columnName}=gte.{value}': 'greater than or equal',
+                '{columnName}=lt.{value}': 'less than',
+                '{columnName}=lte.{value}': 'less than or equal',
+                '{columnName}=like.{pattern}': 'LIKE pattern (use * as wildcard)',
+                '{columnName}=ilike.{pattern}': 'case-insensitive LIKE (use * as wildcard)',
+                '{columnName}=is.null': 'IS NULL',
+                '{columnName}=not.is.null': 'IS NOT NULL',
+                '{columnName}=in.({value1},{value2},{value3})':
+                  'IN - comma-separated values in parentheses',
               },
             },
             response: {
