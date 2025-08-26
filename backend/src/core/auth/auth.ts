@@ -5,7 +5,7 @@ import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import { verifyCloudToken } from '@/utils/cloud-token.js';
-import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
+import { isCloudEnvironment, shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -287,6 +287,9 @@ export class AuthService {
     // Simply validate against environment variables
     if (email !== this.adminEmail || password !== this.adminPassword) {
       throw new Error('Invalid admin credentials');
+    }
+    if (isCloudEnvironment()) {
+      throw new Error('Admin login not supported in cloud environment');
     }
 
     // Use a fixed admin ID for the system administrator
