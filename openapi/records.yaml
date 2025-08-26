@@ -156,7 +156,7 @@ paths:
                   summary: Response without Prefer header
                   value: []
                 with_prefer:
-                  summary: Response with Prefer: return=representation
+                  summary: "Response with Prefer: return=representation"
                   value:
                     - id: "248373e1-0aea-45ce-8844-5ef259203749"
                       name: "John Doe"
@@ -238,7 +238,7 @@ paths:
                   summary: Response without Prefer header
                   value: []
                 with_prefer:
-                  summary: Response with Prefer: return=representation
+                  summary: "Response with Prefer: return=representation"
                   value:
                     - id: "123e4567-e89b-12d3-a456-426614174000"
                       name: "Jane Doe"
