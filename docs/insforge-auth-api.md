@@ -170,7 +170,7 @@ Example - Create table with user reference:
       "nullable": false,
       "is_unique": false,
       "foreign_key": {
-        "reference_table": "user",
+        "reference_table": "_user",
         "reference_column": "id",
         "on_delete": "CASCADE",
         "on_update": "CASCADE"

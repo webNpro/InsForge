@@ -289,7 +289,7 @@ Without `Prefer: count=exact`, you get: `Content-Range: 0-9/*` (no total count)
   "table_name": "user_profiles",
   "columns": [
     {"name": "user_id", "type": "string", "nullable": false, "is_unique": true,
-     "foreign_key": {"reference_table": "user", "reference_column": "id", 
+     "foreign_key": {"reference_table": "_user", "reference_column": "id", 
                      "on_delete": "CASCADE", "on_update": "CASCADE"}},
     {"name": "bio", "type": "string", "nullable": true},
     {"name": "avatar_url", "type": "string", "nullable": true}
