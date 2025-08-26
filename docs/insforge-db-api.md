@@ -183,14 +183,14 @@ Response format (WITH `Prefer: return=representation` header):
 Example:
 ```bash
 # Mac/Linux
-curl -X PATCH "http://localhost:7130/api/database/records/users?id=eq.UUID" \
+curl -X PATCH "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
   -H 'Authorization: Bearer TOKEN' \
   -H 'Content-Type: application/json' \
   -H 'Prefer: return=representation' \
   -d '{"name": "Jane Doe"}'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
-curl.exe -X PATCH "http://localhost:7130/api/database/records/users?id=eq.UUID" \
+curl.exe -X PATCH "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
@@ -233,7 +233,7 @@ Response format (WITH `Prefer: return=representation` header):
 Example:
 ```bash
 # Windows PowerShell: use curl.exe
-curl -X DELETE "http://localhost:7130/api/database/records/users?id=eq.UUID" \
+curl -X DELETE "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
   -H "Authorization: Bearer TOKEN" \
   -H "Prefer: return=representation"
 ```
@@ -281,7 +281,7 @@ Without `Prefer: count=exact`, you get: `Content-Range: 0-9/*` (no total count)
 ## 🚨 Critical: User Table is Read-Only
 
 **The `_user` table is managed by the JWT authentication system:**
-- **✅ READ**: `GET /api/database/records/user` - Works!
+- **✅ READ**: `GET /api/database/records/_user` - Works!
 - **❌ WRITE**: POST/PUT/PATCH/DELETE returns `403 FORBIDDEN`
 - **Solution**: For additional user data, create `user_profiles` table:
 ```json
