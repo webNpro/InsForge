@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Database, Lock, Mail } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -59,14 +59,14 @@ export default function LoginPage() {
   }, [isAuthenticated, navigate, getRedirectPath]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-lg mb-4">
-            <Database className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-black dark:bg-emerald-300 rounded-lg mb-4">
+            <Lock className="h-8 w-8 text-white dark:text-black" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Insforge Admin</h1>
+          <h1 className="text-2xl font-bold tracking-tight dark:text-white">Insforge Admin</h1>
           <p className="text-sm text-muted-foreground mt-2">Sign in to access your dashboard</p>
         </div>
 

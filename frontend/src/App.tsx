@@ -56,7 +56,7 @@ function AppRoutes() {
       <Route
         path="/cloud/*"
         element={
-          <PrivateRoute>
+          <PrivateRoute classname="bg-neutral-800">
             <CloudLayout>
               <Routes>
                 <Route path="/" element={<Navigate to="/cloud/dashboard" replace />} />
@@ -75,7 +75,7 @@ function AppRoutes() {
       <Route
         path="/*"
         element={
-          <PrivateRoute>
+          <PrivateRoute classname="bg-bg-gray">
             <Layout>
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />

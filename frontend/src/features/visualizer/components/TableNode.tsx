@@ -12,11 +12,6 @@ interface TableNodeProps {
 export function TableNode({ data }: TableNodeProps) {
   const { table, referencedColumns = [] } = data;
 
-  const primaryKeys = table.columns.filter((col) => col.isPrimaryKey);
-  const foreignKeys = table.columns.filter((col) => col.foreignKey);
-  const regularColumns = table.columns.filter((col) => !col.isPrimaryKey && !col.foreignKey);
-  const allColumns = [...primaryKeys, ...foreignKeys, ...regularColumns];
-
   const getColumnIcon = (isReferenced: boolean = false) => {
     // If column is referenced by another table (has incoming connections)
     // Show outer gray diamond with inner white diamond
@@ -62,7 +57,7 @@ export function TableNode({ data }: TableNodeProps) {
 
       {/* Columns */}
       <div>
-        {allColumns.map((column) => (
+        {table.columns.map((column) => (
           <div
             key={column.columnName}
             className="flex items-center justify-between p-3 border-b border-neutral-800 relative"
@@ -85,7 +80,7 @@ export function TableNode({ data }: TableNodeProps) {
             )}
 
             {/* Target handle for columns that can be referenced - invisible and non-interactive */}
-            {column.isPrimaryKey && (
+            {referencedColumns.includes(column.columnName) && (
               <Handle
                 type="target"
                 position={Position.Left}
@@ -126,7 +121,7 @@ export function TableNode({ data }: TableNodeProps) {
         ))}
 
         {/* Empty state */}
-        {allColumns.length === 0 && (
+        {table.columns.length === 0 && (
           <div className="flex items-center justify-center p-6">
             <div className="text-center">
               <Database className="w-6 h-6 text-neutral-600 mx-auto mb-2" />
