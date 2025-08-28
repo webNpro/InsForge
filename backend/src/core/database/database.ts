@@ -125,7 +125,6 @@ export class DatabaseManager {
             avatar_url TEXT,
             bio TEXT,
             birthday DATE,
-            extra JSONB,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
           );
