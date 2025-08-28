@@ -238,7 +238,8 @@ export class AgentAPIDocService {
         },
 
         // Universal patterns for all tables
-        '<critical-database>': 'Re-read the tableApi section before implementing database operations',
+        '<critical-database>':
+          'Re-read the tableApi section before implementing database operations',
         tableApi: {
           list: {
             method: 'GET',
@@ -315,7 +316,8 @@ export class AgentAPIDocService {
           },
 
           create: {
-            '<critical-create>': 'Re-read this create operation documentation before every POST request',
+            '<critical-create>':
+              'Re-read this create operation documentation before every POST request',
             method: 'POST',
             path: '/api/database/records/{tableName}',
             request: {
@@ -324,7 +326,8 @@ export class AgentAPIDocService {
               },
               body: '[{tableName}RecordSchema] - MUST be array even for single record (exclude: id, created_at, updated_at)',
               headers: {
-                'Prefer': 'return=representation (REQUIRED to get created record back, otherwise returns empty array)',
+                Prefer:
+                  'return=representation (REQUIRED to get created record back, otherwise returns empty array)',
               },
             },
             response: {
@@ -358,7 +361,7 @@ export class AgentAPIDocService {
               },
               body: 'Partial<{tableName}RecordSchema> (all fields optional, exclude: id, created_at, updated_at)',
               headers: {
-                'Prefer': 'return=representation (optional - to return updated record)',
+                Prefer: 'return=representation (optional - to return updated record)',
               },
             },
             response: {
@@ -390,7 +393,7 @@ export class AgentAPIDocService {
                 'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
               },
               headers: {
-                'Prefer': 'return=representation (optional - to return deleted record)',
+                Prefer: 'return=representation (optional - to return deleted record)',
               },
             },
             response: {
@@ -418,7 +421,8 @@ export class AgentAPIDocService {
               },
               body: 'Array<{tableName}RecordSchema> (exclude system fields)',
               headers: {
-                'Prefer': 'return=representation (REQUIRED to get created records back, otherwise returns empty array)',
+                Prefer:
+                  'return=representation (REQUIRED to get created records back, otherwise returns empty array)',
               },
             },
             response: {
@@ -636,8 +640,8 @@ export class AgentAPIDocService {
               size: { type: 'number (bytes)', required: true },
               mimeType: { type: 'string', required: false },
               uploadedAt: { type: 'datetime string', required: true },
-              url: { 
-                type: 'string', 
+              url: {
+                type: 'string',
                 required: true,
                 description: 'Relative path: /api/storage/buckets/{bucket}/objects/{key}',
               },
@@ -686,7 +690,8 @@ export class AgentAPIDocService {
             listProducts: 'GET /api/database/records/products?limit=10&category=eq.electronics',
             createProduct:
               'POST /api/database/records/products with Prefer: return=representation header and body [{name: "New Product", price: 29.99}]',
-            updateProduct: 'PATCH /api/database/records/products?id=eq.123 with Prefer: return=representation header and body {price: 39.99}',
+            updateProduct:
+              'PATCH /api/database/records/products?id=eq.123 with Prefer: return=representation header and body {price: 39.99}',
             deleteProduct: 'DELETE /api/database/records/products?id=eq.123',
             // Storage examples
             uploadFile: 'PUT /api/storage/buckets/uploads/objects/avatar.jpg with FormData file',
