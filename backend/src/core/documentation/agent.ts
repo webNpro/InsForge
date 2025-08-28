@@ -315,17 +315,19 @@ export class AgentAPIDocService {
 
           getById: {
             method: 'GET',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
               },
             },
             response: {
               success: {
                 status: 200,
-                body: '{tableName}RecordSchema',
+                body: 'Array<{tableName}RecordSchema> (single item array)',
               },
               error: {
                 status: '404 | 401 | 500',
@@ -333,8 +335,8 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'GET /api/database/records/products/123',
-              response: '{id: "123", name: "Product Name", price: 29.99, ...}',
+              request: 'GET /api/database/records/products?id=eq.123',
+              response: '[{id: "123", name: "Product Name", price: 29.99, ...}]',
             },
           },
 
@@ -367,18 +369,23 @@ export class AgentAPIDocService {
 
           update: {
             method: 'PATCH',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
               },
               body: 'Partial<{tableName}RecordSchema> (all fields optional, exclude: id, created_at, updated_at)',
+              headers: {
+                'Prefer': 'return=representation (optional - to return updated record)',
+              },
             },
             response: {
               success: {
                 status: 200,
-                body: '{tableName}RecordSchema',
+                body: 'Array<{tableName}RecordSchema> (with Prefer: return=representation) | 204 No Content (without)',
               },
               error: {
                 status: '404 | 400 | 401 | 500',
@@ -386,25 +393,31 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'PATCH /api/database/records/products/123',
+              request: 'PATCH /api/database/records/products?id=eq.123',
+              headers: 'Prefer: return=representation',
               body: '{price: 39.99}',
-              response: '{id: "123", name: "Product Name", price: 39.99, ...}',
+              response: '[{id: "123", name: "Product Name", price: 39.99, ...}]',
             },
           },
 
           delete: {
             method: 'DELETE',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
+              },
+              headers: {
+                'Prefer': 'return=representation (optional - to return deleted record)',
               },
             },
             response: {
               success: {
                 status: 204,
-                body: 'null (No Content)',
+                body: 'null (No Content) | Array<{tableName}RecordSchema> with Prefer: return=representation',
               },
               error: {
                 status: '404 | 401 | 500',
@@ -412,7 +425,7 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'DELETE /api/database/records/products/123',
+              request: 'DELETE /api/database/records/products?id=eq.123',
               response: 'Status: 204',
             },
           },
@@ -680,11 +693,11 @@ export class AgentAPIDocService {
             googleLogin: 'GET /api/auth/oauth/google?redirect_uri=http://localhost:3000',
             githubLogin: 'GET /api/auth/oauth/github?redirect_uri=http://localhost:3000',
             // Database examples
-            listProducts: 'GET /api/database/records/products?limit=10&category=electronics',
+            listProducts: 'GET /api/database/records/products?limit=10&category=eq.electronics',
             createProduct:
-              'POST /api/database/records/products with body {name: "New Product", price: 29.99}',
-            updateProduct: 'PATCH /api/database/records/products/apple with body {price: 39.99}',
-            deleteProduct: 'DELETE /api/database/records/products/apple',
+              'POST /api/database/records/products with body [{name: "New Product", price: 29.99}]',
+            updateProduct: 'PATCH /api/database/records/products?id=eq.123 with body {price: 39.99}',
+            deleteProduct: 'DELETE /api/database/records/products?id=eq.123',
             // Storage examples
             uploadFile: 'PUT /api/storage/buckets/uploads/objects/avatar.jpg with FormData file',
             downloadFile: 'GET /api/storage/buckets/uploads/objects/avatar.jpg',
