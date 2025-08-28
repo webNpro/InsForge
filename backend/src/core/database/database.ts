@@ -129,6 +129,30 @@ export class DatabaseManager {
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
           );
+          
+          -- Check and create policies only if they don't exist
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'users' 
+            AND policyname = 'Disable delete for users'
+          ) THEN
+            CREATE POLICY "Disable delete for users" ON users
+              FOR DELETE
+              TO authenticated
+              USING (false);
+          END IF;
+
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'users' 
+            AND policyname = 'Enable update for users based on user_id'
+          ) THEN
+            CREATE POLICY "Enable update for users based on user_id" ON users
+              FOR UPDATE
+              TO authenticated
+              USING (uid() = id)
+              WITH CHECK (uid() = id);  -- make sure only the owner can update
+          END IF;
       END $$;
     `);
 
@@ -243,7 +267,6 @@ export class DatabaseManager {
 
       // Drop old auth tables if they exist - using Better Auth now
       await client.query(`
-        DROP TABLE IF EXISTS users CASCADE;
         DROP TABLE IF EXISTS _superuser CASCADE;
         DROP TABLE IF EXISTS _identifies CASCADE;
         DROP TABLE IF EXISTS _profiles CASCADE;
