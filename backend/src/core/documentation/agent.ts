@@ -235,34 +235,6 @@ export class AgentAPIDocService {
               response: '{authUrl: "https://github.com/login/oauth/authorize?..."}',
             },
           },
-
-          oauthCallback: {
-            method: 'GET',
-            path: '/api/auth/oauth/{provider}/callback',
-            description: 'OAuth callback endpoint - typically handled automatically by OAuth flow',
-            request: {
-              requiresAuth: false,
-              params: {
-                provider: 'string - OAuth provider (google or github)',
-              },
-              queryParams: {
-                code: 'string - Authorization code from OAuth provider',
-                state: 'string - State parameter for security',
-                token: 'string (optional) - ID token for some flows',
-              },
-            },
-            response: {
-              success: {
-                status: 302,
-                description:
-                  'Redirects to redirect_uri with access_token, user_id, email, and name in query params',
-              },
-              error: {
-                status: 302,
-                description: 'Redirects to redirect_uri with error in query params',
-              },
-            },
-          },
         },
 
         // Universal patterns for all tables
