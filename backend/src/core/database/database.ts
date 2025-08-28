@@ -131,6 +131,17 @@ export class DatabaseManager {
           );
           
           -- Check and create policies only if they don't exist
+          -- Allow everyone to read users table
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'users' 
+            AND policyname = 'Enable read access for all users'
+          ) THEN
+            CREATE POLICY "Enable read access for all users" ON users
+              FOR SELECT
+              USING (true);  -- Allow all reads
+          END IF;
+          
           IF NOT EXISTS (
             SELECT 1 FROM pg_policies 
             WHERE tablename = 'users' 
@@ -153,6 +164,13 @@ export class DatabaseManager {
               USING (uid() = id)
               WITH CHECK (uid() = id);  -- make sure only the owner can update
           END IF;
+          
+          -- Enable Row Level Security on the users table
+          ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+          
+          -- Grant permissions to anon and authenticated roles
+          GRANT SELECT ON users TO anon;
+          GRANT SELECT, UPDATE ON users TO authenticated;
       END $$;
     `);
 
