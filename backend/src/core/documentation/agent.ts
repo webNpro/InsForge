@@ -81,6 +81,7 @@ export class AgentAPIDocService {
       const bucketList = buckets.map((bucket: any) => bucket.name);
 
       const document = {
+        '<critical>': 'Re-read this documentation at the start of each conversation',
         version: metadata.version || '1.0.0',
         baseUrl: process.env.API_BASE_URL || 'http://localhost:7130',
         securitySchemes: {
@@ -265,6 +266,7 @@ export class AgentAPIDocService {
         },
 
         // Universal patterns for all tables
+        '<critical-database>': 'Re-read the tableApi section before implementing database operations',
         tableApi: {
           list: {
             method: 'GET',
@@ -341,18 +343,22 @@ export class AgentAPIDocService {
           },
 
           create: {
+            '<critical-create>': 'Re-read this create operation documentation before every POST request',
             method: 'POST',
             path: '/api/database/records/{tableName}',
             request: {
               params: {
                 tableName: 'string - name of the table',
               },
-              body: '{tableName}RecordSchema (exclude: id, created_at, updated_at)',
+              body: '[{tableName}RecordSchema] - MUST be array even for single record (exclude: id, created_at, updated_at)',
+              headers: {
+                'Prefer': 'return=representation (REQUIRED to get created record back, otherwise returns empty array)',
+              },
             },
             response: {
               success: {
                 status: 201,
-                body: '{tableName}RecordSchema (complete)',
+                body: 'Array<{tableName}RecordSchema> with Prefer header | [] empty array without',
               },
               error: {
                 status: '400 | 401 | 500',
@@ -361,9 +367,10 @@ export class AgentAPIDocService {
             },
             example: {
               request: 'POST /api/database/records/products',
-              body: '{name: "New Product", price: 29.99, category: "electronics"}',
+              headers: 'Prefer: return=representation',
+              body: '[{name: "New Product", price: 29.99, category: "electronics"}]',
               response:
-                '{id: "123", name: "New Product", price: 29.99, category: "electronics", created_at: "...", updated_at: "..."}',
+                '[{id: "123", name: "New Product", price: 29.99, category: "electronics", created_at: "...", updated_at: "..."}]',
             },
           },
 
@@ -438,11 +445,14 @@ export class AgentAPIDocService {
                 tableName: 'string - name of the table',
               },
               body: 'Array<{tableName}RecordSchema> (exclude system fields)',
+              headers: {
+                'Prefer': 'return=representation (REQUIRED to get created records back, otherwise returns empty array)',
+              },
             },
             response: {
               success: {
                 status: 201,
-                body: 'Array<{tableName}RecordSchema>',
+                body: 'Array<{tableName}RecordSchema> with Prefer header | [] empty array without',
               },
               error: {
                 status: '400 | 401 | 500',
@@ -451,6 +461,7 @@ export class AgentAPIDocService {
             },
             example: {
               request: 'POST /api/database/records/products',
+              headers: 'Prefer: return=representation',
               body: '[{name: "Product 1", price: 19.99}, {name: "Product 2", price: 29.99}]',
               response:
                 '[{id: "123", name: "Product 1", price: 19.99, ...}, {id: "124", name: "Product 2", price: 29.99, ...}]',
@@ -511,6 +522,7 @@ export class AgentAPIDocService {
         },
 
         // Storage API for file upload and management
+        '<critical-storage>': 'Re-read storageApi section before implementing file operations',
         storageApi: {
           uploadObject: {
             method: 'PUT',
@@ -541,7 +553,7 @@ export class AgentAPIDocService {
               request: 'PUT /api/storage/buckets/uploads/objects/images/profile.jpg',
               formData: 'file: <binary data>',
               response:
-                '{key: "images/profile.jpg", bucket: "uploads", size: 2048, mimeType: "image/jpeg", ...}',
+                '{key: "images/profile.jpg", bucket: "uploads", size: 2048, mimeType: "image/jpeg", url: "/api/storage/buckets/uploads/objects/images/profile.jpg"}',
             },
           },
 
@@ -572,7 +584,7 @@ export class AgentAPIDocService {
               request: 'POST /api/storage/buckets/uploads/objects',
               formData: 'file: <binary data of photo.jpg>',
               response:
-                '{key: "photo-1704000000000-abc123.jpg", bucket: "uploads", size: 2048, ...}',
+                '{key: "photo-1704000000000-abc123.jpg", bucket: "uploads", size: 2048, url: "/api/storage/buckets/uploads/objects/photo-1704000000000-abc123.jpg"}',
             },
           },
 
@@ -652,12 +664,17 @@ export class AgentAPIDocService {
               size: { type: 'number (bytes)', required: true },
               mimeType: { type: 'string', required: false },
               uploadedAt: { type: 'datetime string', required: true },
-              url: { type: 'string', required: true },
+              url: { 
+                type: 'string', 
+                required: true,
+                description: 'Relative path: /api/storage/buckets/{bucket}/objects/{key}',
+              },
             },
           },
         },
 
         // Quick reference for AI
+        '<critical-quickref>': 'Re-read quickReference before starting implementation',
         quickReference: {
           authenticationSteps: [
             '1. Register new users with POST /api/auth/users',
@@ -678,10 +695,11 @@ export class AgentAPIDocService {
           storageSteps: [
             '1. Upload files using PUT (specific key) or POST (auto-generated key)',
             '2. Files are uploaded as multipart/form-data with "file" field',
-            '3. Download files using GET with bucket and object key',
-            '4. Public buckets allow downloading without authentication',
-            '5. Private buckets require authentication for all operations',
-            '6. Organize files using key prefixes like "images/", "documents/", etc.',
+            '3. Response url field contains relative path to the file',
+            '4. Download files using GET with the url path',
+            '5. Public buckets allow downloading without authentication',
+            '6. Private buckets require authentication for all operations',
+            '7. Organize files using key prefixes like "images/", "documents/"',
           ],
           examples: {
             // Authentication examples
@@ -695,8 +713,8 @@ export class AgentAPIDocService {
             // Database examples
             listProducts: 'GET /api/database/records/products?limit=10&category=eq.electronics',
             createProduct:
-              'POST /api/database/records/products with body [{name: "New Product", price: 29.99}]',
-            updateProduct: 'PATCH /api/database/records/products?id=eq.123 with body {price: 39.99}',
+              'POST /api/database/records/products with Prefer: return=representation header and body [{name: "New Product", price: 29.99}]',
+            updateProduct: 'PATCH /api/database/records/products?id=eq.123 with Prefer: return=representation header and body {price: 39.99}',
             deleteProduct: 'DELETE /api/database/records/products?id=eq.123',
             // Storage examples
             uploadFile: 'PUT /api/storage/buckets/uploads/objects/avatar.jpg with FormData file',
