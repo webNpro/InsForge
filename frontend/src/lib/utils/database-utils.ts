@@ -29,13 +29,15 @@ export function convertValueForColumn(
       if (newValue === '' || newValue === null) {
         convertedValue = null;
       } else {
-        convertedValue = parseInt(String(newValue), 10);
-        if (isNaN(convertedValue) || String(convertedValue) !== String(newValue)) {
+        const stringValue = String(newValue).trim();
+        // Check if the input is a valid integer format first
+        if (!/^-?\d+$/.test(stringValue)) {
           return {
             success: false,
             error: 'Please enter a valid integer',
           };
         }
+        convertedValue = parseInt(stringValue, 10);
         // PostgreSQL integer range: -2,147,483,648 to 2,147,483,647
         if (convertedValue < -2147483648 || convertedValue > 2147483647) {
           return {
@@ -68,13 +70,16 @@ export function convertValueForColumn(
       if (newValue === '' || newValue === null) {
         convertedValue = null;
       } else {
-        convertedValue = parseFloat(String(newValue));
-        if (isNaN(convertedValue) || String(convertedValue) !== String(newValue)) {
+        const stringValue = String(newValue).trim();
+        // Check if the input is a valid number format first
+        // This regex allows for integers, decimals, scientific notation
+        if (!/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(stringValue)) {
           return {
             success: false,
             error: 'Please enter a valid number',
           };
         }
+        convertedValue = parseFloat(stringValue);
         // PostgreSQL double precision range: approximately ±1.7976931348623157E+308
         if (!isFinite(convertedValue)) {
           return {
@@ -93,13 +98,16 @@ export function convertValueForColumn(
       if (newValue === '' || newValue === null) {
         convertedValue = null;
       } else {
-        convertedValue = parseFloat(String(newValue));
-        if (isNaN(convertedValue)) {
+        const stringValue = String(newValue).trim();
+        // Check if the input is a valid number format first
+        // This regex allows for integers, decimals, scientific notation
+        if (!/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(stringValue)) {
           return {
             success: false,
             error: 'Please enter a valid number',
           };
         }
+        convertedValue = parseFloat(stringValue);
         // PostgreSQL real range: approximately ±3.40282347E+38
         if (!isFinite(convertedValue)) {
           return {

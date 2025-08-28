@@ -70,13 +70,17 @@ export interface DataGridProps {
 
 // Default cell renderers
 export const DefaultCellRenderers = {
-  text: ({ row, column }: any) => (
-    <div className="w-full h-full flex items-center">
-      <span className="truncate dark:text-zinc-300" title={String(row[column.key] || 'null')}>
-        {row[column.key] || 'null'}
-      </span>
-    </div>
-  ),
+  text: ({ row, column }: any) => {
+    const value = row[column.key];
+    const displayValue = value === null || value === undefined ? 'null' : String(value);
+    return (
+      <div className="w-full h-full flex items-center">
+        <span className="truncate dark:text-zinc-300" title={displayValue}>
+          {displayValue}
+        </span>
+      </div>
+    );
+  },
 
   boolean: ({ row, column }: any) => {
     const value = row[column.key];
@@ -151,14 +155,18 @@ export const DefaultCellRenderers = {
     return <IdCell value={value} />;
   },
 
-  email: ({ row, column }: any) => (
-    <span
-      className="text-sm text-gray-800 font-medium truncate dark:text-zinc-300"
-      title={row[column.key] || 'null'}
-    >
-      {row[column.key] || 'null'}
-    </span>
-  ),
+  email: ({ row, column }: any) => {
+    const value = row[column.key];
+    const displayValue = value === null || value === undefined ? 'null' : String(value);
+    return (
+      <span
+        className="text-sm text-gray-800 font-medium truncate dark:text-zinc-300"
+        title={displayValue}
+      >
+        {displayValue}
+      </span>
+    );
+  },
 
   badge: ({ row, column, options }: any) => {
     const value = row[column.key];
