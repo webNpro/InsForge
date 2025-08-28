@@ -8,7 +8,7 @@ interface CloudLayoutProps {
 }
 
 interface RouterMessage {
-  type: 'ROUTE_CHANGE';
+  type: 'ROUTE_CHANGE' | 'REFRESH';
   path: string;
 }
 
@@ -24,6 +24,8 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
         if (message.type === 'ROUTE_CHANGE' && message.path) {
           // Navigate to the corresponding cloud route
           void navigate(message.path);
+        } else if (message.type === 'REFRESH') {
+          window.location.reload();
         }
       } catch (error) {
         console.error('Error handling router message:', error);
