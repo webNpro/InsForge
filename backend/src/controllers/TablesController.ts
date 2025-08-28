@@ -30,6 +30,8 @@ const reservedColumns = {
   updated_at: ColumnType.DATETIME,
 };
 
+const userTableFrozenColumns = ['nickname', 'avatar_url'];
+
 export class TablesController {
   private dbManager: DatabaseManager;
   private metadataService: MetadataService;
@@ -424,6 +426,14 @@ export class TablesController {
             `You cannot drop the system column '${col}'`
           );
         }
+        if (tableName === 'users' && userTableFrozenColumns.includes(col)) {
+          throw new AppError(
+            'cannot drop frozen users columns',
+            403,
+            ERROR_CODES.FORBIDDEN,
+            `You cannot drop the frozen users column '${col}'`
+          );
+        }
         await db
           .prepare(
             `
@@ -446,6 +456,14 @@ export class TablesController {
             404,
             ERROR_CODES.DATABASE_FORBIDDEN,
             `You cannot update the system column '${column.columnName}'`
+          );
+        }
+        if (tableName === 'users' && userTableFrozenColumns.includes(column.columnName)) {
+          throw new AppError(
+            'cannot update frozen user columns',
+            403,
+            ERROR_CODES.FORBIDDEN,
+            `You cannot update the frozen users column '${column.columnName}'`
           );
         }
 
@@ -553,6 +571,13 @@ export class TablesController {
     }
 
     if (renameTable && renameTable.newTableName) {
+      if (tableName === 'users') {
+        throw new AppError(
+          'Cannot rename users table',
+          403,
+          ERROR_CODES.FORBIDDEN,
+        );
+      }
       // Prevent renaming to system tables
       if (renameTable.newTableName.startsWith('_')) {
         throw new AppError(
@@ -607,6 +632,13 @@ export class TablesController {
         403,
         ERROR_CODES.DATABASE_FORBIDDEN,
         'System tables cannot be deleted. System tables are prefixed with underscore.'
+      );
+    }
+    if (table === 'users') {
+      throw new AppError(
+        'Cannot delete users table',
+        403,
+        ERROR_CODES.DATABASE_FORBIDDEN,
       );
     }
 
