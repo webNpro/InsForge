@@ -87,6 +87,16 @@ export class DatabaseManager {
       $$;
     `);
 
+    await client.query(`
+      DO $$
+      BEGIN
+          IF EXISTS (SELECT FROM information_schema.tables 
+                    WHERE table_name = '_account' AND table_schema = 'public') THEN
+              ALTER TABLE _account RENAME TO _oauth_connections;
+          END IF;
+      END $$;
+    `)
+
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
 
