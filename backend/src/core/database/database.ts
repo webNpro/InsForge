@@ -87,15 +87,50 @@ export class DatabaseManager {
       $$;
     `);
 
+    // rename _account to _oauth_connections
     await client.query(`
       DO $$
       BEGIN
           IF EXISTS (SELECT FROM information_schema.tables 
                     WHERE table_name = '_account' AND table_schema = 'public') THEN
-              ALTER TABLE _account RENAME TO _oauth_connections;
+              IF NOT EXISTS (SELECT FROM information_schema.tables 
+                             WHERE table_name = '_oauth_connections' AND table_schema = 'public') THEN
+                    ALTER TABLE _account RENAME TO _oauth_connections;
+              END IF;
           END IF;
       END $$;
     `)
+
+    // rename _user to _accounts
+    await client.query(`
+      DO $$
+      BEGIN
+          IF EXISTS (SELECT FROM information_schema.tables 
+                    WHERE table_name = '_user' AND table_schema = 'public') THEN
+              IF NOT EXISTS (SELECT FROM information_schema.tables 
+                             WHERE table_name = '_accounts' AND table_schema = 'public') THEN
+                    ALTER TABLE _user RENAME TO _accounts;
+              END IF;
+          END IF;
+      END $$;
+    `)
+
+    // create users table.
+    await client.query(`
+      DO $$
+      BEGIN
+          CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY REFERENCES _accounts(id) ON DELETE CASCADE,
+            nickname TEXT,
+            avatar_url TEXT,
+            bio TEXT,
+            birthday DATE,
+            extra JSONB,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          );
+      END $$;
+    `);
 
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
