@@ -81,6 +81,7 @@ export class AgentAPIDocService {
       const bucketList = buckets.map((bucket: any) => bucket.name);
 
       const document = {
+        '<critical>': 'Re-read this documentation at the start of each conversation',
         version: metadata.version || '1.0.0',
         baseUrl: process.env.API_BASE_URL || 'http://localhost:7130',
         securitySchemes: {
@@ -234,37 +235,10 @@ export class AgentAPIDocService {
               response: '{authUrl: "https://github.com/login/oauth/authorize?..."}',
             },
           },
-
-          oauthCallback: {
-            method: 'GET',
-            path: '/api/auth/oauth/{provider}/callback',
-            description: 'OAuth callback endpoint - typically handled automatically by OAuth flow',
-            request: {
-              requiresAuth: false,
-              params: {
-                provider: 'string - OAuth provider (google or github)',
-              },
-              queryParams: {
-                code: 'string - Authorization code from OAuth provider',
-                state: 'string - State parameter for security',
-                token: 'string (optional) - ID token for some flows',
-              },
-            },
-            response: {
-              success: {
-                status: 302,
-                description:
-                  'Redirects to redirect_uri with access_token, user_id, email, and name in query params',
-              },
-              error: {
-                status: 302,
-                description: 'Redirects to redirect_uri with error in query params',
-              },
-            },
-          },
         },
 
         // Universal patterns for all tables
+        '<critical-database>': 'Re-read the tableApi section before implementing database operations',
         tableApi: {
           list: {
             method: 'GET',
@@ -315,17 +289,19 @@ export class AgentAPIDocService {
 
           getById: {
             method: 'GET',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
               },
             },
             response: {
               success: {
                 status: 200,
-                body: '{tableName}RecordSchema',
+                body: 'Array<{tableName}RecordSchema> (single item array)',
               },
               error: {
                 status: '404 | 401 | 500',
@@ -333,24 +309,28 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'GET /api/database/records/products/123',
-              response: '{id: "123", name: "Product Name", price: 29.99, ...}',
+              request: 'GET /api/database/records/products?id=eq.123',
+              response: '[{id: "123", name: "Product Name", price: 29.99, ...}]',
             },
           },
 
           create: {
+            '<critical-create>': 'Re-read this create operation documentation before every POST request',
             method: 'POST',
             path: '/api/database/records/{tableName}',
             request: {
               params: {
                 tableName: 'string - name of the table',
               },
-              body: '{tableName}RecordSchema (exclude: id, created_at, updated_at)',
+              body: '[{tableName}RecordSchema] - MUST be array even for single record (exclude: id, created_at, updated_at)',
+              headers: {
+                'Prefer': 'return=representation (REQUIRED to get created record back, otherwise returns empty array)',
+              },
             },
             response: {
               success: {
                 status: 201,
-                body: '{tableName}RecordSchema (complete)',
+                body: 'Array<{tableName}RecordSchema> with Prefer header | [] empty array without',
               },
               error: {
                 status: '400 | 401 | 500',
@@ -359,26 +339,32 @@ export class AgentAPIDocService {
             },
             example: {
               request: 'POST /api/database/records/products',
-              body: '{name: "New Product", price: 29.99, category: "electronics"}',
+              headers: 'Prefer: return=representation',
+              body: '[{name: "New Product", price: 29.99, category: "electronics"}]',
               response:
-                '{id: "123", name: "New Product", price: 29.99, category: "electronics", created_at: "...", updated_at: "..."}',
+                '[{id: "123", name: "New Product", price: 29.99, category: "electronics", created_at: "...", updated_at: "..."}]',
             },
           },
 
           update: {
             method: 'PATCH',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
               },
               body: 'Partial<{tableName}RecordSchema> (all fields optional, exclude: id, created_at, updated_at)',
+              headers: {
+                'Prefer': 'return=representation (optional - to return updated record)',
+              },
             },
             response: {
               success: {
                 status: 200,
-                body: '{tableName}RecordSchema',
+                body: 'Array<{tableName}RecordSchema> (with Prefer: return=representation) | 204 No Content (without)',
               },
               error: {
                 status: '404 | 400 | 401 | 500',
@@ -386,25 +372,31 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'PATCH /api/database/records/products/123',
+              request: 'PATCH /api/database/records/products?id=eq.123',
+              headers: 'Prefer: return=representation',
               body: '{price: 39.99}',
-              response: '{id: "123", name: "Product Name", price: 39.99, ...}',
+              response: '[{id: "123", name: "Product Name", price: 39.99, ...}]',
             },
           },
 
           delete: {
             method: 'DELETE',
-            path: '/api/database/records/{tableName}/{id}',
+            path: '/api/database/records/{tableName}?id=eq.{id}',
             request: {
               params: {
                 tableName: 'string - name of the table',
-                id: 'string - primary key value',
+              },
+              queryParams: {
+                'id=eq.{value}': 'string - primary key value (using PostgREST eq operator)',
+              },
+              headers: {
+                'Prefer': 'return=representation (optional - to return deleted record)',
               },
             },
             response: {
               success: {
                 status: 204,
-                body: 'null (No Content)',
+                body: 'null (No Content) | Array<{tableName}RecordSchema> with Prefer: return=representation',
               },
               error: {
                 status: '404 | 401 | 500',
@@ -412,7 +404,7 @@ export class AgentAPIDocService {
               },
             },
             example: {
-              request: 'DELETE /api/database/records/products/123',
+              request: 'DELETE /api/database/records/products?id=eq.123',
               response: 'Status: 204',
             },
           },
@@ -425,11 +417,14 @@ export class AgentAPIDocService {
                 tableName: 'string - name of the table',
               },
               body: 'Array<{tableName}RecordSchema> (exclude system fields)',
+              headers: {
+                'Prefer': 'return=representation (REQUIRED to get created records back, otherwise returns empty array)',
+              },
             },
             response: {
               success: {
                 status: 201,
-                body: 'Array<{tableName}RecordSchema>',
+                body: 'Array<{tableName}RecordSchema> with Prefer header | [] empty array without',
               },
               error: {
                 status: '400 | 401 | 500',
@@ -438,6 +433,7 @@ export class AgentAPIDocService {
             },
             example: {
               request: 'POST /api/database/records/products',
+              headers: 'Prefer: return=representation',
               body: '[{name: "Product 1", price: 19.99}, {name: "Product 2", price: 29.99}]',
               response:
                 '[{id: "123", name: "Product 1", price: 19.99, ...}, {id: "124", name: "Product 2", price: 29.99, ...}]',
@@ -498,6 +494,7 @@ export class AgentAPIDocService {
         },
 
         // Storage API for file upload and management
+        '<critical-storage>': 'Re-read storageApi section before implementing file operations',
         storageApi: {
           uploadObject: {
             method: 'PUT',
@@ -528,7 +525,7 @@ export class AgentAPIDocService {
               request: 'PUT /api/storage/buckets/uploads/objects/images/profile.jpg',
               formData: 'file: <binary data>',
               response:
-                '{key: "images/profile.jpg", bucket: "uploads", size: 2048, mimeType: "image/jpeg", ...}',
+                '{key: "images/profile.jpg", bucket: "uploads", size: 2048, mimeType: "image/jpeg", url: "/api/storage/buckets/uploads/objects/images/profile.jpg"}',
             },
           },
 
@@ -559,7 +556,7 @@ export class AgentAPIDocService {
               request: 'POST /api/storage/buckets/uploads/objects',
               formData: 'file: <binary data of photo.jpg>',
               response:
-                '{key: "photo-1704000000000-abc123.jpg", bucket: "uploads", size: 2048, ...}',
+                '{key: "photo-1704000000000-abc123.jpg", bucket: "uploads", size: 2048, url: "/api/storage/buckets/uploads/objects/photo-1704000000000-abc123.jpg"}',
             },
           },
 
@@ -639,12 +636,17 @@ export class AgentAPIDocService {
               size: { type: 'number (bytes)', required: true },
               mimeType: { type: 'string', required: false },
               uploadedAt: { type: 'datetime string', required: true },
-              url: { type: 'string', required: true },
+              url: { 
+                type: 'string', 
+                required: true,
+                description: 'Relative path: /api/storage/buckets/{bucket}/objects/{key}',
+              },
             },
           },
         },
 
         // Quick reference for AI
+        '<critical-quickref>': 'Re-read quickReference before starting implementation',
         quickReference: {
           authenticationSteps: [
             '1. Register new users with POST /api/auth/users',
@@ -665,10 +667,11 @@ export class AgentAPIDocService {
           storageSteps: [
             '1. Upload files using PUT (specific key) or POST (auto-generated key)',
             '2. Files are uploaded as multipart/form-data with "file" field',
-            '3. Download files using GET with bucket and object key',
-            '4. Public buckets allow downloading without authentication',
-            '5. Private buckets require authentication for all operations',
-            '6. Organize files using key prefixes like "images/", "documents/", etc.',
+            '3. Response url field contains relative path to the file',
+            '4. Download files using GET with the url path',
+            '5. Public buckets allow downloading without authentication',
+            '6. Private buckets require authentication for all operations',
+            '7. Organize files using key prefixes like "images/", "documents/"',
           ],
           examples: {
             // Authentication examples
@@ -680,11 +683,11 @@ export class AgentAPIDocService {
             googleLogin: 'GET /api/auth/oauth/google?redirect_uri=http://localhost:3000',
             githubLogin: 'GET /api/auth/oauth/github?redirect_uri=http://localhost:3000',
             // Database examples
-            listProducts: 'GET /api/database/records/products?limit=10&category=electronics',
+            listProducts: 'GET /api/database/records/products?limit=10&category=eq.electronics',
             createProduct:
-              'POST /api/database/records/products with body {name: "New Product", price: 29.99}',
-            updateProduct: 'PATCH /api/database/records/products/apple with body {price: 39.99}',
-            deleteProduct: 'DELETE /api/database/records/products/apple',
+              'POST /api/database/records/products with Prefer: return=representation header and body [{name: "New Product", price: 29.99}]',
+            updateProduct: 'PATCH /api/database/records/products?id=eq.123 with Prefer: return=representation header and body {price: 39.99}',
+            deleteProduct: 'DELETE /api/database/records/products?id=eq.123',
             // Storage examples
             uploadFile: 'PUT /api/storage/buckets/uploads/objects/avatar.jpg with FormData file',
             downloadFile: 'GET /api/storage/buckets/uploads/objects/avatar.jpg',
