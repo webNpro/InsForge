@@ -226,7 +226,9 @@ export class AuthService {
    * User registration
    */
   async register(email: string, password: string, name?: string): Promise<CreateUserResponse> {
-    const existingUser = await this.db.prepare('SELECT id FROM _accounts WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT id FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
       throw new Error('User already exists');
@@ -395,7 +397,9 @@ export class AuthService {
     }
 
     // If not found by provider_id, try to find by email in _user table
-    const existingUser = await this.db.prepare('SELECT * FROM _accounts WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT * FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
       // Found existing user by email, create _oauth_connections record to link OAuth

@@ -99,7 +99,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 
     // Check for API key using shared logic
     const apiKey = extractApiKey(req);
-    
+
     // If we have an API key, verify it and use admin token for PostgREST
     if (apiKey) {
       const isValid = await authService.verifyApiKey(apiKey);

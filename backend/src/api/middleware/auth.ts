@@ -18,7 +18,7 @@ export interface AuthRequest extends Request {
 const authService = AuthService.getInstance();
 
 // Helper function to extract Bearer token
-export function extractBearerToken(authHeader: string | undefined): string | null {
+function extractBearerToken(authHeader: string | undefined): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -32,12 +32,12 @@ export function extractApiKey(req: AuthRequest): string | null {
   if (bearerToken && bearerToken.startsWith('ik_')) {
     return bearerToken;
   }
-  
+
   // Fall back to x-api-key header for backward compatibility
   if (req.headers['x-api-key']) {
     return req.headers['x-api-key'] as string;
   }
-  
+
   return null;
 }
 
@@ -55,7 +55,7 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
   const apiKey = extractApiKey(req);
-    if (apiKey) {
+  if (apiKey) {
     return verifyApiKey(req, res, next);
   }
 
@@ -121,7 +121,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
   try {
     // Extract API key from request using helper
     const apiKey = extractApiKey(req);
-    
+
     if (!apiKey) {
       throw new AppError(
         'No API key provided',
