@@ -48,15 +48,14 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
     return verifyApiKey(req, res, next);
   }
 
-  // Use the main verifyToken that handles all the logic
-  return verifyTokenOrApiKey(req, res, next);
+  // Use the main verifyToken that handles JWT authentication
+  return verifyToken(req, res, next);
 }
 
 /**
  * Verifies admin authentication (requires admin token)
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
     // API key takes precedence for backward compatibility
     // Fall back to x-api-key header for backward compatibility
     // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
@@ -66,9 +65,9 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
       // Use verifyApiKey which already sets role as 'project_admin' for API keys
       return verifyApiKey(req, res, next);
     }
-
-    // First verify the token (JWT or API key)
-    await verifyTokenOrApiKey(req, res, (error) => {
+  try {
+    // First verify the token (JWT only since API key is already handled above)
+    await verifyToken(req, res, (error) => {
       if (error) {
         return next(error);
       }
@@ -153,12 +152,10 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 }
 
 /**
- * Core token verification middleware that handles both JWT tokens and API keys
- * - API keys start with 'ik' (Insforge Key)
- * - JWT tokens have 3 parts separated by dots
+ * Core token verification middleware that handles JWT tokens
  * Sets req.user with the authenticated user information
  */
-export async function verifyTokenOrApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
+export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
@@ -170,43 +167,21 @@ export async function verifyTokenOrApiKey(req: AuthRequest, _res: Response, next
       );
     }
 
-    // Check if it's an API key (starts with 'ik' for Insforge Key)
-    if (token.startsWith('ik')) {
-      const isValid = await authService.verifyApiKey(token);
-      if (!isValid) {
-        throw new AppError(
-          'Invalid API key',
-          401,
-          ERROR_CODES.AUTH_INVALID_API_KEY,
-          NEXT_ACTION.CHECK_API_KEY
-        );
-      }
+    // Verify JWT token
+    const payload = authService.verifyToken(token);
 
-      // Set project-level authentication for API key
-      setRequestUser(req, {
-        sub: 'api-key',
-        email: 'api@insforge.local',
-        role: 'project_admin',
-      });
-      req.authenticated = true;
-      req.apiKey = token;
-    } else {
-      // It's a JWT token
-      const payload = authService.verifyToken(token);
-
-      // Validate token has a role
-      if (!payload.role) {
-        throw new AppError(
-          'Invalid token: missing role',
-          401,
-          ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-          NEXT_ACTION.CHECK_TOKEN
-        );
-      }
-
-      // Set user info on request
-      setRequestUser(req, payload);
+    // Validate token has a role
+    if (!payload.role) {
+      throw new AppError(
+        'Invalid token: missing role',
+        401,
+        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+        NEXT_ACTION.CHECK_TOKEN
+      );
     }
+
+    // Set user info on request
+    setRequestUser(req, payload);
 
     next();
   } catch (error) {
