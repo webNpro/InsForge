@@ -56,36 +56,41 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
  * Verifies admin authentication (requires admin token)
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-    // API key takes precedence for backward compatibility
-    // Fall back to x-api-key header for backward compatibility
-    // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
-    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
-    const apiKey = req.headers['x-api-key'] as string;
-    if (apiKey) {
-      // Use verifyApiKey which already sets role as 'project_admin' for API keys
-      return verifyApiKey(req, res, next);
-    }
+  // API key takes precedence for backward compatibility
+  // Fall back to x-api-key header for backward compatibility
+  // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
+  // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
+  const apiKey = req.headers['x-api-key'] as string;
+  if (apiKey) {
+    // Use verifyApiKey which already sets role as 'project_admin' for API keys
+    return verifyApiKey(req, res, next);
+  }
+
   try {
-    // First verify the token (JWT only since API key is already handled above)
-    await verifyToken(req, res, (error) => {
-      if (error) {
-        return next(error);
-      }
+    const token = extractBearerToken(req.headers.authorization);
+    if (!token) {
+      throw new AppError(
+        'No admin token provided',
+        401,
+        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+        NEXT_ACTION.CHECK_TOKEN
+      );
+    }
 
-      // Then check for admin role
-      if (req.user?.role !== 'project_admin') {
-        return next(
-          new AppError(
-            'Admin access required',
-            403,
-            ERROR_CODES.AUTH_UNAUTHORIZED,
-            NEXT_ACTION.CHECK_ADMIN_TOKEN
-          )
-        );
-      }
+    // For admin, we use JWT tokens
+    const payload = authService.verifyToken(token);
 
-      next();
-    });
+    if (payload.role !== 'project_admin') {
+      throw new AppError(
+        'Admin access required',
+        403,
+        ERROR_CODES.AUTH_UNAUTHORIZED,
+        NEXT_ACTION.CHECK_ADMIN_TOKEN
+      );
+    }
+
+    setRequestUser(req, payload);
+    next();
   } catch (error) {
     if (error instanceof AppError) {
       next(error);
