@@ -18,7 +18,7 @@ export interface AuthRequest extends Request {
 const authService = AuthService.getInstance();
 
 // Helper function to extract Bearer token
-function extractBearerToken(authHeader: string | undefined): string | null {
+export function extractBearerToken(authHeader: string | undefined): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -38,51 +38,35 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  * Verifies user authentication (accepts both user and admin tokens)
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
-  // API key takes precedence for backward compatibility
-  const apiKey = req.headers['x-api-key'] as string;
-  if (apiKey) {
-    return verifyApiKey(req, res, next);
-  }
-
   // Use the main verifyToken that handles all the logic
-  return verifyToken(req, res, next);
+  return verifyTokenOrApiKey(req, res, next);
 }
 
 /**
  * Verifies admin authentication (requires admin token)
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  // API key takes precedence for backward compatibility
-  const apiKey = req.headers['x-api-key'] as string;
-  if (apiKey) {
-    return verifyApiKey(req, res, next);
-  }
-
   try {
-    const token = extractBearerToken(req.headers.authorization);
-    if (!token) {
-      throw new AppError(
-        'No admin token provided',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      );
-    }
+    // First verify the token (JWT or API key)
+    await verifyTokenOrApiKey(req, res, (error) => {
+      if (error) {
+        return next(error);
+      }
 
-    // For admin, we use JWT tokens
-    const payload = authService.verifyToken(token);
+      // Then check for admin role
+      if (req.user?.role !== 'project_admin') {
+        return next(
+          new AppError(
+            'Admin access required',
+            403,
+            ERROR_CODES.AUTH_UNAUTHORIZED,
+            NEXT_ACTION.CHECK_ADMIN_TOKEN
+          )
+        );
+      }
 
-    if (payload.role !== 'project_admin') {
-      throw new AppError(
-        'Admin access required',
-        403,
-        ERROR_CODES.AUTH_UNAUTHORIZED,
-        NEXT_ACTION.CHECK_ADMIN_TOKEN
-      );
-    }
-
-    setRequestUser(req, payload);
-    next();
+      next();
+    });
   } catch (error) {
     if (error instanceof AppError) {
       next(error);
@@ -99,9 +83,21 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+/**
+ * Verifies API key authentication
+ * Accepts API key via Authorization: Bearer header or x-api-key header (backward compatibility)
+ */
 export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
-    const apiKey = req.headers['x-api-key'] as string;
+    // Try to get API key from Bearer token first
+    let apiKey = extractBearerToken(req.headers.authorization);
+    
+    // Fall back to x-api-key header for backward compatibility
+    // MCP tool usage still sends x-api-key header, we don't wnat to easily upgrade mcp version as that will break existing users
+    if (!apiKey) {
+      apiKey = req.headers['x-api-key'] as string;
+    }
+    
     if (!apiKey) {
       throw new AppError(
         'No API key provided',
@@ -121,6 +117,12 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
       );
     }
 
+    // Set project-level authentication for API key
+    setRequestUser(req, {
+      sub: 'api-key',
+      email: 'api@insforge.local',
+      role: 'project_admin',
+    });
     req.authenticated = true;
     req.apiKey = apiKey;
     next();
@@ -130,10 +132,12 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 }
 
 /**
- * Core token verification middleware that handles JWT token extraction and verification
+ * Core token verification middleware that handles both JWT tokens and API keys
+ * - API keys start with 'ik' (Insforge Key)
+ * - JWT tokens have 3 parts separated by dots
  * Sets req.user with the authenticated user information
  */
-export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
+export async function verifyTokenOrApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
@@ -145,21 +149,43 @@ export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction
       );
     }
 
-    // Verify JWT token
-    const payload = authService.verifyToken(token);
+    // Check if it's an API key (starts with 'ik' for Insforge Key)
+    if (token.startsWith('ik')) {
+      const isValid = await authService.verifyApiKey(token);
+      if (!isValid) {
+        throw new AppError(
+          'Invalid API key',
+          401,
+          ERROR_CODES.AUTH_INVALID_API_KEY,
+          NEXT_ACTION.CHECK_API_KEY
+        );
+      }
 
-    // Validate token has a role
-    if (!payload.role) {
-      throw new AppError(
-        'Invalid token: missing role',
-        401,
-        ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-        NEXT_ACTION.CHECK_TOKEN
-      );
+      // Set project-level authentication for API key
+      setRequestUser(req, {
+        sub: 'api-key',
+        email: 'api@insforge.local',
+        role: 'project_admin',
+      });
+      req.authenticated = true;
+      req.apiKey = token;
+    } else {
+      // It's a JWT token
+      const payload = authService.verifyToken(token);
+
+      // Validate token has a role
+      if (!payload.role) {
+        throw new AppError(
+          'Invalid token: missing role',
+          401,
+          ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+          NEXT_ACTION.CHECK_TOKEN
+        );
+      }
+
+      // Set user info on request
+      setRequestUser(req, payload);
     }
-
-    // Set user info on request
-    setRequestUser(req, payload);
 
     next();
   } catch (error) {

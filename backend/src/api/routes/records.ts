@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { AuthRequest } from '@/api/middleware/auth.js';
+import { AuthRequest, extractBearerToken } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -96,17 +96,16 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       },
     };
 
-    // If no authorization header, check api key
-    if (!req.headers.authorization) {
-      const apiKey = req.headers['x-api-key'] as string;
-      if (apiKey) {
-        // If API key is provided, use it
-        const isValid = await authService.verifyApiKey(apiKey);
-        if (isValid) {
-          axiosConfig.headers.authorization = `Bearer ${adminToken}`;
-        }
+    // Check if authorization header contains an API key (starts with 'ik_')
+    const token = extractBearerToken(req.headers.authorization);
+    if (token && token.startsWith('ik_')) {
+      // Verify the API key and replace with admin token for PostgREST
+      const isValid = await authService.verifyApiKey(token);
+      if (isValid) {
+        axiosConfig.headers.authorization = `Bearer ${adminToken}`;
       }
     }
+    // Otherwise, the JWT token will be passed through as-is in the headers
 
     // Add body for methods that support it
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
