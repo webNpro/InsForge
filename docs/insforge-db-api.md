@@ -6,13 +6,12 @@
 
 **Authentication Requirements:**
 - **READ operations (GET):** No authentication required - public access by default
-- **WRITE operations (POST/PATCH/DELETE):** Requires `Authorization: Bearer <session-token>` header
-- **Note:** The `x-api-key` header is only for MCP tool testing, not needed for regular API calls
+- **WRITE operations (POST/PATCH/DELETE):** Requires `Authorization: Bearer <token>` header (JWT token or API key for MCP testing)
 
-**Important: How Authentication Actually Works**
-1. Login returns a **session token** (NOT a JWT) - e.g., `ciJv6pHifEz2N7WRYRZFg8YF6D1jTnFk` (32 chars, no dots)
-2. Backend middleware automatically converts session token → JWT for PostgREST (handled transparently)
-3. Just use: `Authorization: Bearer <session-token>` - no JWT handling needed on your end
+**Important: How Authentication Works**
+1. Login returns a **JWT access token** - e.g., `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+2. Just use: `Authorization: Bearer <token>` in your requests
+3. API keys (starting with `ik_`) can also be used as Bearer tokens for testing
 **Critical:** Always call `get-backend-metadata` first to understand current database structure
 **Critical:** POST body must be arrays `[{...}]`, query filters `?field=eq.value`, add header `Prefer: return=representation` to return created data - follows PostgREST design (not traditional REST)
 
@@ -60,7 +59,7 @@ curl -X GET "http://localhost:7130/api/database/records/posts?limit=10"
 ### Create Records
 **POST** `/api/database/records/:tableName`
 
-**AUTHENTICATION REQUIRED** - Must include `Authorization: Bearer <session-token>`
+**AUTHENTICATION REQUIRED** - Must include `Authorization: Bearer <token>`
 
 **CRITICAL**: Request body MUST be an array, even for single records!
 
@@ -114,14 +113,14 @@ Example:
 ```bash
 # Mac/Linux
 curl -X POST http://localhost:7130/api/database/records/comments \
-  -H 'Authorization: Bearer YOUR_SESSION_TOKEN' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -H 'Prefer: return=representation' \
   -d '[{"user_id": "from-localStorage", "post_id": "post-uuid", "content": "Great!"}]'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
 curl.exe -X POST http://localhost:7130/api/database/records/comments \
-  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
   -d '[{\"user_id\": \"from-localStorage\", \"post_id\": \"post-uuid\", \"content\": \"Great!\"}]'
@@ -337,9 +336,9 @@ curl.exe -X POST http://localhost:7130/api/database/records/comments \
    | Operation | Auth Required | Header |
    |-----------|--------------|--------|
    | GET (read) | ❌ No | None needed |
-   | POST (create) | ✅ Yes | `Authorization: Bearer <session-token>` |
-   | PATCH (update) | ✅ Yes | `Authorization: Bearer <session-token>` |
-   | DELETE | ✅ Yes | `Authorization: Bearer <session-token>` |
+   | POST (create) | ✅ Yes | `Authorization: Bearer <token>` |
+   | PATCH (update) | ✅ Yes | `Authorization: Bearer <token>` |
+   | DELETE | ✅ Yes | `Authorization: Bearer <token>` |
 
 2. **Auto-Generated Fields**
    - `id` - UUID primary key (auto-generated)
@@ -357,14 +356,14 @@ curl.exe -X POST http://localhost:7130/api/database/records/comments \
    // Means: User not authenticated for write operation
    
    {"code": "PGRST301", "message": "JWSError (CompactDecodeError Invalid number of parts: Expected 3 parts; got 1)"}
-   // Means: Invalid or expired session token - user needs to login again
+   // Means: Invalid or expired token - user needs to login again
    ```
 
 4. **Remember**
    - READ operations are public (no auth needed)
-   - WRITE operations require session token from login
+   - WRITE operations require token from login
    - POST needs array `[{...}]` even for single record
    - Add `Prefer: return=representation` to see created/updated data  
    - PATCH cannot use SQL expressions - calculate in JavaScript
-   - Session tokens from login work directly - no JWT handling needed
+   - Tokens from login work directly as Bearer tokens
    - Always include `user_id` in user-related tables

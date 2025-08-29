@@ -18,7 +18,7 @@ export interface AuthRequest extends Request {
 const authService = AuthService.getInstance();
 
 // Helper function to extract Bearer token
-function extractBearerToken(authHeader: string | undefined): string | null {
+export function extractBearerToken(authHeader: string | undefined): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -39,12 +39,16 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
   // API key takes precedence for backward compatibility
+   // Fall back to x-api-key header for backward compatibility
+    // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
+    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
+ 
   const apiKey = req.headers['x-api-key'] as string;
   if (apiKey) {
     return verifyApiKey(req, res, next);
   }
 
-  // Use the main verifyToken that handles all the logic
+  // Use the main verifyToken that handles JWT authentication
   return verifyToken(req, res, next);
 }
 
@@ -53,8 +57,12 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
   // API key takes precedence for backward compatibility
+  // Fall back to x-api-key header for backward compatibility
+  // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
+  // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
   const apiKey = req.headers['x-api-key'] as string;
   if (apiKey) {
+    // Use verifyApiKey which already sets role as 'project_admin' for API keys
     return verifyApiKey(req, res, next);
   }
 
@@ -99,9 +107,22 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+/**
+ * Verifies API key authentication
+ * Accepts API key via Authorization: Bearer header or x-api-key header (backward compatibility)
+ */
 export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
-    const apiKey = req.headers['x-api-key'] as string;
+    // Try to get API key from Bearer token first
+    let apiKey = extractBearerToken(req.headers.authorization);
+    
+    // Fall back to x-api-key header for backward compatibility
+    // after each mcp tool call it will still send x-api-key header to, we don't want to easily upgrade mcp version
+    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
+    if (!apiKey) {
+      apiKey = req.headers['x-api-key'] as string;
+    }
+    
     if (!apiKey) {
       throw new AppError(
         'No API key provided',
@@ -121,6 +142,12 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
       );
     }
 
+    // Set project-level authentication for API key
+    setRequestUser(req, {
+      sub: 'api-key',
+      email: 'api@insforge.local',
+      role: 'project_admin',
+    });
     req.authenticated = true;
     req.apiKey = apiKey;
     next();
@@ -130,10 +157,10 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 }
 
 /**
- * Core token verification middleware that handles JWT token extraction and verification
+ * Core token verification middleware that handles JWT tokens
  * Sets req.user with the authenticated user information
  */
-export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
+export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {

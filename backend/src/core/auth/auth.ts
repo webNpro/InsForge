@@ -838,10 +838,10 @@ export class AuthService {
   }
 
   /**
-   * Generate a new API key
+   * Generate a new API key with 'ik_' prefix (Insforge Key)
    */
   generateApiKey(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return 'ik_' + crypto.randomBytes(32).toString('hex');
   }
 
   /**
@@ -869,8 +869,8 @@ export class AuthService {
       const envApiKey = process.env.ACCESS_API_KEY;
 
       if (envApiKey && envApiKey.trim() !== '') {
-        // Use the provided API key from environment
-        apiKey = envApiKey;
+        // Use the provided API key from environment, ensure it has 'ik_' prefix
+        apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
         await dbManager.setApiKey(apiKey);
         logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
       } else {
