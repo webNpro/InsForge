@@ -152,7 +152,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
  * Core token verification middleware that handles JWT tokens
  * Sets req.user with the authenticated user information
  */
-export async function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
+export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const token = extractBearerToken(req.headers.authorization);
     if (!token) {
