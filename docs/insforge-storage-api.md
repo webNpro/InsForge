@@ -6,7 +6,8 @@
 **Authentication:**
 - **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <token>` header
 - **Download from public buckets:** No authentication required
-- **List/manage buckets:** Requires authentication  
+- **List/manage buckets:** Requires authentication 
+- **API keys are for MCP testing** (use tokens for production)
 **System:** Bucket-based storage with public/private access control
 **URL Format**: Response `url` field contains `/api/storage/buckets/{bucket}/objects/{filename}` - correct format for serving files
 

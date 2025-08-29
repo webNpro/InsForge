@@ -46,7 +46,7 @@ Before ANY database operation, call `get-backend-metadata` to get the current da
 - Always define explicit table schemas (no assumptions)
 - Every table gets auto ID, created_at, updated_at fields
 - **Database operations require**: JWT token (Authorization: Bearer header)
-- **API keys are for MCP testing** (use session tokens for production)
+- **API keys are for MCP testing** (use tokens for production)
 - File uploads work automatically with multipart/form-data
 
 ## Authentication Requirements
