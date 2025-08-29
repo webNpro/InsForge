@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { AuthRequest, extractBearerToken } from '@/api/middleware/auth.js';
+import { AuthRequest, extractApiKey } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -97,19 +97,8 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       },
     };
 
-    // Check for API key in both Bearer token and x-api-key header (backward compatibility)
-    let apiKey: string | null = null;
-    
-    // First check Bearer token
-    const bearerToken = extractBearerToken(req.headers.authorization);
-    if (bearerToken && bearerToken.startsWith('ik_')) {
-      apiKey = bearerToken;
-    }
-    
-    // Fall back to x-api-key header for backward compatibility
-    if (!apiKey && req.headers['x-api-key']) {
-      apiKey = req.headers['x-api-key'] as string;
-    }
+    // Check for API key using shared logic
+    const apiKey = extractApiKey(req);
     
     // If we have an API key, verify it and use admin token for PostgREST
     if (apiKey) {

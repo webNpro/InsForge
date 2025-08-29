@@ -27,8 +27,7 @@ export function extractBearerToken(authHeader: string | undefined): string | nul
 
 // Helper function to extract API key from request
 // Checks both Bearer token (if starts with 'ik_') and x-api-key header
-function extractApiKey(req: AuthRequest): string | null {
-  // Check Bearer token - if it starts with 'ik_', treat as API key
+export function extractApiKey(req: AuthRequest): string | null {
   const bearerToken = extractBearerToken(req.headers.authorization);
   if (bearerToken && bearerToken.startsWith('ik_')) {
     return bearerToken;
@@ -55,11 +54,8 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  * Verifies user authentication (accepts both user and admin tokens)
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
-  // Check if user is trying to use an API key
   const apiKey = extractApiKey(req);
-  
-  // If we detected an API key, verify it
-  if (apiKey) {
+    if (apiKey) {
     return verifyApiKey(req, res, next);
   }
 
@@ -71,10 +67,7 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
  * Verifies admin authentication (requires admin token)
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  // Check if user is trying to use an API key
   const apiKey = extractApiKey(req);
-  
-  // If we detected an API key, verify it (API keys have project_admin role)
   if (apiKey) {
     return verifyApiKey(req, res, next);
   }
