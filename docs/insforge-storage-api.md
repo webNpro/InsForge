@@ -4,10 +4,9 @@
 
 **Base URL:** `http://localhost:7130`  
 **Authentication:**
-- **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <token>` header
+- **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <session-token>` header
 - **Download from public buckets:** No authentication required
-- **List/manage buckets:** Requires authentication 
-- **API keys are for MCP testing** (use tokens for production)
+- **List/manage buckets:** Requires authentication  
 **System:** Bucket-based storage with public/private access control
 **URL Format**: Response `url` field contains `/api/storage/buckets/{bucket}/objects/{filename}` - correct format for serving files
 
@@ -126,7 +125,7 @@ Example curl:
 ```bash
 # Windows PowerShell: use curl.exe
 curl -X GET "http://localhost:7130/api/storage/buckets/avatars/objects?limit=10&prefix=users/" \
-  -H "Authorization: Bearer <token>"
+  -H "x-api-key: YOUR_API_KEY"
 ```
 
 ### Delete Object
@@ -143,7 +142,7 @@ Example curl:
 ```bash
 # Windows PowerShell: use curl.exe
 curl -X DELETE http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg \
-  -H "Authorization: Bearer <token>"
+  -H "x-api-key: YOUR_API_KEY"
 ```
 
 ### Update Bucket
@@ -168,13 +167,13 @@ Example curl:
 ```bash
 # Mac/Linux
 curl -X PATCH http://localhost:7130/api/storage/buckets/avatars \
-  -H 'Authorization: Bearer <token>' \
+  -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"isPublic": true}'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
 curl.exe -X PATCH http://localhost:7130/api/storage/buckets/avatars \
-  -H "Authorization: Bearer <token>" \
+  -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{\"isPublic\": true}'
 ```
@@ -188,7 +187,7 @@ const formData = new FormData();
 formData.append('file', file);
 const upload = await fetch('/api/storage/buckets/images/objects/avatar.jpg', {
   method: 'PUT',
-  headers: { 'Authorization': `Bearer ${token}` },
+  headers: { 'x-api-key': apiKey },
   body: formData
 });
 
@@ -200,7 +199,7 @@ const records = [{
 await fetch('/api/database/profiles', {
   method: 'POST',
   headers: { 
-    'Authorization': `Bearer ${token}`,
+    'x-api-key': apiKey,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify(records)
@@ -214,7 +213,7 @@ const formData = new FormData();
 formData.append('file', file);
 const upload = await fetch('/api/storage/buckets/images/objects', {
   method: 'POST',
-  headers: { 'Authorization': `Bearer ${token}` },
+  headers: { 'x-api-key': apiKey },
   body: formData
 });
 const fileData = await upload.json();
@@ -227,7 +226,7 @@ const records = [{
 await fetch('/api/database/profiles', {
   method: 'POST',
   headers: { 
-    'Authorization': `Bearer ${token}`,
+    'x-api-key': apiKey,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify(records)

@@ -48,7 +48,7 @@ fi
 # Step 1: Create a public bucket
 print_info "1️⃣  Creating PUBLIC bucket: $PUBLIC_BUCKET"
 response=$(curl -s -w "\n%{http_code}" -X POST "${API_BASE_URL}/storage/buckets" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
   -d "{\"bucketName\": \"${PUBLIC_BUCKET}\", \"isPublic\": true}")
 
@@ -71,7 +71,7 @@ fi
 # Step 2: Create a private bucket
 print_info "2️⃣  Creating PRIVATE bucket: $PRIVATE_BUCKET"
 response=$(curl -s -w "\n%{http_code}" -X POST "${API_BASE_URL}/storage/buckets" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
   -d "{\"bucketName\": \"${PRIVATE_BUCKET}\", \"isPublic\": false}")
 
@@ -94,11 +94,11 @@ fi
 print_info "3️⃣  Uploading file to PUBLIC bucket..."
 # First delete if exists
 curl -s -X DELETE "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${TEST_FILE}" \
-  -H "Authorization: Bearer ${api_key}" > /dev/null 2>&1
+  -H "x-api-key: ${api_key}" > /dev/null 2>&1
 
 echo "This is a test file for public access" > /tmp/public-test.txt
 response=$(curl -s -w "\n%{http_code}" -X PUT "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${TEST_FILE}" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -F "file=@/tmp/public-test.txt")
 
 body=$(echo "$response" | sed '$d')
@@ -120,11 +120,11 @@ fi
 print_info "4️⃣  Uploading file to PRIVATE bucket..."
 # First delete if exists
 curl -s -X DELETE "${API_BASE_URL}/storage/buckets/${PRIVATE_BUCKET}/objects/${TEST_FILE}" \
-  -H "Authorization: Bearer ${api_key}" > /dev/null 2>&1
+  -H "x-api-key: ${api_key}" > /dev/null 2>&1
 
 echo "This is a test file for private access" > /tmp/private-test.txt
 response=$(curl -s -w "\n%{http_code}" -X PUT "${API_BASE_URL}/storage/buckets/${PRIVATE_BUCKET}/objects/${TEST_FILE}" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -F "file=@/tmp/private-test.txt")
 
 body=$(echo "$response" | sed '$d')
@@ -166,7 +166,7 @@ fi
 # Step 7: Test accessing PRIVATE file WITH API key
 print_info "7️⃣  Testing PRIVATE file access WITH API key..."
 HTTP_CODE=$(curl -s -o /tmp/private-auth-response.txt -w "%{http_code}" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   "${API_BASE_URL}/storage/buckets/${PRIVATE_BUCKET}/objects/${TEST_FILE}")
 if [ "$HTTP_CODE" -eq 200 ]; then
     print_success "Private file accessible with API key! (Status: ${HTTP_CODE})"
@@ -177,7 +177,7 @@ fi
 
 # Step 8: List all buckets
 print_info "8️⃣  Listing all buckets..."
-response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer ${api_key}" "${API_BASE_URL}/storage/buckets")
+response=$(curl -s -w "\n%{http_code}" -H "x-api-key: ${api_key}" "${API_BASE_URL}/storage/buckets")
 body=$(echo "$response" | sed '$d')
 status=$(echo "$response" | tail -n 1)
 
@@ -197,7 +197,7 @@ fi
 print_info "9️⃣  Testing POST upload with auto-generated key..."
 echo "This is a test file for POST upload" > /tmp/post-test.txt
 response=$(curl -s -w "\n%{http_code}" -X POST "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -F "file=@/tmp/post-test.txt")
 
 body=$(echo "$response" | sed '$d')
@@ -229,7 +229,7 @@ fi
 # Step 10: Update bucket visibility
 print_info "🔟 Testing bucket visibility update (making public bucket private)..."
 response=$(curl -s -w "\n%{http_code}" -X PATCH "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}" \
-  -H "Authorization: Bearer ${api_key}" \
+  -H "x-api-key: ${api_key}" \
   -H "Content-Type: application/json" \
   -d '{"isPublic": false}')
 

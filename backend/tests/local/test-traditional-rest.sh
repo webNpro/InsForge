@@ -175,14 +175,14 @@ if [ -n "$API_KEY" ]; then
     export ACCESS_API_KEY="$API_KEY"
     # List buckets
     response=$(curl -s "$API_BASE/storage/buckets" \
-        -H "Authorization: Bearer $API_KEY")
+        -H "x-api-key: $API_KEY")
     test_response_format "Direct array for buckets" "$response" '^\['
     
     # Create a test bucket
     BUCKET_NAME="test-rest-bucket-$(date +%s)"
     response=$(curl -s -X POST "$API_BASE/storage/buckets" \
         -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $API_KEY" \
+        -H "x-api-key: $API_KEY" \
         -d "{\"bucketName\": \"$BUCKET_NAME\", \"isPublic\": true}")
     
     if echo "$response" | grep -q '"bucketName"'; then

@@ -58,6 +58,7 @@ curl.exe -X POST http://localhost:7130/api/database/records/your_table \
 - Backend runs on port 7130
 - **READ operations**: No authentication required
 - **WRITE operations**: Need `Authorization: Bearer <accessToken>` header
+- **x-api-key**: Only for MCP tool testing, not regular API calls
 - POST requests must be arrays `[{...}]`
 - System tables (prefixed with _) need special APIs
 - No escaped characters in JSON
