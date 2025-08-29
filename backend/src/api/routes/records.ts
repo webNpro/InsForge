@@ -8,9 +8,10 @@ import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
 import { AuthService } from '@/core/auth/auth.js';
+import logger from '@/utils/logger.js';
+import { log } from 'console';
 
 const router = Router();
-const dbManager = DatabaseManager.getInstance();
 const authService = AuthService.getInstance();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
 
@@ -150,13 +151,8 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 
     // Set status and send response
     successResponse(res, responseData, response.status);
-
-    // Log the activity
-    await dbManager.logActivity(req.method, tableName, wildcardPath || 'table', {
-      query: req.query,
-      user_id: req.user?.id,
-    });
   } catch (error) {
+    logger.debug('failed to invoke database service', { error });
     if (axios.isAxiosError(error)) {
       // Forward PostgREST errors
       if (error.response) {
