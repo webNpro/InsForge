@@ -96,16 +96,27 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       },
     };
 
-    // Check if authorization header contains an API key (starts with 'ik_')
-    const token = extractBearerToken(req.headers.authorization);
-    if (token && token.startsWith('ik_')) {
-      // Verify the API key and replace with admin token for PostgREST
-      const isValid = await authService.verifyApiKey(token);
+    // Check for API key in both Bearer token and x-api-key header (backward compatibility)
+    let apiKey: string | null = null;
+    
+    // First check Bearer token
+    const bearerToken = extractBearerToken(req.headers.authorization);
+    if (bearerToken && bearerToken.startsWith('ik_')) {
+      apiKey = bearerToken;
+    }
+    
+    // Fall back to x-api-key header for backward compatibility
+    if (!apiKey && req.headers['x-api-key']) {
+      apiKey = req.headers['x-api-key'] as string;
+    }
+    
+    // If we have an API key, verify it and use admin token for PostgREST
+    if (apiKey) {
+      const isValid = await authService.verifyApiKey(apiKey);
       if (isValid) {
         axiosConfig.headers.authorization = `Bearer ${adminToken}`;
       }
     }
-    // Otherwise, the JWT token will be passed through as-is in the headers
 
     // Add body for methods that support it
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
