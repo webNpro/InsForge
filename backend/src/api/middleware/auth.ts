@@ -38,6 +38,16 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  * Verifies user authentication (accepts both user and admin tokens)
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
+  // API key takes precedence for backward compatibility
+   // Fall back to x-api-key header for backward compatibility
+    // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
+    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
+ 
+  const apiKey = req.headers['x-api-key'] as string;
+  if (apiKey) {
+    return verifyApiKey(req, res, next);
+  }
+
   // Use the main verifyToken that handles all the logic
   return verifyTokenOrApiKey(req, res, next);
 }
@@ -47,6 +57,16 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    // API key takes precedence for backward compatibility
+    // Fall back to x-api-key header for backward compatibility
+    // mcp tool call still sends x-api-key header, we don't want to easily upgrade mcp version
+    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
+    const apiKey = req.headers['x-api-key'] as string;
+    if (apiKey) {
+      // Use verifyApiKey which already sets role as 'project_admin' for API keys
+      return verifyApiKey(req, res, next);
+    }
+
     // First verify the token (JWT or API key)
     await verifyTokenOrApiKey(req, res, (error) => {
       if (error) {
@@ -93,7 +113,8 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
     let apiKey = extractBearerToken(req.headers.authorization);
     
     // Fall back to x-api-key header for backward compatibility
-    // MCP tool usage still sends x-api-key header, we don't wnat to easily upgrade mcp version as that will break existing users
+    // after each mcp tool call it will still send x-api-key header to, we don't want to easily upgrade mcp version
+    // as that will break existing users. We wait for every user to upgrade their docker backend, then we can upgrade mcp version and remove this check.
     if (!apiKey) {
       apiKey = req.headers['x-api-key'] as string;
     }

@@ -178,7 +178,7 @@ fi
 # 10. Test Storage - Create Bucket
 print_info "10. Testing Create Storage Bucket"
 response=$(curl -s -w "\n%{http_code}" -X POST "$TEST_API_BASE/storage/buckets" \
-  -H "x-api-key: $API_KEY" \
+  -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"bucketName\": \"$TEST_BUCKET\",
@@ -190,14 +190,14 @@ test_endpoint "Create bucket" "$response" "201"
 print_info "11. Testing Upload File"
 echo "Test file content" > /tmp/test-upload.txt
 response=$(curl -s -w "\n%{http_code}" -X PUT "$TEST_API_BASE/storage/buckets/$TEST_BUCKET/objects/test-file.txt" \
-  -H "x-api-key: $API_KEY" \
+  -H "Authorization: Bearer $API_KEY" \
   -F "file=@/tmp/test-upload.txt")
 test_endpoint "Upload file" "$response" "201"
 
 # 12. Test Download File
 print_info "12. Testing Download File"
 response=$(curl -s -w "\n%{http_code}" "$TEST_API_BASE/storage/buckets/$TEST_BUCKET/objects/test-file.txt" \
-  -H "x-api-key: $API_KEY" \
+  -H "Authorization: Bearer $API_KEY" \
   -o /tmp/test-download.txt)
 test_endpoint "Download file" "$response" "200"
 
@@ -227,7 +227,7 @@ fi
 # 14. Test Delete File
 print_info "14. Testing Delete File"
 response=$(curl -s -w "\n%{http_code}" -X DELETE "$TEST_API_BASE/storage/buckets/$TEST_BUCKET/objects/test-file.txt" \
-  -H "x-api-key: $API_KEY")
+  -H "Authorization: Bearer $API_KEY")
 test_endpoint "Delete file" "$response" "200"
 
 # Clean up temp files
