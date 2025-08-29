@@ -140,13 +140,6 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
         NEXT_ACTION.CHECK_API_KEY
       );
     }
-
-    // Set project-level authentication for API key
-    setRequestUser(req, {
-      sub: 'api-key',
-      email: 'api@insforge.local',
-      role: 'project_admin',
-    });
     req.authenticated = true;
     req.apiKey = apiKey;
     next();
