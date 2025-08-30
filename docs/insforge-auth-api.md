@@ -27,8 +27,6 @@ Body: `{"email": "user@example.com", "password": "password"}`
 
 Returns: `{"accessToken": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
 
-**Note:** This creates an entry in the `users` table with the same `id` for profile data
-
 ### Get Current User
 **GET** `/api/auth/sessions/current` 
 
