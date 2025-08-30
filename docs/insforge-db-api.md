@@ -4,6 +4,8 @@
 
 **Base URL:** `http://localhost:7130`
 
+**Note:** Avoid special characters (!,$,`,\) in curl command data - they can cause bash interpretation issues. Use simple text for testing.
+
 **Authentication Requirements:**
 - **READ operations (GET):** No authentication required - public access by default
 - **WRITE operations (POST/PATCH/DELETE):** Requires `Authorization: Bearer <token>` header (JWT token or API key for MCP testing)
@@ -116,14 +118,14 @@ curl -X POST http://localhost:7130/api/database/records/comments \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -H 'Prefer: return=representation' \
-  -d '[{"user_id": "from-localStorage", "post_id": "post-uuid", "content": "Great!"}]'
+  -d '[{"user_id": "from-localStorage", "post_id": "post-uuid", "content": "Great"}]'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
 curl.exe -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=representation" \
-  -d '[{\"user_id\": \"from-localStorage\", \"post_id\": \"post-uuid\", \"content\": \"Great!\"}]'
+  -d '[{\"user_id\": \"from-localStorage\", \"post_id\": \"post-uuid\", \"content\": \"Great\"}]'
 ```
 
 ### Update Record
@@ -277,21 +279,35 @@ Content-Range: 0-9/100  # Shows items 0-9 out of 100 total
 
 Without `Prefer: count=exact`, you get: `Content-Range: 0-9/*` (no total count)
 
-## 🚨 Critical: User Table is Read-Only
+## 🚨 Working with User Data
 
-**The `_user` table is managed by the JWT authentication system:**
-- **✅ READ**: `GET /api/database/records/_user` - Works!
-- **❌ WRITE**: POST/PUT/PATCH/DELETE returns `403 FORBIDDEN`
-- **Solution**: For additional user data, create `user_profiles` table:
+**The `users` table stores user profiles:**
+- **✅ READ**: `GET /api/database/records/users` - Get user profiles
+- **✅ WRITE**: `PATCH /api/database/records/users?id=eq.<user_id>` - Update profiles
+
+**Schema:**
+- `id` - User ID (UUID, references auth system)
+- `nickname` - Display name (text, nullable)
+- `avatar_url` - Profile picture URL (text, nullable)
+- `bio` - User biography (text, nullable)
+- `birthday` - Birth date (date, nullable)
+- `created_at` - Profile creation timestamp
+- `updated_at` - Last update timestamp
+
+**Important:**
+- User accounts (email, password) are managed via Auth API only
+- The `users` table is automatically created when a user registers
+- Use `users.id` for foreign key references in your tables
+
+**Creating tables with user references:**
 ```json
 {
-  "table_name": "user_profiles",
+  "table_name": "posts",
   "columns": [
-    {"name": "user_id", "type": "string", "nullable": false, "is_unique": true,
-     "foreign_key": {"reference_table": "_user", "reference_column": "id", 
+    {"name": "user_id", "type": "string", "nullable": false,
+     "foreign_key": {"reference_table": "users", "reference_column": "id", 
                      "on_delete": "CASCADE", "on_update": "CASCADE"}},
-    {"name": "bio", "type": "string", "nullable": true},
-    {"name": "avatar_url", "type": "string", "nullable": true}
+    {"name": "content", "type": "string", "nullable": false}
   ]
 }
 ```
@@ -316,13 +332,13 @@ curl -X POST http://localhost:7130/api/database/records/comments \
 curl -X POST http://localhost:7130/api/database/records/comments \
   -H 'Authorization: Bearer TOKEN' \
   -H 'Prefer: return=representation' \
-  -d '[{"content": "Great post!", "user_id": "user-uuid-from-localStorage"}]'
+  -d '[{"content": "Great post", "user_id": "user-uuid-from-localStorage"}]'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
 curl.exe -X POST http://localhost:7130/api/database/records/comments \
   -H "Authorization: Bearer TOKEN" \
   -H "Prefer: return=representation" \
-  -d '[{\"content\": \"Great post!\", \"user_id\": \"user-uuid-from-localStorage\"}]'
+  -d '[{\"content\": \"Great post\", \"user_id\": \"user-uuid-from-localStorage\"}]'
 ```
 
 **Required for all user-related operations:**
@@ -346,9 +362,9 @@ curl.exe -X POST http://localhost:7130/api/database/records/comments \
    - `updatedAt` - Timestamp (auto-updated)
 
 2. **System Tables**
-   - Tables prefixed with `_` are system tables
-   - Authentication tables (`_user`) - use Auth API only for modifications
-   - **`_user` table is PROTECTED** - read-only via database API
+   - Tables prefixed with `_` are system tables (protected)
+   - User profiles stored in `users` table (read/write allowed)
+   - Account management only through Auth API (register/login)
 
 3. **Common PostgREST Errors**:
    ```json

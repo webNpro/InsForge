@@ -9,7 +9,13 @@
 - **List/manage buckets:** Requires authentication 
 - **API keys are for MCP testing** (use tokens for production)
 **System:** Bucket-based storage with public/private access control
-**URL Format**: Response `url` field contains `/api/storage/buckets/{bucket}/objects/{filename}` - correct format for serving files
+
+### 🔴 CRITICAL: URL Format
+**Storage returns ABSOLUTE URLs** that are ready to use directly:
+- Response `url` field contains complete URL: `http://localhost:7130/api/storage/buckets/{bucket}/objects/{filename}`
+- **DO NOT prepend host or modify the URL** - use it exactly as returned
+- URLs work directly in `<img src>`, `<video src>`, or fetch requests
+- Example: `"url": "http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg"`
 
 
 ## Bucket Operations (Use MCP Tools)
@@ -42,7 +48,7 @@ Returns:
   "size": 30,
   "mimeType": "text/plain",
   "uploadedAt": "2025-07-18T04:32:13.801Z",
-  "url": "/api/storage/buckets/test-images/objects/test.txt"
+  "url": "http://localhost:7130/api/storage/buckets/test-images/objects/test.txt"
 }
 ```
 
@@ -73,7 +79,7 @@ Response:
   "size": 15234,
   "mimeType": "image/jpeg",
   "uploadedAt": "2025-07-18T04:32:13.801Z",
-  "url": "/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
+  "url": "http://localhost:7130/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
 }
 ```
 
@@ -105,7 +111,7 @@ Returns:
       "size": 30,
       "mimeType": "text/plain",
       "uploadedAt": "2025-07-18T04:32:13.801Z",
-      "url": "/api/storage/buckets/test-images/objects/test.txt"
+      "url": "http://localhost:7130/api/storage/buckets/test-images/objects/test.txt"
     }
   ],
   "pagination": {

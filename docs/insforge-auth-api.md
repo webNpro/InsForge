@@ -17,6 +17,8 @@ Body: `{"email": "user@example.com", "password": "password", "name": "User Name"
 
 Returns: `{"accessToken": "...", "user": {"id": "...", "email": "...", "name": "...", "emailVerified": false, "createdAt": "...", "updatedAt": "..."}}`
 
+**Note:** This creates an entry in the `users` table with the same `id` for profile data
+
 ### Login User  
 **POST** `/api/auth/sessions`
 
@@ -31,7 +33,7 @@ Headers: `Authorization: Bearer <accessToken>`
 
 Returns: `{"user": {"id": "...", "email": "...", "role": "authenticated"}}`
 
-**Note**: Returns LIMITED fields (id, email, type, role). For full user data including name/image, query `/api/database/records/_user?id=eq.<user_id>`
+**Note**: Returns LIMITED fields (id, email, role). For user profile data (nickname, avatar, bio, etc.), query `/api/database/records/users?id=eq.<user_id>`
 
 **Common errors:**
 - `401` with `"code": "MISSING_AUTHORIZATION_HEADER"` → No token provided
@@ -143,14 +145,25 @@ After processing, backend redirects to your specified `redirectUrl` with JWT tok
 - `email` - User's email address
 - `name` - User's display name
 
-## Built-in Auth Tables
+## User Profile Table
 
-### User Table (Read-Only)
-The `user` table is **system-managed**:
-- **✅ READ** via: `GET /api/database/records/_user`
-- **❌ NO WRITE** - use Auth API instead
-- **✅ Foreign keys allowed**
-- Schema: `id`, `email`, `name`, `image`, `email_verified`, `created_at`, `updated_at`
+### Users Table
+The `users` table stores **user profile data**:
+- **✅ READ** via: `GET /api/database/records/users`
+- **✅ WRITE** via: `PATCH /api/database/records/users?id=eq.<user_id>`
+- **✅ Foreign keys allowed** - reference `users.id`
+- **IMPORTANT**: Add columns to this table for profile data instead of creating separate profile tables
+
+**Schema:**
+- `id` - User ID (UUID, primary key)
+- `nickname` - Display name (text, nullable)
+- `avatar_url` - Profile picture URL (text, nullable)
+- `bio` - User biography (text, nullable)
+- `birthday` - Birth date (date, nullable)
+- `created_at` - Account creation timestamp
+- `updated_at` - Last update timestamp
+
+**Note:** Email and name from auth are returned by Auth API, not stored in users table
 
 Example - Create table with user reference:
 ```json
@@ -169,7 +182,7 @@ Example - Create table with user reference:
       "nullable": false,
       "is_unique": false,
       "foreign_key": {
-        "reference_table": "_user",
+        "reference_table": "users",
         "reference_column": "id",
         "on_delete": "CASCADE",
         "on_update": "CASCADE"
@@ -179,10 +192,10 @@ Example - Create table with user reference:
 }
 ```
 
-### System Tables
-The authentication system manages:
-- **_user** - User accounts (read-only via database API)
-- OAuth provider data stored internally
+### Available Tables
+- **users** - User profile data (read/write access)
+  - Use this table for foreign key references
+  - Update profiles with PATCH requests
 
 ## Headers Summary
 
@@ -196,7 +209,7 @@ The authentication system manages:
 
 1. `/api/auth/sessions/current` returns `{"user": {...}}` - nested, not root level
 2. `/api/auth/sessions/current` only has: id, email, role (limited fields)
-3. Full user data: `GET /api/database/records/_user?id=eq.<id>`
+3. Full user profile: `GET /api/database/records/users?id=eq.<id>`
 4. POST to database requires `[{...}]` array format always
 5. Auth endpoints (register/login): no headers needed
 6. Protected endpoints: `Authorization: Bearer <accessToken>`
