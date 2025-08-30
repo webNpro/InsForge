@@ -17,28 +17,34 @@ const authService = AuthService.getInstance();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
 
 // Create a dedicated HTTP agent with connection pooling for PostgREST
+// Optimized connection pool for Docker network communication
 const httpAgent = new http.Agent({
   keepAlive: true,
-  keepAliveMsecs: 10000,
-  maxSockets: 50,
-  maxFreeSockets: 10,
-  timeout: 30000,
+  keepAliveMsecs: 5000, // Shorter for Docker network
+  maxSockets: 20, // Reduced for stability
+  maxFreeSockets: 5,
+  timeout: 10000, // Match axios timeout
 });
 
 const httpsAgent = new https.Agent({
   keepAlive: true,
-  keepAliveMsecs: 10000,
-  maxSockets: 50,
-  maxFreeSockets: 10,
-  timeout: 30000,
+  keepAliveMsecs: 5000,
+  maxSockets: 20,
+  maxFreeSockets: 5,
+  timeout: 10000,
 });
 
-// Create axios instance with custom agents
+// Create axios instance with optimized configuration for PostgREST
 const postgrestAxios = axios.create({
   httpAgent,
   httpsAgent,
-  timeout: 5000, // Request timeout
-  maxRedirects: 0, // Don't follow redirects
+  timeout: 10000, // Increased timeout for stability
+  maxRedirects: 0,
+  // Additional connection stability options
+  headers: {
+    'Connection': 'keep-alive',
+    'Keep-Alive': 'timeout=5, max=10'
+  }
 });
 
 // Generate admin token once and reuse
@@ -139,10 +145,10 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       axiosConfig.data = req.body;
     }
 
-    // Make the request to PostgREST with retry logic for transient failures
+    // Enhanced retry logic with improved error handling
     let response;
     let lastError;
-    const maxRetries = 2;
+    const maxRetries = 3; // Increased retries for connection resets
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -151,15 +157,19 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       } catch (error) {
         lastError = error;
         
-        // Only retry on network errors, not on HTTP error responses
-        if (axios.isAxiosError(error) && !error.response && attempt < maxRetries) {
+        // Retry on network errors (ECONNRESET, ECONNREFUSED, timeout) but not HTTP errors
+        const shouldRetry = axios.isAxiosError(error) && !error.response && attempt < maxRetries;
+        
+        if (shouldRetry) {
           logger.warn(`PostgREST request failed, retrying (attempt ${attempt}/${maxRetries})`, {
             url: targetUrl,
             errorCode: error.code,
+            message: error.message
           });
           
-          // Exponential backoff: 100ms, 200ms, 400ms
-          await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, attempt - 1)));
+          // Enhanced exponential backoff: 200ms, 500ms, 1000ms
+          const backoffDelay = Math.min(200 * Math.pow(2.5, attempt - 1), 1000);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
         } else {
           throw error; // Don't retry on HTTP errors or last attempt
         }
