@@ -153,7 +153,7 @@ The `users` table stores **user profile data**:
 - **✅ READ** via: `GET /api/database/records/users`
 - **✅ WRITE** via: `PATCH /api/database/records/users?id=eq.<user_id>`
 - **✅ Foreign keys allowed** - reference `users.id`
-- **⚠️IMPORTANT**: Add columns to this table for profile data instead of creating separate profile tables
+- **IMPORTANT**: Add columns to this table for profile data instead of creating separate profile tables
 
 **Schema:**
 - `id` - User ID (UUID, primary key)
