@@ -97,7 +97,9 @@ The `_user` table is **protected** by the JWT authentication system:
 - **Authentication**: Upload operations require `Authorization: Bearer {accessToken}`
 - **Generate Unique Filenames**: Use POST for auto-generated keys to prevent overwrites
 - **Multipart Form**: Use FormData for file uploads
-- **URL Format**: Response `url` field now contains correct format `/api/storage/buckets/{bucket}/objects/{filename}`
+- **URL Format**: Storage returns **ABSOLUTE URLs** (e.g., `http://localhost:7130/api/storage/buckets/{bucket}/objects/{filename}`)
+  - **IMPORTANT**: URLs are complete and ready to use - no need to prepend host or path
+  - Use the URL directly in `<img src>` or fetch requests
 
 ## 🔥 Test EVERY Endpoint
 

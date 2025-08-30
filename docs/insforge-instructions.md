@@ -103,7 +103,9 @@ To work with users:
 
 ## Critical Rule: Test API Endpoints with curl
 
-After creating or modifying any API endpoint, always test it with curl to verify it works correctly:
+After creating or modifying any API endpoint, always test it with curl to verify it works correctly.
+
+**Note:** Avoid special characters (!,$,`,\) in curl command data - they can cause bash interpretation issues. Use simple text for testing:
 
 ```bash
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)
