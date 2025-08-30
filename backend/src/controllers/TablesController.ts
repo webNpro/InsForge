@@ -572,11 +572,7 @@ export class TablesController {
 
     if (renameTable && renameTable.newTableName) {
       if (tableName === 'users') {
-        throw new AppError(
-          'Cannot rename users table',
-          403,
-          ERROR_CODES.FORBIDDEN,
-        );
+        throw new AppError('Cannot rename users table', 403, ERROR_CODES.FORBIDDEN);
       }
       // Prevent renaming to system tables
       if (renameTable.newTableName.startsWith('_')) {
@@ -635,11 +631,7 @@ export class TablesController {
       );
     }
     if (table === 'users') {
-      throw new AppError(
-        'Cannot delete users table',
-        403,
-        ERROR_CODES.DATABASE_FORBIDDEN,
-      );
+      throw new AppError('Cannot delete users table', 403, ERROR_CODES.DATABASE_FORBIDDEN);
     }
 
     const db = this.dbManager.getAppDb();

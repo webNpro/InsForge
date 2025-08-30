@@ -99,7 +99,7 @@ export class DatabaseManager {
               END IF;
           END IF;
       END $$;
-    `)
+    `);
 
     // rename _user to _accounts
     await client.query(`
@@ -113,7 +113,7 @@ export class DatabaseManager {
               END IF;
           END IF;
       END $$;
-    `)
+    `);
 
     // create users table.
     await client.query(`

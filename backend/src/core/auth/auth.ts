@@ -226,7 +226,9 @@ export class AuthService {
    * User registration
    */
   async register(email: string, password: string, name?: string): Promise<CreateUserResponse> {
-    const existingUser = await this.db.prepare('SELECT id FROM _accounts WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT id FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
       throw new Error('User already exists');
@@ -395,7 +397,9 @@ export class AuthService {
     }
 
     // If not found by provider_id, try to find by email in _user table
-    const existingUser = await this.db.prepare('SELECT * FROM _accounts WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT * FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
       // Found existing user by email, create _oauth_connections record to link OAuth
@@ -838,10 +842,10 @@ export class AuthService {
   }
 
   /**
-   * Generate a new API key
+   * Generate a new API key with 'ik_' prefix (Insforge Key)
    */
   generateApiKey(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return 'ik_' + crypto.randomBytes(32).toString('hex');
   }
 
   /**
@@ -869,8 +873,8 @@ export class AuthService {
       const envApiKey = process.env.ACCESS_API_KEY;
 
       if (envApiKey && envApiKey.trim() !== '') {
-        // Use the provided API key from environment
-        apiKey = envApiKey;
+        // Use the provided API key from environment, ensure it has 'ik_' prefix
+        apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
         await dbManager.setApiKey(apiKey);
         logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
       } else {

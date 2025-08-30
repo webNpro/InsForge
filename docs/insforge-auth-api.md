@@ -2,9 +2,8 @@
 
 ## Overview
 
-Insforge uses JWT tokens for authentication. Store tokens in localStorage after login.
-**MCP Testing**: Use `x-api-key` header
-**Production**: Use `Authorization: Bearer <token>` header
+Insforge uses JWT tokens and API keys for authentication. Store tokens in localStorage after login.
+**All requests**: Use `Authorization: Bearer <token>` header (for both JWT tokens and API keys)
 
 ## Base URL
 `http://localhost:7130`
