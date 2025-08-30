@@ -25,6 +25,22 @@ function extractBearerToken(authHeader: string | undefined): string | null {
   return authHeader.substring(7);
 }
 
+// Helper function to extract API key from request
+// Checks both Bearer token (if starts with 'ik_') and x-api-key header
+export function extractApiKey(req: AuthRequest): string | null {
+  const bearerToken = extractBearerToken(req.headers.authorization);
+  if (bearerToken && bearerToken.startsWith('ik_')) {
+    return bearerToken;
+  }
+
+  // Fall back to x-api-key header for backward compatibility
+  if (req.headers['x-api-key']) {
+    return req.headers['x-api-key'] as string;
+  }
+
+  return null;
+}
+
 // Helper function to set user on request
 function setRequestUser(req: AuthRequest, payload: { sub: string; email: string; role: string }) {
   req.user = {
@@ -38,13 +54,12 @@ function setRequestUser(req: AuthRequest, payload: { sub: string; email: string;
  * Verifies user authentication (accepts both user and admin tokens)
  */
 export async function verifyUser(req: AuthRequest, res: Response, next: NextFunction) {
-  // API key takes precedence for backward compatibility
-  const apiKey = req.headers['x-api-key'] as string;
+  const apiKey = extractApiKey(req);
   if (apiKey) {
     return verifyApiKey(req, res, next);
   }
 
-  // Use the main verifyToken that handles all the logic
+  // Use the main verifyToken that handles JWT authentication
   return verifyToken(req, res, next);
 }
 
@@ -52,8 +67,7 @@ export async function verifyUser(req: AuthRequest, res: Response, next: NextFunc
  * Verifies admin authentication (requires admin token)
  */
 export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  // API key takes precedence for backward compatibility
-  const apiKey = req.headers['x-api-key'] as string;
+  const apiKey = extractApiKey(req);
   if (apiKey) {
     return verifyApiKey(req, res, next);
   }
@@ -99,9 +113,15 @@ export async function verifyAdmin(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+/**
+ * Verifies API key authentication
+ * Accepts API key via Authorization: Bearer header or x-api-key header (backward compatibility)
+ */
 export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
-    const apiKey = req.headers['x-api-key'] as string;
+    // Extract API key from request using helper
+    const apiKey = extractApiKey(req);
+
     if (!apiKey) {
       throw new AppError(
         'No API key provided',
@@ -120,7 +140,6 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
         NEXT_ACTION.CHECK_API_KEY
       );
     }
-
     req.authenticated = true;
     req.apiKey = apiKey;
     next();
@@ -130,7 +149,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
 }
 
 /**
- * Core token verification middleware that handles JWT token extraction and verification
+ * Core token verification middleware that handles JWT tokens
  * Sets req.user with the authenticated user information
  */
 export function verifyToken(req: AuthRequest, _res: Response, next: NextFunction) {

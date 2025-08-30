@@ -2,7 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
 import http from 'http';
 import https from 'https';
-import { AuthRequest } from '@/api/middleware/auth.js';
+import { AuthRequest, extractApiKey } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -123,15 +123,14 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       },
     };
 
-    // If no authorization header, check api key
-    if (!req.headers.authorization) {
-      const apiKey = req.headers['x-api-key'] as string;
-      if (apiKey) {
-        // If API key is provided, use it
-        const isValid = await authService.verifyApiKey(apiKey);
-        if (isValid) {
-          axiosConfig.headers.authorization = `Bearer ${adminToken}`;
-        }
+    // Check for API key using shared logic
+    const apiKey = extractApiKey(req);
+
+    // If we have an API key, verify it and use admin token for PostgREST
+    if (apiKey) {
+      const isValid = await authService.verifyApiKey(apiKey);
+      if (isValid) {
+        axiosConfig.headers.authorization = `Bearer ${adminToken}`;
       }
     }
 

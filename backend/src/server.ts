@@ -15,6 +15,8 @@ import { configRouter } from '@/api/routes/config.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
 import { usageRouter } from '@/api/routes/usage.js';
+import { openAPIRouter } from '@/api/routes/openapi.js';
+import { agentDocsRouter } from '@/api/routes/agent.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
 import { DatabaseManager } from '@/core/database/database.js';
@@ -146,9 +148,35 @@ export async function createApp() {
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
   apiRouter.use('/usage', usageRouter);
+  apiRouter.use('/openapi', openAPIRouter);
+  apiRouter.use('/agent-docs', agentDocsRouter);
 
   // Mount all API routes under /api prefix
   app.use('/api', apiRouter);
+
+  // Add direct OpenAPI route at /openapi
+  app.get('/openapi', async (_req: Request, res: Response) => {
+    try {
+      const { OpenAPIService } = await import('@/core/documentation/openapi.js');
+      const openAPIService = OpenAPIService.getInstance();
+      const openAPIDocument = await openAPIService.generateOpenAPIDocument();
+      res.json(openAPIDocument);
+    } catch {
+      res.status(500).json({ error: 'Failed to generate OpenAPI document' });
+    }
+  });
+
+  // Add direct AI agent documentation route at /agent-docs
+  app.get('/agent-docs', async (_req: Request, res: Response) => {
+    try {
+      const { AgentAPIDocService } = await import('@/core/documentation/agent.js');
+      const agentAPIDocService = AgentAPIDocService.getInstance();
+      const agentDocs = await agentAPIDocService.generateAgentDocumentation();
+      res.json(agentDocs);
+    } catch {
+      res.status(500).json({ error: 'Failed to generate agent API documentation' });
+    }
+  });
 
   // Proxy function execution to Deno runtime
   app.all('/functions/:slug', async (req: Request, res: Response) => {
