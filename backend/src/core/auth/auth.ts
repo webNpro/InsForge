@@ -226,7 +226,9 @@ export class AuthService {
    * User registration
    */
   async register(email: string, password: string, name?: string): Promise<CreateUserResponse> {
-    const existingUser = await this.db.prepare('SELECT id FROM _user WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT id FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
       throw new Error('User already exists');
@@ -238,15 +240,24 @@ export class AuthService {
     await this.db
       .prepare(
         `
-      INSERT INTO _user (id, email, password, name, email_verified, created_at, updated_at)
+      INSERT INTO _accounts (id, email, password, name, email_verified, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, NOW(), NOW())
     `
       )
       .run(userId, email, hashedPassword, name || null, false);
 
+    await this.db
+      .prepare(
+        `
+      INSERT INTO users (id, nickname, created_at, updated_at)
+      VALUES (?, ?, NOW(), NOW())
+    `
+      )
+      .run(userId, name || null);
+
     const dbUser = await this.db
       .prepare(
-        'SELECT id, email, name, email_verified, created_at, updated_at FROM _user WHERE id = ?'
+        'SELECT id, email, name, email_verified, created_at, updated_at FROM _accounts WHERE id = ?'
       )
       .get(userId);
     const user = this.dbUserToApiUser(dbUser);
@@ -259,7 +270,7 @@ export class AuthService {
    * User login
    */
   async login(email: string, password: string): Promise<CreateSessionResponse> {
-    const dbUser = await this.db.prepare('SELECT * FROM _user WHERE email = ?').get(email);
+    const dbUser = await this.db.prepare('SELECT * FROM _accounts WHERE email = ?').get(email);
 
     if (!dbUser || !dbUser.password) {
       throw new Error('Invalid credentials');
@@ -356,22 +367,22 @@ export class AuthService {
     avatarUrl: string,
     identityData: any
   ): Promise<CreateSessionResponse> {
-    // First, try to find existing user by provider ID in _account table
+    // First, try to find existing user by provider ID in _oauth_connections table
     const account = await this.db
-      .prepare('SELECT * FROM _account WHERE provider = ? AND provider_account_id = ?')
+      .prepare('SELECT * FROM _oauth_connections WHERE provider = ? AND provider_account_id = ?')
       .get(provider, providerId);
 
     if (account) {
       // Found existing OAuth user, update last login time
       await this.db
         .prepare(
-          'UPDATE _account SET updated_at = CURRENT_TIMESTAMP WHERE provider = ? AND provider_account_id = ?'
+          'UPDATE _oauth_connections SET updated_at = CURRENT_TIMESTAMP WHERE provider = ? AND provider_account_id = ?'
         )
         .run(provider, providerId);
 
       const dbUser = await this.db
         .prepare(
-          'SELECT id, email, name, email_verified, created_at, updated_at FROM _user WHERE id = ?'
+          'SELECT id, email, name, email_verified, created_at, updated_at FROM _accounts WHERE id = ?'
         )
         .get(account.user_id);
 
@@ -386,14 +397,16 @@ export class AuthService {
     }
 
     // If not found by provider_id, try to find by email in _user table
-    const existingUser = await this.db.prepare('SELECT * FROM _user WHERE email = ?').get(email);
+    const existingUser = await this.db
+      .prepare('SELECT * FROM _accounts WHERE email = ?')
+      .get(email);
 
     if (existingUser) {
-      // Found existing user by email, create _account record to link OAuth
+      // Found existing user by email, create _oauth_connections record to link OAuth
       await this.db
         .prepare(
           `
-        INSERT INTO _account (
+        INSERT INTO _oauth_connections (
           user_id, provider, provider_account_id, 
           provider_data, created_at, updated_at
         )
@@ -443,17 +456,26 @@ export class AuthService {
       await this.db
         .prepare(
           `
-        INSERT INTO _user (id, email, name, email_verified, created_at, updated_at)
+        INSERT INTO _accounts (id, email, name, email_verified, created_at, updated_at)
         VALUES (?, ?, ?, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `
         )
         .run(userId, email, userName);
 
-      // Create _account record
       await this.db
         .prepare(
           `
-        INSERT INTO _account (
+        INSERT INTO users (id, nickname, avatar_url, created_at, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `
+        )
+        .run(userId, userName, avatarUrl);
+
+      // Create _oauth_connections record
+      await this.db
+        .prepare(
+          `
+        INSERT INTO _oauth_connections (
           user_id, provider, provider_account_id,
           provider_data, created_at, updated_at
         )
@@ -820,10 +842,10 @@ export class AuthService {
   }
 
   /**
-   * Generate a new API key
+   * Generate a new API key with 'ik_' prefix (Insforge Key)
    */
   generateApiKey(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return 'ik_' + crypto.randomBytes(32).toString('hex');
   }
 
   /**
@@ -851,8 +873,8 @@ export class AuthService {
       const envApiKey = process.env.ACCESS_API_KEY;
 
       if (envApiKey && envApiKey.trim() !== '') {
-        // Use the provided API key from environment
-        apiKey = envApiKey;
+        // Use the provided API key from environment, ensure it has 'ik_' prefix
+        apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
         await dbManager.setApiKey(apiKey);
         logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
       } else {

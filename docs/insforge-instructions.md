@@ -46,7 +46,7 @@ Before ANY database operation, call `get-backend-metadata` to get the current da
 - Always define explicit table schemas (no assumptions)
 - Every table gets auto ID, created_at, updated_at fields
 - **Database operations require**: JWT token (Authorization: Bearer header)
-- **API keys (x-api-key) are ONLY for MCP testing**, not for production applications
+- **API keys are for MCP testing** (use tokens for production)
 - File uploads work automatically with multipart/form-data
 
 ## Authentication Requirements
@@ -78,19 +78,6 @@ curl -X POST http://localhost:7130/api/database/records/products \
   -H "Content-Type: application/json" \
   -d "[{\"name\": \"Product\", \"price\": 99.99}]"
 ```
-## System Tables
-
-### User Table (Read-Only Access)
-The `_user` table is a **system-managed table** from the JWT authentication system:
-- **✅ CAN READ** via `GET /api/database/records/user`
-- **❌ CANNOT MODIFY** through database API - use Auth API instead
-- **✅ CAN REFERENCE** by other tables using `user_id` foreign keys
-
-To work with users:
-- Read users: `GET /api/database/records/user`
-- Create users: Use `POST /api/auth/users`
-- Authenticate: Use `POST /api/auth/sessions`
-- Store additional data: Create your own `user_profiles` table
 
 ## Example: Comment Upvoting Feature
 
@@ -103,7 +90,9 @@ To work with users:
 
 ## Critical Rule: Test API Endpoints with curl
 
-After creating or modifying any API endpoint, always test it with curl to verify it works correctly:
+After creating or modifying any API endpoint, always test it with curl to verify it works correctly.
+
+**Note:** Avoid special characters (!,$,`,\) in curl command data - they can cause bash interpretation issues. Use simple text for testing:
 
 ```bash
 # Works on both Windows and Unix (Windows PowerShell: use curl.exe)

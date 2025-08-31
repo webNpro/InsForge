@@ -150,7 +150,7 @@ export default function DatabasePage() {
           name: selectedTable,
           schema,
           records: records.records,
-          totalRecords: records.total,
+          totalRecords: schema.recordCount,
         };
       } catch (error) {
         // If sorting caused the error, retry without sorting
@@ -168,7 +168,7 @@ export default function DatabasePage() {
             name: selectedTable,
             schema,
             records: records.records,
-            totalRecords: records.total,
+            totalRecords: schema.recordCount,
           };
         }
         throw error;

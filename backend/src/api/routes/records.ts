@@ -1,6 +1,8 @@
 import { Router, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { AuthRequest } from '@/api/middleware/auth.js';
+import http from 'http';
+import https from 'https';
+import { AuthRequest, extractApiKey } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -8,11 +10,42 @@ import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
 import { AuthService } from '@/core/auth/auth.js';
+import logger from '@/utils/logger.js';
 
 const router = Router();
-const dbManager = DatabaseManager.getInstance();
 const authService = AuthService.getInstance();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
+
+// Create a dedicated HTTP agent with connection pooling for PostgREST
+// Optimized connection pool for Docker network communication
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 5000, // Shorter for Docker network
+  maxSockets: 20, // Reduced for stability
+  maxFreeSockets: 5,
+  timeout: 10000, // Match axios timeout
+});
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 5000,
+  maxSockets: 20,
+  maxFreeSockets: 5,
+  timeout: 10000,
+});
+
+// Create axios instance with optimized configuration for PostgREST
+const postgrestAxios = axios.create({
+  httpAgent,
+  httpsAgent,
+  timeout: 10000, // Increased timeout for stability
+  maxRedirects: 0,
+  // Additional connection stability options
+  headers: {
+    'Connection': 'keep-alive',
+    'Keep-Alive': 'timeout=5, max=10'
+  }
+});
 
 // Generate admin token once and reuse
 // If user request with api key, this token should be added automatically.
@@ -30,10 +63,14 @@ const adminToken = authService.generateToken({
  * Forward database requests to PostgREST
  */
 const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { tableName } = req.params;
+  const wildcardPath = req.params[0] || '';
+  
+  // Build the target URL early so it's available in error handling
+  const targetPath = wildcardPath ? `/${tableName}/${wildcardPath}` : `/${tableName}`;
+  const targetUrl = `${postgrestUrl}${targetPath}`;
+  
   try {
-    const { tableName } = req.params;
-    const wildcardPath = req.params[0] || '';
-
     // Validate table name with operation type
     const method = req.method.toUpperCase();
     const operation = method === 'GET' ? 'READ' : 'WRITE';
@@ -74,10 +111,6 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       }
     }
 
-    // Build the target URL
-    const targetPath = wildcardPath ? `/${tableName}/${wildcardPath}` : `/${tableName}`;
-    const targetUrl = `${postgrestUrl}${targetPath}`;
-
     // Forward the request
     const axiosConfig: {
       method: string;
@@ -96,15 +129,14 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       },
     };
 
-    // If no authorization header, check api key
-    if (!req.headers.authorization) {
-      const apiKey = req.headers['x-api-key'] as string;
-      if (apiKey) {
-        // If API key is provided, use it
-        const isValid = await authService.verifyApiKey(apiKey);
-        if (isValid) {
-          axiosConfig.headers.authorization = `Bearer ${adminToken}`;
-        }
+    // Check for API key using shared logic
+    const apiKey = extractApiKey(req);
+
+    // If we have an API key, verify it and use admin token for PostgREST
+    if (apiKey) {
+      const isValid = await authService.verifyApiKey(apiKey);
+      if (isValid) {
+        axiosConfig.headers.authorization = `Bearer ${adminToken}`;
       }
     }
 
@@ -113,8 +145,40 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
       axiosConfig.data = req.body;
     }
 
-    // Make the request to PostgREST
-    const response = await axios(axiosConfig);
+    // Enhanced retry logic with improved error handling
+    let response;
+    let lastError;
+    const maxRetries = 3; // Increased retries for connection resets
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        response = await postgrestAxios(axiosConfig);
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error;
+        
+        // Retry on network errors (ECONNRESET, ECONNREFUSED, timeout) but not HTTP errors
+        const shouldRetry = axios.isAxiosError(error) && !error.response && attempt < maxRetries;
+        
+        if (shouldRetry) {
+          logger.warn(`PostgREST request failed, retrying (attempt ${attempt}/${maxRetries})`, {
+            url: targetUrl,
+            errorCode: error.code,
+            message: error.message
+          });
+          
+          // Enhanced exponential backoff: 200ms, 500ms, 1000ms
+          const backoffDelay = Math.min(200 * Math.pow(2.5, attempt - 1), 1000);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        } else {
+          throw error; // Don't retry on HTTP errors or last attempt
+        }
+      }
+    }
+    
+    if (!response) {
+      throw lastError || new Error('Failed to get response from PostgREST');
+    }
 
     // Forward response headers
     Object.entries(response.headers).forEach(([key, value]) => {
@@ -140,21 +204,35 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 
     // Set status and send response
     successResponse(res, responseData, response.status);
-
-    // Log the activity
-    await dbManager.logActivity(req.method, tableName, wildcardPath || 'table', {
-      query: req.query,
-      user_id: req.user?.id,
-    });
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      // Log more detailed error information  
+      logger.error('PostgREST request failed', {
+        url: targetUrl,
+        method: req.method,
+        error: {
+          code: error.code,
+          message: error.message,
+          response: error.response?.data,
+          responseStatus: error.response?.status,
+        },
+      });
+      
       // Forward PostgREST errors
       if (error.response) {
         res.status(error.response.status).json(error.response.data);
       } else {
-        next(new AppError('Database service unavailable', 503, ERROR_CODES.INTERNAL_ERROR));
+        // Network error - connection refused, DNS failure, etc.
+        const errorMessage = error.code === 'ECONNREFUSED' 
+          ? 'PostgREST connection refused'
+          : error.code === 'ENOTFOUND'
+          ? 'PostgREST service not found'
+          : 'Database service unavailable';
+
+        next(new AppError(errorMessage, 503, ERROR_CODES.INTERNAL_ERROR));
       }
     } else {
+      logger.error('Unexpected error in database route', { error });
       next(error);
     }
   }

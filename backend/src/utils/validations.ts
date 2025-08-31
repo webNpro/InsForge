@@ -65,24 +65,6 @@ export function isValidIdentifier(identifier: string): boolean {
 export function validateTableName(tableName: string, operation?: 'READ' | 'WRITE'): boolean {
   validateIdentifier(tableName, 'table');
 
-  // Special handling for _user table - check this BEFORE general _ check
-  if (tableName.toLowerCase() === '_user') {
-    // _user table allows read-only access for foreign key references
-    if (operation === 'READ') {
-      return true; // Allow read access to _user table
-    }
-
-    // Provide specific error for write operations on _user table
-    if (operation === 'WRITE') {
-      throw new AppError(
-        'Cannot modify _user table - use Auth API instead',
-        403,
-        ERROR_CODES.FORBIDDEN,
-        'Use /api/auth/* endpoints to create or update users'
-      );
-    }
-  }
-
   // Prevent access to all other system tables (starting with _)
   if (tableName.startsWith('_')) {
     throw new AppError(

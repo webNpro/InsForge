@@ -132,7 +132,6 @@
 /* Sortable column header styling */
 .rdg-header-row .rdg-cell[aria-sort] {
   cursor: pointer;
-  position: relative;
 }
 
 /* Monospace font for IDs */

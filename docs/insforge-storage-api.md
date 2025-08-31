@@ -4,11 +4,18 @@
 
 **Base URL:** `http://localhost:7130`  
 **Authentication:**
-- **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <session-token>` header
+- **Upload operations (PUT/POST/DELETE):** Requires `Authorization: Bearer <token>` header
 - **Download from public buckets:** No authentication required
-- **List/manage buckets:** Requires authentication  
+- **List/manage buckets:** Requires authentication 
+- **API keys are for MCP testing** (use tokens for production)
 **System:** Bucket-based storage with public/private access control
-**URL Format**: Response `url` field contains `/api/storage/buckets/{bucket}/objects/{filename}` - correct format for serving files
+
+### 🔴 CRITICAL: URL Format
+**Storage returns ABSOLUTE URLs** that are ready to use directly:
+- Response `url` field contains complete URL: `http://localhost:7130/api/storage/buckets/{bucket}/objects/{filename}`
+- **DO NOT prepend host or modify the URL** - use it exactly as returned
+- URLs work directly in `<img src>`, `<video src>`, or fetch requests
+- Example: `"url": "http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg"`
 
 
 ## Bucket Operations (Use MCP Tools)
@@ -41,7 +48,7 @@ Returns:
   "size": 30,
   "mimeType": "text/plain",
   "uploadedAt": "2025-07-18T04:32:13.801Z",
-  "url": "/api/storage/buckets/test-images/objects/test.txt"
+  "url": "http://localhost:7130/api/storage/buckets/test-images/objects/test.txt"
 }
 ```
 
@@ -72,7 +79,7 @@ Response:
   "size": 15234,
   "mimeType": "image/jpeg",
   "uploadedAt": "2025-07-18T04:32:13.801Z",
-  "url": "/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
+  "url": "http://localhost:7130/api/storage/buckets/avatars/objects/image-1737546841234-a3f2b1.jpg"
 }
 ```
 
@@ -104,7 +111,7 @@ Returns:
       "size": 30,
       "mimeType": "text/plain",
       "uploadedAt": "2025-07-18T04:32:13.801Z",
-      "url": "/api/storage/buckets/test-images/objects/test.txt"
+      "url": "http://localhost:7130/api/storage/buckets/test-images/objects/test.txt"
     }
   ],
   "pagination": {
@@ -125,7 +132,7 @@ Example curl:
 ```bash
 # Windows PowerShell: use curl.exe
 curl -X GET "http://localhost:7130/api/storage/buckets/avatars/objects?limit=10&prefix=users/" \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Delete Object
@@ -142,7 +149,7 @@ Example curl:
 ```bash
 # Windows PowerShell: use curl.exe
 curl -X DELETE http://localhost:7130/api/storage/buckets/avatars/objects/user123.jpg \
-  -H "x-api-key: YOUR_API_KEY"
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Update Bucket
@@ -167,13 +174,13 @@ Example curl:
 ```bash
 # Mac/Linux
 curl -X PATCH http://localhost:7130/api/storage/buckets/avatars \
-  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"isPublic": true}'
 
 # Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
 curl.exe -X PATCH http://localhost:7130/api/storage/buckets/avatars \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{\"isPublic\": true}'
 ```
@@ -187,7 +194,7 @@ const formData = new FormData();
 formData.append('file', file);
 const upload = await fetch('/api/storage/buckets/images/objects/avatar.jpg', {
   method: 'PUT',
-  headers: { 'x-api-key': apiKey },
+  headers: { 'Authorization': `Bearer ${token}` },
   body: formData
 });
 
@@ -199,7 +206,7 @@ const records = [{
 await fetch('/api/database/profiles', {
   method: 'POST',
   headers: { 
-    'x-api-key': apiKey,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify(records)
@@ -213,7 +220,7 @@ const formData = new FormData();
 formData.append('file', file);
 const upload = await fetch('/api/storage/buckets/images/objects', {
   method: 'POST',
-  headers: { 'x-api-key': apiKey },
+  headers: { 'Authorization': `Bearer ${token}` },
   body: formData
 });
 const fileData = await upload.json();
@@ -226,7 +233,7 @@ const records = [{
 await fetch('/api/database/profiles', {
   method: 'POST',
   headers: { 
-    'x-api-key': apiKey,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify(records)

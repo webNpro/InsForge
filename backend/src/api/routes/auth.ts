@@ -164,8 +164,8 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         u.updated_at,
         u.password,
         STRING_AGG(a.provider, ',') as providers
-      FROM _user u
-      LEFT JOIN _account a ON u.id = a.user_id
+      FROM _accounts u
+      LEFT JOIN _oauth_connections a ON u.id = a.user_id
     `;
     const params: any[] = [];
 
@@ -215,7 +215,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
       };
     });
 
-    let countQuery = 'SELECT COUNT(*) as count FROM _user';
+    let countQuery = 'SELECT COUNT(*) as count FROM _accounts';
     const countParams: any[] = [];
     if (search) {
       countQuery += ' WHERE email LIKE ? OR name LIKE ?';
@@ -261,8 +261,8 @@ router.get(
         u.updated_at,
         u.password,
         STRING_AGG(a.provider, ',') as providers
-      FROM _user u
-      LEFT JOIN _account a ON u.id = a.user_id
+      FROM _accounts u
+      LEFT JOIN _oauth_connections a ON u.id = a.user_id
       WHERE u.id = ?
       GROUP BY u.id
     `
@@ -287,13 +287,13 @@ router.get(
 
       // Add email provider if password exists
       if (dbUser.password) {
-        identities.push({ provider: 'email' });
+        identities.push({ provider: 'Email' });
         providers.push('email');
       }
 
       // Use first provider to determine type: 'email' or 'social'
       const firstProvider = providers[0];
-      const provider_type = firstProvider === 'email' ? 'email' : 'social';
+      const provider_type = firstProvider === 'email' ? 'Email' : 'Social';
 
       // Return snake_case for frontend compatibility
       const user = {
@@ -331,7 +331,7 @@ router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: N
     const db = authService.getDb();
     const placeholders = userIds.map(() => '?').join(',');
 
-    await db.prepare(`DELETE FROM _user WHERE id IN (${placeholders})`).run(...userIds);
+    await db.prepare(`DELETE FROM _accounts WHERE id IN (${placeholders})`).run(...userIds);
 
     const response: DeleteUsersResponse = {
       message: 'Users deleted successfully',
@@ -347,11 +347,11 @@ router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: N
 // OAuth endpoints following naming convention: /oauth/:provider and /oauth/:provider/callback
 router.get('/oauth/google', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { redirectUrl } = req.query;
+    const { redirect_uri } = req.query;
 
     const jwtPayload = {
       provider: 'google',
-      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
       createdAt: Date.now(),
     };
     const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
@@ -375,10 +375,10 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
 
 router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { redirectUrl } = req.query;
+    const { redirect_uri } = req.query;
     const jwtPayload = {
       provider: 'github',
-      redirectUrl: redirectUrl ? (redirectUrl as string) : undefined,
+      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
       createdAt: Date.now(),
     };
     const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {

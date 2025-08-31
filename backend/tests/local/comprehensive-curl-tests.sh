@@ -107,7 +107,7 @@ if [ -n "$API_KEY" ] && [ "$API_KEY" != "null" ]; then
   # List buckets
   echo -e "\n${BLUE}7a. List Buckets (Array Response)${NC}"
   curl -s "$BASE_URL/storage/buckets" \
-    -H "x-api-key: $API_KEY" | jq '.'
+    -H "Authorization: Bearer $API_KEY" | jq '.'
   echo -e "${GREEN}✓ Returns array of buckets${NC}"
 else
   echo -e "${RED}✗ Could not get API key for storage tests${NC}"

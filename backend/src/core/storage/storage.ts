@@ -297,7 +297,7 @@ export class StorageService {
       size: file.size,
       mimeType: file.mimetype,
       uploadedAt: result.uploadedAt,
-      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
   }
 
@@ -326,8 +326,12 @@ export class StorageService {
     return {
       file,
       metadata: {
-        ...metadata,
-        url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+        key: metadata.key,
+        bucket: metadata.bucket,
+        size: metadata.size,
+        mimeType: metadata.mime_type,
+        uploadedAt: metadata.uploaded_at,
+        url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       },
     };
   }
@@ -356,7 +360,7 @@ export class StorageService {
       const dbManager = DatabaseManager.getInstance();
       await dbManager.logActivity('DELETE', `storage/${bucket}`, key, {
         size: fileInfo.size,
-        mime_type: fileInfo.mimeType,
+        mime_type: fileInfo.mime_type,
       });
     }
 
@@ -403,7 +407,7 @@ export class StorageService {
         ...obj,
         mimeType: obj.mime_type,
         uploadedAt: obj.uploaded_at,
-        url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
+        url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
       })),
       total,
     };

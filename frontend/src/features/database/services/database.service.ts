@@ -75,7 +75,7 @@ export class DatabaseService {
       const textColumns = schema.columns
         .filter((col: ColumnSchema) => {
           const type = col.type.toLowerCase();
-          return type === 'text' || type === 'varchar' || type.includes('character varying');
+          return type === 'string';
         })
         .map((col: ColumnSchema) => col.columnName);
 
