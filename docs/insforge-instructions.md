@@ -78,19 +78,6 @@ curl -X POST http://localhost:7130/api/database/records/products \
   -H "Content-Type: application/json" \
   -d "[{\"name\": \"Product\", \"price\": 99.99}]"
 ```
-## System Tables
-
-### User Table (Read-Only Access)
-The `_user` table is a **system-managed table** from the JWT authentication system:
-- **✅ CAN READ** via `GET /api/database/records/_user`
-- **❌ CANNOT MODIFY** through database API - use Auth API instead
-- **✅ CAN REFERENCE** by other tables using `user_id` foreign keys
-
-To work with users:
-- Read users: `GET /api/database/records/_user`
-- Create users: Use `POST /api/auth/users`
-- Authenticate: Use `POST /api/auth/sessions`
-- Store additional data: Create your own `user_profiles` table
 
 ## Example: Comment Upvoting Feature
 

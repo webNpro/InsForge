@@ -36,15 +36,6 @@ curl.exe -X POST http://localhost:7130/api/[endpoint] \
 
 When in doubt, read instructions documents again.
 
-## 🚨 System Tables
-
-### User Table (Read-Only)
-The `_user` table is **protected** by the JWT authentication system:
-- **✅ CAN READ** via `GET /api/database/records/_user`
-- **❌ CANNOT MODIFY** (POST/PUT/PATCH/DELETE) - use Auth API instead
-- **✅ CAN reference** with foreign keys
-- Get `user_id` from `localStorage.getItem('user_id')` after login
-
 ## 🚨 CRUD Operations - PostgREST NOT RESTful
 ### PostgREST Database API Behavior
 

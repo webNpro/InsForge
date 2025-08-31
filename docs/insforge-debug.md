@@ -16,7 +16,6 @@ Before debugging, you MUST read all documentation to understand how the API work
 **Table created but API fails** → Check field names match schema exactly
 **Array required** → PostgREST requires POST requests as arrays `[{...}]`
 **Foreign key error** → Parent record must exist before child
-**Auth tables** → Use Auth API for _user tables, not Database API
 **Permission denied** → Write operations need `Authorization: Bearer <accessToken>`
 **JWSError** → JWT token expired or invalid - user needs to login again
 **PATCH increment fails** → PostgREST doesn't support SQL expressions like `count + 1`
