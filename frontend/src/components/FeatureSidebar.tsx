@@ -4,6 +4,12 @@ import { ScrollArea } from '@/components/radix/ScrollArea';
 import { Button } from '@/components/radix/Button';
 import { SearchInput } from '@/components/SearchInput';
 import { FeatureSidebarItem } from '@/components/FeatureSidebarItem';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/radix/Tooltip';
 
 interface FeatureSidebarProps {
   title: string;
@@ -57,28 +63,36 @@ export function FeatureSidebar({
   return (
     <div className="w-70 flex flex-col h-full bg-white dark:bg-neutral-800 border-r border-border-gray dark:border-neutral-700">
       {/* Header */}
-      <div className="px-6 py-3 h-12 bg-white border-b border-border-gray dark:bg-neutral-800 dark:border-neutral-700">
-        <h2 className="text-base font-semibold text-black dark:text-zinc-300">{title}</h2>
+      <div className="flex flex-row justify-between items-center pl-4 pr-1.5 py-1.5 bg-white dark:bg-neutral-800">
+        <h2 className="text-base font-bold text-black dark:text-white">{title}</h2>
+        {onNewItem && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onNewItem}
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 dark:bg-transparent dark:text-neutral-400 dark:hover:bg-neutral-700"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{newItemTooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
       {/* Add Button and Search */}
-      <div className="p-3 pb-2.5 bg-white space-y-2.5 dark:bg-neutral-800">
-        {onNewItem && (
-          <Button
-            onClick={onNewItem}
-            variant="outline"
-            size="sm"
-            className="w-full h-10 text-sm justify-start dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:border-neutral-700"
-          >
-            <Plus className="w-5 h-5 mr-1" />
-            {newItemTooltip}
-          </Button>
-        )}
+      <div className="py-2 px-3 bg-white dark:bg-neutral-800">
         <SearchInput
           value={searchTerm}
           onChange={setSearchTerm}
           placeholder={searchPlaceholder}
-          className="w-full dark:bg-neutral-800 dark:text-zinc-300"
+          className="w-full dark:text-white"
           debounceTime={200}
         />
       </div>

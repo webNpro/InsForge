@@ -40,10 +40,10 @@ export function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-[400px] py-6 px-0 gap-6 bg-white border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
+      <AlertDialogContent className="max-w-[480px] p-0 gap-0 bg-white border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
         {/* Header with close button */}
-        <div className="flex items-center justify-between px-6">
-          <AlertDialogTitle className="text-base font-semibold text-zinc-950 dark:text-white">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
+          <AlertDialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
             {title}
           </AlertDialogTitle>
           <button
@@ -56,21 +56,21 @@ export function ConfirmDialog({
         </div>
 
         {/* Description */}
-        <div className="px-6">
+        <div className="p-6">
           {typeof description === 'string' ? (
-            <AlertDialogDescription className="text-zinc-500 text-sm leading-5 dark:text-zinc-400">
+            <AlertDialogDescription className="text-zinc-500 text-sm leading-5 dark:text-neutral-400">
               {description}
             </AlertDialogDescription>
           ) : (
-            <div className="text-zinc-500 text-sm leading-5 dark:text-zinc-400">{description}</div>
+            <div className="text-zinc-500 text-sm leading-5 dark:text-neutral-400">{description}</div>
           )}
         </div>
 
         {/* Footer */}
-        <AlertDialogFooter className="px-6 flex-row justify-end gap-3">
+        <AlertDialogFooter className="p-6 flex-row justify-end gap-3 border-t border-zinc-200 dark:border-neutral-700">
           <AlertDialogCancel
             disabled={isLoading}
-            className="h-10 w-20 px-4 py-2 text-sm font-medium bg-white border border-zinc-200 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] rounded-md hover:bg-zinc-50 dark:bg-neutral-600 dark:border-neutral-600 dark:text-white dark:hover:bg-neutral-700"
+            className="h-10 w-30 px-3 py-2 text-sm font-medium bg-white border border-zinc-200 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] rounded-md hover:bg-zinc-50 dark:bg-neutral-600 dark:border-neutral-600 dark:text-white dark:hover:bg-neutral-700"
           >
             {cancelText}
           </AlertDialogCancel>
@@ -79,7 +79,7 @@ export function ConfirmDialog({
               void handleConfirm();
             }}
             disabled={isLoading}
-            className={`h-10 w-20 px-4 py-2 text-sm font-medium rounded-md shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] dark:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] ${
+            className={`h-10 w-30 px-3 py-2 text-sm font-medium rounded-md shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] dark:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.1)] ${
               destructive
                 ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-200 dark:hover:bg-red-300 dark:text-red-700'
                 : 'bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400'

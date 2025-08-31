@@ -429,8 +429,8 @@ export function DataGrid({
   }
 
   return (
-    <div className={cn('h-full flex flex-col bg-white dark:bg-neutral-800', className)}>
-      <div className="flex-1 overflow-hidden relative">
+    <div className={cn('h-full flex flex-col bg-white dark:bg-neutral-800 overflow-hidden', className)}>
+      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg">
         <ReactDataGrid
           columns={gridColumns}
           rows={data || []}

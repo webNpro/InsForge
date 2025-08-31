@@ -498,16 +498,16 @@ export default function DatabasePage() {
             {/* Sticky Header Section */}
             {selectedTable && (
               <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
-                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-700">
+                <div className="pl-4 pr-1.5 py-1.5 h-12">
                   {/* Page Header with Breadcrumb */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black dark:text-zinc-300">{selectedTable}</span>
+                        <span className="text-black dark:text-white">{selectedTable}</span>
                       </nav>
 
                       {/* Separator */}
-                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
+                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-700" />
 
                       {/* Action buttons group */}
                       <div className="flex items-center gap-1">
@@ -517,7 +517,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6"
+                                className="p-1 h-9 w-9"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
                                 <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
@@ -533,7 +533,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6"
+                                className="p-1 h-9 w-9"
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
@@ -550,7 +550,7 @@ export default function DatabasePage() {
                   </div>
                 </div>
 
-                <div className="px-6 py-3">
+                <div className="pt-2 pb-4 px-3">
                   {/* Search Bar and Actions - only show when table is selected */}
                   {selectedTable && (
                     <div className="flex items-center justify-between">
@@ -613,28 +613,26 @@ export default function DatabasePage() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-700">
-                  <DatabaseDataGrid
-                    data={tableData?.records || []}
-                    schema={tableData?.schema}
-                    loading={isLoadingTable && !tableData}
-                    isSorting={isSorting}
-                    isRefreshing={isRefreshing}
-                    selectedRows={selectedRows}
-                    onSelectedRowsChange={setSelectedRows}
-                    sortColumns={sortColumns}
-                    onSortColumnsChange={handleSortColumnsChange}
-                    onCellEdit={handleRecordUpdate}
-                    searchQuery={searchQuery}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalRecords={tableData?.totalRecords || 0}
-                    onPageChange={setCurrentPage}
-                    onDeleteRecord={(id) => void handleRecordDelete(id)}
-                    onNewRecord={() => setShowRecordForm(true)}
-                  />
-                </div>
+                <DatabaseDataGrid
+                  data={tableData?.records || []}
+                  schema={tableData?.schema}
+                  loading={isLoadingTable && !tableData}
+                  isSorting={isSorting}
+                  isRefreshing={isRefreshing}
+                  selectedRows={selectedRows}
+                  onSelectedRowsChange={setSelectedRows}
+                  sortColumns={sortColumns}
+                  onSortColumnsChange={handleSortColumnsChange}
+                  onCellEdit={handleRecordUpdate}
+                  searchQuery={searchQuery}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalRecords={tableData?.totalRecords || 0}
+                  onPageChange={setCurrentPage}
+                  onDeleteRecord={(id) => void handleRecordDelete(id)}
+                  onNewRecord={() => setShowRecordForm(true)}
+                />
               )}
             </div>
           </>

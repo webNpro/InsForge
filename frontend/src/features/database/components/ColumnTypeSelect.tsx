@@ -43,7 +43,7 @@ export const ColumnTypeSelect = memo(function TableFormSelect({
           <Select disabled={disabled} value={field.value} onValueChange={field.onChange}>
             <SelectTrigger className={className}>
               <div className="flex items-center gap-2">
-                {Icon && <Icon className="h-4 w-4 text-zinc-500 dark:text-zinc-300" />}
+                {Icon && <Icon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />}
                 <span className="text-black dark:text-white">{field.value}</span>
               </div>
             </SelectTrigger>

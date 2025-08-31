@@ -64,7 +64,7 @@ export function SearchInput({
   };
 
   return (
-    <div className={`relative bg-white dark:bg-neutral-900 ${className || ''}`}>
+    <div className={`relative bg-white dark:bg-neutral-900 overflow-hidden rounded-md ${className || ''}`}>
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground dark:text-zinc-300" />
       <Input
         type="text"
