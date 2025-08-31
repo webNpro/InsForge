@@ -12,12 +12,12 @@ const router = Router();
 
 // Define available documentation files
 const DOCS_MAP: Record<string, string> = {
-  instructions: 'insforge-instructions.md',
-  'db-api': 'insforge-db-api.md',
-  'auth-api': 'insforge-auth-api.md',
+  instructions: 'insforge-instructions-sdk.md',
+  'db-api': 'insforge-db-sdk.md',
+  'auth-api': 'insforge-auth-sdk.md',
   'storage-api': 'insforge-storage-api.md',
-  debug: 'insforge-debug.md',
-  project: 'insforge-project.md',
+  debug: 'insforge-debug-sdk.md',
+  project: 'insforge-project-sdk.md',
 };
 
 // GET /api/docs/:docType - Get specific documentation

@@ -39,43 +39,6 @@ Returns: `{"user": {"id": "...", "email": "...", "role": "authenticated"}}`
 - `401` with `"code": "MISSING_AUTHORIZATION_HEADER"` → No token provided
 - `401` with `"code": "INVALID_TOKEN"` → Token expired or invalid
 
-## Admin Authentication
-
-### Admin Login
-**POST** `/api/auth/admin/sessions`
-
-Request:
-```json
-{
-  "email": "admin@example.com",
-  "password": "change-this-password"
-}
-```
-
-Response:
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "admin-id",
-    "email": "admin@example.com",
-    "name": "Administrator",
-    "role": "project_admin"
-  }
-}
-```
-
-```bash
-# Mac/Linux
-curl -X POST http://localhost:7130/api/auth/admin/sessions \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.com","password":"change-this-password"}'
-
-# Windows PowerShell (use curl.exe)
-curl.exe -X POST http://localhost:7130/api/auth/admin/sessions \
-  -H "Content-Type: application/json" \
-  -d '{\"email\":\"admin@example.com\",\"password\":\"change-this-password\"}'
-```
 
 ## Error Response Format
 
