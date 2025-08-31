@@ -33,6 +33,10 @@ export { Auth } from './modules/auth';
 export { Database, QueryBuilder } from './modules/database';
 export type { DatabaseResponse } from './modules/database';
 
+// Re-export storage module and types
+export { Storage, StorageBucket } from './modules/storage';
+export type { StorageResponse } from './modules/storage';
+
 // Re-export utilities for advanced usage
 export { HttpClient } from './lib/http-client';
 export { TokenManager } from './lib/token-manager';

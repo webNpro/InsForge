@@ -204,13 +204,64 @@ const { data, error } = await insforge.database
   .limit(10)
 ```
 
+## Storage Methods
+
+### `storage.from()`
+```javascript
+const bucket = insforge.storage.from('avatars')
+// Returns StorageBucket instance for file operations
+```
+
+### `bucket.upload()`
+```javascript
+await bucket.upload('path/file.jpg', file)
+// Response: { data: StorageFileSchema, error }
+// data: { bucket, key, size, mimeType, uploadedAt, url }
+```
+
+### `bucket.uploadAuto()`
+```javascript
+await bucket.uploadAuto(file)
+// Response: { data: StorageFileSchema, error }
+// Auto-generates unique filename
+```
+
+### `bucket.download()`
+```javascript
+await bucket.download('path/file.jpg')
+// Response: { data: Blob, error }
+```
+
+### `bucket.list()`
+```javascript
+await bucket.list({ prefix: 'users/', limit: 10 })
+// Response: { data: ListObjectsResponseSchema, error }
+// data: { bucketName, objects[], pagination }
+```
+
+### `bucket.remove()`
+```javascript
+await bucket.remove('path/file.jpg')
+// Response: { data: { message }, error }
+```
+
+### `bucket.getPublicUrl()`
+```javascript
+bucket.getPublicUrl('path/file.jpg')
+// Returns: string URL (no API call)
+```
+
+
 ## Types (from @insforge/shared-schemas)
 ```typescript
 import type {
   UserSchema,
   CreateUserRequest,
   CreateSessionRequest,
-  GetCurrentSessionResponse
+  GetCurrentSessionResponse,
+  StorageFileSchema,
+  StorageBucketSchema,
+  ListObjectsResponseSchema
 } from '@insforge/shared-schemas';
 
 // Database response type
@@ -218,5 +269,11 @@ interface DatabaseResponse<T> {
   data: T | null;
   error: InsForgeError | null;
   count?: number;
+}
+
+// Storage response type
+interface StorageResponse<T> {
+  data: T | null;
+  error: InsForgeError | null;
 }
 ```

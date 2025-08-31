@@ -5,8 +5,8 @@ export interface RequestOptions extends RequestInit {
 }
 
 export class HttpClient {
-  private baseUrl: string;
-  private fetch: typeof fetch;
+  public readonly baseUrl: string;
+  public readonly fetch: typeof fetch;
   private defaultHeaders: Record<string, string>;
 
   constructor(config: InsForgeConfig) {
@@ -52,9 +52,20 @@ export class HttpClient {
       ...this.defaultHeaders,
     };
     
-    // Only add Content-Type for non-GET requests with body
-    if (method !== 'GET' && body !== undefined) {
-      requestHeaders['Content-Type'] = 'application/json;charset=UTF-8';
+    // Handle body serialization
+    let processedBody: any;
+    if (body !== undefined) {
+      // Check if body is FormData (for file uploads)
+      if (typeof FormData !== 'undefined' && body instanceof FormData) {
+        // Don't set Content-Type for FormData, let browser set it with boundary
+        processedBody = body;
+      } else {
+        // JSON body
+        if (method !== 'GET') {
+          requestHeaders['Content-Type'] = 'application/json;charset=UTF-8';
+        }
+        processedBody = JSON.stringify(body);
+      }
     }
     
     Object.assign(requestHeaders, headers);
@@ -62,7 +73,7 @@ export class HttpClient {
     const response = await this.fetch(url, {
       method,
       headers: requestHeaders,
-      body: body ? JSON.stringify(body) : undefined,
+      body: processedBody,
       ...fetchOptions,
     });
 
@@ -122,5 +133,9 @@ export class HttpClient {
     } else {
       delete this.defaultHeaders['Authorization'];
     }
+  }
+
+  getHeaders(): Record<string, string> {
+    return { ...this.defaultHeaders };
   }
 }
