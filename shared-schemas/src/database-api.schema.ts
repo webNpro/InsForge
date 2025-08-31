@@ -76,9 +76,78 @@ export const deleteTableResponse = z.object({
   nextActions: z.string(),
 });
 
+// Raw SQL Schemas
+export const rawSQLRequestSchema = z.object({
+  query: z.string().min(1, 'Query is required'),
+  params: z.array(z.any()).optional(),
+});
+
+export const rawSQLResponseSchema = z.object({
+  rows: z.array(z.any()),
+  rowCount: z.number().nullable(),
+  fields: z.array(z.object({
+    name: z.string(),
+    dataTypeID: z.number(),
+  })).optional(),
+});
+
+// Export Schemas
+export const exportRequestSchema = z.object({
+  tables: z.array(z.string()).optional(),
+  format: z.enum(['sql', 'json']).default('sql'),
+  includeData: z.boolean().default(true),
+});
+
+export const exportJsonDataSchema = z.object({
+  timestamp: z.string(),
+  tables: z.record(z.string(), z.object({
+    schema: z.array(z.object({
+      column_name: z.string(),
+      data_type: z.string(),
+      character_maximum_length: z.number().nullable(),
+      is_nullable: z.string(),
+      column_default: z.string().nullable(),
+    })),
+    rows: z.array(z.any()),
+  })),
+});
+
+export const exportResponseSchema = z.object({
+  format: z.enum(['sql', 'json']),
+  data: z.union([z.string(), exportJsonDataSchema]),
+  timestamp: z.string(),
+});
+
+// Import Schemas
+export const importRequestSchema = z.object({
+  truncate: z.boolean().default(false),
+});
+
+export const importResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  filename: z.string(),
+  tables: z.array(z.string()),
+  rowsImported: z.number(),
+  fileSize: z.number(),
+});
+
 export type CreateTableRequest = z.infer<typeof createTableRequestSchema>;
 export type CreateTableResponse = z.infer<typeof createTableResponseSchema>;
 export type GetTableSchemaResponse = z.infer<typeof getTableSchemaResponseSchema>;
 export type UpdateTableSchemaRequest = z.infer<typeof updateTableSchemaRequestSchema>;
 export type UpdateTableSchemaResponse = z.infer<typeof updateTableSchemaResponse>;
 export type DeleteTableResponse = z.infer<typeof deleteTableResponse>;
+
+// Raw SQL Types
+export type RawSQLRequest = z.infer<typeof rawSQLRequestSchema>;
+export type RawSQLResponse = z.infer<typeof rawSQLResponseSchema>;
+
+// Export Types
+export type ExportRequest = z.infer<typeof exportRequestSchema>;
+export type ExportJsonData = z.infer<typeof exportJsonDataSchema>;
+export type ExportResponse = z.infer<typeof exportResponseSchema>;
+
+// Import Types
+export type ImportRequest = z.infer<typeof importRequestSchema>;
+export type ImportResponse = z.infer<typeof importResponseSchema>;

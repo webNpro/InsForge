@@ -242,4 +242,4 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 router.all('/:tableName', forwardToPostgrest);
 router.all('/:tableName/*', forwardToPostgrest);
 
-export { router as databaseRouter };
+export { router as recordRouter };
