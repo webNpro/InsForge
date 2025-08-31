@@ -326,7 +326,11 @@ export class StorageService {
     return {
       file,
       metadata: {
-        ...metadata,
+        key: metadata.key,
+        bucket: metadata.bucket,
+        size: metadata.size,
+        mimeType: metadata.mime_type,
+        uploadedAt: metadata.uploaded_at,
         url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       },
     };
@@ -356,7 +360,7 @@ export class StorageService {
       const dbManager = DatabaseManager.getInstance();
       await dbManager.logActivity('DELETE', `storage/${bucket}`, key, {
         size: fileInfo.size,
-        mime_type: fileInfo.mimeType,
+        mime_type: fileInfo.mime_type,
       });
     }
 
