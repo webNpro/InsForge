@@ -29,6 +29,10 @@ export type {
 // Re-export auth module for advanced usage
 export { Auth } from './modules/auth';
 
+// Re-export database module and types
+export { Database, QueryBuilder } from './modules/database';
+export type { DatabaseResponse } from './modules/database';
+
 // Re-export utilities for advanced usage
 export { HttpClient } from './lib/http-client';
 export { TokenManager } from './lib/token-manager';

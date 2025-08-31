@@ -2,6 +2,7 @@ import { InsForgeConfig } from './types';
 import { HttpClient } from './lib/http-client';
 import { TokenManager } from './lib/token-manager';
 import { Auth } from './modules/auth';
+import { Database } from './modules/database';
 
 /**
  * Main InsForge SDK Client
@@ -14,44 +15,45 @@ import { Auth } from './modules/auth';
  *   baseUrl: 'http://localhost:7130'
  * });
  * 
- * // Register a new user
+ * // Authentication
  * const session = await client.auth.register({
  *   email: 'user@example.com',
  *   password: 'password123',
  *   name: 'John Doe'
  * });
  * 
- * // Or login
- * const session = await client.auth.login({
- *   email: 'user@example.com',
- *   password: 'password123'
- * });
+ * // Database operations
+ * const { data, error } = await client.database
+ *   .from('posts')
+ *   .select('*')
+ *   .eq('user_id', session.user.id)
+ *   .order('created_at', { ascending: false })
+ *   .limit(10);
  * 
- * // Get current user
- * const user = await client.auth.getCurrentUser();
+ * // Insert data
+ * const { data: newPost } = await client.database
+ *   .from('posts')
+ *   .insert({ title: 'Hello', content: 'World' })
+ *   .single();
  * ```
  */
 export class InsForgeClient {
   private http: HttpClient;
   private tokenManager: TokenManager;
   
-  /**
-   * Authentication module
-   */
   public readonly auth: Auth;
+  public readonly database: Database;
 
   constructor(config: InsForgeConfig = {}) {
-    // Initialize HTTP client
     this.http = new HttpClient(config);
-    
-    // Initialize token manager with storage
     this.tokenManager = new TokenManager(config.storage);
     
-    // Initialize auth module
     this.auth = new Auth(
       this.http,
       this.tokenManager
     );
+    
+    this.database = new Database(this.http);
   }
 
 

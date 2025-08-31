@@ -24,12 +24,12 @@ describe('InsForge SDK - Auth Module', () => {
       });
 
       expect(error).toBeNull();
-      expect(data.session).toBeDefined();
-      expect(data.session?.accessToken).toBeDefined();
-      expect(data.user).toBeDefined();
-      expect(data.user?.email).toBe(email);
-      expect(data.user?.name).toBe('Test User');
-      expect(data.user?.emailVerified).toBe(false);
+      expect(data).toBeDefined();
+      expect(data?.accessToken).toBeDefined();
+      expect(data?.user).toBeDefined();
+      expect(data?.user?.email).toBe(email);
+      expect(data?.user?.name).toBe('Test User');
+      expect(data?.user?.emailVerified).toBe(false);
     });
 
     it('should fail to register with existing email', async () => {
@@ -76,10 +76,10 @@ describe('InsForge SDK - Auth Module', () => {
       });
 
       expect(error).toBeNull();
-      expect(data.session).toBeDefined();
-      expect(data.session?.accessToken).toBeDefined();
-      expect(data.user?.email).toBe(email);
-      expect(data.user?.name).toBe('Login Test');
+      expect(data).toBeDefined();
+      expect(data?.accessToken).toBeDefined();
+      expect(data?.user?.email).toBe(email);
+      expect(data?.user?.name).toBe('Login Test');
     });
 
     it('should fail to login with invalid credentials', async () => {
