@@ -78,12 +78,6 @@ curl -X POST http://localhost:7130/api/database/records/products \
   -H "Content-Type: application/json" \
   -d "[{\"name\": \"Product\", \"price\": 99.99}]"
 ```
-## System Tables
-
-To work with users:
-- Create users: Use `POST /api/auth/users`
-- Authenticate: Use `POST /api/auth/sessions`
-- Store additional data: Create your own `user_profiles` table
 
 ## Example: Comment Upvoting Feature
 
