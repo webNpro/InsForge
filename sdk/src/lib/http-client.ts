@@ -14,7 +14,6 @@ export class HttpClient {
     // Properly bind fetch to maintain its context
     this.fetch = config.fetch || (globalThis.fetch ? globalThis.fetch.bind(globalThis) : undefined as any);
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
       ...config.headers,
     };
     
@@ -49,12 +48,20 @@ export class HttpClient {
     
     const url = this.buildUrl(path, params);
     
+    const requestHeaders: Record<string, string> = {
+      ...this.defaultHeaders,
+    };
+    
+    // Only add Content-Type for non-GET requests with body
+    if (method !== 'GET' && body !== undefined) {
+      requestHeaders['Content-Type'] = 'application/json;charset=UTF-8';
+    }
+    
+    Object.assign(requestHeaders, headers);
+    
     const response = await this.fetch(url, {
       method,
-      headers: {
-        ...this.defaultHeaders,
-        ...headers,
-      },
+      headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
       ...fetchOptions,
     });

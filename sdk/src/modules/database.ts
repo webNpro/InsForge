@@ -29,14 +29,24 @@ export class QueryBuilder<T = any> {
 
   /**
    * Perform a SELECT query
+   * For mutations (insert/update/delete), this enables returning data
    * @param columns - Columns to select (default: '*')
    * @example
    * .select('*')
    * .select('id, title, content')
-   * .select('*, user:user_id(name, email)')  // Foreign key expansion
+   * .insert({ title: 'New' }).select()  // Returns inserted data
    */
   select(columns: string = '*'): this {
-    this.method = 'GET';
+    // For mutations, add return=representation header
+    if (this.method !== 'GET') {
+      const existingPrefer = this.headers['Prefer'] || '';
+      const preferParts = existingPrefer ? [existingPrefer] : [];
+      if (!preferParts.some(p => p.includes('return='))) {
+        preferParts.push('return=representation');
+      }
+      this.headers['Prefer'] = preferParts.join(',');
+    }
+    
     if (columns !== '*') {
       this.queryParams.select = columns;
     }
@@ -48,17 +58,15 @@ export class QueryBuilder<T = any> {
    * @param values - Single object or array of objects
    * @param options - { upsert: true } for upsert behavior
    * @example
-   * .insert({ title: 'Hello', content: 'World' })
-   * .insert([{ title: 'Post 1' }, { title: 'Post 2' }])
+   * .insert({ title: 'Hello', content: 'World' }).select()
+   * .insert([{ title: 'Post 1' }, { title: 'Post 2' }]).select()
    */
   insert(values: Partial<T> | Partial<T>[], options?: { upsert?: boolean }): this {
     this.method = 'POST';
     this.body = Array.isArray(values) ? values : [values];
     
     if (options?.upsert) {
-      this.headers['Prefer'] = 'resolution=merge-duplicates,return=representation';
-    } else {
-      this.headers['Prefer'] = 'return=representation';
+      this.headers['Prefer'] = 'resolution=merge-duplicates';
     }
     
     return this;
@@ -68,23 +76,21 @@ export class QueryBuilder<T = any> {
    * Perform an UPDATE
    * @param values - Object with fields to update
    * @example
-   * .update({ title: 'Updated Title' })
+   * .update({ title: 'Updated Title' }).select()
    */
   update(values: Partial<T>): this {
     this.method = 'PATCH';
     this.body = values;
-    this.headers['Prefer'] = 'return=representation';
     return this;
   }
 
   /**
    * Perform a DELETE
    * @example
-   * .delete()
+   * .delete().select()
    */
   delete(): this {
     this.method = 'DELETE';
-    this.headers['Prefer'] = 'return=representation';
     return this;
   }
 

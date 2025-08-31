@@ -75,7 +75,8 @@ describe('InsForge SDK - Database Module', () => {
         .insert({ 
           title: 'Test Post',
           content: 'Test Content'
-        });
+        })
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -86,7 +87,8 @@ describe('InsForge SDK - Database Module', () => {
         .insert([
           { title: 'Post 1', content: 'Content 1' },
           { title: 'Post 2', content: 'Content 2' }
-        ]);
+        ])
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -97,7 +99,8 @@ describe('InsForge SDK - Database Module', () => {
         .upsert({ 
           id: '123',
           title: 'Updated or New Post'
-        });
+        })
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -108,7 +111,8 @@ describe('InsForge SDK - Database Module', () => {
       const query = client.database
         .from('posts')
         .update({ title: 'Updated Title' })
-        .eq('id', '123');
+        .eq('id', '123')
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -118,7 +122,8 @@ describe('InsForge SDK - Database Module', () => {
         .from('posts')
         .update({ status: 'published' })
         .eq('user_id', '123')
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -129,7 +134,8 @@ describe('InsForge SDK - Database Module', () => {
       const query = client.database
         .from('posts')
         .delete()
-        .eq('id', '123');
+        .eq('id', '123')
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });
@@ -139,7 +145,8 @@ describe('InsForge SDK - Database Module', () => {
         .from('posts')
         .delete()
         .eq('user_id', '123')
-        .lt('created_at', '2024-01-01');
+        .lt('created_at', '2024-01-01')
+        .select();
       
       expect(query).toBeInstanceOf(QueryBuilder);
     });

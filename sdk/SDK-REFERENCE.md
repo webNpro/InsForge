@@ -123,10 +123,11 @@ await insforge.database
 
 ### INSERT Operations
 ```javascript
-// Single record
+// Single record - use .select() to return inserted data
 await insforge.database
   .from('posts')
   .insert({ title: 'Hello', content: 'World' })
+  .select()
 
 // Multiple records
 await insforge.database
@@ -135,12 +136,16 @@ await insforge.database
     { title: 'Post 1', content: 'Content 1' },
     { title: 'Post 2', content: 'Content 2' }
   ])
+  .select()
 
 // Upsert
 await insforge.database
   .from('posts')
   .upsert({ id: '123', title: 'Updated or New' })
+  .select()
 // Response: { data: [...], error }
+
+// Note: Without .select(), mutations return { data: null, error }
 ```
 
 ### UPDATE Operations
@@ -149,6 +154,7 @@ await insforge.database
   .from('posts')
   .update({ title: 'Updated Title' })
   .eq('id', '123')
+  .select()
 // Response: { data: [...], error }
 ```
 
@@ -158,6 +164,7 @@ await insforge.database
   .from('posts')
   .delete()
   .eq('id', '123')
+  .select()
 // Response: { data: [...], error }
 ```
 
