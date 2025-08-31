@@ -520,6 +520,7 @@ export class TablesController {
         }
 
         const nullable = col.isNullable !== false ? '' : 'NOT NULL';
+        const unique = col.isUnique ? 'UNIQUE' : '';
         let defaultClause = '';
 
         if (col.defaultValue !== undefined) {
@@ -536,7 +537,7 @@ export class TablesController {
           .prepare(
             `
               ALTER TABLE ${safeTableName} 
-              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${defaultClause}
+              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${unique} ${defaultClause}
             `
           )
           .exec();

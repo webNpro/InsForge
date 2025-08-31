@@ -166,7 +166,12 @@ export function ForeignKeyPopover({
                         value={col.columnName}
                         disabled={col.isSystemColumn}
                       >
-                        {col.columnName} ({col.type})
+                        <div className="flex flex-row items-center justify-between gap-2">
+                          <span className="truncate max-w-[160px] block">{col.columnName}</span>
+                          <span className="text-xs text-muted-foreground dark:text-neutral-400 flex-shrink-0">
+                            ({col.type})
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -199,8 +204,8 @@ export function ForeignKeyPopover({
               </Select>
             </div>
 
-            {/* Reference Column selector - only shown after table is selected */}
-            {newForeignKey.referenceTable && (
+            {/* Reference Column selector - only shown after table and source column are selected */}
+            {newForeignKey.referenceTable && newForeignKey.columnName && (
               <div className="flex flex-row gap-10 items-center">
                 <Label className="text-sm text-black dark:text-white flex-1">
                   Reference Column
@@ -215,7 +220,7 @@ export function ForeignKeyPopover({
                   <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                     <SelectValue placeholder="Select column" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[280px]">
                     {(() => {
                       const allColumns = referenceTableSchema?.columns || [];
 
@@ -223,9 +228,9 @@ export function ForeignKeyPopover({
                         const sourceType = getSourceFieldType();
 
                         return allColumns.map((col: ColumnSchema) => {
-                          // Check if types match exactly
+                          // Check if types match exactly (sourceType should always exist at this point since we require columnName)
                           const typesMatch =
-                            !sourceType || col.type.toLowerCase() === sourceType.toLowerCase();
+                            sourceType && col.type.toLowerCase() === sourceType.toLowerCase();
 
                           // Disable if not a valid reference or types don't match
                           const isDisabled = !col.isUnique || !typesMatch;
@@ -243,13 +248,21 @@ export function ForeignKeyPopover({
                               key={col.columnName}
                               value={col.columnName}
                               disabled={isDisabled}
+                              className="relative flex items-center justify-between pr-16"
                             >
-                              <span>{col.columnName}</span>
-                              {rightText && (
-                                <span className="absolute right-3 text-xs text-muted-foreground dark:text-neutral-400">
-                                  {rightText}
+                              <div className="flex flex-row items-center justify-between gap-2">
+                                <span
+                                  className="truncate max-w-[160px] block"
+                                  title={col.columnName}
+                                >
+                                  {col.columnName}
                                 </span>
-                              )}
+                                {rightText && (
+                                  <span className="text-right text-xs text-muted-foreground dark:text-neutral-400 flex-shrink-0">
+                                    {rightText}
+                                  </span>
+                                )}
+                              </div>
                             </SelectItem>
                           );
                         });

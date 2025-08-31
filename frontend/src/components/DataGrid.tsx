@@ -247,7 +247,10 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
-        <span className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300">
+        <span
+          className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300 max-w-[120px]"
+          title={column.name}
+        >
           {column.name}
         </span>
 
@@ -429,8 +432,13 @@ export function DataGrid({
   }
 
   return (
-    <div className={cn('h-full flex flex-col bg-white dark:bg-neutral-800 overflow-hidden', className)}>
-      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg">
+    <div
+      className={cn(
+        'h-full flex flex-col bg-bg-gray dark:bg-neutral-800 overflow-hidden',
+        className
+      )}
+    >
+      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg border border-border-gray dark:border-transparent">
         <ReactDataGrid
           columns={gridColumns}
           rows={data || []}
