@@ -10,7 +10,7 @@ npm install @insforge/sdk
 import { createClient } from '@insforge/sdk';
 
 const insforge = createClient({
-  url: 'http://localhost:7130',
+  baseUrl: 'http://localhost:7130',
   apiKey: 'ik_xxx'  // optional
 });
 ```
@@ -24,9 +24,9 @@ await insforge.auth.signUp({
   password: 'password123',
   name: 'John Doe'  // optional
 })
-// Response: { data: { user, session }, error }
+// Response: { data: { user, accessToken }, error }
 // user: { id, email, name, emailVerified, createdAt, updatedAt }
-// session: { accessToken, user }
+// accessToken: JWT token string
 ```
 
 ### `signInWithPassword()`
@@ -35,9 +35,9 @@ await insforge.auth.signInWithPassword({
   email: 'user@example.com',
   password: 'password123'
 })
-// Response: { data: { user, session }, error }
+// Response: { data: { user, accessToken }, error }
 // user: { id, email, name, emailVerified, createdAt, updatedAt }
-// session: { accessToken, user }
+// accessToken: JWT token string
 ```
 
 ### `signInWithOAuth()`
@@ -91,6 +91,112 @@ await insforge.auth.getSession()
 - **Node.js**: In-memory Map
 - **Custom**: Provide via `storage` option in config
 
+## Database Methods
+
+### `from()`
+Create a query builder for a table:
+```javascript
+const query = insforge.database.from('posts')
+```
+
+### SELECT Operations
+```javascript
+// Basic select
+await insforge.database
+  .from('posts')
+  .select()  // Default: '*'
+
+// Select specific columns
+await insforge.database
+  .from('posts')
+  .select('id, title, created_at')
+
+// With filters
+await insforge.database
+  .from('posts')
+  .select()
+  .eq('user_id', '123')
+  .order('created_at', { ascending: false })
+  .limit(10)
+// Response: { data: [...], error }
+```
+
+### INSERT Operations
+```javascript
+// Single record
+await insforge.database
+  .from('posts')
+  .insert({ title: 'Hello', content: 'World' })
+
+// Multiple records
+await insforge.database
+  .from('posts')
+  .insert([
+    { title: 'Post 1', content: 'Content 1' },
+    { title: 'Post 2', content: 'Content 2' }
+  ])
+
+// Upsert
+await insforge.database
+  .from('posts')
+  .upsert({ id: '123', title: 'Updated or New' })
+// Response: { data: [...], error }
+```
+
+### UPDATE Operations
+```javascript
+await insforge.database
+  .from('posts')
+  .update({ title: 'Updated Title' })
+  .eq('id', '123')
+// Response: { data: [...], error }
+```
+
+### DELETE Operations
+```javascript
+await insforge.database
+  .from('posts')
+  .delete()
+  .eq('id', '123')
+// Response: { data: [...], error }
+```
+
+### Filter Methods
+```javascript
+.eq('column', value)        // Equals
+.neq('column', value)       // Not equals
+.gt('column', value)        // Greater than
+.gte('column', value)       // Greater than or equal
+.lt('column', value)        // Less than
+.lte('column', value)       // Less than or equal
+.like('column', '%pattern%')  // Pattern match (case-sensitive)
+.ilike('column', '%pattern%') // Pattern match (case-insensitive)
+.is('column', null)         // IS NULL / IS boolean
+.in('column', [1, 2, 3])    // IN array
+```
+
+### Modifiers
+```javascript
+.order('column', { ascending: false })  // Order by
+.limit(10)                              // Limit results
+.offset(20)                             // Skip results
+.range(0, 9)                            // Get specific range
+.single()                               // Return single object
+.count('exact')                         // Get total count
+```
+
+### Method Chaining
+All methods return the query builder for chaining:
+```javascript
+const { data, error } = await insforge.database
+  .from('posts')
+  .select('id, title, content')
+  .eq('status', 'published')
+  .gte('likes', 100)
+  .order('created_at', { ascending: false })
+  .limit(10)
+```
+
 ## Types (from @insforge/shared-schemas)
 ```typescript
 import type {
@@ -99,4 +205,11 @@ import type {
   CreateSessionRequest,
   GetCurrentSessionResponse
 } from '@insforge/shared-schemas';
+
+// Database response type
+interface DatabaseResponse<T> {
+  data: T | null;
+  error: InsForgeError | null;
+  count?: number;
+}
 ```
