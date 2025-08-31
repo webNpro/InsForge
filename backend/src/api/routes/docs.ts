@@ -15,7 +15,7 @@ const DOCS_MAP: Record<string, string> = {
   instructions: 'insforge-instructions-sdk.md',
   'db-api': 'insforge-db-sdk.md',
   'auth-api': 'insforge-auth-sdk.md',
-  'storage-api': 'insforge-storage-api.md',
+  'storage-api': 'insforge-storage-sdk.md',
   debug: 'insforge-debug-sdk.md',
   project: 'insforge-project-sdk.md',
 };
