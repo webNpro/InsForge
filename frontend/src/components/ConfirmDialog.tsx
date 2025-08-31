@@ -62,7 +62,9 @@ export function ConfirmDialog({
               {description}
             </AlertDialogDescription>
           ) : (
-            <div className="text-zinc-500 text-sm leading-5 dark:text-neutral-400">{description}</div>
+            <div className="text-zinc-500 text-sm leading-5 dark:text-neutral-400">
+              {description}
+            </div>
           )}
         </div>
 

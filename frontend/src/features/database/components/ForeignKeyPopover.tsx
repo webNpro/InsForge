@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
@@ -91,11 +91,13 @@ export function ForeignKeyPopover({
   });
 
   // Get the type of the selected source column
-  const getSourceFieldType = () => {
-    if (!newForeignKey.columnName) return null;
+  const getSourceFieldType = useMemo(() => {
+    if (!newForeignKey.columnName) {
+      return null;
+    }
     const sourceColumn = columns.find((col) => col.columnName === newForeignKey.columnName);
     return sourceColumn?.type || null;
-  };
+  }, [newForeignKey.columnName, columns]);
 
   // Calculate if the button should be enabled
   const isAddButtonEnabled = Boolean(
@@ -220,12 +222,11 @@ export function ForeignKeyPopover({
                   <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                     <SelectValue placeholder="Select column" />
                   </SelectTrigger>
-                  <SelectContent className="max-w-[280px]">
+                  <SelectContent className="max-w-[360px]">
                     {(() => {
                       const allColumns = referenceTableSchema?.columns || [];
-
                       if (allColumns.length > 0) {
-                        const sourceType = getSourceFieldType();
+                        const sourceType = getSourceFieldType;
 
                         return allColumns.map((col: ColumnSchema) => {
                           // Check if types match exactly (sourceType should always exist at this point since we require columnName)
@@ -240,7 +241,7 @@ export function ForeignKeyPopover({
                           if (!col.isUnique) {
                             rightText = 'Not unique';
                           } else if (!typesMatch) {
-                            rightText = 'Datatype not match';
+                            rightText = 'Columntype not match';
                           }
 
                           return (
@@ -252,13 +253,16 @@ export function ForeignKeyPopover({
                             >
                               <div className="flex flex-row items-center justify-between gap-2">
                                 <span
-                                  className="truncate max-w-[160px] block"
+                                  className="flex-1 truncate max-w-[180px] block"
                                   title={col.columnName}
                                 >
                                   {col.columnName}
                                 </span>
+                                <span className="text-xs text-muted-foreground dark:text-neutral-400">
+                                  ({col.type})
+                                </span>
                                 {rightText && (
-                                  <span className="text-right text-xs text-muted-foreground dark:text-neutral-400 flex-shrink-0">
+                                  <span className="text-right text-xs text-muted-foreground dark:text-neutral-400">
                                     {rightText}
                                   </span>
                                 )}
