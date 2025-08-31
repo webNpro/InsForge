@@ -154,11 +154,8 @@ export function ForeignKeyPopover({
                   setNewForeignKey((prev) => ({ ...prev, columnName: value }))
                 }
               >
-                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
-                  <SelectValue
-                    placeholder="Select column"
-                    className="text-zinc-500 dark:text-neutral-400"
-                  />
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                  <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
                   {columns
@@ -189,11 +186,8 @@ export function ForeignKeyPopover({
                   }));
                 }}
               >
-                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
-                  <SelectValue
-                    placeholder="Select table"
-                    className="text-zinc-500 dark:text-neutral-400"
-                  />
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                  <SelectValue placeholder="Select table" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTables.map((table) => (
@@ -218,11 +212,8 @@ export function ForeignKeyPopover({
                     setNewForeignKey((prev) => ({ ...prev, referenceColumn: value }))
                   }
                 >
-                  <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
-                    <SelectValue
-                      placeholder="Select column"
-                      className="text-zinc-500 dark:text-neutral-400"
-                    />
+                  <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                    <SelectValue placeholder="Select column" />
                   </SelectTrigger>
                   <SelectContent>
                     {(() => {
@@ -287,7 +278,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,7 +301,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-white">
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
