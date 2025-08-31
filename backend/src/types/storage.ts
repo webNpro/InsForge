@@ -1,8 +1,14 @@
 // Storage-related type definitions
-import { StorageFileSchema, StorageBucketSchema } from '@insforge/shared-schemas';
+import { StorageBucketSchema } from '@insforge/shared-schemas';
 
 // Base storage record from database
-export type StorageRecord = Omit<StorageFileSchema, 'url'>;
+export interface StorageRecord {
+  key: string;
+  bucket: string;
+  size: number;
+  mime_type?: string;
+  uploaded_at: string;
+}
 
 // Bucket record from _storage_buckets table
 export type BucketRecord = Omit<StorageBucketSchema, 'created_at'>;
