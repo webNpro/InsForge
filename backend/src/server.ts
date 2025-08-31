@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import authRouter from '@/api/routes/auth.js';
 import { tablesRouter } from '@/api/routes/tables.js';
-import { databaseRouter } from '@/api/routes/records.js';
+import { recordRouter } from '@/api/routes/records.js';
+import databaseRouter from '@/api/routes/database.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
@@ -26,6 +27,7 @@ import { MetadataService } from '@/core/metadata/metadata.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedAdmin } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
+import { isProduction } from './utils/environment';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +76,9 @@ export async function createApp() {
       credentials: true, // Allow cookies/credentials
     })
   );
-  app.use(limiter);
+  if (isProduction()) {
+    app.use(limiter);
+  }
   app.use((req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     const originalSend = res.send;
@@ -140,7 +144,8 @@ export async function createApp() {
   // Mount auth routes
   apiRouter.use('/auth', authRouter);
   apiRouter.use('/database/tables', tablesRouter);
-  apiRouter.use('/database/records', databaseRouter);
+  apiRouter.use('/database/records', recordRouter);
+  apiRouter.use('/database/advance', databaseRouter);
   apiRouter.use('/storage', storageRouter);
   apiRouter.use('/metadata', metadataRouter);
   apiRouter.use('/logs', logsRouter);
