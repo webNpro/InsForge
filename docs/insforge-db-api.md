@@ -181,23 +181,6 @@ Response format (WITH `Prefer: return=representation` header):
 ]
 ```
 
-Example:
-```bash
-# Mac/Linux
-curl -X PATCH "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
-  -H 'Authorization: Bearer TOKEN' \
-  -H 'Content-Type: application/json' \
-  -H 'Prefer: return=representation' \
-  -d '{"name": "Jane Doe"}'
-
-# Windows PowerShell (use curl.exe) - different quotes needed for nested JSON
-curl.exe -X PATCH "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Prefer: return=representation" \
-  -d '{\"name\": \"Jane Doe\"}'
-```
-
 ### Delete Record
 **DELETE** `/api/database/records/:tableName?id=eq.uuid`
 
@@ -230,15 +213,6 @@ Response format (WITH `Prefer: return=representation` header):
 // If record didn't exist (already deleted or never existed):
 []
 ```
-
-Example:
-```bash
-# Windows PowerShell: use curl.exe
-curl -X DELETE "http://localhost:7130/api/database/records/_users?id=eq.UUID" \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Prefer: return=representation"
-```
-
 
 ## Error Response Format
 
