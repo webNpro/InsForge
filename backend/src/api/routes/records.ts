@@ -42,9 +42,9 @@ const postgrestAxios = axios.create({
   maxRedirects: 0,
   // Additional connection stability options
   headers: {
-    'Connection': 'keep-alive',
-    'Keep-Alive': 'timeout=5, max=10'
-  }
+    Connection: 'keep-alive',
+    'Keep-Alive': 'timeout=5, max=10',
+  },
 });
 
 // Generate admin token once and reuse
@@ -65,11 +65,11 @@ const adminToken = authService.generateToken({
 const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { tableName } = req.params;
   const wildcardPath = req.params[0] || '';
-  
+
   // Build the target URL early so it's available in error handling
   const targetPath = wildcardPath ? `/${tableName}/${wildcardPath}` : `/${tableName}`;
   const targetUrl = `${postgrestUrl}${targetPath}`;
-  
+
   try {
     // Validate table name with operation type
     const method = req.method.toUpperCase();
@@ -149,33 +149,33 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     let response;
     let lastError;
     const maxRetries = 3; // Increased retries for connection resets
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         response = await postgrestAxios(axiosConfig);
         break; // Success, exit retry loop
       } catch (error) {
         lastError = error;
-        
+
         // Retry on network errors (ECONNRESET, ECONNREFUSED, timeout) but not HTTP errors
         const shouldRetry = axios.isAxiosError(error) && !error.response && attempt < maxRetries;
-        
+
         if (shouldRetry) {
           logger.warn(`PostgREST request failed, retrying (attempt ${attempt}/${maxRetries})`, {
             url: targetUrl,
             errorCode: error.code,
-            message: error.message
+            message: error.message,
           });
-          
+
           // Enhanced exponential backoff: 200ms, 500ms, 1000ms
           const backoffDelay = Math.min(200 * Math.pow(2.5, attempt - 1), 1000);
-          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          await new Promise((resolve) => setTimeout(resolve, backoffDelay));
         } else {
           throw error; // Don't retry on HTTP errors or last attempt
         }
       }
     }
-    
+
     if (!response) {
       throw lastError || new Error('Failed to get response from PostgREST');
     }
@@ -206,7 +206,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     successResponse(res, responseData, response.status);
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      // Log more detailed error information  
+      // Log more detailed error information
       logger.error('PostgREST request failed', {
         url: targetUrl,
         method: req.method,
@@ -217,17 +217,18 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
           responseStatus: error.response?.status,
         },
       });
-      
+
       // Forward PostgREST errors
       if (error.response) {
         res.status(error.response.status).json(error.response.data);
       } else {
         // Network error - connection refused, DNS failure, etc.
-        const errorMessage = error.code === 'ECONNREFUSED' 
-          ? 'PostgREST connection refused'
-          : error.code === 'ENOTFOUND'
-          ? 'PostgREST service not found'
-          : 'Database service unavailable';
+        const errorMessage =
+          error.code === 'ECONNREFUSED'
+            ? 'PostgREST connection refused'
+            : error.code === 'ENOTFOUND'
+              ? 'PostgREST service not found'
+              : 'Database service unavailable';
 
         next(new AppError(errorMessage, 503, ERROR_CODES.INTERNAL_ERROR));
       }
