@@ -33,15 +33,29 @@ await client.auth.signInWithOAuth({ provider: 'google'|'github', redirectTo })
 ### getCurrentUser
 ```javascript
 await client.auth.getCurrentUser()
-// Returns: { data: { user: { id, email, role } }, error }
-// Makes API call to validate token
+// Returns: { data: { user: { id, email, role }, profile: {...} }, error }
+// Makes API call to validate token and fetch profile
 ```
 
-### getSession
+### getCurrentSession
 ```javascript
-await client.auth.getSession()
-// Returns: { data: { accessToken, user }, error }
+await client.auth.getCurrentSession()
+// Returns: { data: { session: { accessToken, user } }, error }
 // From localStorage, no API call
+```
+
+### getProfile
+```javascript
+await client.auth.getProfile(userId)
+// Returns: { data: { id, nickname, bio, ... }, error }
+// Returns single object, not array!
+```
+
+### setProfile
+```javascript
+await client.auth.setProfile({ nickname, bio, avatar_url })
+// Returns: { data: { id, nickname, bio, ... }, error }
+// Returns single object, not array!
 ```
 
 ### signOut

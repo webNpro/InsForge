@@ -49,8 +49,8 @@ if (error) {
 
 ### 2. Verify Token Storage
 ```javascript
-const { data } = await client.auth.getSession();
-console.log('Stored token:', data?.accessToken ? 'Present' : 'Missing');
+const { data } = await client.auth.getCurrentSession();
+console.log('Stored token:', data?.session?.accessToken ? 'Present' : 'Missing');
 ```
 
 ### 3. Test Database Connection
@@ -102,7 +102,6 @@ console.log('Raw response:', data);
 // Check storage adapter
 const client = createClient({
   baseUrl: 'http://localhost:7130',
-  storage: customStorageAdapter  // If custom
 });
 ```
 
