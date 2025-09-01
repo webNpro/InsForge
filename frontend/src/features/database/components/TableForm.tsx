@@ -316,7 +316,6 @@ export function TableForm({
         const existingFK = existingForeignKeys.find((efk) => efk.columnName === fk.columnName);
 
         if (!existingFK) {
-          // This is a new foreign key
           addForeignKeys.push({
             columnName: fk.columnName,
             foreignKey: {
@@ -504,7 +503,7 @@ export function TableForm({
                   variant="outline"
                   className="w-50 h-9 px-2 gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:text-white dark:hover:text-white dark:border-transparent"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   Add Column
                 </Button>
               </div>

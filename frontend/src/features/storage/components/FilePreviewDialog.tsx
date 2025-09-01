@@ -205,25 +205,21 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
       <DialogContent className="w-[800px] max-w-[800px] p-0 overflow-hidden flex">
         <div className="w-[800px] min-h-[500px] max-h-[820px] bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-zinc-200 dark:border-neutral-700 flex flex-col">
           {/* Header */}
-          <div className="px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-300 leading-6">
-                  {fileName}
-                </h2>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-sm text-zinc-500 dark:text-zinc-300">
-                    {formatFileSize(file.size)}
-                  </span>
-                  {file.mimeType && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-normal px-2.5 py-0.5 dark:border-neutral-600 dark:bg-neutral-600 dark:text-neutral-400"
-                    >
-                      {file.mimeType}
-                    </Badge>
-                  )}
-                </div>
+          <div className="px-6 py-3">
+            <div className="flex flex-col items-start gap-1">
+              <h2 className="text-lg font-semibold text-zinc-950 dark:text-white">{fileName}</h2>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-zinc-500 dark:text-neutral-400">
+                  {formatFileSize(file.size)}
+                </span>
+                {file.mimeType && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-medium px-1.5 py-0.5 dark:border-transparent dark:bg-neutral-700 dark:text-neutral-400"
+                  >
+                    {file.mimeType}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

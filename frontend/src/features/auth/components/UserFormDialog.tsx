@@ -139,94 +139,102 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] dark:bg-neutral-800 dark:text-white">
-        <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
+      <DialogContent className="sm:max-w-[480px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
+        <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
+          <DialogTitle className="h-7">Add User</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={(e) => {
             void handleSubmit(e);
           }}
-          className="space-y-6"
+          className="flex flex-col"
         >
-          {/* Email Field */}
-          <div className="flex flex-col gap-3">
-            <Label
-              htmlFor="user-email"
-              className="text-sm font-medium text-zinc-950 dark:text-white"
-            >
-              Email
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                id="user-email"
-                type="email"
-                placeholder="user@example.com"
-                value={email}
-                onChange={handleEmailChange}
-                className={`pl-10 ${emailError && showValidation ? 'border-red-500 focus:border-red-500' : ''}`}
-                autoFocus={false}
-              />
+          <div className="space-y-6 p-6">
+            {/* Email Field */}
+            <div className="flex flex-row gap-10 justify-between items-center">
+              <div className="flex flex-row gap-2 items-center">
+                <Mail className="h-5 w-5 text-neutral-500" />
+                <Label htmlFor="user-email" className="text-sm text-zinc-950 dark:text-neutral-50">
+                  Email
+                </Label>
+              </div>
+              <div className="flex flex-col space-y-1">
+                <Input
+                  id="user-email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={email}
+                  onChange={handleEmailChange}
+                  className={`w-70 dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white ${emailError && showValidation ? 'border-red-500 focus:border-red-500' : ''}`}
+                  autoFocus={false}
+                />
+                {emailError && showValidation && (
+                  <div className="flex items-center gap-1">
+                    <img src={ErrorIcon} alt="Error" className="h-4 w-4" />
+                    <p className="text-xs font-medium text-red-600 dark:text-red-500">
+                      {emailError}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            {emailError && showValidation && (
-              <div className="flex items-center gap-1 -mt-1.5">
-                <img src={ErrorIcon} alt="Error" className="h-4 w-4" />
-                <p className="text-xs text-red-600">{emailError}</p>
+
+            {/* Password Field */}
+            <div className="flex flex-row gap-10 justify-between items-center">
+              <div className="flex flex-row gap-2 items-center">
+                <Lock className="h-5 w-5 text-neutral-500" />
+                <Label
+                  htmlFor="user-password"
+                  className="text-sm text-zinc-950 dark:text-neutral-50"
+                >
+                  Password
+                </Label>
+              </div>
+              <div className="flex flex-col space-y-1">
+                <Input
+                  id="user-password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  className={`w-70 dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white ${passwordError && showValidation ? 'border-red-500 focus:border-red-500' : ''}`}
+                />
+                {passwordError && showValidation && (
+                  <div className="flex items-center gap-1">
+                    <img src={ErrorIcon} alt="Error" className="h-4 w-4" />
+                    <p className="text-xs font-medium text-red-600 dark:text-red-500">
+                      {passwordError}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Error Alert */}
+            {error && (
+              <div className="mx-6 mb-6 shrink-0">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               </div>
             )}
           </div>
-
-          {/* Password Field */}
-          <div className="flex flex-col gap-3">
-            <Label
-              htmlFor="user-password"
-              className="text-sm font-medium text-zinc-950 dark:text-white"
-            >
-              Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                id="user-password"
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={handlePasswordChange}
-                className={`pl-10 ${passwordError && showValidation ? 'border-red-500 focus:border-red-500' : ''}`}
-              />
-            </div>
-            {passwordError && showValidation && (
-              <div className="flex items-center gap-1 -mt-1.5">
-                <img src={ErrorIcon} alt="Error" className="h-4 w-4" />
-                <p className="text-xs text-red-600">{passwordError}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Error Alert */}
-          {error && (
-            <Alert variant="destructive" className="mt-4 dark:bg-red-500 dark:text-white">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Footer Buttons */}
-          <DialogFooter>
+          <DialogFooter className="p-6 border-t border-zinc-200 dark:border-neutral-700">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="h-10 w-20 px-4 py-2 dark:border-neutral-700 dark:text-white"
+              className="h-9 w-30 px-3 py-2 dark:bg-neutral-600 dark:border-transparent dark:text-white dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading || email === '' || password === ''}
-              className="h-10 w-20 px-4 py-2 bg-zinc-950 hover:bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
+              className="h-9 w-30 px-3 py-2 bg-zinc-950 hover:bg-zinc-800 text-white disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
             >
               Add
             </Button>

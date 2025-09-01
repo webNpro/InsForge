@@ -69,6 +69,13 @@ export function RecordFormDialog({
     }
   }, [editingRecord, displayFields, schema, form, initialValues]);
 
+  // Clear error state when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setError(null);
+    }
+  }, [open]);
+
   const createRecordMutation = useMutation({
     mutationFn: (data: any) => {
       return databaseService.createRecord(tableName, data);
@@ -129,14 +136,14 @@ export function RecordFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[640px] p-0 gap-0 overflow-hidden flex flex-col">
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-base font-semibold text-zinc-950 dark:text-zinc-300">
+          <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
+            <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
               {editingRecord ? `Edit ${tableName} Record` : `Add Record`}
             </DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="h-full max-h-[540px] overflow-auto">
-            <div className="px-6 py-6 space-y-6">
+            <div className="p-6 space-y-6">
               {displayFields.map((field) => (
                 <FormField key={field.columnName} field={field} form={form} tableName={tableName} />
               ))}
@@ -144,7 +151,7 @@ export function RecordFormDialog({
           </ScrollArea>
 
           {error && (
-            <div className="px-6 pb-4 shrink-0">
+            <div className="mx-6 mb-6 shrink-0">
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
@@ -152,7 +159,7 @@ export function RecordFormDialog({
             </div>
           )}
 
-          <DialogFooter className="px-6 py-6 gap-3 sm:justify-end border-t border-zinc-200 dark:border-neutral-700 shrink-0">
+          <DialogFooter className="p-6 gap-3 sm:justify-end border-t border-zinc-200 dark:border-neutral-700 shrink-0">
             <Button
               type="button"
               variant="outline"

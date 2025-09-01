@@ -4,6 +4,7 @@
 @layer base {
   :root {
     --rdg-border-color: #f3f4f6;
+    --rdg-border-highlight-color: #000000;
     --rdg-background-color: #f9fafb;
     --rdg-row-hover-color: #f5f5f5;
     --rdg-background-color-edit: #ffffff;
@@ -12,6 +13,7 @@
 
   .rdg-dark {
     --rdg-border-color: #404040;
+    --rdg-border-highlight-color: #ffffff;
     --rdg-background-color: #262626;
     --rdg-row-hover-color: #171717;
     --rdg-background-color-edit: #262626;
@@ -57,19 +59,12 @@
   justify-content: center;
 }
 
-.rdg-header-row .rdg-cell:first-child {
-  padding: 0;
-  width: 45px !important;
-  min-width: 45px !important;
-  max-width: 45px !important;
-  justify-content: center;
-}
-
 .rdg-row:hover,
 .rdg-row[aria-selected='true'],
 .rdg-row[aria-selected='true']:hover,
 .rdg-header-row .rdg-cell:hover {
   background-color: var(--rdg-row-hover-color);
+  border: 1px solid var(--rdg-border-highlight-color);
 }
 
 /* Remove cell focus outline and use custom styling */

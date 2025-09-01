@@ -83,6 +83,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   useEffect(() => {
     if (isOpen && provider) {
       void loadOAuthConfig();
+    } else if (!isOpen) {
+      // Clear error when dialog closes
+      setError(null);
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
@@ -159,12 +162,12 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white p-0 gap-0">
+        <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="p-6 flex items-center justify-center">
             <div className="text-center">
               <div className="text-sm text-gray-500 dark:text-zinc-400">
                 Loading OAuth configuration...
@@ -179,94 +182,95 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
               </div>
             )}
 
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-              {/* Shared Keys Toggle */}
-              <div className="flex items-center justify-start gap-2">
-                <Switch
-                  checked={useSharedKeys}
-                  onCheckedChange={(checked) =>
-                    form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
-                  }
-                />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  Shared Keys
-                </span>
-              </div>
-
-              {useSharedKeys ? (
-                /* Shared Keys Enabled */
-                <div className="space-y-6">
-                  <p className="text-sm text-zinc-500 dark:text-neutral-400">
-                    Shared keys are created by the InsForge team for development. It helps you get
-                    started, but will show a InsForge logo and name on the OAuth screen.
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
-                    <span className="text-sm font-medium text-zinc-950 dark:text-white">
-                      Shared keys should never be used in production
-                    </span>
-                  </div>
+            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
+              <div className="space-y-6 p-6">
+                {/* Shared Keys Toggle */}
+                <div className="flex items-center justify-start gap-2">
+                  <Switch
+                    checked={useSharedKeys}
+                    onCheckedChange={(checked) =>
+                      form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
+                    }
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Shared Keys
+                  </span>
                 </div>
-              ) : (
-                /* Shared Keys Disabled */
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <a
-                      href={provider?.setupUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
-                    >
-                      Create a {provider?.name.split(' ')[0]} OAuth App
-                    </a>
-                    <span className="text-sm font-normal text-zinc-950 dark:text-zinc-400">
-                      {' '}
-                      and set the callback url to:
-                    </span>
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <code className="py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
-                        {getCallbackUrl(provider?.id)}
-                      </code>
-                      <CopyButton text={getCallbackUrl(provider?.id)} />
-                    </div>
-                  </div>
-
+                {useSharedKeys ? (
+                  /* Shared Keys Enabled */
                   <div className="space-y-6">
-                    <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
-                        Client ID
-                      </label>
-                      <Input
-                        type="text"
-                        {...form.register(`${currentProviderKey}.clientId`)}
-                        placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
-                      />
+                    <p className="text-sm text-zinc-500 dark:text-neutral-400">
+                      Shared keys are created by the InsForge team for development. It helps you get
+                      started, but will show a InsForge logo and name on the OAuth screen.
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
+                      <span className="text-sm font-medium text-zinc-950 dark:text-white">
+                        Shared keys should never be used in production
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Shared Keys Disabled */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <a
+                        href={provider?.setupUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
+                      >
+                        Create a {provider?.name.split(' ')[0]} OAuth App
+                      </a>
+                      <span className="text-sm font-normal text-zinc-950 dark:text-white">
+                        {' '}
+                        and set the callback url to:
+                      </span>
                     </div>
 
-                    <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
-                        Client Secret
-                      </label>
-                      <Input
-                        type="password"
-                        {...form.register(`${currentProviderKey}.clientSecret`)}
-                        placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
-                      />
+                    <div className="space-x-3">
+                      <div className="flex items-center gap-2">
+                        <code className="h-9 flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                          {getCallbackUrl(provider?.id)}
+                        </code>
+                        <CopyButton className="h-9" text={getCallbackUrl(provider?.id)} />
+                      </div>
                     </div>
+                  </div>
+                )}
+              </div>
+              {!useSharedKeys && (
+                <div className="space-y-6 p-6 border-t border-zinc-200 dark:border-neutral-700">
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client ID</label>
+                    <Input
+                      type="text"
+                      {...form.register(`${currentProviderKey}.clientId`)}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client Secret</label>
+                    <Input
+                      type="password"
+                      {...form.register(`${currentProviderKey}.clientSecret`)}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
                   </div>
                 </div>
               )}
             </form>
 
-            <DialogFooter>
+            <DialogFooter className="p-6 border-t border-zinc-200 dark:border-neutral-700">
               <Button
                 type="button"
-                className="py-2 px-4 text-sm font-medium dark:bg-neutral-800 dark:text-white dark:border-neutral-700 dark:hover:bg-neutral-700"
+                className="h-9 w-30 px-3 py-2 dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
@@ -277,7 +281,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 type="button"
                 onClick={handleSubmit}
                 disabled={isUpdateDisabled()}
-                className="py-2 px-4 text-sm font-medium dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
+                className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
                 {saving ? 'Saving...' : reloading ? 'Reloading...' : 'Update'}
               </Button>
