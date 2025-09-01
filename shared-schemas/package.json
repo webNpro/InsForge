@@ -1,6 +1,6 @@
 {
   "name": "@insforge/shared-schemas",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Insforge",
   "description": "Shared TypeScript schemas for InsForge frontend and backend",
   "license": "Apache-2.0",
@@ -11,15 +11,14 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
@@ -27,7 +26,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "tsup": "^8.3.5",
     "typescript": "^5.3.3"
   }
 }
