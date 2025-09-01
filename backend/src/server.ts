@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import authRouter from '@/api/routes/auth.js';
-import { tablesRouter } from '@/api/routes/tables.js';
+import { tableRouter } from '@/api/routes/tables.js';
 import { recordRouter } from '@/api/routes/records.js';
 import databaseRouter from '@/api/routes/database.js';
 import { storageRouter } from '@/api/routes/storage.js';
@@ -143,7 +143,7 @@ export async function createApp() {
 
   // Mount auth routes
   apiRouter.use('/auth', authRouter);
-  apiRouter.use('/database/tables', tablesRouter);
+  apiRouter.use('/database/tables', tableRouter);
   apiRouter.use('/database/records', recordRouter);
   apiRouter.use('/database/advance', databaseRouter);
   apiRouter.use('/storage', storageRouter);
