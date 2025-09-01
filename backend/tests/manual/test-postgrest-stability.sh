@@ -1,10 +1,16 @@
 #!/bin/bash
 
 # Configuration
-URL="http://localhost:7130/api/database/records/posts"
-DURATION=300  # 5 minutes in seconds
-CONCURRENT_REQUESTS=5  # Number of concurrent requests
+BASE_URL="http://localhost:7130/api/database/records/posts"
+DURATION=600  # 5 minutes in seconds
+CONCURRENT_REQUESTS=10  # Number of concurrent requests
 REQUEST_INTERVAL=0.1  # Seconds between requests per thread
+
+# Function to generate random 8-character string (macOS compatible)
+generate_random_string() {
+    # Use LC_ALL=C to avoid locale issues with tr on macOS
+    LC_ALL=C cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | head -c 8
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,6 +22,7 @@ NC='\033[0m' # No Color
 TOTAL_REQUESTS=0
 SUCCESS_COUNT=0
 ERROR_COUNT=0
+NOT_MODIFIED_COUNT=0
 ERROR_MESSAGES=""
 START_TIME=$(date +%s)
 END_TIME=$((START_TIME + DURATION))
@@ -31,7 +38,7 @@ touch "$LOCK_FILE"
 echo "========================================="
 echo "PostgREST Stability Test"
 echo "========================================="
-echo "URL: $URL"
+echo "Base URL: $BASE_URL"
 echo "Duration: $DURATION seconds (5 minutes)"
 echo "Concurrent requests: $CONCURRENT_REQUESTS"
 echo "Request interval: $REQUEST_INTERVAL seconds"
@@ -45,6 +52,10 @@ make_requests() {
     local log_file="$LOG_DIR/thread-$thread_id.log"
     
     while [ $(date +%s) -lt $END_TIME ]; do
+        # Generate random 8-character string for query parameter
+        RANDOM_STR=$(generate_random_string)
+        URL="${BASE_URL}?title=eq.${RANDOM_STR}"
+        
         # Make request and capture response (macOS compatible)
         RESPONSE=$(curl -s -w "\n:HTTP_CODE:%{http_code}\n:TIME:%{time_total}" "$URL" 2>&1)
         HTTP_CODE=$(echo "$RESPONSE" | grep ":HTTP_CODE:" | cut -d: -f3)
@@ -60,12 +71,16 @@ make_requests() {
         [ -f "$LOG_DIR/total.cnt" ] && TOTAL_REQUESTS=$(cat "$LOG_DIR/total.cnt") || TOTAL_REQUESTS=0
         [ -f "$LOG_DIR/success.cnt" ] && SUCCESS_COUNT=$(cat "$LOG_DIR/success.cnt") || SUCCESS_COUNT=0
         [ -f "$LOG_DIR/error.cnt" ] && ERROR_COUNT=$(cat "$LOG_DIR/error.cnt") || ERROR_COUNT=0
+        [ -f "$LOG_DIR/not_modified.cnt" ] && NOT_MODIFIED_COUNT=$(cat "$LOG_DIR/not_modified.cnt") || NOT_MODIFIED_COUNT=0
         
         TOTAL_REQUESTS=$((TOTAL_REQUESTS + 1))
         
         if [ "$HTTP_CODE" = "200" ]; then
             SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] Thread $thread_id: SUCCESS (${RESPONSE_TIME}s)" >> "$log_file"
+        elif [ "$HTTP_CODE" = "304" ]; then
+            NOT_MODIFIED_COUNT=$((NOT_MODIFIED_COUNT + 1))
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Thread $thread_id: NOT MODIFIED (${RESPONSE_TIME}s)" >> "$log_file"
         else
             ERROR_COUNT=$((ERROR_COUNT + 1))
             ERROR_MSG="[$(date '+%Y-%m-%d %H:%M:%S')] Thread $thread_id: ERROR - HTTP $HTTP_CODE (${RESPONSE_TIME}s)"
@@ -83,6 +98,7 @@ make_requests() {
         echo $TOTAL_REQUESTS > "$LOG_DIR/total.cnt"
         echo $SUCCESS_COUNT > "$LOG_DIR/success.cnt"
         echo $ERROR_COUNT > "$LOG_DIR/error.cnt"
+        echo $NOT_MODIFIED_COUNT > "$LOG_DIR/not_modified.cnt"
         
         # Release lock
         rmdir "$LOCK_FILE.lock" 2>/dev/null
@@ -98,6 +114,7 @@ display_stats() {
         [ -f "$LOG_DIR/total.cnt" ] && TOTAL_REQUESTS=$(cat "$LOG_DIR/total.cnt")
         [ -f "$LOG_DIR/success.cnt" ] && SUCCESS_COUNT=$(cat "$LOG_DIR/success.cnt")
         [ -f "$LOG_DIR/error.cnt" ] && ERROR_COUNT=$(cat "$LOG_DIR/error.cnt")
+        [ -f "$LOG_DIR/not_modified.cnt" ] && NOT_MODIFIED_COUNT=$(cat "$LOG_DIR/not_modified.cnt")
         
         ELAPSED=$(($(date +%s) - START_TIME))
         REMAINING=$((END_TIME - $(date +%s)))
@@ -111,8 +128,8 @@ display_stats() {
         fi
         
         # Clear line and print stats
-        printf "\r${GREEN}[%ds/%ds]${NC} Requests: %d | Success: %d (%.1f%%) | Errors: %d | Rate: %.1f req/s | Remaining: %ds" \
-            "$ELAPSED" "$DURATION" "$TOTAL_REQUESTS" "$SUCCESS_COUNT" "$SUCCESS_RATE" "$ERROR_COUNT" "$REQ_PER_SEC" "$REMAINING"
+        printf "\r${GREEN}[%ds/%ds]${NC} Requests: %d | Success: %d (%.1f%%) | 304s: %d | Errors: %d | Rate: %.1f req/s | Remaining: %ds" \
+            "$ELAPSED" "$DURATION" "$TOTAL_REQUESTS" "$SUCCESS_COUNT" "$SUCCESS_RATE" "$NOT_MODIFIED_COUNT" "$ERROR_COUNT" "$REQ_PER_SEC" "$REMAINING"
         
         sleep 1
     done
@@ -145,6 +162,7 @@ echo "Test Complete - Final Statistics"
 echo "========================================="
 echo "Total Requests: $TOTAL_REQUESTS"
 echo -e "Successful: ${GREEN}$SUCCESS_COUNT${NC}"
+echo -e "Not Modified (304): ${YELLOW}$NOT_MODIFIED_COUNT${NC}"
 echo -e "Failed: ${RED}$ERROR_COUNT${NC}"
 
 if [ $TOTAL_REQUESTS -gt 0 ]; then
