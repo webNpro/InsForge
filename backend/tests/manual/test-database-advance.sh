@@ -245,7 +245,7 @@ echo -e "${GREEN}=== IMPORT TESTS ===${NC}"
 echo ""
 
 # Define the path to the SQL file
-SQL_FILE_PATH="$(dirname "$0")/users.sql"
+SQL_FILE_PATH="$(dirname "$0")/test-users.sql"
 
 # Test 13: Import users.sql without truncate
 test_import \

@@ -1,4 +1,4 @@
-import { Router, Response, NextFunction } from 'express';
+import { Router, Response } from 'express';
 import { DatabaseController } from '@/controllers/database.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
@@ -17,7 +17,7 @@ const databaseController = new DatabaseController();
  * Execute raw SQL query
  * POST /api/database/advance/rawsql
  */
-router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     // Validate request body
     const validation = rawSQLRequestSchema.safeParse(req.body);
@@ -25,27 +25,27 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response, next
       throw new AppError(
         validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
         400,
-        ERROR_CODES.INVALID_INPUT,
+        ERROR_CODES.INVALID_INPUT
       );
     }
-    
+
     const { query, params = [] } = validation.data;
     const response = await databaseController.executeRawSQL(query, params);
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Raw SQL execution error:', error);
-    
+
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
         error: 'SQL_EXECUTION_ERROR',
         message: error.message,
-        statusCode: error.statusCode
+        statusCode: error.statusCode,
       });
     } else {
       res.status(400).json({
         error: 'SQL_EXECUTION_ERROR',
-        message: error.message || 'Failed to execute SQL query',
-        statusCode: 400
+        message: error instanceof Error ? error.message : 'Failed to execute SQL query',
+        statusCode: 400,
       });
     }
   }
@@ -55,7 +55,7 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response, next
  * Export database data
  * POST /api/database/advance/export
  */
-router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     // Validate request body
     const validation = exportRequestSchema.safeParse(req.body);
@@ -63,19 +63,19 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response, next
       throw new AppError(
         validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
         400,
-        ERROR_CODES.INVALID_INPUT,
+        ERROR_CODES.INVALID_INPUT
       );
     }
-    
+
     const { tables, format, includeData } = validation.data;
     const response = await databaseController.exportDatabase(tables, format, includeData);
     res.json(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Database export error:', error);
     res.status(500).json({
       error: 'EXPORT_ERROR',
-      message: error.message || 'Failed to export database',
-      statusCode: 500
+      message: error instanceof Error ? error.message : 'Failed to export database',
+      statusCode: 500,
     });
   }
 });
@@ -85,52 +85,54 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response, next
  * POST /api/database/advance/import
  * Expects a SQL file upload via multipart/form-data
  */
-router.post('/import', 
-  verifyAdmin, 
+router.post(
+  '/import',
+  verifyAdmin,
   upload.single('file'),
   handleUploadError,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    // Validate request body
-    const validation = importRequestSchema.safeParse(req.body);
-    if (!validation.success) {
-      throw new AppError(
-        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
-        400,
-        ERROR_CODES.INVALID_INPUT,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      // Validate request body
+      const validation = importRequestSchema.safeParse(req.body);
+      if (!validation.success) {
+        throw new AppError(
+          validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      const { truncate } = validation.data;
+
+      if (!req.file) {
+        throw new AppError('SQL file is required', 400, ERROR_CODES.INVALID_INPUT);
+      }
+
+      const response = await databaseController.importDatabase(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.size,
+        truncate
       );
-    }
-    
-    const { truncate } = validation.data;
-    
-    if (!req.file) {
-      throw new AppError('SQL file is required', 400, ERROR_CODES.INVALID_INPUT);
-    }
-    
-    const response = await databaseController.importDatabase(
-      req.file.buffer,
-      req.file.originalname,
-      req.file.size,
-      truncate
-    );
-    res.json(response);
-  } catch (error: any) {
-    console.error('Database import error:', error);
-    
-    if (error instanceof AppError) {
-      res.status(error.statusCode).json({
-        error: 'IMPORT_ERROR',
-        message: error.message,
-        statusCode: error.statusCode
-      });
-    } else {
-      res.status(500).json({
-        error: 'IMPORT_ERROR',
-        message: error.message || 'Failed to import database',
-        statusCode: 500
-      });
+      res.json(response);
+    } catch (error: unknown) {
+      console.error('Database import error:', error);
+
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({
+          error: 'IMPORT_ERROR',
+          message: error.message,
+          statusCode: error.statusCode,
+        });
+      } else {
+        res.status(500).json({
+          error: 'IMPORT_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to import database',
+          statusCode: 500,
+        });
+      }
     }
   }
-});
+);
 
 export default router;
