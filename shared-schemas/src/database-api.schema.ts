@@ -100,6 +100,9 @@ export const exportRequestSchema = z.object({
   tables: z.array(z.string()).optional(),
   format: z.enum(['sql', 'json']).default('sql'),
   includeData: z.boolean().default(true),
+  includeFunctions: z.boolean().default(false),
+  includeSequences: z.boolean().default(false),
+  includeViews: z.boolean().default(false),
 });
 
 export const exportJsonDataSchema = z.object({
@@ -143,7 +146,42 @@ export const exportJsonDataSchema = z.object({
           withCheck: z.string().nullable(),
         })
       ),
+      triggers: z.array(
+        z.object({
+          triggerName: z.string(),
+          actionTiming: z.string(),
+          eventManipulation: z.string(),
+          actionOrientation: z.string(),
+          actionCondition: z.string().nullable(),
+          actionStatement: z.string(),
+          newTable: z.string().nullable(),
+          oldTable: z.string().nullable(),
+        })
+      ),
       rows: z.array(z.any()),
+    })
+  ),
+  functions: z.array(
+    z.object({
+      functionName: z.string(),
+      functionDef: z.string(),
+      kind: z.string(),
+    })
+  ),
+  sequences: z.array(
+    z.object({
+      sequenceName: z.string(),
+      startValue: z.string(),
+      increment: z.string(),
+      minValue: z.string().nullable(),
+      maxValue: z.string().nullable(),
+      cycle: z.string(),
+    })
+  ),
+  views: z.array(
+    z.object({
+      viewName: z.string(),
+      definition: z.string(),
     })
   ),
 });

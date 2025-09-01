@@ -67,8 +67,15 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const { tables, format, includeData } = validation.data;
-    const response = await databaseController.exportDatabase(tables, format, includeData);
+    const { tables, format, includeData, includeFunctions, includeSequences, includeViews } = validation.data;
+    const response = await databaseController.exportDatabase(
+      tables,
+      format,
+      includeData,
+      includeFunctions,
+      includeSequences,
+      includeViews
+    );
     res.json(response);
   } catch (error: unknown) {
     console.error('Database export error:', error);

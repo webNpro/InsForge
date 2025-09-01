@@ -61,7 +61,10 @@ export class DatabaseController {
   async exportDatabase(
     tables?: string[],
     format: 'sql' | 'json' = 'sql',
-    includeData: boolean = true
+    includeData: boolean = true,
+    includeFunctions: boolean = false,
+    includeSequences: boolean = false,
+    includeViews: boolean = false
   ): Promise<ExportDatabaseResponse> {
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
@@ -210,6 +213,49 @@ export class DatabaseController {
             sqlExport += '\n';
           }
 
+          // Export triggers for this table
+          const triggersResult = await client.query(
+            `
+            SELECT 
+              'CREATE TRIGGER ' || quote_ident(trigger_name) || 
+              ' ' || action_timing || ' ' || event_manipulation ||
+              ' ON ' || quote_ident(event_object_table) ||
+              CASE 
+                WHEN action_reference_new_table IS NOT NULL OR action_reference_old_table IS NOT NULL 
+                THEN ' REFERENCING ' ||
+                  CASE WHEN action_reference_new_table IS NOT NULL 
+                    THEN 'NEW TABLE AS ' || quote_ident(action_reference_new_table) 
+                    ELSE '' 
+                  END ||
+                  CASE WHEN action_reference_old_table IS NOT NULL 
+                    THEN ' OLD TABLE AS ' || quote_ident(action_reference_old_table) 
+                    ELSE '' 
+                  END
+                ELSE ''
+              END ||
+              ' FOR EACH ' || action_orientation ||
+              CASE 
+                WHEN action_condition IS NOT NULL 
+                THEN ' WHEN (' || action_condition || ')'
+                ELSE ''
+              END ||
+              ' ' || action_statement || ';' as trigger_statement
+            FROM information_schema.triggers
+            WHERE event_object_schema = 'public' 
+            AND event_object_table = $1
+            ORDER BY trigger_name
+          `,
+            [table]
+          );
+
+          if (triggersResult.rows.length > 0) {
+            sqlExport += `-- Triggers for table: ${table}\n`;
+            for (const triggerRow of triggersResult.rows) {
+              sqlExport += triggerRow.trigger_statement + '\n';
+            }
+            sqlExport += '\n';
+          }
+
           // Export data if requested
           if (includeData) {
             const dataResult = await client.query(`SELECT * FROM ${table}`);
@@ -217,16 +263,99 @@ export class DatabaseController {
               sqlExport += `-- Data for table: ${table}\n`;
               for (const row of dataResult.rows) {
                 const columns = Object.keys(row);
-                const values = Object.values(row).map((val) =>
-                  val === null
-                    ? 'NULL'
-                    : typeof val === 'string'
-                      ? `'${val.replace(/'/g, "''")}'`
-                      : String(val)
-                );
+                const values = Object.values(row).map((val) => {
+                  if (val === null) {
+                    return 'NULL';
+                  } else if (typeof val === 'string') {
+                    return `'${val.replace(/'/g, "''")}'`;
+                  } else if (val instanceof Date) {
+                    return `'${val.toISOString()}'`;
+                  } else if (typeof val === 'object') {
+                    // Handle JSON/JSONB columns
+                    return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                  } else if (typeof val === 'boolean') {
+                    return val ? 'true' : 'false';
+                  } else {
+                    return String(val);
+                  }
+                });
                 sqlExport += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
               }
               sqlExport += '\n';
+            }
+          }
+        }
+
+        // Export all functions in public schema
+        if (includeFunctions) {
+          const functionsResult = await client.query(`
+            SELECT 
+              pg_get_functiondef(p.oid) || ';' as function_def,
+              p.proname as function_name
+            FROM pg_proc p
+            JOIN pg_namespace n ON p.pronamespace = n.oid
+            WHERE n.nspname = 'public'
+              AND p.prokind IN ('f', 'p', 'w')  -- functions, procedures, window functions
+              AND NOT EXISTS (
+                SELECT 1 FROM pg_depend d
+                JOIN pg_extension e ON d.refobjid = e.oid
+                WHERE d.objid = p.oid
+              )  -- Exclude extension functions
+            ORDER BY p.proname
+          `);
+
+          if (functionsResult.rows.length > 0) {
+            sqlExport += `-- Functions and Procedures\n`;
+            for (const funcRow of functionsResult.rows) {
+              sqlExport += `-- Function: ${funcRow.function_name}\n`;
+              sqlExport += funcRow.function_def + '\n\n';
+            }
+          }
+        }
+
+        // Export all sequences in public schema
+        if (includeSequences) {
+          const sequencesResult = await client.query(`
+            SELECT 
+              'CREATE SEQUENCE IF NOT EXISTS ' || quote_ident(sequence_name) ||
+              ' START WITH ' || start_value ||
+              ' INCREMENT BY ' || increment ||
+              CASE WHEN minimum_value IS NOT NULL THEN ' MINVALUE ' || minimum_value ELSE ' NO MINVALUE' END ||
+              CASE WHEN maximum_value IS NOT NULL THEN ' MAXVALUE ' || maximum_value ELSE ' NO MAXVALUE' END ||
+              CASE WHEN cycle_option = 'YES' THEN ' CYCLE' ELSE ' NO CYCLE' END ||
+              ';' as sequence_statement,
+              sequence_name
+            FROM information_schema.sequences
+            WHERE sequence_schema = 'public'
+            ORDER BY sequence_name
+          `);
+
+          if (sequencesResult.rows.length > 0) {
+            sqlExport += `-- Sequences\n`;
+            for (const seqRow of sequencesResult.rows) {
+              sqlExport += seqRow.sequence_statement + '\n';
+            }
+            sqlExport += '\n';
+          }
+        }
+
+        // Export all views in public schema
+        if (includeViews) {
+          const viewsResult = await client.query(`
+            SELECT 
+              'CREATE OR REPLACE VIEW ' || quote_ident(table_name) || ' AS ' || 
+              view_definition as view_statement,
+              table_name as view_name
+            FROM information_schema.views
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+          `);
+
+          if (viewsResult.rows.length > 0) {
+            sqlExport += `-- Views\n`;
+            for (const viewRow of viewsResult.rows) {
+              sqlExport += `-- View: ${viewRow.view_name}\n`;
+              sqlExport += viewRow.view_statement + '\n\n';
             }
           }
         }
@@ -241,6 +370,9 @@ export class DatabaseController {
         const jsonData: ExportDatabaseJsonData = {
           timestamp,
           tables: {},
+          functions: [],
+          sequences: [],
+          views: [],
         };
 
         for (const table of tablesToExport) {
@@ -316,6 +448,26 @@ export class DatabaseController {
             [table]
           );
 
+          // Get triggers
+          const triggersResult = await client.query(
+            `
+            SELECT 
+              trigger_name as "triggerName",
+              action_timing as "actionTiming",
+              event_manipulation as "eventManipulation",
+              action_orientation as "actionOrientation",
+              action_condition as "actionCondition",
+              action_statement as "actionStatement",
+              action_reference_new_table as "newTable",
+              action_reference_old_table as "oldTable"
+            FROM information_schema.triggers
+            WHERE event_object_schema = 'public' 
+            AND event_object_table = $1
+            ORDER BY trigger_name
+          `,
+            [table]
+          );
+
           // Get data if requested
           let rows: unknown[] = [];
           if (includeData) {
@@ -328,8 +480,60 @@ export class DatabaseController {
             indexes: indexesResult.rows,
             foreignKeys: foreignKeysResult.rows,
             policies: policiesResult.rows,
+            triggers: triggersResult.rows,
             rows,
           };
+        }
+
+        // Get all functions
+        if (includeFunctions) {
+          const functionsResult = await client.query(`
+            SELECT 
+              p.proname as "functionName",
+              pg_get_functiondef(p.oid) as "functionDef",
+              p.prokind as "kind"
+            FROM pg_proc p
+            JOIN pg_namespace n ON p.pronamespace = n.oid
+            WHERE n.nspname = 'public'
+              AND p.prokind IN ('f', 'p', 'w')
+              AND NOT EXISTS (
+                SELECT 1 FROM pg_depend d
+                JOIN pg_extension e ON d.refobjid = e.oid
+                WHERE d.objid = p.oid
+              )
+            ORDER BY p.proname
+          `);
+          jsonData.functions = functionsResult.rows;
+        }
+
+        // Get all sequences
+        if (includeSequences) {
+          const sequencesResult = await client.query(`
+            SELECT 
+              sequence_name as "sequenceName",
+              start_value as "startValue",
+              increment as "increment",
+              minimum_value as "minValue",
+              maximum_value as "maxValue",
+              cycle_option as "cycle"
+            FROM information_schema.sequences
+            WHERE sequence_schema = 'public'
+            ORDER BY sequence_name
+          `);
+          jsonData.sequences = sequencesResult.rows;
+        }
+
+        // Get all views
+        if (includeViews) {
+          const viewsResult = await client.query(`
+            SELECT 
+              table_name as "viewName",
+              view_definition as "definition"
+            FROM information_schema.views
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+          `);
+          jsonData.views = viewsResult.rows;
         }
 
         return {
