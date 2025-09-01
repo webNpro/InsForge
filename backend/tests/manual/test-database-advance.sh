@@ -102,6 +102,57 @@ test_export() {
     echo ""
 }
 
+# Function to test import endpoint with file upload
+test_import() {
+    local test_name="$1"
+    local file_path="$2"
+    local truncate_option="$3"
+    local description="$4"
+    
+    echo -e "${BLUE}Test: $test_name${NC}"
+    echo -e "${YELLOW}Description: $description${NC}"
+    echo "File: $file_path"
+    echo "Truncate: $truncate_option"
+    echo ""
+    
+    # Check if file exists
+    if [ ! -f "$file_path" ]; then
+        echo -e "${RED}✗ File not found: $file_path${NC}"
+        echo ""
+        echo "----------------------------------------"
+        echo ""
+        return 1
+    fi
+    
+    # Make the API request with file upload
+    RESPONSE=$(curl -s -w "\n:HTTP_CODE:%{http_code}" -X POST "$BASE_URL/import" \
+        -H "Authorization: Bearer $TOKEN" \
+        -F "file=@$file_path" \
+        -F "truncate=$truncate_option" 2>&1)
+    
+    # Extract HTTP code and response body
+    HTTP_CODE=$(echo "$RESPONSE" | grep ":HTTP_CODE:" | cut -d: -f3)
+    RESPONSE_BODY=$(echo "$RESPONSE" | sed '/^:HTTP_CODE:/d')
+    
+    echo -e "${BLUE}HTTP Status: $HTTP_CODE${NC}"
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo -e "${GREEN}✓ Request successful${NC}"
+        echo ""
+        echo -e "${BLUE}Response:${NC}"
+        echo "$RESPONSE_BODY" | jq . 2>/dev/null || echo "$RESPONSE_BODY"
+    else
+        echo -e "${RED}✗ Request failed${NC}"
+        echo ""
+        echo -e "${RED}Response:${NC}"
+        echo "$RESPONSE_BODY"
+    fi
+    
+    echo ""
+    echo "----------------------------------------"
+    echo ""
+}
+
 # ===========================================
 # RAW SQL TESTS
 # ===========================================
@@ -184,6 +235,39 @@ test_export \
     '{"tables": ["users"], "format": "xml"}' \
     "Test validation with invalid format"
 
+# Test 12.5: Export posts table in SQL format with data
+test_export \
+    "All Tables - SQL with Data" \
+    '{"format": "sql", "includeData": false}' \
+    "Export all tables as SQL with both schema and data"
+
+echo -e "${GREEN}=== IMPORT TESTS ===${NC}"
+echo ""
+
+# Define the path to the SQL file
+SQL_FILE_PATH="$(dirname "$0")/users.sql"
+
+# Test 13: Import users.sql without truncate
+test_import \
+    "Import Users SQL - No Truncate" \
+    "$SQL_FILE_PATH" \
+    "false" \
+    "Import users table structure from SQL file without truncating existing data"
+
+# Test 14: Import users.sql with truncate
+test_import \
+    "Import Users SQL - With Truncate" \
+    "$SQL_FILE_PATH" \
+    "true" \
+    "Import users table structure from SQL file with truncating existing data"
+
+# Test 15: Test with non-existent file
+test_import \
+    "Import Non-existent File" \
+    "$(dirname "$0")/nonexistent.sql" \
+    "false" \
+    "Test error handling with non-existent SQL file"
+
 echo "========================================="
 echo "Database Advance Tests Complete"
 echo "========================================="
@@ -204,3 +288,10 @@ echo "- When includeData=true, INSERT statements should be present"
 echo "- When includeData=false, only schema should be exported"
 echo "- JSON exports should have 'schema' and 'rows' properties"
 echo "- Invalid requests should return appropriate error messages"
+echo ""
+echo -e "${BLUE}Import Tests:${NC}"
+echo "- File uploads should be processed correctly"
+echo "- SQL files should be executed and tables created"
+echo "- Truncate option should control data preservation"
+echo "- Error handling should work for missing files"
+echo "- Response should include import statistics"

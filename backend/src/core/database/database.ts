@@ -614,11 +614,11 @@ export class DatabaseManager {
     }
   }
 
-  async close(): Promise<void> {
-    await this.pool.end();
-  }
-
   getPool(): Pool {
     return this.pool;
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
   }
 }

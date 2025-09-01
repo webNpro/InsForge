@@ -85,10 +85,14 @@ export const rawSQLRequestSchema = z.object({
 export const rawSQLResponseSchema = z.object({
   rows: z.array(z.any()),
   rowCount: z.number().nullable(),
-  fields: z.array(z.object({
-    name: z.string(),
-    dataTypeID: z.number(),
-  })).optional(),
+  fields: z
+    .array(
+      z.object({
+        name: z.string(),
+        dataTypeID: z.number(),
+      })
+    )
+    .optional(),
 });
 
 // Export Schemas
@@ -100,16 +104,48 @@ export const exportRequestSchema = z.object({
 
 export const exportJsonDataSchema = z.object({
   timestamp: z.string(),
-  tables: z.record(z.string(), z.object({
-    schema: z.array(z.object({
-      column_name: z.string(),
-      data_type: z.string(),
-      character_maximum_length: z.number().nullable(),
-      is_nullable: z.string(),
-      column_default: z.string().nullable(),
-    })),
-    rows: z.array(z.any()),
-  })),
+  tables: z.record(
+    z.string(),
+    z.object({
+      schema: z.array(
+        z.object({
+          columnName: z.string(),
+          dataType: z.string(),
+          characterMaximumLength: z.number().nullable(),
+          isNullable: z.string(),
+          columnDefault: z.string().nullable(),
+        })
+      ),
+      indexes: z.array(
+        z.object({
+          indexname: z.string(),
+          indexdef: z.string(),
+          isUnique: z.boolean().nullable(),
+          isPrimary: z.boolean().nullable(),
+        })
+      ),
+      foreignKeys: z.array(
+        z.object({
+          constraintName: z.string(),
+          columnName: z.string(),
+          foreignTableName: z.string(),
+          foreignColumnName: z.string(),
+          deleteRule: z.string().nullable(),
+          updateRule: z.string().nullable(),
+        })
+      ),
+      policies: z.array(
+        z.object({
+          policyname: z.string(),
+          cmd: z.string(),
+          roles: z.array(z.string()),
+          qual: z.string().nullable(),
+          withCheck: z.string().nullable(),
+        })
+      ),
+      rows: z.array(z.any()),
+    })
+  ),
 });
 
 export const exportResponseSchema = z.object({
@@ -120,7 +156,16 @@ export const exportResponseSchema = z.object({
 
 // Import Schemas
 export const importRequestSchema = z.object({
-  truncate: z.boolean().default(false),
+  truncate: z
+    .union([
+      z.boolean(),
+      z.string().transform((val) => {
+        if (val === 'true') return true;
+        if (val === 'false') return false;
+        throw new Error('Invalid boolean string');
+      }),
+    ])
+    .default(false),
 });
 
 export const importResponseSchema = z.object({
