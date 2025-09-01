@@ -189,7 +189,6 @@ export function LinkRecordModal({
         </div>
 
         {/* Records DataGrid */}
-
         <div className="flex-1 overflow-hidden">
           <DataGrid
             data={records}
