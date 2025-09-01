@@ -65,7 +65,6 @@ export interface DataGridProps {
   rowKeyGetter?: (row: any) => string;
   className?: string;
   showSelection?: boolean;
-  hideSelectionColumn?: boolean; // Show selection styling but hide checkbox column
   showPagination?: boolean;
   showTypeBadge?: boolean;
 }
@@ -315,7 +314,6 @@ export function DataGrid({
   rowKeyGetter,
   className,
   showSelection = false,
-  hideSelectionColumn = false,
   showPagination = true,
   showTypeBadge = true,
 }: DataGridProps) {
@@ -327,7 +325,6 @@ export function DataGrid({
     // Add selection column if enabled and not hidden
     if (
       showSelection &&
-      !hideSelectionColumn &&
       selectedRows !== undefined &&
       onSelectedRowsChange
     ) {
@@ -421,7 +418,6 @@ export function DataGrid({
     data,
     sortColumns,
     showSelection,
-    hideSelectionColumn,
     showTypeBadge,
   ]);
 

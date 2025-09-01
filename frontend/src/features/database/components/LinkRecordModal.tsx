@@ -171,8 +171,7 @@ export function LinkRecordModal({
             pageSize={pageSize}
             totalRecords={totalRecords}
             onPageChange={setCurrentPage}
-            showSelection={true} // Enable selection for row highlighting
-            hideSelectionColumn={true} // Hide checkbox column but keep row highlighting
+            showSelection={false}
             showPagination={true}
             emptyStateTitle="No records found"
             emptyStateDescription={

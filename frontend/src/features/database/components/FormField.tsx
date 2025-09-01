@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
 import { TypeBadge } from '@/features/database/components/TypeBadge';
@@ -223,7 +223,7 @@ function FieldLabel({
 // Generic component for any field type with foreign key linking
 interface FieldWithLinkProps {
   field: ColumnSchema;
-  control: any;
+  control: Control<any, any, any>;
   children: React.ReactNode;
 }
 
