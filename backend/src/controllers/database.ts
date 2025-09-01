@@ -3,9 +3,9 @@ import { MetadataService } from '@/core/metadata/metadata.js';
 import { AppError } from '@/api/middleware/error.js';
 import {
   type RawSQLResponse,
-  type ExportResponse,
-  type ExportJsonData,
-  type ImportResponse,
+  type ExportDatabaseResponse,
+  type ExportDatabaseJsonData,
+  type ImportDatabaseResponse,
 } from '@insforge/shared-schemas';
 
 export class DatabaseController {
@@ -62,7 +62,7 @@ export class DatabaseController {
     tables?: string[],
     format: 'sql' | 'json' = 'sql',
     includeData: boolean = true
-  ): Promise<ExportResponse> {
+  ): Promise<ExportDatabaseResponse> {
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -238,7 +238,7 @@ export class DatabaseController {
         };
       } else {
         // JSON format
-        const jsonData: ExportJsonData = {
+        const jsonData: ExportDatabaseJsonData = {
           timestamp,
           tables: {},
         };
@@ -348,7 +348,7 @@ export class DatabaseController {
     filename: string,
     fileSize: number,
     truncate: boolean = false
-  ): Promise<ImportResponse> {
+  ): Promise<ImportDatabaseResponse> {
     // Validate file type
     const allowedExtensions = ['.sql', '.txt'];
     const fileExtension = filename.toLowerCase().substring(filename.lastIndexOf('.'));

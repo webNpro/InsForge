@@ -189,10 +189,10 @@ export type RawSQLRequest = z.infer<typeof rawSQLRequestSchema>;
 export type RawSQLResponse = z.infer<typeof rawSQLResponseSchema>;
 
 // Export Types
-export type ExportRequest = z.infer<typeof exportRequestSchema>;
-export type ExportJsonData = z.infer<typeof exportJsonDataSchema>;
-export type ExportResponse = z.infer<typeof exportResponseSchema>;
+export type ExportDatabaseRequest = z.infer<typeof exportRequestSchema>;
+export type ExportDatabaseJsonData = z.infer<typeof exportJsonDataSchema>;
+export type ExportDatabaseResponse = z.infer<typeof exportResponseSchema>;
 
 // Import Types
-export type ImportRequest = z.infer<typeof importRequestSchema>;
-export type ImportResponse = z.infer<typeof importResponseSchema>;
+export type ImportDatabaseRequest = z.infer<typeof importRequestSchema>;
+export type ImportDatabaseResponse = z.infer<typeof importResponseSchema>;
