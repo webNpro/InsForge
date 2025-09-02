@@ -33,6 +33,31 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 });
 
+// Get metadata for frontend dashboard
+router.get('/dashboard', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const metadataService = MetadataService.getInstance();
+    await metadataService.updateDatabaseMetadata();
+    const databaseMetadata = await metadataService.getDashboardMetadata();
+
+    successResponse(res, databaseMetadata);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get API key (admin only)
+router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authService = AuthService.getInstance();
+    const apiKey = await authService.initializeApiKey();
+
+    successResponse(res, { apiKey: apiKey });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // get metadata for a table.
 router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -56,31 +81,6 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
     const jsonData = schemaResponse.data as { tables: Record<string, any> };
     const metadata = jsonData.tables;
     successResponse(res, metadata);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get metadata for frontend dashboard
-router.get('/dashboard', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const metadataService = MetadataService.getInstance();
-    await metadataService.updateDatabaseMetadata();
-    const databaseMetadata = await metadataService.getDashboardMetadata();
-
-    successResponse(res, databaseMetadata);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get API key (admin only)
-router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const authService = AuthService.getInstance();
-    const apiKey = await authService.initializeApiKey();
-
-    successResponse(res, { apiKey: apiKey });
   } catch (error) {
     next(error);
   }
