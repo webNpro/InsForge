@@ -622,6 +622,7 @@ export default function DatabasePage() {
                   sortColumns={sortColumns}
                   onSortColumnsChange={handleSortColumnsChange}
                   onCellEdit={handleRecordUpdate}
+                  onJumpToTable={setSelectedTable}
                   searchQuery={searchQuery}
                   currentPage={currentPage}
                   totalPages={totalPages}

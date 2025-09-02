@@ -9,6 +9,7 @@ import { BooleanCellEditor } from '@/features/database/components/BooleanCellEdi
 import { DateCellEditor } from '@/features/database/components/DateCellEditor';
 import { JsonCellEditor } from '@/features/database/components/JsonCellEditor';
 import { ColumnSchema, ColumnType, TableSchema } from '@insforge/shared-schemas';
+import { ForeignKeyCell } from './ForeignKeyCell';
 
 // Custom cell editors for database fields
 function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) {
@@ -167,7 +168,8 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
 // Convert database schema to DataGrid columns
 export function convertSchemaToColumns(
   schema?: TableSchema,
-  onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>
+  onCellEdit?: (rowId: string, columnKey: string, newValue: any) => Promise<void>,
+  onJumpToTable?: (tableName: string) => void
 ): DataGridColumn[] {
   if (!schema?.columns) {
     return [];
@@ -199,8 +201,21 @@ export function convertSchemaToColumns(
       isNullable: col.isNullable,
     };
 
-    // Set custom renderers based on column type
-    if (col.columnName === 'id') {
+    // Set custom renderers - check for foreign key first (highest priority)
+    if (col.foreignKey) {
+      // Foreign key column - show reference popover, disable editing
+      column.renderCell = (props: any) => (
+        < ForeignKeyCell
+          value={props.row[col.columnName]}
+          foreignKey={{
+            table: col.foreignKey!.referenceTable,
+            column: col.foreignKey!.referenceColumn,
+          }}
+          onJumpToTable={onJumpToTable}
+        />
+      );
+      column.editable = false; // Disable editing for foreign key columns
+    } else if (col.columnName === 'id') {
       column.renderCell = DefaultCellRenderers.id;
       column.editable = false;
     } else if (col.type === ColumnType.BOOLEAN) {
@@ -230,19 +245,21 @@ export function convertSchemaToColumns(
 // Database-specific DataGrid props
 export interface DatabaseDataGridProps extends Omit<DataGridProps, 'columns'> {
   schema?: TableSchema;
+  onJumpToTable?: (tableName: string) => void;
 }
 
 // Specialized DataGrid for database tables
 export function DatabaseDataGrid({
   schema,
   onCellEdit,
+  onJumpToTable,
   emptyStateTitle = 'No data available',
   emptyStateDescription,
   ...props
 }: DatabaseDataGridProps) {
   const columns = useMemo(() => {
-    return convertSchemaToColumns(schema, onCellEdit);
-  }, [schema, onCellEdit]);
+    return convertSchemaToColumns(schema, onCellEdit, onJumpToTable);
+  }, [schema, onCellEdit, onJumpToTable]);
 
   const defaultEmptyDescription = props.searchQuery
     ? 'No records match your search criteria'
