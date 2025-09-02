@@ -116,6 +116,7 @@ export function LinkRecordModal({
         width: 210,
         minWidth: 210,
         resizable: true,
+        editable: false,
       };
 
       if (col.key === referenceColumn) {

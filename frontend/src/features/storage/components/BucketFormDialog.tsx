@@ -139,7 +139,7 @@ export function BucketFormDialog({
                   }}
                   placeholder={mode === 'create' ? 'Enter a name' : ''}
                   disabled={mode === 'edit'}
-                  className={`w-full h-9 px-3 py-2 text-base bg-gray-100 dark:bg-neutral-900 ${mode === 'edit' ? 'cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
+                  className={`w-full h-9 px-3 py-2 text-base bg-transparent dark:bg-neutral-900 ${mode === 'edit' ? 'cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
                   autoFocus={mode === 'create'}
                 />
                 {error && <p className="text-sm text-red-600 dark:text-red-500">{error}</p>}
