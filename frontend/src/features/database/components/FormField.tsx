@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
-import { TypeBadge } from '@/features/database/components/TypeBadge';
+import { Badge } from '@/components/radix/Badge';
 import { Button } from '@/components/radix/Button';
 import { Calendar, Link2, X } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
@@ -208,7 +208,13 @@ function FieldLabel({
 }) {
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2">
-      <TypeBadge type={field.type} className="w-12 h-6" />
+      <Badge
+        variant="database"
+        size="sm"
+        className="w-12 h-6 dark:bg-neutral-900 dark:border-neutral-700"
+      >
+        {field.type}
+      </Badge>
       <span className="text-sm text-black dark:text-white truncate block w-9/10">
         {field.columnName}
         {!field.isNullable && field.columnName !== 'id' && (
@@ -292,16 +298,16 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 {/* Foreign Key Relationship Info */}
                 <div className="text-xs text-medium text-black dark:text-neutral-400 flex items-center gap-1.5">
                   <span>Has a Foreign Key relation to</span>
-                  <span className="font-mono bg-zinc-200 text-black dark:bg-neutral-700 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs">
+                  <Badge variant="database" size="sm" className="dark:bg-neutral-700">
                     {field.foreignKey?.referenceTable}.{field.foreignKey?.referenceColumn}
-                  </span>
+                  </Badge>
                 </div>
               </div>
 
               <LinkRecordModal
                 open={showLinkModal}
                 onOpenChange={setShowLinkModal}
-                tableName={field.foreignKey!.referenceTable}
+                referenceTable={field.foreignKey!.referenceTable}
                 referenceColumn={field.foreignKey!.referenceColumn}
                 currentValue={formField.value}
                 onSelectRecord={(record: DatabaseRecord) => {

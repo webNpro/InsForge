@@ -205,7 +205,7 @@ export function convertSchemaToColumns(
     if (col.foreignKey) {
       // Foreign key column - show reference popover, disable editing
       column.renderCell = (props: any) => (
-        < ForeignKeyCell
+        <ForeignKeyCell
           value={props.row[col.columnName]}
           foreignKey={{
             table: col.foreignKey!.referenceTable,
