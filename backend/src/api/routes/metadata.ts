@@ -59,6 +59,7 @@ router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunctio
 });
 
 // get metadata for a table.
+// Notice: must be after endpoint /api-key in case of conflict.
 router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { tableName } = req.params;
