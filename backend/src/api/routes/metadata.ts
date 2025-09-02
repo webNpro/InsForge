@@ -38,7 +38,7 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
   try {
     const { tableName } = req.params;
     if (!tableName) {
-      throw new AppError('Table name is required', 400, 'INVALID_INPUT');
+      throw new AppError('Table name is required', 400, ERROR_CODES.INVALID_INPUT);
     }
     const includeData = false;
     const includeFunctions = false;
