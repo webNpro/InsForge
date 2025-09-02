@@ -12,6 +12,8 @@ import {
 import ErrorIcon from '@/assets/icons/error.svg';
 import { useToast } from '@/lib/hooks/useToast';
 import { useUsers } from '@/features/auth/hooks/useUsers';
+import { emailSchema } from '@/lib/utils/validation-schemas';
+import { z } from 'zod';
 
 interface User {
   id?: string;
@@ -31,11 +33,15 @@ const validateEmail = (email: string): string => {
   if (!email.trim()) {
     return 'Cannot leave empty';
   }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return 'Incorrect format';
+  try {
+    emailSchema.parse(email);
+    return '';
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return 'Incorrect format';
+    }
+    return 'Invalid email';
   }
-  return '';
 };
 
 const validatePassword = (password: string): string => {

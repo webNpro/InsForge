@@ -1,3 +1,4 @@
+import { jsonSchema } from '@/lib/utils/validation-schemas';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { z } from 'zod';
 
@@ -82,7 +83,7 @@ export function buildDynamicSchema(columns: ColumnSchema[]) {
         }
         break;
       case ColumnType.JSON:
-        fieldSchema = z.string(); // JSON string
+        fieldSchema = jsonSchema;
         if (column.isNullable) {
           fieldSchema = fieldSchema.nullable().optional();
         }

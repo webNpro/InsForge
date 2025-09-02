@@ -149,7 +149,7 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
       onRowChange(updatedRow);
       onClose();
     },
-    [row, column.key, onRowChange, onClose, onCellEdit]
+    [column.key, onCellEdit, row, onRowChange, onClose]
   );
 
   return (
@@ -167,7 +167,7 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
 // Convert database schema to DataGrid columns
 export function convertSchemaToColumns(
   schema?: TableSchema,
-  onCellEdit?: (rowId: string, columnKey: string, newValue: any) => Promise<void>
+  onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>
 ): DataGridColumn[] {
   if (!schema?.columns) {
     return [];
@@ -211,12 +211,12 @@ export function convertSchemaToColumns(
     } else if (col.type === ColumnType.DATETIME) {
       column.renderCell = DefaultCellRenderers.date;
       column.renderEditCell = (props: any) => (
-        <CustomDateCellEditor {...props} onCellEdit={onCellEdit} />
+        <CustomDateCellEditor {...props} column={col} onCellEdit={onCellEdit} />
       );
     } else if (col.type === ColumnType.JSON) {
       column.renderCell = DefaultCellRenderers.json;
       column.renderEditCell = (props: any) => (
-        <CustomJsonCellEditor {...props} onCellEdit={onCellEdit} />
+        <CustomJsonCellEditor {...props} column={col} onCellEdit={onCellEdit} />
       );
     } else {
       column.renderCell = DefaultCellRenderers.text;
