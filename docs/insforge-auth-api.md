@@ -115,16 +115,16 @@ Prerequisites:
 
 Parameters:
 - `provider`: "google" or "github" in the URL path
-- Query params: `?redirectUrl=http://localhost:3000/dashboard`
+- Query params: `?redirect_uri=http://localhost:3000/dashboard`
 
 Returns: `{"authUrl": "https://accounts.google.com/..."}` - URL to redirect user to provider's OAuth page.
 
 ```bash
 # Mac/Linux
-curl -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
+curl -X GET "http://localhost:7130/api/auth/oauth/google?redirect_uri=http://localhost:3000/dashboard"
 
 # Windows PowerShell (use curl.exe)
-curl.exe -X GET "http://localhost:7130/api/auth/oauth/google?redirectUrl=http://localhost:3000/dashboard"
+curl.exe -X GET "http://localhost:7130/api/auth/oauth/google?redirect_uri=http://localhost:3000/dashboard"
 ```
 
 Example response:
@@ -139,7 +139,7 @@ The OAuth provider will redirect to:
 - Google: `http://localhost:7130/api/auth/oauth/google/callback`
 - GitHub: `http://localhost:7130/api/auth/oauth/github/callback`
 
-After processing, backend redirects to your specified `redirectUrl` with JWT token in URL parameters:
+After processing, backend redirects to your specified `redirect_uri` with JWT token in URL parameters:
 - `access_token` - JWT authentication token
 - `user_id` - User's unique ID  
 - `email` - User's email address
