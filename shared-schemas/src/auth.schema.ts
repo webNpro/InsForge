@@ -50,7 +50,7 @@ export const oAuthProvidersSchema = z.enum(['google', 'github']);
 
 export const oAuthStateSchema = z.object({
   provider: oAuthProvidersSchema,
-  redirectUrl: z.string().url().optional(),
+  redirectUri: z.string().url().optional(),
 });
 
 // OAuth provider configuration schema
