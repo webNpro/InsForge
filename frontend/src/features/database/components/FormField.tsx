@@ -9,6 +9,7 @@ import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
+import { convertValueForColumn } from '@/lib/utils/utils';
 
 // Form adapters for edit cell components
 interface FormBooleanEditorProps {
@@ -126,11 +127,7 @@ function FormJsonEditor({ value, nullable, onChange }: FormJsonEditorProps) {
   const [showEditor, setShowEditor] = useState(false);
 
   const handleValueChange = (newValue: string) => {
-    if (newValue === 'null') {
-      onChange(null);
-    } else {
-      onChange(newValue);
-    }
+    onChange(newValue);
     setShowEditor(false);
   };
 
@@ -155,8 +152,7 @@ function FormJsonEditor({ value, nullable, onChange }: FormJsonEditorProps) {
     }
 
     try {
-      const parsed = JSON.parse(value);
-      const keys = Object.keys(parsed);
+      const keys = Object.keys(value);
       if (keys.length === 0) {
         return '{}';
       }
@@ -302,13 +298,23 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
             <Controller
               control={control}
               name={field.columnName}
-              render={({ field: formField }) => (
-                <FormJsonEditor
-                  value={formField.value}
-                  nullable={field.isNullable}
-                  onChange={formField.onChange}
-                />
-              )}
+              render={({ field: formField }) => {
+                return (
+                  <FormJsonEditor
+                    value={formField.value}
+                    nullable={field.isNullable}
+                    onChange={(newValue) => {
+                      const result = convertValueForColumn(ColumnType.JSON, newValue);
+                      if (result.success) {
+                        formField.onChange(result.value as JSON);
+                      } else {
+                        // If parsing fails, keep the string value
+                        formField.onChange(newValue);
+                      }
+                    }}
+                  />
+                );
+              }}
             />
           </>
         );

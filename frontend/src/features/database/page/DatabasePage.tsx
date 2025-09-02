@@ -24,7 +24,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
-import { convertValueForColumn } from '@/lib/utils/database-utils';
+import { convertValueForColumn } from '@/lib/utils/utils';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -338,7 +338,7 @@ export default function DatabasePage() {
   };
 
   // Handle record update
-  const handleRecordUpdate = async (rowId: string, columnKey: string, newValue: any) => {
+  const handleRecordUpdate = async (rowId: string, columnKey: string, newValue: string) => {
     if (!selectedTable) {
       return;
     }
@@ -347,21 +347,19 @@ export default function DatabasePage() {
       // Find column schema to determine the correct type conversion
       const columnSchema = tableData?.schema?.columns?.find((col) => col.columnName === columnKey);
 
-      // Convert value based on column type using utility function
-      let convertedValue: any = newValue;
       if (columnSchema) {
-        const conversionResult = convertValueForColumn(columnSchema, newValue);
+        // Convert value based on column type using utility function
+        const conversionResult = convertValueForColumn(columnSchema.type, newValue);
+
         if (!conversionResult.success) {
           showToast(conversionResult.error || 'Invalid value', 'error');
           return;
         }
-        convertedValue = conversionResult.value;
+        const updates = { [columnKey]: conversionResult.value };
+        await databaseService.updateRecord(selectedTable, rowId, updates);
+        await refetchTableData();
+        showToast('Record updated successfully', 'success');
       }
-
-      const updates = { [columnKey]: convertedValue };
-      await databaseService.updateRecord(selectedTable, rowId, updates);
-      await refetchTableData();
-      showToast('Record updated successfully', 'success');
     } catch (error) {
       showToast('Failed to update record', 'error');
       throw error;
