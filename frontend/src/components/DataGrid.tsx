@@ -323,11 +323,7 @@ export function DataGrid({
     const cols: Column<any>[] = [];
 
     // Add selection column if enabled and not hidden
-    if (
-      showSelection &&
-      selectedRows !== undefined &&
-      onSelectedRowsChange
-    ) {
+    if (showSelection && selectedRows !== undefined && onSelectedRowsChange) {
       cols.push({
         ...SelectColumn,
         key: SELECT_COLUMN_KEY,

@@ -90,21 +90,64 @@ export function LinkRecordModal({
     return new Set([selectedRecord.id]);
   }, [selectedRecord]);
 
-  // Handle cell click to select record
+  // Handle cell click to select record - only for reference column
   const handleCellClick = useCallback(
     (args: any) => {
+      // Only allow selection when clicking on the reference column
+      if (args.column.key !== referenceColumn) {
+        return; // Ignore clicks on other columns
+      }
+
       const record = records.find((r: DatabaseRecord) => r.id === args.row.id);
       if (record) {
         setSelectedRecord(record);
       }
     },
-    [records]
+    [records, referenceColumn]
   );
 
-  // Convert schema to columns for the DataGrid with proper widths
+  // Convert schema to columns for the DataGrid with visual distinction
   const columns = useMemo(() => {
-    return convertSchemaToColumns(schema);
-  }, [schema]);
+    const cols = convertSchemaToColumns(schema);
+    // Add visual indication for the reference column (clickable column)
+    return cols.map((col) => {
+      const baseCol = {
+        ...col,
+        width: 210,
+        minWidth: 210,
+        resizable: true,
+      };
+
+      if (col.key === referenceColumn) {
+        return {
+          ...baseCol,
+          renderCell: (props: any) => (
+            <div className="w-full h-full flex items-center cursor-pointer">
+              <span className="truncate font-medium" title={props.row[col.key]}>
+                {props.row[col.key] === null || props.row[col.key] === undefined
+                  ? 'null'
+                  : String(props.row[col.key])}
+              </span>
+            </div>
+          ),
+        };
+      }
+
+      return {
+        ...baseCol,
+        renderCell: (props: any) => (
+          <div className="w-full h-full flex items-center cursor-default relative">
+            <span className="truncate dark:text-zinc-300 opacity-70" title={props.row[col.key]}>
+              {props.row[col.key] === null || props.row[col.key] === undefined
+                ? 'null'
+                : String(props.row[col.key])}
+            </span>
+            <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
+          </div>
+        ),
+      };
+    });
+  }, [schema, referenceColumn]);
 
   const handleConfirmSelection = () => {
     if (selectedRecord) {
@@ -125,10 +168,11 @@ export function LinkRecordModal({
             Link Record
           </DialogTitle>
           <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1">
-            Select a record to reference from
-            <span className="font-mono bg-zinc-200 text-black dark:bg-neutral-700 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs">
-              {tableName}.{referenceColumn}
+            Click on the
+            <span className="font-mono bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded text-xs font-medium">
+              {referenceColumn}
             </span>
+            column to select a record from {tableName}
           </p>
         </DialogHeader>
 
@@ -144,6 +188,7 @@ export function LinkRecordModal({
         </div>
 
         {/* Records DataGrid */}
+
         <div className="flex-1 overflow-hidden">
           <DataGrid
             data={records}
