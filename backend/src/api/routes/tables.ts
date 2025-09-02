@@ -117,4 +117,4 @@ router.delete(
   }
 );
 
-export { router as tablesRouter };
+export { router as tableRouter };
