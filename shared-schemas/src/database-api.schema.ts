@@ -103,7 +103,7 @@ export const exportRequestSchema = z.object({
   includeFunctions: z.boolean().default(false),
   includeSequences: z.boolean().default(false),
   includeViews: z.boolean().default(false),
-  rowLimit: z.number().int().positive().max(10000).optional(),
+  rowLimit: z.number().int().positive().max(10000).default(1000),
 });
 
 export const exportJsonDataSchema = z.object({

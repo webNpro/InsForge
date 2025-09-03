@@ -26,6 +26,8 @@
     "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@aws-sdk/client-cloudwatch-logs": "^3.713.0",
     "@aws-sdk/client-s3": "^3.713.0",
+    "@databases/split-sql-query": "^1.0.4",
+    "@databases/sql": "^3.3.0",
     "@insforge/insforge-mcp": "^1.0.8",
     "@modelcontextprotocol/sdk": "^1.15.1",
     "@types/multer": "^1.4.13",

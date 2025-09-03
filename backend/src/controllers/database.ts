@@ -9,6 +9,7 @@ import {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
+import { parseSQLStatements } from '@/utils/sql-parser.js';
 
 export class DatabaseController {
   private dbManager = DatabaseManager.getInstance();
@@ -643,20 +644,20 @@ export class DatabaseController {
         }
       }
 
-      // Process SQL file
-      // Split SQL into individual statements, handling multi-line statements and comments
-      const statements = data
-        .split(';')
-        .map((s) => {
-          // Remove single-line comments and trim whitespace
-          return s
-            .split('\n')
-            .map((line) => line.replace(/--.*$/, '').trim())
-            .filter((line) => line.length > 0)
-            .join(' ')
-            .trim();
-        })
-        .filter((s) => s.length > 0);
+      // Process SQL file using our SQL parser utility
+      let statements: string[] = [];
+      
+      try {
+        statements = parseSQLStatements(data);
+        logger.info(`Parsed ${statements.length} SQL statements from import file`);
+      } catch (parseError) {
+        logger.error('Failed to parse SQL file:', parseError);
+        throw new AppError(
+          'Invalid SQL file format. Please ensure the file contains valid SQL statements.',
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
 
       for (const statement of statements) {
         // Basic validation to prevent dangerous operations
