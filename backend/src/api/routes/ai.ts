@@ -135,7 +135,7 @@ router.get('/image/models', verifyUser, (req: AuthRequest, res: Response, next: 
  * Generate images using specified model
  */
 router.post(
-  '/image/generate',
+  '/image/generation',
   verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

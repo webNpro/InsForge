@@ -97,9 +97,9 @@ paths:
         '500':
           description: Internal server error
 
-  /api/ai/image/generate:
+  /api/ai/image/generation:
     post:
-      summary: Generate images
+      summary: Image Generation
       description: Generate images using specified model and options
       security:
         - bearerAuth: []

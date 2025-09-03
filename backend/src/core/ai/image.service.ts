@@ -97,10 +97,6 @@ export class ImageService {
     switch (provider) {
       case 'openai':
         return !!process.env.OPENAI_API_KEY;
-      case 'xai':
-        return !!process.env.XAI_API_KEY;
-      case 'bedrock':
-        return !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
       case 'google':
         return !!process.env.GOOGLE_API_KEY;
       default:
@@ -114,6 +110,29 @@ export class ImageService {
   private static parseSize(sizeStr: string): { width: number; height: number } {
     const [width, height] = sizeStr.split('x').map(Number);
     return { width, height };
+  }
+
+  /**
+   * Generate images using the specified model
+   */
+  static async generate(options: ImageGenerationOptions): Promise<GeneratedImage[]> {
+    const config = ImageService.modelConfigs[options.model];
+    if (!config) {
+      throw new Error(`Unknown model: ${options.model}`);
+    }
+
+    if (!ImageService.isProviderConfigured(config.provider)) {
+      throw new Error(`${config.provider} provider not configured`);
+    }
+
+    switch (config.provider) {
+      case 'openai':
+        return ImageService.generateWithOpenAI(options);
+      case 'google':
+        return ImageService.generateWithGoogle(options);
+      default:
+        throw new Error(`Unsupported provider: ${config.provider}`);
+    }
   }
 
   /**
@@ -299,25 +318,6 @@ export class ImageService {
       throw new Error(
         `Failed to generate image with Google Imagen: ${error instanceof Error ? error.message : String(error)}`
       );
-    }
-  }
-
-  /**
-   * Generate images using the specified model
-   */
-  static async generate(options: ImageGenerationOptions): Promise<GeneratedImage[]> {
-    const config = ImageService.modelConfigs[options.model];
-    if (!config) {
-      throw new Error(`Unknown model: ${options.model}`);
-    }
-
-    switch (config.provider) {
-      case 'openai':
-        return ImageService.generateWithOpenAI(options);
-      case 'google':
-        return ImageService.generateWithGoogle(options);
-      default:
-        throw new Error(`Unsupported provider: ${config.provider}`);
     }
   }
 }

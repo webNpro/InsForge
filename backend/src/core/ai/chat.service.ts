@@ -137,11 +137,12 @@ export class ChatService {
     const temperature = options?.temperature ?? 0.7;
     const maxTokens = options?.maxTokens ?? 2048;
 
+    if (!ChatService.isProviderConfigured(config.provider)) {
+      throw new Error(`${config.provider} provider not configured`);
+    }
+
     switch (config.provider) {
       case 'openai':
-        if (!process.env.OPENAI_API_KEY) {
-          throw new Error('OpenAI API key not configured');
-        }
         return new ChatOpenAI({
           modelName: config.modelId,
           temperature,
@@ -150,9 +151,6 @@ export class ChatService {
         });
 
       case 'anthropic':
-        if (!process.env.ANTHROPIC_API_KEY) {
-          throw new Error('Anthropic API key not configured');
-        }
         return new ChatAnthropic({
           modelName: config.modelId,
           temperature,
@@ -161,9 +159,6 @@ export class ChatService {
         });
 
       case 'google':
-        if (!process.env.GOOGLE_API_KEY) {
-          throw new Error('Google API key not configured');
-        }
         return new ChatGoogleGenerativeAI({
           model: config.modelId,
           temperature,
@@ -172,24 +167,18 @@ export class ChatService {
         });
 
       case 'bedrock':
-        if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-          throw new Error('AWS credentials not configured');
-        }
         return new ChatBedrockConverse({
           region: process.env.AWS_REGION || 'us-east-1',
           model: config.modelId,
           temperature,
           maxTokens,
           credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
           },
         });
 
       case 'xai':
-        if (!process.env.XAI_API_KEY) {
-          throw new Error('xAI API key not configured');
-        }
         return new ChatXAI({
           model: config.modelId,
           temperature,
