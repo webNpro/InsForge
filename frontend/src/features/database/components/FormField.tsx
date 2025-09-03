@@ -249,14 +249,11 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
         name={field.columnName}
         render={({ field: formField }) => {
           const hasLinkedValue = formField.value && formField.value !== '';
-
-          // Clone children and add disabled state and padding for linked values
           const childElement = children as React.ReactElement<any>;
           const existingClassName = childElement.props.className || '';
           const paddingClass = hasLinkedValue ? 'pr-20' : 'pr-11';
           const modifiedChildren = React.cloneElement(childElement, {
             value: formField.value,
-            disabled: hasLinkedValue,
             className: `${existingClassName} ${paddingClass}`.trim(),
           });
 

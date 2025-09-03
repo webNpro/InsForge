@@ -8,6 +8,7 @@ import { convertSchemaToColumns } from '@/features/database/components/DatabaseD
 import { SortableHeaderRenderer } from '@/components/DataGrid';
 import { SearchInput, DataGrid } from '@/components';
 import { SortColumn } from 'react-data-grid';
+import { ColumnType } from '@insforge/shared-schemas';
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -121,18 +122,62 @@ export function LinkRecordModal({
         editable: false,
       };
 
+      // Helper function to render cell value properly based on type
+      const renderCellValue = (value: any, type: string | undefined) => {
+        if (value === null || value === undefined) {
+          return 'null';
+        }
+
+        if (type === ColumnType.JSON) {
+          // Use the same JSON rendering logic as DefaultCellRenderers.json
+          try {
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            if (parsed && typeof parsed === 'object') {
+              return JSON.stringify(parsed);
+            } else {
+              return String(parsed);
+            }
+          } catch {
+            return 'Invalid JSON';
+          }
+        }
+
+        if (type === ColumnType.BOOLEAN) {
+          return value === null ? 'null' : value ? 'true' : 'false';
+        }
+
+        if (type === ColumnType.DATETIME) {
+          if (!value) return 'null';
+          try {
+            const date = new Date(value);
+            return date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          } catch {
+            return 'Invalid date';
+          }
+        }
+
+        return String(value);
+      };
+
       if (col.key === referenceColumn) {
         return {
           ...baseCol,
-          renderCell: (props: any) => (
-            <div className="w-full h-full flex items-center cursor-pointer">
-              <span className="truncate font-medium" title={props.row[col.key]}>
-                {props.row[col.key] === null || props.row[col.key] === undefined
-                  ? 'null'
-                  : String(props.row[col.key])}
-              </span>
-            </div>
-          ),
+          renderCell: (props: any) => {
+            const displayValue = renderCellValue(props.row[col.key], col.type);
+            return (
+              <div className="w-full h-full flex items-center cursor-pointer">
+                <span className="truncate font-medium" title={displayValue}>
+                  {displayValue}
+                </span>
+              </div>
+            );
+          },
           renderHeaderCell: (props: any) => (
             <SortableHeaderRenderer
               column={col}
@@ -147,16 +192,17 @@ export function LinkRecordModal({
 
       return {
         ...baseCol,
-        renderCell: (props: any) => (
-          <div className="w-full h-full flex items-center cursor-not-allowed relative">
-            <span className="truncate dark:text-zinc-300 opacity-70" title={props.row[col.key]}>
-              {props.row[col.key] === null || props.row[col.key] === undefined
-                ? 'null'
-                : String(props.row[col.key])}
-            </span>
-            <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
-          </div>
-        ),
+        renderCell: (props: any) => {
+          const displayValue = renderCellValue(props.row[col.key], col.type);
+          return (
+            <div className="w-full h-full flex items-center cursor-not-allowed relative">
+              <span className="truncate dark:text-zinc-300 opacity-70" title={displayValue}>
+                {displayValue}
+              </span>
+              <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
+            </div>
+          );
+        },
         renderHeaderCell: (props: any) => (
           <SortableHeaderRenderer
             column={col}

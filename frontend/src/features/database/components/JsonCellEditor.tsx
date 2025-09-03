@@ -209,7 +209,11 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
             {formatDisplayValue()}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="overflow-hidden w-125 p-0 dark:bg-neutral-800 dark:border-neutral-700" align="start" side="bottom">
+        <PopoverContent
+          className="overflow-hidden w-125 p-0 dark:bg-neutral-800 dark:border-neutral-700"
+          align="start"
+          side="bottom"
+        >
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
