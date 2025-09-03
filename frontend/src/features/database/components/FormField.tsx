@@ -121,7 +121,7 @@ function FormDateEditor({
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-9 dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={`w-full justify-start h-9 ${!value || value === 'null' ? 'text-muted-foreground dark:text-neutral-400' : 'text-black dark:text-white'}  dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
     >
       <Calendar className="mr-2 h-4 w-4" />
       {formatDisplayValue()}
@@ -183,7 +183,7 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-9 dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={`w-full justify-start h-9 ${!value || value === 'null' ? 'text-muted-foreground dark:text-neutral-400' : 'text-black dark:text-white'}  dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
     >
       {formatDisplayValue()}
     </Button>

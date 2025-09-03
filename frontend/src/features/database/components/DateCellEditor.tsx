@@ -327,7 +327,7 @@ export function DateCellEditor({
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 dark:bg-neutral-800" align="start" side="bottom">
+      <PopoverContent className="overflow-hidden w-auto p-0 dark:bg-neutral-800 dark:border-neutral-700" align="start" side="bottom">
         <div className={cn('flex', type === 'datetime' && '')}>
           <div className="p-3">
             {/* Header */}
