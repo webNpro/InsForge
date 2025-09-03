@@ -159,7 +159,7 @@ export const exportJsonDataSchema = z.object({
           oldTable: z.string().nullable(),
         })
       ),
-      rows: z.array(z.any()),
+      rows: z.array(z.any()).optional(),
     })
   ),
   functions: z.array(
