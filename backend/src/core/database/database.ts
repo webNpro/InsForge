@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import logger from '@/utils/logger.js';
+import { MigrationRunner } from './migrations/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,131 +48,9 @@ export class DatabaseManager {
     const client = await this.pool.connect();
     await client.query('BEGIN');
 
-    // placeholder for future migrations
-    await client.query(`
-      -- Create function
-      create or replace function public.uid()
-      returns uuid
-      language sql stable
-      as $$
-        select
-        nullif(
-          coalesce(
-            current_setting('request.jwt.claim.sub', true),
-            (current_setting('request.jwt.claims', true)::jsonb ->> 'sub')
-          ),
-          ''
-        )::uuid
-      $$;
-
-      create or replace function public.role()
-      returns text
-      language sql stable
-      as $$
-        select
-        coalesce(
-          current_setting('request.jwt.claim.role', true),
-          (current_setting('request.jwt.claims', true)::jsonb ->> 'role')
-        )::text
-      $$;
-
-      create or replace function public.email()
-      returns text
-      language sql stable
-      as $$
-        select
-        coalesce(
-          current_setting('request.jwt.claim.email', true),
-          (current_setting('request.jwt.claims', true)::jsonb ->> 'email')
-        )::text
-      $$;
-    `);
-
-    // rename _account to _oauth_connections
-    await client.query(`
-      DO $$
-      BEGIN
-          IF EXISTS (SELECT FROM information_schema.tables 
-                    WHERE table_name = '_account' AND table_schema = 'public') THEN
-              IF NOT EXISTS (SELECT FROM information_schema.tables 
-                             WHERE table_name = '_oauth_connections' AND table_schema = 'public') THEN
-                    ALTER TABLE _account RENAME TO _oauth_connections;
-              END IF;
-          END IF;
-      END $$;
-    `);
-
-    // rename _user to _accounts
-    await client.query(`
-      DO $$
-      BEGIN
-          IF EXISTS (SELECT FROM information_schema.tables 
-                    WHERE table_name = '_user' AND table_schema = 'public') THEN
-              IF NOT EXISTS (SELECT FROM information_schema.tables 
-                             WHERE table_name = '_accounts' AND table_schema = 'public') THEN
-                    ALTER TABLE _user RENAME TO _accounts;
-              END IF;
-          END IF;
-      END $$;
-    `);
-
-    // create users table.
-    await client.query(`
-      DO $$
-      BEGIN
-          CREATE TABLE IF NOT EXISTS users (
-            id UUID PRIMARY KEY REFERENCES _accounts(id) ON DELETE CASCADE,
-            nickname TEXT,
-            avatar_url TEXT,
-            bio TEXT,
-            birthday DATE,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            updated_at TIMESTAMPTZ DEFAULT NOW()
-          );
-          
-          -- Check and create policies only if they don't exist
-          -- Allow everyone to read users table
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_policies 
-            WHERE tablename = 'users' 
-            AND policyname = 'Enable read access for all users'
-          ) THEN
-            CREATE POLICY "Enable read access for all users" ON users
-              FOR SELECT
-              USING (true);  -- Allow all reads
-          END IF;
-          
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_policies 
-            WHERE tablename = 'users' 
-            AND policyname = 'Disable delete for users'
-          ) THEN
-            CREATE POLICY "Disable delete for users" ON users
-              FOR DELETE
-              TO authenticated
-              USING (false);
-          END IF;
-
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_policies 
-            WHERE tablename = 'users' 
-            AND policyname = 'Enable update for users based on user_id'
-          ) THEN
-            CREATE POLICY "Enable update for users based on user_id" ON users
-              FOR UPDATE
-              TO authenticated
-              USING (uid() = id)
-              WITH CHECK (uid() = id);  -- make sure only the owner can update
-          END IF;
-          
-          -- Enable Row Level Security on the users table
-          ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-          
-          -- Grant permissions to anon and authenticated roles
-          GRANT SELECT ON users TO anon;
-          GRANT SELECT, UPDATE ON users TO authenticated;
-      END $$;
-    `);
+    // Run all migrations from separate files
+    const migrationRunner = new MigrationRunner(client);
+    await migrationRunner.runAll();
 
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
