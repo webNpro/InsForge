@@ -156,7 +156,7 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
   return (
     <div className="w-full h-full">
       <JsonCellEditor
-        value={row[column.key]}
+        value={row[column.columnName]}
         nullable={column.isNullable}
         onValueChange={handleValueChange}
         onCancel={onClose}

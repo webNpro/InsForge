@@ -26,6 +26,25 @@ interface ForeignKeyCellProps {
 export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyCellProps) {
   const [open, setOpen] = useState(false);
 
+  // Helper function to safely render any value type (including JSON objects)
+  const renderValue = (val: any): string => {
+    if (val === null || val === undefined) {
+      return 'null';
+    }
+
+    // If it's an object (likely JSON), stringify it
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val);
+      } catch {
+        return '[Invalid Object]';
+      }
+    }
+
+    // For all other types, convert to string
+    return String(val);
+  };
+
   // Fetch the referenced record when popover opens
   const {
     data: recordData,
@@ -39,8 +58,8 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
       }
 
       try {
-        // Use getRecords with PostgREST query format to filter by the foreign key column
-        const queryParams = `${foreignKey.column}=eq.${value}&limit=1`;
+        const searchValue = renderValue(value);
+        const queryParams = `${foreignKey.column}=eq.${encodeURIComponent(searchValue)}&limit=1`;
         const response = await databaseService.getRecords(foreignKey.table, queryParams);
 
         // Return the first record if found, or null if not found
@@ -88,11 +107,12 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
   if (!value) {
     return <span className="text-muted-foreground">null</span>;
   }
+  const displayValue = renderValue(value);
 
   return (
     <div className="w-full flex items-center justify-between gap-1">
-      <span className="text-sm truncate" title={value}>
-        {value}
+      <span className="text-sm truncate" title={displayValue}>
+        {displayValue}
       </span>
 
       <Popover open={open} onOpenChange={setOpen}>

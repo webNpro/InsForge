@@ -136,6 +136,47 @@ interface FormJsonEditorProps {
   hasForeignKey?: boolean;
 }
 
+interface FormNumberEditorProps {
+  value: number | null;
+  type: 'integer' | 'float';
+  nullable: boolean;
+  onChange: (value: number | null) => void;
+  hasForeignKey?: boolean;
+  tableName: string;
+  fieldName: string;
+}
+
+function FormNumberEditor({
+  value,
+  type,
+  nullable,
+  onChange,
+  hasForeignKey,
+  tableName,
+  fieldName,
+}: FormNumberEditorProps) {
+  return (
+    <Input
+      id={`${tableName}-${fieldName}`}
+      type="number"
+      step={type === 'float' ? '0.01' : '1'}
+      value={value ?? ''}
+      onChange={(e) => {
+        const inputValue = e.target.value;
+        if (inputValue === '') {
+          // Handle empty value based on nullability
+          onChange(nullable ? null : 0);
+        } else {
+          const numValue = type === 'integer' ? parseInt(inputValue, 10) : parseFloat(inputValue);
+          onChange(isNaN(numValue) ? (nullable ? null : 0) : numValue);
+        }
+      }}
+      placeholder={nullable ? 'Optional' : 'Required'}
+      className={`dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-16' : ''}`}
+    />
+  );
+}
+
 function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEditorProps) {
   const [showEditor, setShowEditor] = useState(false);
 
@@ -165,7 +206,14 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
     }
 
     try {
-      const keys = Object.keys(value);
+      // Ensure we're working with an object, not a string
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+
+      if (!parsed || typeof parsed !== 'object') {
+        return String(parsed);
+      }
+
+      const keys = Object.keys(parsed);
       if (keys.length === 0) {
         return '{}';
       }
@@ -251,7 +299,7 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
           const hasLinkedValue = formField.value && formField.value !== '';
           const childElement = children as React.ReactElement<any>;
           const existingClassName = childElement.props.className || '';
-          const paddingClass = hasLinkedValue ? 'pr-20' : 'pr-11';
+          const paddingClass = hasLinkedValue ? 'pr-16' : 'pr-11';
           const modifiedChildren = React.cloneElement(childElement, {
             value: formField.value,
             className: `${existingClassName} ${paddingClass}`.trim(),
@@ -371,28 +419,14 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   control={control}
                   name={field.columnName}
                   render={({ field: formField }) => (
-                    <Input
-                      id={`${tableName}-${field.columnName}`}
-                      type="number"
-                      step={field.type === ColumnType.FLOAT ? '0.01' : '1'}
-                      value={formField.value ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          // Handle empty value based on nullability
-                          formField.onChange(field.isNullable ? null : 0);
-                        } else {
-                          const numValue =
-                            field.type === ColumnType.INTEGER
-                              ? parseInt(value, 10)
-                              : parseFloat(value);
-                          formField.onChange(
-                            isNaN(numValue) ? (field.isNullable ? null : 0) : numValue
-                          );
-                        }
-                      }}
-                      placeholder={field.isNullable ? 'Optional' : 'Required'}
-                      className="dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
+                    <FormNumberEditor
+                      value={formField.value}
+                      type={field.type === ColumnType.INTEGER ? 'integer' : 'float'}
+                      nullable={field.isNullable}
+                      onChange={formField.onChange}
+                      hasForeignKey={!!field.foreignKey}
+                      tableName={tableName}
+                      fieldName={field.columnName}
                     />
                   )}
                 />
@@ -441,7 +475,11 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   render={({ field: formField }) => {
                     return (
                       <FormJsonEditor
-                        value={formField.value}
+                        value={
+                          typeof formField.value === 'object'
+                            ? JSON.stringify(formField.value)
+                            : formField.value
+                        }
                         nullable={field.isNullable}
                         onChange={(newValue) => {
                           const result = convertValueForColumn(ColumnType.JSON, newValue);
@@ -473,7 +511,13 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder="Auto-generated if empty"
+                  placeholder={
+                    field.foreignKey
+                      ? field.isNullable
+                        ? 'Optional'
+                        : 'Required'
+                      : 'Auto-generated if empty'
+                  }
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
