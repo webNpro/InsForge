@@ -89,20 +89,28 @@ export class ChatService {
   };
 
   /**
-   * Get available models
+   * Get available models grouped by provider
    */
   static getAvailableModels() {
-    const models = [];
+    const providerMap = new Map<string, { configured: boolean; models: string[] }>();
+
     for (const [key, config] of Object.entries(this.modelConfigs)) {
-      models.push({
-        id: key,
-        provider: config.provider,
-        modelId: config.modelId,
-        displayName: config.displayName,
-        available: this.isProviderConfigured(config.provider),
-      });
+      const existing = providerMap.get(config.provider);
+      if (!existing) {
+        providerMap.set(config.provider, {
+          configured: this.isProviderConfigured(config.provider),
+          models: [key],
+        });
+      } else {
+        existing.models.push(key);
+      }
     }
-    return models;
+
+    return Array.from(providerMap.entries()).map(([provider, data]) => ({
+      provider,
+      configured: data.configured,
+      models: data.models,
+    }));
   }
 
   /**

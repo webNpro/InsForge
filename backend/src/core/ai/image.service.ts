@@ -72,22 +72,28 @@ export class ImageService {
   };
 
   /**
-   * Get available image generation models
+   * Get available image generation models grouped by provider
    */
   static getAvailableModels() {
-    const models = [];
+    const providerMap = new Map<string, { configured: boolean; models: string[] }>();
+
     for (const [key, config] of Object.entries(this.modelConfigs)) {
-      models.push({
-        id: key,
-        provider: config.provider,
-        modelId: config.modelId,
-        displayName: config.displayName,
-        supportedSizes: config.supportedSizes,
-        defaultSize: config.defaultSize,
-        available: this.isProviderConfigured(config.provider),
-      });
+      const existing = providerMap.get(config.provider);
+      if (!existing) {
+        providerMap.set(config.provider, {
+          configured: this.isProviderConfigured(config.provider),
+          models: [key],
+        });
+      } else {
+        existing.models.push(key);
+      }
     }
-    return models;
+
+    return Array.from(providerMap.entries()).map(([provider, data]) => ({
+      provider,
+      configured: data.configured,
+      models: data.models,
+    }));
   }
 
   /**

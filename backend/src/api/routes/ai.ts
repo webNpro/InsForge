@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat.service';
-import { AuthRequest, verifyUser } from '../middleware/auth';
+import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
 import type { ChatRequest, ImageGenerationOptions } from '@/types/ai';
 import { ImageService } from '@/core/ai/image.service';
 import { AppError } from '@/api/middleware/error';
@@ -11,15 +11,17 @@ const router = Router();
 const chatService = new ChatService();
 
 /**
- * GET /api/ai/chat/models
- * Get available chat models
+ * GET /api/ai/models
+ * Get all available AI models in ListModelsResponse format
  */
-router.get('/chat/models', verifyUser, (req: AuthRequest, res: Response) => {
+router.get('/models', verifyAdmin, (req: AuthRequest, res: Response) => {
   try {
-    const models = ChatService.getAvailableModels();
+    const textModels = ChatService.getAvailableModels();
+    const imageModels = ImageService.getAvailableModels();
+
     res.json({
-      success: true,
-      models,
+      text: textModels,
+      image: imageModels,
     });
   } catch (error) {
     console.error('Error getting models:', error);
@@ -111,22 +113,6 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
       error: 'Failed to get response',
       details: error instanceof Error ? error.message : String(error),
     });
-  }
-});
-
-/**
- * GET /api/ai/image/models
- * Get available image generation models
- */
-router.get('/image/models', verifyUser, (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const models = ImageService.getAvailableModels();
-    successResponse(res, {
-      models,
-      totalCount: models.length,
-    });
-  } catch (error) {
-    next(error);
   }
 });
 

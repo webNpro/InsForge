@@ -5,3 +5,4 @@ export * from './storage-api.schema';
 export * from './auth.schema';
 export * from './auth-api.schema';
 export * from './metadata.schema';
+export * from './ai-api.schema';
