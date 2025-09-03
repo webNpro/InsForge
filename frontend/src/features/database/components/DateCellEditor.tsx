@@ -319,16 +319,15 @@ export function DateCellEditor({
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start text-left font-normal h-full border-0 p-0 hover:bg-transparent',
+            'w-full justify-start text-left text-sm font-normal h-full border-0 p-0 hover:bg-transparent dark:text-white',
             (!value || value === 'null') && 'text-muted-foreground'
           )}
-          style={{ fontSize: '14px' }}
         >
           <Calendar className="mr-2 h-4 w-4" />
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 dark:bg-neutral-800" align="start" side="bottom">
+      <PopoverContent className="overflow-hidden w-auto p-0 dark:bg-neutral-800 dark:border-neutral-700" align="start" side="bottom">
         <div className={cn('flex', type === 'datetime' && '')}>
           <div className="p-3">
             {/* Header */}

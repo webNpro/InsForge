@@ -7,6 +7,8 @@ import {
   type ExportDatabaseJsonData,
   type ImportDatabaseResponse,
 } from '@insforge/shared-schemas';
+import logger from '@/utils/logger.js';
+import { ERROR_CODES } from '@/types/error-constants';
 
 export class DatabaseController {
   private dbManager = DatabaseManager.getInstance();
@@ -584,9 +586,9 @@ export class DatabaseController {
         for (const row of tablesResult.rows) {
           try {
             await client.query(`TRUNCATE TABLE ${row.tablename} CASCADE`);
-            console.warn(`Truncated table: ${row.tablename}`);
+            logger.warn(`Truncated table: ${row.tablename}`);
           } catch (err) {
-            console.warn(`Could not truncate table ${row.tablename}:`, err);
+            logger.warn(`Could not truncate table ${row.tablename}:`, err);
           }
         }
       }
@@ -641,11 +643,11 @@ export class DatabaseController {
             }
           }
         } catch (err: unknown) {
-          console.error(`Failed to execute statement: ${statement.substring(0, 100)}...`, err);
+          logger.warn(`Failed to execute statement: ${statement.substring(0, 100)}...`, err);
           throw new AppError(
             `Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
             400,
-            'INVALID_INPUT'
+            ERROR_CODES.INVALID_INPUT
           );
         }
       }

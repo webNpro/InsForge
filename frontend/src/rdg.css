@@ -19,13 +19,6 @@
   }
 }
 
-/* Custom react-data-grid styling to match our design */
-.rdg-header-row {
-  font-weight: 600;
-  font-size: 13px;
-  height: 60px; /* Increased height to accommodate column types */
-}
-
 .rdg-cell {
   border-right: 1px solid var(--rdg-border-color);
   padding: 0 14px;

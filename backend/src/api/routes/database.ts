@@ -9,6 +9,7 @@ import {
   exportRequestSchema,
   importRequestSchema,
 } from '@insforge/shared-schemas';
+import logger from '@/utils/logger';
 
 const router = Router();
 const databaseController = new DatabaseController();
@@ -33,7 +34,7 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
     const response = await databaseController.executeRawSQL(query, params);
     res.json(response);
   } catch (error: unknown) {
-    console.error('Raw SQL execution error:', error);
+    logger.warn('Raw SQL execution error:', error);
 
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
@@ -67,7 +68,8 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
       );
     }
 
-    const { tables, format, includeData, includeFunctions, includeSequences, includeViews } = validation.data;
+    const { tables, format, includeData, includeFunctions, includeSequences, includeViews } =
+      validation.data;
     const response = await databaseController.exportDatabase(
       tables,
       format,
@@ -78,7 +80,7 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
     );
     res.json(response);
   } catch (error: unknown) {
-    console.error('Database export error:', error);
+    logger.warn('Database export error:', error);
     res.status(500).json({
       error: 'EXPORT_ERROR',
       message: error instanceof Error ? error.message : 'Failed to export database',
@@ -123,7 +125,7 @@ router.post(
       );
       res.json(response);
     } catch (error: unknown) {
-      console.error('Database import error:', error);
+      logger.warn('Database import error:', error);
 
       if (error instanceof AppError) {
         res.status(error.statusCode).json({

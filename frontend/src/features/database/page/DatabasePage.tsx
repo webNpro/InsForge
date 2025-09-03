@@ -33,6 +33,8 @@ import {
   useSocket,
 } from '@/lib/contexts/SocketContext';
 
+const PAGE_SIZE = 50;
+
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
   const [selectedTable, setSelectedTable] = useState<string | null>(() => {
@@ -47,7 +49,6 @@ export default function DatabasePage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
   const [isSorting, setIsSorting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -123,7 +124,7 @@ export default function DatabasePage() {
       'table',
       selectedTable,
       currentPage,
-      pageSize,
+      PAGE_SIZE,
       searchQuery,
       JSON.stringify(sortColumns),
     ],
@@ -132,14 +133,14 @@ export default function DatabasePage() {
         return null;
       }
 
-      const offset = (currentPage - 1) * pageSize;
+      const offset = (currentPage - 1) * PAGE_SIZE;
 
       try {
         const [schema, records] = await Promise.all([
           databaseService.getTableSchema(selectedTable),
           databaseService.getTableRecords(
             selectedTable,
-            pageSize,
+            PAGE_SIZE,
             offset,
             searchQuery,
             sortColumns
@@ -159,7 +160,7 @@ export default function DatabasePage() {
 
           const [schema, records] = await Promise.all([
             databaseService.getTableSchema(selectedTable),
-            databaseService.getTableRecords(selectedTable, pageSize, offset, searchQuery, []),
+            databaseService.getTableRecords(selectedTable, PAGE_SIZE, offset, searchQuery, []),
           ]);
 
           showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
@@ -454,7 +455,7 @@ export default function DatabasePage() {
   });
 
   // Calculate pagination
-  const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
+  const totalPages = Math.ceil((tableData?.totalRecords || 0) / PAGE_SIZE);
 
   return (
     <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
@@ -626,7 +627,7 @@ export default function DatabasePage() {
                   searchQuery={searchQuery}
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  pageSize={pageSize}
+                  pageSize={PAGE_SIZE}
                   totalRecords={tableData?.totalRecords || 0}
                   onPageChange={setCurrentPage}
                   onDeleteRecord={(id) => void handleRecordDelete(id)}

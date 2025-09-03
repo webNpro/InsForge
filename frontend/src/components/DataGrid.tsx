@@ -8,13 +8,10 @@ import ReactDataGrid, {
 } from 'react-data-grid';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
-import ArrowUpIcon from '@/assets/icons/arrow_up.svg?react';
-import ArrowDownIcon from '@/assets/icons/arrow_down.svg?react';
 import { Checkbox } from './Checkbox';
-import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 
 // Types
@@ -200,13 +197,13 @@ function IdCell({ value }: { value: any }) {
 
   return (
     <div className="w-full h-full flex items-center justify-between group">
-      <span className="font-mono text-sm truncate dark:text-zinc-300" title={String(value)}>
+      <span className="text-sm truncate" title={String(value)}>
         {value}
       </span>
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 dark:bg-neutral-800 dark:text-zinc-300"
+        className="h-7 w-7 p-1 bg-white dark:bg-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => {
           handleCopy(e).catch(() => {
             // Handle copy error silently
@@ -214,9 +211,9 @@ function IdCell({ value }: { value: any }) {
         }}
       >
         {copied ? (
-          <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+          <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
         ) : (
-          <Copy className="h-3 w-3 text-gray-400 dark:text-zinc-300" />
+          <Copy className="h-5 w-5 text-black dark:text-white" />
         )}
       </Button>
     </div>
@@ -229,18 +226,23 @@ export function SortableHeaderRenderer({
   sortDirection,
   columnType,
   showTypeBadge,
+  mutedHeader,
 }: {
   column: any;
   sortDirection?: 'ASC' | 'DESC';
   columnType?: string;
   showTypeBadge?: boolean;
+  mutedHeader?: boolean;
 }) {
   // Determine which arrow to show on hover based on current sort state
   const getNextSortDirection = () => {
     if (!sortDirection) {
       return 'DESC'; // Default to DESC for first sort
+    } else if (sortDirection === 'ASC') {
+      return null;
+    } else {
+      return 'ASC';
     }
-    return sortDirection === 'DESC' ? 'ASC' : 'DESC'; // Toggle direction
   };
 
   const nextDirection = getNextSortDirection();
@@ -249,13 +251,17 @@ export function SortableHeaderRenderer({
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
         <span
-          className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300 max-w-[120px]"
+          className={`truncate text-sm font-medium ${mutedHeader ? 'text-zinc-500 dark:text-neutral-400' : 'text-zinc-950 dark:text-zinc-300'} max-w-[120px]`}
           title={column.name}
         >
           {column.name}
         </span>
 
-        {columnType && showTypeBadge && <TypeBadge type={columnType} />}
+        {columnType && showTypeBadge && (
+          <Badge variant="database" size="sm">
+            {columnType}
+          </Badge>
+        )}
 
         {/* Show sort arrow with hover effect */}
         {column.sortable && (
@@ -263,20 +269,22 @@ export function SortableHeaderRenderer({
             {sortDirection && (
               <div className="bg-transparent p-0.5 rounded">
                 {sortDirection === 'DESC' ? (
-                  <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                  <ArrowDownWideNarrow className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
                 ) : (
-                  <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                  <ArrowUpNarrowWide className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
                 )}
               </div>
             )}
 
-            <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 dark:bg-neutral-800 p-0.5 rounded w-5 h-5">
-              {nextDirection === 'DESC' ? (
-                <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
-              ) : (
-                <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
-              )}
-            </div>
+            {nextDirection && (
+              <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 border border-slate-200 dark:bg-neutral-800 dark:border-neutral-800 p-0.5 rounded w-5 h-5">
+                {nextDirection === 'DESC' ? (
+                  <ArrowDownWideNarrow className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+                ) : (
+                  <ArrowUpNarrowWide className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -452,8 +460,8 @@ export function DataGrid({
           onSortColumnsChange={onSortColumnsChange}
           onCellClick={onCellClick}
           className={`h-full fill-grid ${resolvedTheme === 'dark' ? 'rdg-dark' : 'rdg-light'}`}
-          headerRowHeight={52}
-          rowHeight={52}
+          headerRowHeight={36}
+          rowHeight={36}
           enableVirtualization={true}
           renderers={{
             noRowsFallback: (

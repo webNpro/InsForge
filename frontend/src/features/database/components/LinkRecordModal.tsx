@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
+import { Badge } from '@/components/radix/Badge';
 import { databaseService } from '@/features/database/services/database.service';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
+import { SortableHeaderRenderer } from '@/components/DataGrid';
 import { SearchInput, DataGrid } from '@/components';
 import { SortColumn } from 'react-data-grid';
 
@@ -13,7 +15,7 @@ type DatabaseRecord = Record<string, any>;
 interface LinkRecordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tableName: string;
+  referenceTable: string;
   referenceColumn: string;
   onSelectRecord: (record: DatabaseRecord) => void;
   currentValue?: string | null;
@@ -22,7 +24,7 @@ interface LinkRecordModalProps {
 export function LinkRecordModal({
   open,
   onOpenChange,
-  tableName,
+  referenceTable,
   referenceColumn,
   onSelectRecord,
 }: LinkRecordModalProps) {
@@ -34,8 +36,8 @@ export function LinkRecordModal({
 
   // Fetch table schema
   const { data: schema } = useQuery({
-    queryKey: ['table-schema', tableName],
-    queryFn: () => databaseService.getTableSchema(tableName),
+    queryKey: ['table-schema', referenceTable],
+    queryFn: () => databaseService.getTableSchema(referenceTable),
     enabled: open,
   });
 
@@ -43,7 +45,7 @@ export function LinkRecordModal({
   const { data: recordsData, isLoading } = useQuery({
     queryKey: [
       'records',
-      tableName,
+      referenceTable,
       currentPage,
       pageSize,
       searchQuery,
@@ -52,7 +54,7 @@ export function LinkRecordModal({
     queryFn: async () => {
       const offset = (currentPage - 1) * pageSize;
       const response = await databaseService.getTableRecords(
-        tableName,
+        referenceTable,
         pageSize,
         offset,
         searchQuery || undefined,
@@ -131,13 +133,22 @@ export function LinkRecordModal({
               </span>
             </div>
           ),
+          renderHeaderCell: (props: any) => (
+            <SortableHeaderRenderer
+              column={col}
+              sortDirection={props.sortDirection}
+              columnType={col.type}
+              showTypeBadge={true}
+              mutedHeader={false}
+            />
+          ),
         };
       }
 
       return {
         ...baseCol,
         renderCell: (props: any) => (
-          <div className="w-full h-full flex items-center cursor-default relative">
+          <div className="w-full h-full flex items-center cursor-not-allowed relative">
             <span className="truncate dark:text-zinc-300 opacity-70" title={props.row[col.key]}>
               {props.row[col.key] === null || props.row[col.key] === undefined
                 ? 'null'
@@ -145,6 +156,15 @@ export function LinkRecordModal({
             </span>
             <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
           </div>
+        ),
+        renderHeaderCell: (props: any) => (
+          <SortableHeaderRenderer
+            column={col}
+            sortDirection={props.sortDirection}
+            columnType={col.type}
+            showTypeBadge={true}
+            mutedHeader={true}
+          />
         ),
       };
     });
@@ -168,12 +188,11 @@ export function LinkRecordModal({
           <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
             Link Record
           </DialogTitle>
-          <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1">
-            Click on the
-            <span className="font-mono bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded text-xs font-medium">
-              {referenceColumn}
-            </span>
-            column to select a record from {tableName}
+          <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1.5">
+            Select a record to reference from
+            <Badge variant="database" size="sm" className="dark:bg-neutral-700">
+              {referenceTable}.{referenceColumn}
+            </Badge>
           </p>
         </DialogHeader>
 

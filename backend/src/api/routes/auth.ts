@@ -348,6 +348,9 @@ router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: N
 router.get('/oauth/google', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirect_uri } = req.query;
+    if (!redirect_uri) {
+      throw new AppError('Redirect URI is required', 400, ERROR_CODES.INVALID_INPUT);
+    }
 
     const jwtPayload = {
       provider: 'google',
@@ -376,6 +379,10 @@ router.get('/oauth/google', async (req: Request, res: Response, next: NextFuncti
 router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { redirect_uri } = req.query;
+    if (!redirect_uri) {
+      throw new AppError('Redirect URI is required', 400, ERROR_CODES.INVALID_INPUT);
+    }
+
     const jwtPayload = {
       provider: 'github',
       redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
