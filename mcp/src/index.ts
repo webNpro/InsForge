@@ -322,6 +322,7 @@ server.tool(
   }
 );
 
+/*
 // Download project-specific rules (CLAUDE.md and cursor rules)
 server.tool(
   'download-project-rules',
@@ -381,6 +382,7 @@ server.tool(
     }
   })
 );
+*/
 
 // --------------------------------------------------
 // Core Database Tools
