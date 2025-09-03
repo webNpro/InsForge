@@ -57,14 +57,6 @@
   justify-content: center;
 }
 
-.rdg-header-row .rdg-cell:first-child {
-  padding: 0;
-  width: 45px !important;
-  min-width: 45px !important;
-  max-width: 45px !important;
-  justify-content: center;
-}
-
 .rdg-row:hover,
 .rdg-row[aria-selected='true'],
 .rdg-row[aria-selected='true']:hover,

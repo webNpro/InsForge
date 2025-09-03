@@ -47,6 +47,7 @@ export interface DataGridProps {
   sortColumns?: SortColumn[];
   onSortColumnsChange?: (sortColumns: SortColumn[]) => void;
   onCellEdit?: (rowId: string, columnKey: string, newValue: any) => Promise<void>;
+  onCellClick?: (args: any, event: any) => void;
   searchQuery?: string;
   currentPage?: number;
   totalPages?: number;
@@ -295,6 +296,7 @@ export function DataGrid({
   sortColumns,
   onSortColumnsChange,
   // onCellEdit,
+  onCellClick,
   searchQuery: _searchQuery,
   currentPage,
   totalPages,
@@ -320,7 +322,7 @@ export function DataGrid({
   const gridColumns = useMemo(() => {
     const cols: Column<any>[] = [];
 
-    // Add selection column if enabled (not fixed anymore)
+    // Add selection column if enabled and not hidden
     if (showSelection && selectedRows !== undefined && onSelectedRowsChange) {
       cols.push({
         ...SelectColumn,
@@ -448,6 +450,7 @@ export function DataGrid({
           onSelectedRowsChange={onSelectedRowsChange}
           sortColumns={sortColumns || []}
           onSortColumnsChange={onSortColumnsChange}
+          onCellClick={onCellClick}
           className={`h-full fill-grid ${resolvedTheme === 'dark' ? 'rdg-dark' : 'rdg-light'}`}
           headerRowHeight={52}
           rowHeight={52}

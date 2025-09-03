@@ -9,8 +9,8 @@ export function TypeBadge({ type, className }: TypeBadgeProps) {
   return (
     <div
       className={cn(
-        'inline-flex items-center justify-center px-1.5 py-0.5 rounded-md',
-        'bg-white border border-zinc-200 dark:bg-neutral-800 dark:border-neutral-800',
+        'inline-flex items-center justify-center px-1.5 py-0.5 rounded',
+        'bg-white border border-zinc-200 dark:bg-neutral-900 dark:border-neutral-700',
         className
       )}
     >
