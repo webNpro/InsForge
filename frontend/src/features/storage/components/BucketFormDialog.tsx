@@ -107,27 +107,27 @@ export function BucketFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[640px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-base font-semibold text-zinc-950 dark:text-zinc-300">
+      <DialogContent className="w-[480px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <DialogHeader className="px-6 py-3 flex flex-col gap-1 justify-start border-b border-zinc-200 dark:border-neutral-700">
+            <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
               {mode === 'create' ? 'Create New Bucket' : 'Edit Bucket'}
             </DialogTitle>
             {mode === 'create' && (
-              <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-300">
+              <DialogDescription className="text-sm text-zinc-500">
                 Create a new storage bucket to organize your files.
               </DialogDescription>
             )}
           </DialogHeader>
-          <div className="flex flex-col gap-6 px-6">
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-3">
-                <Label
-                  htmlFor="bucket-name"
-                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
-                >
-                  Bucket Name
-                </Label>
+          <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-row justify-between gap-10">
+              <Label
+                htmlFor="bucket-name"
+                className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+              >
+                Bucket Name
+              </Label>
+              <div className="w-70 flex flex-col gap-1">
                 <Input
                   id="bucket-name"
                   value={bucketName}
@@ -139,22 +139,22 @@ export function BucketFormDialog({
                   }}
                   placeholder={mode === 'create' ? 'Enter a name' : ''}
                   disabled={mode === 'edit'}
-                  className={`h-10 px-3 py-2 text-base ${mode === 'edit' ? 'bg-gray-100 dark:bg-neutral-700 cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
+                  className={`w-full h-9 px-3 py-2 text-base bg-transparent dark:bg-neutral-900 ${mode === 'edit' ? 'cursor-not-allowed' : ''} dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700`}
                   autoFocus={mode === 'create'}
                 />
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-500">{error}</p>}
+                <p className="text-xs font-medium text-zinc-500 dark:text-neutral-400">
+                  {mode === 'create'
+                    ? 'Use lowercase letters, numbers, hyphens, and underscores only.'
+                    : 'Bucket name cannot be changed.'}
+                </p>
               </div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-300">
-                {mode === 'create'
-                  ? 'Use lowercase letters, numbers, hyphens, and underscores only.'
-                  : 'Bucket name cannot be changed.'}
-              </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-row justify-between gap-10">
+              <div className="flex items-center gap-2">
                 <Label
                   htmlFor="bucket-public"
-                  className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+                  className="text-sm font-medium text-zinc-950 dark:text-white"
                 >
                   Public
                 </Label>
@@ -165,24 +165,24 @@ export function BucketFormDialog({
                   className="h-6"
                 />
               </div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-300">
+              <p className="w-70 text-xs font-medium text-zinc-500 dark:text-neutral-400">
                 If enabled, files in this bucket can be accessed without authentication.
               </p>
             </div>
           </div>
-          <DialogFooter className="px-6 pb-6 gap-3">
+          <DialogFooter className="p-6 gap-3 border-t border-zinc-200 dark:border-neutral-700">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              className="h-10 px-4 py-2 text-sm font-medium dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
+              className="w-30 h-9 px-3 py-2 text-sm font-medium dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || (mode === 'create' && !bucketName.trim())}
-              className="h-10 px-4 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
+              className="w-30 h-9 px-3 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
             >
               {submitButtonText}
             </Button>
