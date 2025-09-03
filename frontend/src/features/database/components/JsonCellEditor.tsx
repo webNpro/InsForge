@@ -201,10 +201,9 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start text-left font-normal h-full border-0 p-0 hover:bg-transparent',
+              'w-full justify-start text-sm text-left font-normal h-full border-0 p-0 hover:bg-transparent dark:text-white',
               (!value || value === 'null') && 'text-muted-foreground'
             )}
-            style={{ fontSize: '14px' }}
           >
             <FileJson className="mr-2 h-4 w-4" />
             {formatDisplayValue()}

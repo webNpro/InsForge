@@ -5,6 +5,7 @@ import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
 import { databaseService } from '@/features/database/services/database.service';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
+import { SortableHeaderRenderer } from '@/components/DataGrid';
 import { SearchInput, DataGrid } from '@/components';
 import { SortColumn } from 'react-data-grid';
 
@@ -132,13 +133,22 @@ export function LinkRecordModal({
               </span>
             </div>
           ),
+          renderHeaderCell: (props: any) => (
+            <SortableHeaderRenderer
+              column={col}
+              sortDirection={props.sortDirection}
+              columnType={col.type}
+              showTypeBadge={true}
+              mutedHeader={false}
+            />
+          ),
         };
       }
 
       return {
         ...baseCol,
         renderCell: (props: any) => (
-          <div className="w-full h-full flex items-center cursor-default relative">
+          <div className="w-full h-full flex items-center cursor-not-allowed relative">
             <span className="truncate dark:text-zinc-300 opacity-70" title={props.row[col.key]}>
               {props.row[col.key] === null || props.row[col.key] === undefined
                 ? 'null'
@@ -146,6 +156,15 @@ export function LinkRecordModal({
             </span>
             <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
           </div>
+        ),
+        renderHeaderCell: (props: any) => (
+          <SortableHeaderRenderer
+            column={col}
+            sortDirection={props.sortDirection}
+            columnType={col.type}
+            showTypeBadge={true}
+            mutedHeader={true}
+          />
         ),
       };
     });
