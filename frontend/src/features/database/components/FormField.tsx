@@ -55,7 +55,7 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-10 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={`w-full justify-start h-9 dark:text-white dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
     >
       {value === null ? 'null' : value ? 'true' : 'false'}
     </Button>
@@ -512,11 +512,11 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   type="text"
                   {...register(field.columnName)}
                   placeholder={
-                    field.foreignKey
-                      ? field.isNullable
-                        ? 'Optional'
-                        : 'Required'
-                      : 'Auto-generated if empty'
+                    field.isNullable
+                      ? 'Optional'
+                      : field.foreignKey
+                        ? 'Required'
+                        : 'Auto-generated if empty'
                   }
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
