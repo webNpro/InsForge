@@ -66,7 +66,8 @@ export class DatabaseController {
     includeData: boolean = true,
     includeFunctions: boolean = false,
     includeSequences: boolean = false,
-    includeViews: boolean = false
+    includeViews: boolean = false,
+    rowLimit?: number
   ): Promise<ExportDatabaseResponse> {
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
@@ -87,9 +88,14 @@ export class DatabaseController {
       }
 
       const timestamp = new Date().toISOString();
+      const truncatedTables: string[] = [];
 
       if (format === 'sql') {
-        let sqlExport = `-- Database Export\n-- Generated on: ${timestamp}\n-- Format: SQL\n-- Include Data: ${includeData}\n\n`;
+        let sqlExport = `-- Database Export\n-- Generated on: ${timestamp}\n-- Format: SQL\n-- Include Data: ${includeData}\n`;
+        if (rowLimit) {
+          sqlExport += `-- Row Limit: ${rowLimit} rows per table\n`;
+        }
+        sqlExport += '\n';
 
         for (const table of tablesToExport) {
           // Always export table schema with defaults
@@ -260,9 +266,24 @@ export class DatabaseController {
 
           // Export data if requested
           if (includeData) {
-            const dataResult = await client.query(`SELECT * FROM ${table}`);
+            const query = rowLimit
+              ? `SELECT * FROM ${table} LIMIT ${rowLimit}`
+              : `SELECT * FROM ${table}`;
+            const dataResult = await client.query(query);
+
             if (dataResult.rows.length > 0) {
               sqlExport += `-- Data for table: ${table}\n`;
+
+              // Add comment if data was truncated
+              if (rowLimit && dataResult.rows.length === rowLimit) {
+                const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
+                const totalRows = parseInt(countResult.rows[0].count);
+                if (totalRows > rowLimit) {
+                  sqlExport += `-- WARNING: Table contains ${totalRows} rows, but only ${rowLimit} rows exported due to row limit\n`;
+                  truncatedTables.push(table);
+                }
+              }
+
               for (const row of dataResult.rows) {
                 const columns = Object.keys(row);
                 const values = Object.values(row).map((val) => {
@@ -366,6 +387,10 @@ export class DatabaseController {
           format: 'sql',
           data: sqlExport,
           timestamp,
+          ...(truncatedTables.length > 0 && {
+            truncatedTables,
+            rowLimit,
+          }),
         };
       } else {
         // JSON format
@@ -472,9 +497,25 @@ export class DatabaseController {
 
           // Get data if requested
           let rows: unknown[] = [];
+          let truncated = false;
+          let totalRowCount: number | undefined;
+
           if (includeData) {
-            const dataResult = await client.query(`SELECT * FROM ${table}`);
+            const query = rowLimit
+              ? `SELECT * FROM ${table} LIMIT ${rowLimit}`
+              : `SELECT * FROM ${table}`;
+            const dataResult = await client.query(query);
             rows = dataResult.rows;
+
+            // Check if data was truncated
+            if (rowLimit && dataResult.rows.length === rowLimit) {
+              const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
+              totalRowCount = parseInt(countResult.rows[0].count);
+              truncated = totalRowCount > rowLimit;
+              if (truncated) {
+                truncatedTables.push(table);
+              }
+            }
           }
 
           jsonData.tables[table] = {
@@ -484,6 +525,11 @@ export class DatabaseController {
             policies: policiesResult.rows,
             triggers: triggersResult.rows,
             rows,
+            ...(truncated && {
+              truncated: true,
+              exportedRowCount: rows.length,
+              totalRowCount,
+            }),
           };
         }
 
@@ -542,6 +588,10 @@ export class DatabaseController {
           format: 'json',
           data: jsonData,
           timestamp,
+          ...(truncatedTables.length > 0 && {
+            truncatedTables,
+            rowLimit,
+          }),
         };
       }
     } finally {
