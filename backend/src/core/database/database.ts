@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import logger from '@/utils/logger.js';
-import { MigrationRunner } from './migrations/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,9 +47,8 @@ export class DatabaseManager {
     const client = await this.pool.connect();
     await client.query('BEGIN');
 
-    // Run all migrations from separate files
-    const migrationRunner = new MigrationRunner(client);
-    await migrationRunner.runAll();
+    // Note: Schema migrations are now handled by node-pg-migrate
+    // Run: npm run migrate:up
 
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
@@ -61,12 +59,12 @@ export class DatabaseManager {
   // Initialize OAuth configuration from environment variables to database
   private async migrateOAuthConfig(client: import('pg').PoolClient): Promise<void> {
     // Google OAuth configuration
-    const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const googleRedirectUri =
-      process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
+      const googleClientId = process.env.GOOGLE_CLIENT_ID;
+      const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      const googleRedirectUri =
+        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
 
-    if (googleClientId && googleClientSecret) {
+      if (googleClientId && googleClientSecret) {
       const googleConfig = {
         enabled: true,
         clientId: googleClientId,
