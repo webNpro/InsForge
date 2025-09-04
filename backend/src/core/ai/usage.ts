@@ -165,7 +165,7 @@ export class AIUsageService {
         SELECT 
           COALESCE(SUM(input_tokens), 0) as "totalInputTokens",
           COALESCE(SUM(output_tokens), 0) as "totalOutputTokens",
-          COALESCE(SUM(input_tokens + output_tokens), 0) as "totalTokens",
+          COALESCE(SUM(COALESCE(input_tokens, 0) + COALESCE(output_tokens, 0)), 0) as "totalTokens",
           COALESCE(SUM(image_count), 0) as "totalImageCount",
           COUNT(*) as "totalRequests"
         FROM _ai_usage
