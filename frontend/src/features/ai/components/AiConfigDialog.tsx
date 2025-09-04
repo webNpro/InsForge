@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -20,32 +19,42 @@ import {
   SelectValue,
 } from '@/components/radix/Select';
 import { useAIConfigurations } from '../hooks/useAIConfigurations';
-
-interface AiConfiguration {
-  id: string;
-  modality: 'text' | 'image' | 'audio' | 'video';
-  provider: string;
-  model: string;
-  systemPrompt?: string;
-  tokenUsage: number;
-  isConnected: boolean;
-}
+import {
+  AIConfigurationSchema,
+  createAIConfiguarationReqeustSchema,
+  updateAIConfiguarationReqeustSchema,
+  CreateAIConfiguarationReqeust,
+  UpdateAIConfiguarationReqeust,
+  ModalitySchema,
+} from '@insforge/shared-schemas';
 
 interface AiConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
-  editingConfig?: AiConfiguration;
-  onSuccess?: (config: Partial<AiConfiguration>) => void;
+  editingConfig?: AIConfigurationSchema;
+  onSuccess?: (config: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust) => void;
 }
 
-const formSchema = z.object({
-  modality: z.enum(['text', 'image', 'audio', 'video']),
-  model: z.string().min(1, 'Model is required'),
-  systemPrompt: z.string().optional(),
-});
+interface ModelOption {
+  value: string;
+  label: string;
+  provider: string;
+}
 
-type FormData = z.infer<typeof formSchema>;
+interface ModalityOption {
+  value: string;
+  label: string;
+}
+
+const buildModelKey = (provider: string, model: string): string => `${provider}-${model}`;
+
+const parseModelKey = (key: string): { provider: string; model: string } => {
+  const [provider, ...modelParts] = key.split('-');
+  return { provider, model: modelParts.join('-') };
+};
+
+const buildModelLabel = (provider: string, model: string): string => `${provider} - ${model}`;
 
 export function AiConfigDialog({
   open,
@@ -55,37 +64,31 @@ export function AiConfigDialog({
   onSuccess,
 }: AiConfigDialogProps) {
   const { configuredTextProviders, configuredImageProviders } = useAIConfigurations();
+  const [selectedModality, setSelectedModality] = useState<ModalitySchema>('text');
 
-  const [selectedModality, setSelectedModality] = useState<'text' | 'image' | 'audio' | 'video'>(
-    editingConfig?.modality || 'text'
-  );
-
-  // Build models list from configured providers only
   const modelsByModality = useMemo(() => {
-    const models: Record<string, Array<{ value: string; label: string; provider: string }>> = {
+    const models: Record<ModalitySchema, ModelOption[]> = {
       text: [],
       image: [],
       audio: [],
       video: [],
     };
 
-    // Add text models from configured providers
     configuredTextProviders.forEach((provider) => {
       provider.models.forEach((model) => {
         models.text.push({
-          value: `${provider.provider}-${model}`,
-          label: `${provider.provider} - ${model}`,
+          value: buildModelKey(provider.provider, model),
+          label: buildModelLabel(provider.provider, model),
           provider: provider.provider,
         });
       });
     });
 
-    // Add image models from configured providers
     configuredImageProviders.forEach((provider) => {
       provider.models.forEach((model) => {
         models.image.push({
-          value: `${provider.provider}-${model}`,
-          label: `${provider.provider} - ${model}`,
+          value: buildModelKey(provider.provider, model),
+          label: buildModelLabel(provider.provider, model),
           provider: provider.provider,
         });
       });
@@ -94,100 +97,312 @@ export function AiConfigDialog({
     return models;
   }, [configuredTextProviders, configuredImageProviders]);
 
-  // Determine available modalities based on configured providers
-  const modalityOptions = useMemo(() => {
-    const options = [];
+  const modalityOptions = useMemo((): ModalityOption[] => {
+    const options: ModalityOption[] = [];
     if (configuredTextProviders.length > 0) {
       options.push({ value: 'text', label: 'Text' });
     }
     if (configuredImageProviders.length > 0) {
       options.push({ value: 'image', label: 'Image' });
     }
-    // Add audio and video if they become available in the API
-    // For now, we'll keep them disabled
     return options;
   }, [configuredTextProviders, configuredImageProviders]);
 
-  // Calculate initial values based on editing config and available providers
-  const initialValues = useMemo(() => {
-    if (editingConfig) {
-      const modality = editingConfig.modality as 'text' | 'image' | 'audio' | 'video';
-      const modelValue =
-        modelsByModality[modality]?.find(
-          (m) => m.label.includes(editingConfig.model) && m.provider === editingConfig.provider
-        )?.value || '';
+  const hasProviders = modalityOptions.length > 0;
 
-      return {
-        modality: editingConfig.modality,
-        model: modelValue,
-        systemPrompt: editingConfig.systemPrompt || '',
-      };
-    } else {
-      // Set default modality to the first available one
-      const defaultModality =
-        configuredTextProviders.length > 0
-          ? 'text'
-          : configuredImageProviders.length > 0
-            ? 'image'
-            : 'text';
+  const getDefaultModality = useCallback((): ModalitySchema => {
+    if (configuredTextProviders.length > 0) {
+      return 'text';
+    }
+    if (configuredImageProviders.length > 0) {
+      return 'image';
+    }
+    return 'text';
+  }, [configuredTextProviders, configuredImageProviders]);
 
+  const findModelValue = useCallback(
+    (modality: ModalitySchema, model: string, provider: string): string => {
+      const modelOption = modelsByModality[modality]?.find(
+        (m) => m.label.includes(model) && m.provider === provider
+      );
+      return modelOption?.value ?? '';
+    },
+    [modelsByModality]
+  );
+
+  const getInitialCreateValues = useCallback((): CreateAIConfiguarationReqeust => {
+    if (editingConfig && mode === 'create') {
+      const modality = editingConfig.modality as ModalitySchema;
       return {
-        modality: defaultModality as 'text' | 'image' | 'audio' | 'video',
-        model: '',
-        systemPrompt: '',
+        modality,
+        provider: editingConfig.provider,
+        model: findModelValue(modality, editingConfig.model, editingConfig.provider),
+        systemPrompt: editingConfig.systemPrompt,
       };
     }
-  }, [editingConfig, modelsByModality, configuredTextProviders, configuredImageProviders]);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialValues,
+    return {
+      modality: getDefaultModality(),
+      provider: '',
+      model: '',
+      systemPrompt: undefined,
+    };
+  }, [mode, editingConfig, findModelValue, getDefaultModality]);
+
+  const getInitialEditValues = useCallback((): UpdateAIConfiguarationReqeust => {
+    return {
+      systemPrompt: editingConfig?.systemPrompt ?? null,
+    };
+  }, [editingConfig]);
+
+  const createForm = useForm<CreateAIConfiguarationReqeust>({
+    resolver: zodResolver(createAIConfiguarationReqeustSchema),
+    defaultValues: getInitialCreateValues(),
   });
 
-  // Reset form when dialog opens with proper initial values
+  const editForm = useForm<UpdateAIConfiguarationReqeust>({
+    resolver: zodResolver(updateAIConfiguarationReqeustSchema),
+    defaultValues: getInitialEditValues(),
+  });
+
+  const form = mode === 'edit' ? editForm : createForm;
+  const isCreateMode = mode === 'create';
+
   useEffect(() => {
     if (open) {
-      setSelectedModality(editingConfig?.modality || initialValues.modality);
-      form.reset(initialValues);
+      if (isCreateMode) {
+        const initialValues = getInitialCreateValues();
+        const modality = editingConfig?.modality || initialValues.modality;
+        setSelectedModality(modality as ModalitySchema);
+        createForm.reset(initialValues);
+      } else {
+        const initialValues = getInitialEditValues();
+        const modality = editingConfig?.modality || 'text';
+        setSelectedModality(modality as ModalitySchema);
+        editForm.reset(initialValues);
+      }
     }
-  }, [open, editingConfig, initialValues, form]);
+  }, [
+    open,
+    editingConfig,
+    getInitialCreateValues,
+    getInitialEditValues,
+    createForm,
+    editForm,
+    isCreateMode,
+  ]);
 
-  const handleModalityChange = (value: string) => {
-    const modality = value as 'text' | 'image' | 'audio' | 'video';
-    setSelectedModality(modality);
-    form.setValue('modality', modality);
-    form.setValue('model', '');
-  };
+  const handleModalityChange = useCallback(
+    (value: string) => {
+      const modality = value as ModalitySchema;
+      setSelectedModality(modality);
+      if (isCreateMode) {
+        createForm.setValue('modality', modality);
+        createForm.setValue('model', '');
+      }
+    },
+    [createForm, isCreateMode]
+  );
 
-  const handleSubmit = (data: FormData) => {
-    const selectedModelOption = modelsByModality[data.modality].find((m) => m.value === data.model);
-
-    if (onSuccess && selectedModelOption) {
-      onSuccess({
-        modality: data.modality,
-        model: selectedModelOption.label.split(' - ')[1],
-        provider: selectedModelOption.provider,
-        systemPrompt: data.systemPrompt || undefined,
+  const handleEditSubmit = useCallback(
+    (data: UpdateAIConfiguarationReqeust) => {
+      onSuccess?.({
+        systemPrompt: data.systemPrompt,
       });
-    }
+    },
+    [onSuccess]
+  );
+
+  const handleCreateSubmit = useCallback(
+    (data: CreateAIConfiguarationReqeust) => {
+      const selectedModelOption = modelsByModality[data.modality].find(
+        (m) => m.value === data.model
+      );
+
+      if (selectedModelOption) {
+        const { model } = parseModelKey(selectedModelOption.value);
+        onSuccess?.({
+          modality: data.modality,
+          model,
+          provider: selectedModelOption.provider,
+          systemPrompt: data.systemPrompt,
+        });
+      }
+    },
+    [modelsByModality, onSuccess]
+  );
+
+  const handleSubmit = useCallback(
+    (data: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust) => {
+      if (mode === 'edit') {
+        handleEditSubmit(data as UpdateAIConfiguarationReqeust);
+      } else {
+        handleCreateSubmit(data as CreateAIConfiguarationReqeust);
+      }
+      onOpenChange(false);
+      form.reset();
+    },
+    [mode, handleEditSubmit, handleCreateSubmit, onOpenChange, form]
+  );
+
+  const handleCancel = useCallback(() => {
     onOpenChange(false);
     form.reset();
-  };
+  }, [onOpenChange, form]);
 
   const availableModels = modelsByModality[selectedModality];
+
+  const renderModalityField = () => {
+    if (!isCreateMode) {
+      return (
+        <div className="flex flex-col flex-1 space-y-2">
+          <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">Output</Label>
+          <div className="flex items-center px-3 py-2 text-sm bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-gray-600 dark:text-gray-400">
+            {editingConfig?.modality || 'N/A'}
+          </div>
+        </div>
+      );
+    }
+
+    const modality = createForm.watch('modality');
+    const modalityError = createForm.formState.errors.modality;
+
+    return (
+      <div className="flex flex-col flex-1 space-y-2">
+        <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">Output</Label>
+        <Select value={modality || undefined} onValueChange={handleModalityChange}>
+          <SelectTrigger
+            id="modality"
+            className="dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+          >
+            <SelectValue placeholder="Select modality" />
+          </SelectTrigger>
+          <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
+            {modalityOptions.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                className="dark:text-white dark:hover:bg-neutral-700"
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {modalityError && (
+          <p className="text-sm text-red-600 dark:text-red-500">{modalityError.message}</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderModelField = () => {
+    if (!isCreateMode) {
+      return (
+        <div className="flex flex-col flex-1 space-y-2">
+          <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">AI Model</Label>
+          <div className="w-100 flex items-center px-3 py-2 text-sm bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-gray-600 dark:text-gray-400">
+            {editingConfig?.provider} - {editingConfig?.model}
+          </div>
+        </div>
+      );
+    }
+
+    const model = createForm.watch('model');
+    const modelError = createForm.formState.errors.model;
+    const hasModels = availableModels.length > 0;
+
+    return (
+      <div className="flex flex-col flex-1 space-y-2">
+        <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">AI Model</Label>
+        <Select
+          value={model || undefined}
+          onValueChange={(value) => {
+            createForm.setValue('model', value);
+            const selectedModel = availableModels.find((m) => m.value === value);
+            if (selectedModel) {
+              createForm.setValue('provider', selectedModel.provider);
+            }
+          }}
+          disabled={!hasModels}
+        >
+          <SelectTrigger
+            id="model"
+            className="w-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+          >
+            <SelectValue placeholder={hasModels ? 'Select model' : 'No models available'} />
+          </SelectTrigger>
+          <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
+            {hasModels ? (
+              availableModels.map((modelOption) => (
+                <SelectItem
+                  key={modelOption.value}
+                  value={modelOption.value}
+                  className="dark:text-white dark:hover:bg-neutral-700"
+                >
+                  {modelOption.label}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-models" disabled className="dark:text-zinc-400">
+                No models available for this modality
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        {modelError && (
+          <p className="text-sm text-red-600 dark:text-red-500">{modelError.message}</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderSystemPromptField = () => {
+    const systemPromptRegister = isCreateMode
+      ? createForm.register('systemPrompt')
+      : editForm.register('systemPrompt');
+    const systemPromptError = form.formState.errors.systemPrompt;
+
+    return (
+      <div className="flex flex-col space-y-2">
+        <Label
+          htmlFor="systemPrompt"
+          className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
+        >
+          System Prompt{' '}
+          <span className="text-sm text-gray-500 dark:text-neutral-400">(Optional)</span>
+        </Label>
+        <Textarea
+          id="systemPrompt"
+          {...systemPromptRegister}
+          placeholder="Enter system prompt..."
+          className="min-h-[100px] resize-none dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
+        />
+        {systemPromptError && (
+          <p className="text-sm text-red-600 dark:text-red-500">{systemPromptError.message}</p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 border-zinc-200 dark:border-neutral-700 dark:bg-neutral-900 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
-        <form onSubmit={() => void form.handleSubmit(handleSubmit)} className="flex flex-col">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void form.handleSubmit(handleSubmit)();
+          }}
+          className="flex flex-col"
+        >
           <DialogHeader className="px-6 py-3 flex flex-col gap-1 justify-start border-b border-zinc-200 dark:border-neutral-700">
             <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
-              {mode === 'create' ? 'Create AI Configuration' : 'Edit AI Configuration'}
+              {isCreateMode ? 'Create AI Configuration' : 'Edit AI Configuration'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-6 p-6">
-            {modalityOptions.length === 0 ? (
+            {!hasProviders ? (
               <div className="text-sm text-zinc-600 dark:text-zinc-400 text-center py-4">
                 No AI providers are configured. Please configure at least one provider to create AI
                 configurations.
@@ -195,100 +410,10 @@ export function AiConfigDialog({
             ) : (
               <>
                 <div className="flex gap-3">
-                  <div className="flex flex-col flex-1 space-y-2">
-                    <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">
-                      Output
-                    </Label>
-                    <Select value={form.watch('modality')} onValueChange={handleModalityChange}>
-                      <SelectTrigger
-                        id="modality"
-                        className="dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
-                      >
-                        <SelectValue placeholder="Select modality" />
-                      </SelectTrigger>
-                      <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
-                        {modalityOptions.map((option) => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            className="dark:text-white dark:hover:bg-neutral-700"
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.modality && (
-                      <p className="text-sm text-red-600 dark:text-red-500">
-                        {form.formState.errors.modality.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col flex-1 space-y-2">
-                    <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">
-                      AI Model
-                    </Label>
-                    <Select
-                      value={form.watch('model')}
-                      onValueChange={(value) => form.setValue('model', value)}
-                      disabled={availableModels.length === 0}
-                    >
-                      <SelectTrigger
-                        id="model"
-                        className="w-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
-                      >
-                        <SelectValue
-                          placeholder={
-                            availableModels.length === 0 ? 'No models available' : 'Select model'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
-                        {availableModels.length === 0 ? (
-                          <SelectItem value="no-models" disabled className="dark:text-zinc-400">
-                            No models available for this modality
-                          </SelectItem>
-                        ) : (
-                          availableModels.map((model) => (
-                            <SelectItem
-                              key={model.value}
-                              value={model.value}
-                              className="dark:text-white dark:hover:bg-neutral-700"
-                            >
-                              {model.label}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.model && (
-                      <p className="text-sm text-red-600 dark:text-red-500">
-                        {form.formState.errors.model.message}
-                      </p>
-                    )}
-                  </div>
+                  {renderModalityField()}
+                  {renderModelField()}
                 </div>
-                <div className="flex flex-col space-y-2">
-                  <Label
-                    htmlFor="systemPrompt"
-                    className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
-                  >
-                    System Prompt{' '}
-                    <span className="text-sm text-gray-500 dark:text-neutral-400">(Optional)</span>
-                  </Label>
-                  <Textarea
-                    id="systemPrompt"
-                    {...form.register('systemPrompt')}
-                    placeholder="Enter system prompt..."
-                    className="min-h-[100px] resize-none dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
-                  />
-                  {form.formState.errors.systemPrompt && (
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      {form.formState.errors.systemPrompt.message}
-                    </p>
-                  )}
-                </div>
+                {renderSystemPromptField()}
               </>
             )}
           </div>
@@ -297,20 +422,17 @@ export function AiConfigDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                form.reset();
-              }}
+              onClick={handleCancel}
               className="w-30 h-9 px-3 py-2 text-sm font-medium dark:bg-neutral-600 dark:text-zinc-300 dark:border-neutral-600 dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={modalityOptions.length === 0}
+              disabled={!hasProviders}
               className="w-30 h-9 px-3 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {mode === 'create' ? 'Create' : 'Save'}
+              {isCreateMode ? 'Create' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

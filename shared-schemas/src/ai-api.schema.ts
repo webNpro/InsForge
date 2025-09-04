@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { aiConfigurationSchema } from './ai.schema';
 
 export const listModelsResponseSchema = z.object({
   text: z.array(
@@ -17,4 +18,15 @@ export const listModelsResponseSchema = z.object({
   ),
 });
 
+export const createAIConfiguarationReqeustSchema = aiConfigurationSchema.omit({
+  id: true,
+  tokenUsed: true,
+});
+
+export const updateAIConfiguarationReqeustSchema = z.object({
+  systemPrompt: z.string().nullable(),
+});
+
 export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
+export type CreateAIConfiguarationReqeust = z.infer<typeof createAIConfiguarationReqeustSchema>;
+export type UpdateAIConfiguarationReqeust = z.infer<typeof updateAIConfiguarationReqeustSchema>;

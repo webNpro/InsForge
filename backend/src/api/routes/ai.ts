@@ -1,14 +1,20 @@
 import { Router, Response, NextFunction } from 'express';
-import { ChatService } from '@/core/ai/chat.service';
+import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
 import type { ChatRequest, ImageGenerationOptions } from '@/types/ai';
-import { ImageService } from '@/core/ai/image.service';
+import { ImageService } from '@/core/ai/image';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
+import { AIConfigService } from '@/core/ai/config';
+import {
+  createAIConfiguarationReqeustSchema,
+  updateAIConfiguarationReqeustSchema,
+} from '@insforge/shared-schemas';
 
 const router = Router();
 const chatService = new ChatService();
+const aiConfigService = new AIConfigService();
 
 /**
  * GET /api/ai/models
@@ -158,6 +164,156 @@ router.post(
         next(
           new AppError(
             error instanceof Error ? error.message : 'Failed to generate image',
+            500,
+            ERROR_CODES.INTERNAL_ERROR
+          )
+        );
+      }
+    }
+  }
+);
+
+/**
+ * POST /api/ai/configurations
+ * Create a new AI configuration
+ */
+router.post(
+  '/configurations',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const validationResult = createAIConfiguarationReqeustSchema.safeParse(req.body);
+
+      if (!validationResult.success) {
+        throw new AppError(
+          `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+      const { modality, provider, model, systemPrompt } = validationResult.data;
+
+      const result = await aiConfigService.create(modality, provider, model, systemPrompt);
+
+      successResponse(
+        res,
+        {
+          id: result.id,
+          message: 'AI configuration created successfully',
+        },
+        201
+      );
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError(
+            error instanceof Error ? error.message : 'Failed to create AI configuration',
+            500,
+            ERROR_CODES.INTERNAL_ERROR
+          )
+        );
+      }
+    }
+  }
+);
+
+/**
+ * GET /api/ai/configurations
+ * List all AI configurations
+ */
+router.get(
+  '/configurations',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const configurations = await aiConfigService.findAll();
+
+      successResponse(res, configurations);
+    } catch (error) {
+      next(
+        new AppError(
+          error instanceof Error ? error.message : 'Failed to fetch AI configurations',
+          500,
+          ERROR_CODES.INTERNAL_ERROR
+        )
+      );
+    }
+  }
+);
+
+/**
+ * PATCH /api/ai/configurations/:id
+ * Update an AI configuration
+ */
+router.patch(
+  '/configurations/:id',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const validationResult = updateAIConfiguarationReqeustSchema.safeParse(req.body);
+
+      if (!validationResult.success) {
+        throw new AppError(
+          `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      const { systemPrompt } = validationResult.data;
+
+      const updated = await aiConfigService.update(req.params.id, systemPrompt);
+
+      if (!updated) {
+        throw new AppError('AI configuration not found', 404, ERROR_CODES.NOT_FOUND);
+      }
+
+      successResponse(res, {
+        message: 'AI configuration updated successfully',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError(
+            error instanceof Error ? error.message : 'Failed to update AI configuration',
+            500,
+            ERROR_CODES.INTERNAL_ERROR
+          )
+        );
+      }
+    }
+  }
+);
+
+/**
+ * DELETE /api/ai/configurations/:id
+ * Delete an AI configuration
+ */
+router.delete(
+  '/configurations/:id',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const deleted = await aiConfigService.delete(req.params.id);
+
+      if (!deleted) {
+        throw new AppError('AI configuration not found', 404, ERROR_CODES.NOT_FOUND);
+      }
+
+      successResponse(res, {
+        message: 'AI configuration deleted successfully',
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError(
+            error instanceof Error ? error.message : 'Failed to delete AI configuration',
             500,
             ERROR_CODES.INTERNAL_ERROR
           )

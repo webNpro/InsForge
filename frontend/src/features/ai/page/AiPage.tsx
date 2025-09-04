@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Plus, MoreVertical, FileText, Image, Mic, Video } from 'lucide-react';
+import { Plus, MoreVertical, FileText, Image, Mic, Video, Loader2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { EmptyState } from '@/components/EmptyState';
-import EmptyDatabase from '@/assets/icons/empty_table.svg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,22 +11,23 @@ import {
 import { cn } from '@/lib/utils/utils';
 import { AiConfigDialog } from '../components/AiConfigDialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useAIConfigurations } from '../hooks/useAIConfigurations';
+import { AIConfigurationSchema } from '@insforge/shared-schemas';
+import { useConfirm } from '@/lib/hooks/useConfirm';
 
-interface AiConfiguration {
-  id: string;
-  modality: 'text' | 'image' | 'audio' | 'video';
-  provider: string;
-  model: string;
-  tokenUsage: number;
-  isConnected: boolean;
-  systemPrompt?: string;
-}
-
-const modalityIcons = {
-  text: FileText,
-  image: Image,
-  audio: Mic,
-  video: Video,
+const getModalityIcon = (modality: string) => {
+  switch (modality) {
+    case 'text':
+      return FileText;
+    case 'image':
+      return Image;
+    case 'audio':
+      return Mic;
+    case 'video':
+      return Video;
+    default:
+      return FileText; // Default fallback icon
+  }
 };
 
 const formatTokenCount = (count: number): string => {
@@ -40,53 +40,23 @@ const formatTokenCount = (count: number): string => {
 };
 
 export default function AiPage() {
-  const [configurations, setConfigurations] = useState<AiConfiguration[]>([
-    {
-      id: '1',
-      modality: 'text',
-      provider: 'Google',
-      model: 'Gemini Flash 2.5',
-      tokenUsage: 1250000,
-      isConnected: true,
-    },
-    {
-      id: '2',
-      modality: 'image',
-      provider: 'OpenAI',
-      model: 'DALL-E 3',
-      tokenUsage: 85000,
-      isConnected: false,
-    },
-    {
-      id: '3',
-      modality: 'text',
-      provider: 'Anthropic',
-      model: 'Claude 3.5 Sonnet',
-      tokenUsage: 450000,
-      isConnected: true,
-    },
-    {
-      id: '4',
-      modality: 'audio',
-      provider: 'OpenAI',
-      model: 'Whisper v3',
-      tokenUsage: 32000,
-      isConnected: false,
-    },
-  ]);
+  const {
+    configurations,
+    isLoadingConfigurations,
+    createConfiguration,
+    updateConfiguration,
+    deleteConfiguration,
+  } = useAIConfigurations();
+
+  const { confirm, confirmDialogProps } = useConfirm();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [editingConfig, setEditingConfig] = useState<AiConfiguration | undefined>();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [configToDelete, setConfigToDelete] = useState<string | null>(null);
+  const [editingConfig, setEditingConfig] = useState<AIConfigurationSchema | undefined>();
 
   const handleConnect = (id: string) => {
-    setConfigurations((prev) =>
-      prev.map((config) =>
-        config.id === id ? { ...config, isConnected: !config.isConnected } : config
-      )
-    );
+    // TODO: Implement connection logic when backend supports it
+    console.log('Connect configuration:', id);
   };
 
   const handleEdit = (id: string) => {
@@ -98,15 +68,17 @@ export default function AiPage() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    setConfigToDelete(id);
-    setDeleteConfirmOpen(true);
-  };
+  const handleDelete = async (id: string) => {
+    const config = configurations.find((c) => c.id === id);
+    const shouldDelete = await confirm({
+      title: 'Delete AI Configuration',
+      description: `Are you sure you want to delete the configuration "${config?.provider} - ${config?.model}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      destructive: true,
+    });
 
-  const handleConfirmDelete = () => {
-    if (configToDelete) {
-      setConfigurations((prev) => prev.filter((config) => config.id !== configToDelete));
-      setConfigToDelete(null);
+    if (shouldDelete) {
+      deleteConfiguration(id);
     }
   };
 
@@ -116,24 +88,21 @@ export default function AiPage() {
     setDialogOpen(true);
   };
 
-  const handleDialogSuccess = (configData: Partial<AiConfiguration>) => {
+  const handleDialogSuccess = (configData: any) => {
     if (dialogMode === 'create') {
-      const newConfig: AiConfiguration = {
-        id: Date.now().toString(),
-        modality: configData.modality!,
-        provider: configData.provider!,
-        model: configData.model!,
+      createConfiguration({
+        modality: configData.modality,
+        provider: configData.provider,
+        model: configData.model,
         systemPrompt: configData.systemPrompt,
-        tokenUsage: 0,
-        isConnected: false,
-      };
-      setConfigurations((prev) => [...prev, newConfig]);
+      });
     } else if (editingConfig) {
-      setConfigurations((prev) =>
-        prev.map((config) =>
-          config.id === editingConfig.id ? { ...config, ...configData } : config
-        )
-      );
+      updateConfiguration({
+        id: editingConfig.id,
+        data: {
+          systemPrompt: configData.systemPrompt || null,
+        },
+      });
     }
     setDialogOpen(false);
   };
@@ -161,11 +130,15 @@ export default function AiPage() {
 
         {/* Content Section */}
         <div className="flex-1 overflow-auto">
-          {configurations.length > 0 ? (
+          {isLoadingConfigurations ? (
+            <div className="flex-1 flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+          ) : configurations.length > 0 ? (
             <div className="p-6">
               <div className="space-y-3">
                 {configurations.map((config) => {
-                  const Icon = modalityIcons[config.modality];
+                  const Icon = getModalityIcon(config.modality);
 
                   return (
                     <div
@@ -186,7 +159,7 @@ export default function AiPage() {
 
                       {/* Token Usage */}
                       <div className="text-sm text-gray-500 dark:text-neutral-400">
-                        <span className="font-medium">{formatTokenCount(config.tokenUsage)}</span>
+                        <span className="font-medium">{formatTokenCount(config.tokenUsed)}</span>
                         {' tokens'}
                       </div>
 
@@ -214,7 +187,7 @@ export default function AiPage() {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDelete(config.id)}
+                              onClick={() => void handleDelete(config.id)}
                               className="text-red-600 dark:text-red-400"
                             >
                               Delete
@@ -228,9 +201,8 @@ export default function AiPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="h-full flex-1 flex items-center justify-center">
               <EmptyState
-                image={EmptyDatabase}
                 title="No AI Configurations"
                 description="Create your first AI configuration to get started"
               />
@@ -248,17 +220,8 @@ export default function AiPage() {
         onSuccess={handleDialogSuccess}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title="Delete AI Configuration"
-        description="Are you sure you want to delete this AI configuration? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={handleConfirmDelete}
-        destructive={true}
-      />
+      {/* Confirm Dialog */}
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 }

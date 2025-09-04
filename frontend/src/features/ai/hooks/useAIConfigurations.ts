@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
 import { metadataService } from '@/features/metadata/services/metadata.service';
-import { ListModelsResponse } from '@insforge/shared-schemas';
+import {
+  ListModelsResponse,
+  AIConfigurationSchema,
+  CreateAIConfiguarationReqeust,
+  UpdateAIConfiguarationReqeust,
+} from '@insforge/shared-schemas';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface UseAIConfigurationsOptions {
   enabled?: boolean;
@@ -10,6 +16,8 @@ interface UseAIConfigurationsOptions {
 
 export function useAIConfigurations(options: UseAIConfigurationsOptions = {}) {
   const { enabled = true } = options;
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Ensure API key is fetched
   const { data: apiKey } = useQuery({
@@ -29,6 +37,56 @@ export function useAIConfigurations(options: UseAIConfigurationsOptions = {}) {
     queryFn: () => aiService.getModels(),
     enabled: enabled && !!apiKey,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Fetch AI configurations list
+  const {
+    data: configurations,
+    isLoading: isLoadingConfigurations,
+    error: configurationsError,
+    refetch: refetchConfigurations,
+  } = useQuery<AIConfigurationSchema[]>({
+    queryKey: ['ai-configurations'],
+    queryFn: () => aiService.getConfigurations(),
+    enabled: enabled && !!apiKey,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Create configuration mutation
+  const createConfigurationMutation = useMutation({
+    mutationFn: (data: CreateAIConfiguarationReqeust) => aiService.createConfiguration(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ai-configurations'] });
+      showToast('AI configuration created successfully', 'success');
+    },
+    onError: (error: Error) => {
+      showToast(`Failed to create configuration: ${error.message}`, 'error');
+    },
+  });
+
+  // Update configuration mutation
+  const updateConfigurationMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateAIConfiguarationReqeust }) =>
+      aiService.updateConfiguration(id, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ai-configurations'] });
+      showToast('AI configuration updated successfully', 'success');
+    },
+    onError: (error: Error) => {
+      showToast(`Failed to update configuration: ${error.message}`, 'error');
+    },
+  });
+
+  // Delete configuration mutation
+  const deleteConfigurationMutation = useMutation({
+    mutationFn: (id: string) => aiService.deleteConfiguration(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ai-configurations'] });
+      showToast('AI configuration deleted successfully', 'success');
+    },
+    onError: (error: Error) => {
+      showToast(`Failed to delete configuration: ${error.message}`, 'error');
+    },
   });
 
   // Extract configured providers (memoized to maintain referential stability)
@@ -81,7 +139,23 @@ export function useAIConfigurations(options: UseAIConfigurationsOptions = {}) {
     hasConfiguredImageProviders,
     hasAnyConfiguration,
 
+    // Configurations data
+    configurations: configurations || [],
+    isLoadingConfigurations,
+    configurationsError,
+
+    // Configuration mutations
+    createConfiguration: createConfigurationMutation.mutate,
+    updateConfiguration: updateConfigurationMutation.mutate,
+    deleteConfiguration: deleteConfigurationMutation.mutate,
+
+    // Mutation states
+    isCreating: createConfigurationMutation.isPending,
+    isUpdating: updateConfigurationMutation.isPending,
+    isDeleting: deleteConfigurationMutation.isPending,
+
     // Operations
     refetch,
+    refetchConfigurations,
   };
 }

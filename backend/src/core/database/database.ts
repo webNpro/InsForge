@@ -366,6 +366,18 @@ export class DatabaseManager {
         deployed_at TIMESTAMPTZ
       );
 
+      -- AI configurations table
+      CREATE TABLE IF NOT EXISTS _ai_configs (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        modality VARCHAR(255) NOT NULL,
+        provider VARCHAR(255) NOT NULL,
+        model VARCHAR(255) NOT NULL,
+        system_prompt TEXT,
+        token_used INTEGER DEFAULT 0 CHECK (token_used >= 0),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       -- Auth Tables (2-table structure)
       -- User table
       CREATE TABLE IF NOT EXISTS _user (
@@ -407,7 +419,7 @@ export class DatabaseManager {
       `);
 
       // Create triggers for updated_at
-      const tables = ['_config', '_metadata', '_edge_functions'];
+      const tables = ['_config', '_metadata', '_edge_functions', '_ai_configs'];
       for (const table of tables) {
         await client.query(`
           DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};
