@@ -12,11 +12,32 @@ import {
   DeleteObjectCommand,
   ListObjectsV2Command,
   DeleteObjectsCommand,
+  HeadObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import logger from '@/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Types for upload/download strategies
+export interface UploadStrategy {
+  method: 'presigned' | 'direct';
+  uploadUrl: string;
+  fields?: Record<string, string>;
+  key: string;
+  confirmRequired: boolean;
+  confirmUrl?: string;
+  expiresAt?: Date;
+}
+
+export interface DownloadStrategy {
+  method: 'presigned' | 'direct';
+  url: string;
+  expiresAt?: Date;
+  headers?: Record<string, string>;
+}
 
 // Storage backend interface
 interface StorageBackend {
@@ -26,6 +47,16 @@ interface StorageBackend {
   deleteObject(bucket: string, key: string): Promise<void>;
   createBucket(bucket: string): Promise<void>;
   deleteBucket(bucket: string): Promise<void>;
+  
+  // New methods for presigned URL support
+  supportsPresignedUrls(): boolean;
+  getUploadStrategy?(
+    bucket: string,
+    key: string,
+    metadata: { contentType?: string; size?: number }
+  ): Promise<UploadStrategy>;
+  getDownloadStrategy?(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategy>;
+  verifyObjectExists?(bucket: string, key: string): Promise<boolean>;
 }
 
 // Local filesystem storage implementation
@@ -75,6 +106,37 @@ class LocalStorageBackend implements StorageBackend {
     } catch {
       // Directory might not exist
     }
+  }
+
+  // Local storage doesn't support presigned URLs
+  supportsPresignedUrls(): boolean {
+    return false;
+  }
+
+  async getUploadStrategy(
+    bucket: string,
+    key: string,
+    metadata: { contentType?: string; size?: number }
+  ): Promise<UploadStrategy> {
+    // For local storage, return direct upload strategy
+    return {
+      method: 'direct',
+      uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      key,
+      confirmRequired: false
+    };
+  }
+
+  async getDownloadStrategy(
+    bucket: string,
+    key: string,
+    expiresIn?: number
+  ): Promise<DownloadStrategy> {
+    // For local storage, return direct download URL
+    return {
+      method: 'direct',
+      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`
+    };
   }
 }
 
@@ -194,6 +256,110 @@ class S3StorageBackend implements StorageBackend {
 
       continuationToken = listResponse.NextContinuationToken;
     } while (continuationToken);
+  }
+
+  // S3 supports presigned URLs
+  supportsPresignedUrls(): boolean {
+    return true;
+  }
+
+  async getUploadStrategy(
+    bucket: string,
+    key: string,
+    metadata: { contentType?: string; size?: number }
+  ): Promise<UploadStrategy> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+
+    const s3Key = this.getS3Key(bucket, key);
+    const expiresIn = 3600; // 1 hour
+
+    try {
+      // Generate presigned POST URL for multipart form upload
+      const { url, fields } = await createPresignedPost(this.s3Client, {
+        Bucket: this.s3Bucket,
+        Key: s3Key,
+        Conditions: [
+          ['content-length-range', 0, metadata.size || 10485760], // Max 10MB by default
+          ...(metadata.contentType ? [['starts-with', '$Content-Type', metadata.contentType]] : [])
+        ],
+        Fields: {
+          ...(metadata.contentType ? { 'Content-Type': metadata.contentType } : {})
+        },
+        Expires: expiresIn
+      });
+
+      return {
+        method: 'presigned',
+        uploadUrl: url,
+        fields,
+        key,
+        confirmRequired: true,
+        confirmUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}/confirm`,
+        expiresAt: new Date(Date.now() + expiresIn * 1000)
+      };
+    } catch (error) {
+      logger.error('Failed to generate presigned upload URL', {
+        error: error instanceof Error ? error.message : String(error),
+        bucket,
+        key
+      });
+      throw error;
+    }
+  }
+
+  async getDownloadStrategy(
+    bucket: string,
+    key: string,
+    expiresIn: number = 3600
+  ): Promise<DownloadStrategy> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+
+    const s3Key = this.getS3Key(bucket, key);
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: s3Key
+      });
+
+      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+
+      return {
+        method: 'presigned',
+        url,
+        expiresAt: new Date(Date.now() + expiresIn * 1000)
+      };
+    } catch (error) {
+      logger.error('Failed to generate presigned download URL', {
+        error: error instanceof Error ? error.message : String(error),
+        bucket,
+        key
+      });
+      throw error;
+    }
+  }
+
+  async verifyObjectExists(bucket: string, key: string): Promise<boolean> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized');
+    }
+
+    const s3Key = this.getS3Key(bucket, key);
+
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: s3Key
+      });
+      await this.s3Client.send(command);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -528,5 +694,137 @@ export class StorageService {
     await MetadataService.getInstance().updateStorageMetadata();
 
     return true;
+  }
+
+  // New methods for universal upload/download strategies
+  private generateUniqueKey(filename: string): string {
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const ext = path.extname(filename);
+    const baseName = path.basename(filename, ext);
+    const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '-').substring(0, 32);
+    return `${sanitizedBaseName}-${timestamp}-${randomStr}${ext}`;
+  }
+
+  async getUploadStrategy(
+    bucket: string,
+    metadata: {
+      filename: string;
+      contentType?: string;
+      size?: number;
+    }
+  ): Promise<UploadStrategy> {
+    this.validateBucketName(bucket);
+    
+    // Check if bucket exists
+    const db = DatabaseManager.getInstance().getDb();
+    const bucketExists = await db
+      .prepare('SELECT name FROM _storage_buckets WHERE name = ?')
+      .get(bucket);
+      
+    if (!bucketExists) {
+      throw new Error(`Bucket "${bucket}" does not exist`);
+    }
+
+    const key = this.generateUniqueKey(metadata.filename);
+
+    if (this.backend.getUploadStrategy) {
+      return this.backend.getUploadStrategy(bucket, key, metadata);
+    }
+
+    // Fallback for backends without strategy support
+    return {
+      method: 'direct',
+      uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      key,
+      confirmRequired: false
+    };
+  }
+
+  async getDownloadStrategy(
+    bucket: string,
+    key: string,
+    expiresIn?: number
+  ): Promise<DownloadStrategy> {
+    this.validateBucketName(bucket);
+    this.validateKey(key);
+
+    if (this.backend.getDownloadStrategy) {
+      return this.backend.getDownloadStrategy(bucket, key, expiresIn);
+    }
+
+    // Fallback for backends without strategy support
+    return {
+      method: 'direct',
+      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`
+    };
+  }
+
+  async confirmUpload(
+    bucket: string,
+    key: string,
+    metadata: {
+      size: number;
+      contentType?: string;
+      etag?: string;
+    }
+  ): Promise<StorageFileSchema> {
+    this.validateBucketName(bucket);
+    this.validateKey(key);
+
+    // Verify the file exists in S3 (for S3 backend)
+    if (this.backend.verifyObjectExists) {
+      const exists = await this.backend.verifyObjectExists(bucket, key);
+      if (!exists) {
+        throw new Error(`Upload not found for key "${key}" in bucket "${bucket}"`);
+      }
+    }
+
+    const db = DatabaseManager.getInstance().getDb();
+
+    // Check if already confirmed
+    const existing = await db
+      .prepare('SELECT key FROM _storage WHERE bucket = ? AND key = ?')
+      .get(bucket, key);
+
+    if (existing) {
+      throw new Error(`File "${key}" already confirmed in bucket "${bucket}"`);
+    }
+
+    // Save metadata to database
+    await db
+      .prepare(
+        `
+        INSERT INTO _storage (bucket, key, size, mime_type)
+        VALUES (?, ?, ?, ?)
+      `
+      )
+      .run(bucket, key, metadata.size, metadata.contentType || null);
+
+    // Get the actual uploaded_at timestamp from database
+    const result = (await db
+      .prepare('SELECT uploaded_at as uploadedAt FROM _storage WHERE bucket = ? AND key = ?')
+      .get(bucket, key)) as { uploadedAt: string } | undefined;
+
+    if (!result) {
+      throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
+    }
+
+    // Log the upload activity
+    const dbManager = DatabaseManager.getInstance();
+    await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
+      size: metadata.size,
+      mime_type: metadata.contentType,
+      method: 'presigned'
+    });
+
+    return {
+      bucket,
+      key,
+      size: metadata.size,
+      mimeType: metadata.contentType,
+      uploadedAt: result.uploadedAt,
+      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+    };
   }
 }

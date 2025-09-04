@@ -398,4 +398,97 @@ router.delete(
   }
 );
 
+// === New Universal Endpoints for Presigned URL Support ===
+
+// POST /api/storage/buckets/:bucketName/upload - Get upload strategy (presigned or direct)
+router.post(
+  '/buckets/:bucketName/upload',
+  verifyUser,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { bucketName } = req.params;
+      const { filename, contentType, size } = req.body;
+
+      if (!filename) {
+        throw new AppError('Filename is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
+      }
+
+      const storageService = StorageService.getInstance();
+      const strategy = await storageService.getUploadStrategy(bucketName, {
+        filename,
+        contentType,
+        size
+      });
+
+      successResponse(res, strategy);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('does not exist')) {
+        next(new AppError(error.message, 404, ERROR_CODES.NOT_FOUND));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+// POST /api/storage/buckets/:bucketName/objects/:key/confirm - Confirm presigned upload
+router.post(
+  '/buckets/:bucketName/objects/:key/confirm',
+  verifyUser,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { bucketName, key } = req.params;
+      const { size, contentType, etag } = req.body;
+
+      if (!size) {
+        throw new AppError('Size is required', 400, ERROR_CODES.STORAGE_INVALID_PARAMETER);
+      }
+
+      const storageService = StorageService.getInstance();
+      const fileInfo = await storageService.confirmUpload(bucketName, key, {
+        size,
+        contentType,
+        etag
+      });
+
+      successResponse(res, fileInfo, 201);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        next(new AppError(error.message, 404, ERROR_CODES.NOT_FOUND));
+      } else if (error instanceof Error && error.message.includes('already confirmed')) {
+        next(new AppError(error.message, 409, ERROR_CODES.ALREADY_EXISTS));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+// POST /api/storage/buckets/:bucketName/objects/:key/download-url - Get download URL (presigned or direct)
+router.post(
+  '/buckets/:bucketName/objects/:key/download-url',
+  conditionalAuth,
+  async (req: AuthRequest | Request, res: Response, next: NextFunction) => {
+    try {
+      const { bucketName, key } = req.params;
+      const { expiresIn = 3600 } = req.body;
+
+      const storageService = StorageService.getInstance();
+      const strategy = await storageService.getDownloadStrategy(
+        bucketName, 
+        key,
+        Number(expiresIn)
+      );
+
+      successResponse(res, strategy);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Invalid')) {
+        next(new AppError(error.message, 400, ERROR_CODES.STORAGE_INVALID_PARAMETER));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
 export { router as storageRouter };
