@@ -10,59 +10,43 @@ import {
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
 import { parseSQLStatements } from '@/utils/sql-parser.js';
-import QueryStream from 'pg-query-stream';
 
 export class DatabaseController {
   private dbManager = DatabaseManager.getInstance();
 
   /**
-   * Stream table data using QueryStream for memory efficiency
-   * Returns array of rows processed via callback to avoid loading all into memory
+   * Get table data using simple SELECT query
+   * More reliable than streaming for moderate datasets
    */
-  private async streamTableData(
+  private async getTableData(
     client: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     table: string,
-    rowLimit: number | undefined,
-    onRow: (row: Record<string, unknown>) => void
-  ): Promise<{ totalRows: number; wasTruncated: boolean }> {
+    rowLimit: number | undefined
+  ): Promise<{ rows: Record<string, unknown>[]; totalRows: number; wasTruncated: boolean }> {
     const query = rowLimit ? `SELECT * FROM ${table} LIMIT ${rowLimit}` : `SELECT * FROM ${table}`;
-
-    const queryStream = new QueryStream(query);
-    const stream = client.query(queryStream);
-
-    let rowCount = 0;
+    
     let wasTruncated = false;
+    let totalRows = 0;
 
     // Check for truncation upfront if rowLimit is set
     if (rowLimit) {
       try {
         const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
-        const totalRows = parseInt(countResult.rows[0].count);
+        totalRows = parseInt(countResult.rows[0].count);
         wasTruncated = totalRows > rowLimit;
       } catch (err) {
         logger.error('Error counting rows:', err);
       }
     }
 
-    return new Promise((resolve, reject) => {
-      stream.on('data', (row: Record<string, unknown>) => {
-        try {
-          onRow(row);
-          rowCount++;
-        } catch (error) {
-          logger.error(`Error processing row for table ${table}:`, error);
-        }
-      });
+    const result = await client.query(query);
+    const rows = result.rows || [];
+    
+    if (!rowLimit) {
+      totalRows = rows.length;
+    }
 
-      stream.on('end', () => {
-        resolve({ totalRows: rowCount, wasTruncated });
-      });
-
-      stream.on('error', (error: Error) => {
-        logger.error(`Stream error for table ${table}:`, error);
-        reject(error);
-      });
-    });
+    return { rows, totalRows, wasTruncated };
   }
 
   async executeRawSQL(query: string, params: unknown[] = []): Promise<RawSQLResponse> {
@@ -204,6 +188,22 @@ export class DatabaseController {
       sqlExport += '\n';
     }
 
+    // Check if RLS is enabled on the table
+    const rlsResult = await client.query(
+        `
+          SELECT relrowsecurity 
+          FROM pg_class 
+          WHERE relname = $1
+          AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+        `,
+        [table]
+      );
+    const rlsEnabled = rlsResult.rows.length > 0 && (rlsResult.rows[0].relrowsecurity === true ||rlsResult.rows[0].relrowsecurity === 1);
+    if (rlsEnabled) {
+      sqlExport += `-- RLS enabled for table: ${table}\n`;
+      sqlExport += `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;\n\n`;
+    }
+
     // Export RLS policies
     const policiesResult = await client.query(
       `
@@ -308,6 +308,7 @@ export class DatabaseController {
         `);
         tablesToExport = tablesResult.rows.map((row: { tablename: string }) => row.tablename);
       }
+      logger.info(`Exporting tables: ${tablesToExport.join(', ')}, format: ${format}, includeData: ${includeData}, includeFunctions: ${includeFunctions}, includeSequences: ${includeSequences}, includeViews: ${includeViews}, rowLimit: ${rowLimit}`);
 
       const timestamp = new Date().toISOString();
       const truncatedTables: string[] = [];
@@ -322,21 +323,16 @@ export class DatabaseController {
         for (const table of tablesToExport) {
           sqlExport += await this.exportTableSchemaBySQL(client, table);
 
-          // Export data if requested - using streaming to avoid memory issues
+          // Export data if requested - using simple SELECT query
           if (includeData) {
             let tableDataSql = '';
-            let hasData = false;
 
-            const { wasTruncated } = await this.streamTableData(
-              client,
-              table,
-              rowLimit,
-              (row: Record<string, unknown>) => {
-                if (!hasData) {
-                  tableDataSql += `-- Data for table: ${table}\n`;
-                  hasData = true;
-                }
+            const { rows, wasTruncated } = await this.getTableData(client, table, rowLimit);
 
+            if (rows.length > 0) {
+              tableDataSql += `-- Data for table: ${table}\n`;
+
+              for (const row of rows) {
                 const columns = Object.keys(row);
                 const values = Object.values(row).map((val) => {
                   if (val === null) {
@@ -356,7 +352,7 @@ export class DatabaseController {
                 });
                 tableDataSql += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
               }
-            );
+            }
 
             if (wasTruncated) {
               const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
@@ -367,7 +363,7 @@ export class DatabaseController {
               truncatedTables.push(table);
             }
 
-            if (hasData) {
+            if (tableDataSql) {
               sqlExport += tableDataSql + '\n';
             }
           }
@@ -524,6 +520,19 @@ export class DatabaseController {
             [table]
           );
 
+          // Check if RLS is enabled on the table
+          const rlsResult = await client.query(
+              `
+                SELECT relrowsecurity 
+                FROM pg_class 
+                WHERE relname = $1
+                AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+              `,
+              [table]
+            );
+          
+          const rlsEnabled = rlsResult.rows.length > 0 && (rlsResult.rows[0].relrowsecurity === true ||rlsResult.rows[0].relrowsecurity === 1);
+          
           // Get policies
           const policiesResult = await client.query(
             `
@@ -565,14 +574,13 @@ export class DatabaseController {
           let totalRowCount: number | undefined;
 
           if (includeData) {
-            const streamResult = await this.streamTableData(client, table, rowLimit, (row: Record<string, unknown>) => {
-              rows.push(row);
-            });
-
-            truncated = streamResult.wasTruncated;
+            const tableData = await this.getTableData(client, table, rowLimit);
+            
+            rows.push(...tableData.rows);
+            truncated = tableData.wasTruncated;
+            
             if (truncated) {
-              const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
-              totalRowCount = parseInt(countResult.rows[0].count);
+              totalRowCount = tableData.totalRows;
               truncatedTables.push(table);
             }
           }
@@ -581,6 +589,7 @@ export class DatabaseController {
             schema: schemaResult.rows,
             indexes: indexesResult.rows,
             foreignKeys: foreignKeysResult.rows,
+            rlsEnabled,
             policies: policiesResult.rows,
             triggers: triggersResult.rows,
             rows,

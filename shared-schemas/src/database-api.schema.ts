@@ -138,6 +138,7 @@ export const exportJsonDataSchema = z.object({
           updateRule: z.string().nullable(),
         })
       ),
+      rlsEnabled: z.boolean().optional(),
       policies: z.array(
         z.object({
           policyname: z.string(),
