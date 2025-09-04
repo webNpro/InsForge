@@ -231,7 +231,13 @@ export class ChatService {
   /**
    * Send a chat message to the specified model
    */
-  async chat(message: string, options: ChatOptions): Promise<string> {
+  async chat(
+    message: string,
+    options: ChatOptions
+  ): Promise<{
+    content: string;
+    tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  }> {
     try {
       const chatModel = this.createChatModel(options.model, options);
       const messages = this.formatMessages(
@@ -239,7 +245,20 @@ export class ChatService {
         options.systemPrompt
       );
       const response = await chatModel.invoke(messages);
-      return response.content.toString();
+
+      // Extract token usage if available
+      const tokenUsage = response.usage_metadata
+        ? {
+            promptTokens: response.usage_metadata.input_tokens,
+            completionTokens: response.usage_metadata.output_tokens,
+            totalTokens: response.usage_metadata.total_tokens,
+          }
+        : undefined;
+
+      return {
+        content: response.content.toString(),
+        tokenUsage,
+      };
     } catch (error) {
       console.error('Chat error:', error);
       throw new Error(
@@ -251,12 +270,31 @@ export class ChatService {
   /**
    * Send a multi-turn conversation
    */
-  async chatWithHistory(messages: ChatMessage[], options: ChatOptions): Promise<string> {
+  async chatWithHistory(
+    messages: ChatMessage[],
+    options: ChatOptions
+  ): Promise<{
+    content: string;
+    tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  }> {
     try {
       const chatModel = this.createChatModel(options.model, options);
       const formattedMessages = this.formatMessages(messages, options.systemPrompt);
       const response = await chatModel.invoke(formattedMessages);
-      return response.content.toString();
+
+      // Extract token usage if available
+      const tokenUsage = response.usage_metadata
+        ? {
+            promptTokens: response.usage_metadata.input_tokens,
+            completionTokens: response.usage_metadata.output_tokens,
+            totalTokens: response.usage_metadata.total_tokens,
+          }
+        : undefined;
+
+      return {
+        content: response.content.toString(),
+        tokenUsage,
+      };
     } catch (error) {
       console.error('Chat with history error:', error);
       throw new Error(
@@ -268,7 +306,13 @@ export class ChatService {
   /**
    * Stream a chat response
    */
-  async *streamChat(message: string, options: ChatOptions): AsyncGenerator<string> {
+  async *streamChat(
+    message: string,
+    options: ChatOptions
+  ): AsyncGenerator<{
+    chunk?: string;
+    tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  }> {
     try {
       const chatModel = this.createChatModel(options.model, options);
       const messages = this.formatMessages(
@@ -278,7 +322,19 @@ export class ChatService {
       const stream = await chatModel.stream(messages);
 
       for await (const chunk of stream) {
-        yield chunk.content.toString();
+        // Check if this chunk contains token usage metadata (usually in the last chunk)
+        if (chunk.usage_metadata) {
+          yield {
+            chunk: chunk.content.toString(),
+            tokenUsage: {
+              promptTokens: chunk.usage_metadata.input_tokens,
+              completionTokens: chunk.usage_metadata.output_tokens,
+              totalTokens: chunk.usage_metadata.total_tokens,
+            },
+          };
+        } else {
+          yield { chunk: chunk.content.toString() };
+        }
       }
     } catch (error) {
       console.error('Streaming error:', error);
@@ -294,14 +350,29 @@ export class ChatService {
   async *streamChatWithHistory(
     messages: ChatMessage[],
     options: ChatOptions
-  ): AsyncGenerator<string> {
+  ): AsyncGenerator<{
+    chunk?: string;
+    tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  }> {
     try {
       const chatModel = this.createChatModel(options.model, options);
       const formattedMessages = this.formatMessages(messages, options.systemPrompt);
       const stream = await chatModel.stream(formattedMessages);
 
       for await (const chunk of stream) {
-        yield chunk.content.toString();
+        // Check if this chunk contains token usage metadata (usually in the last chunk)
+        if (chunk.usage_metadata) {
+          yield {
+            chunk: chunk.content.toString(),
+            tokenUsage: {
+              promptTokens: chunk.usage_metadata.input_tokens,
+              completionTokens: chunk.usage_metadata.output_tokens,
+              totalTokens: chunk.usage_metadata.total_tokens,
+            },
+          };
+        } else {
+          yield { chunk: chunk.content.toString() };
+        }
       }
     } catch (error) {
       console.error('Streaming with history error:', error);

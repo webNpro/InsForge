@@ -10,11 +10,11 @@ import {
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 
-interface UseAIConfigurationsOptions {
+interface UseAIConfigsOptions {
   enabled?: boolean;
 }
 
-export function useAIConfigurations(options: UseAIConfigurationsOptions = {}) {
+export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   const { enabled = true } = options;
   const queryClient = useQueryClient();
   const { showToast } = useToast();

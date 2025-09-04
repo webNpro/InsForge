@@ -52,11 +52,11 @@ export interface ImageGenerationOptions {
 
 export interface GeneratedImage {
   url?: string;
-  b64_json?: string;
+  image_data?: string;
   revised_prompt?: string;
 }
 
-export type ImageProvider = 'openai' | 'xai' | 'bedrock' | 'google';
+export type ImageProvider = 'openai' | 'google';
 
 export interface ImageModelConfig {
   provider: ImageProvider;

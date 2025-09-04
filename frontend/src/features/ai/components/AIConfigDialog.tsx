@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/radix/Select';
-import { useAIConfigurations } from '../hooks/useAIConfigurations';
+import { useAIConfigs } from '../hooks/useAIConfigs';
 import {
   AIConfigurationSchema,
   createAIConfiguarationReqeustSchema,
@@ -28,7 +28,7 @@ import {
   ModalitySchema,
 } from '@insforge/shared-schemas';
 
-interface AiConfigDialogProps {
+interface AIConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
@@ -56,14 +56,14 @@ const parseModelKey = (key: string): { provider: string; model: string } => {
 
 const buildModelLabel = (provider: string, model: string): string => `${provider} - ${model}`;
 
-export function AiConfigDialog({
+export function AIConfigDialog({
   open,
   onOpenChange,
   mode,
   editingConfig,
   onSuccess,
-}: AiConfigDialogProps) {
-  const { configuredTextProviders, configuredImageProviders } = useAIConfigurations();
+}: AIConfigDialogProps) {
+  const { configuredTextProviders, configuredImageProviders } = useAIConfigs();
   const [selectedModality, setSelectedModality] = useState<ModalitySchema>('text');
 
   const modelsByModality = useMemo(() => {
@@ -257,7 +257,7 @@ export function AiConfigDialog({
       return (
         <div className="flex flex-col flex-1 space-y-2">
           <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">Output</Label>
-          <div className="flex items-center px-3 py-2 text-sm bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-gray-600 dark:text-gray-400">
+          <div className="flex items-center h-9 px-3 py-2 text-sm bg-zinc-50 dark:bg-neutral-900 border border-zinc-200 dark:border-neutral-700 rounded-md text-zinc-600 dark:text-zinc-400">
             {editingConfig?.modality || 'N/A'}
           </div>
         </div>
@@ -273,11 +273,11 @@ export function AiConfigDialog({
         <Select value={modality || undefined} onValueChange={handleModalityChange}>
           <SelectTrigger
             id="modality"
-            className="dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+            className="h-9 bg-transparent dark:bg-neutral-900 dark:border-neutral-700 dark:text-white"
           >
             <SelectValue placeholder="Select modality" />
           </SelectTrigger>
-          <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
+          <SelectContent className="dark:bg-neutral-900 dark:border-neutral-700">
             {modalityOptions.map((option) => (
               <SelectItem
                 key={option.value}
@@ -301,7 +301,7 @@ export function AiConfigDialog({
       return (
         <div className="flex flex-col flex-1 space-y-2">
           <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">AI Model</Label>
-          <div className="w-100 flex items-center px-3 py-2 text-sm bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-gray-600 dark:text-gray-400">
+          <div className="w-100 flex items-center h-9 px-3 py-2 text-sm bg-zinc-50 dark:bg-neutral-900 border border-zinc-200 dark:border-neutral-700 rounded-md text-zinc-600 dark:text-zinc-400">
             {editingConfig?.provider} - {editingConfig?.model}
           </div>
         </div>
@@ -328,11 +328,11 @@ export function AiConfigDialog({
         >
           <SelectTrigger
             id="model"
-            className="w-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+            className="w-100 h-9 bg-transparent dark:bg-neutral-900 dark:border-neutral-700 dark:text-white"
           >
             <SelectValue placeholder={hasModels ? 'Select model' : 'No models available'} />
           </SelectTrigger>
-          <SelectContent className="dark:bg-neutral-800 dark:border-neutral-700">
+          <SelectContent className="dark:bg-neutral-900 dark:border-neutral-700">
             {hasModels ? (
               availableModels.map((modelOption) => (
                 <SelectItem
@@ -370,13 +370,13 @@ export function AiConfigDialog({
           className="text-sm font-medium text-zinc-950 dark:text-zinc-300"
         >
           System Prompt{' '}
-          <span className="text-sm text-gray-500 dark:text-neutral-400">(Optional)</span>
+          <span className="text-sm text-zinc-500 dark:text-neutral-400">(Optional)</span>
         </Label>
         <Textarea
           id="systemPrompt"
           {...systemPromptRegister}
           placeholder="Enter system prompt..."
-          className="min-h-[100px] resize-none dark:bg-neutral-800 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
+          className="min-h-[100px] resize-none bg-transparent dark:bg-neutral-900 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
         />
         {systemPromptError && (
           <p className="text-sm text-red-600 dark:text-red-500">{systemPromptError.message}</p>
@@ -387,7 +387,7 @@ export function AiConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 border-zinc-200 dark:border-neutral-700 dark:bg-neutral-900 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
+      <DialogContent className="w-[560px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -403,13 +403,13 @@ export function AiConfigDialog({
 
           <div className="flex flex-col gap-6 p-6">
             {!hasProviders ? (
-              <div className="text-sm text-zinc-600 dark:text-zinc-400 text-center py-4">
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-8">
                 No AI providers are configured. Please configure at least one provider to create AI
                 configurations.
               </div>
             ) : (
               <>
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   {renderModalityField()}
                   {renderModelField()}
                 </div>
@@ -430,7 +430,7 @@ export function AiConfigDialog({
             <Button
               type="submit"
               disabled={!hasProviders}
-              className="w-30 h-9 px-3 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-30 h-9 px-3 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
             >
               {isCreateMode ? 'Create' : 'Save'}
             </Button>

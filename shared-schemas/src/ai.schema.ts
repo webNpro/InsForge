@@ -9,6 +9,7 @@ export const aiConfigurationSchema = z.object({
   model: z.string(),
   systemPrompt: z.string().optional(),
   tokenUsed: z.number().min(0),
+  requestsCount: z.number().min(0),
 });
 
 export type ModalitySchema = z.infer<typeof modalitySchema>;

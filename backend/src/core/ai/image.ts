@@ -183,18 +183,18 @@ export class ImageService {
           const parsed = JSON.parse(result);
           if (Array.isArray(parsed)) {
             return parsed.map((item) => ({
-              b64_json: item.b64_json,
+              image_data: item.b64_json,
               revised_prompt: item.revised_prompt,
             }));
           }
           return [
             {
-              b64_json: parsed.b64_json,
+              image_data: parsed.b64_json,
               revised_prompt: parsed.revised_prompt,
             },
           ];
         } catch {
-          return [{ b64_json: result }];
+          return [{ image_data: result }];
         }
       } else {
         // URL format - result is a URL string or comma-separated URLs
@@ -255,7 +255,7 @@ export class ImageService {
                 if (part.inlineData && part.inlineData.data) {
                   // Base64 format
                   images.push({
-                    b64_json: part.inlineData.data,
+                    image_data: part.inlineData.data,
                   });
                 } else if (part.fileData && part.fileData.fileUri) {
                   // File URI format
@@ -300,7 +300,7 @@ export class ImageService {
               if (generatedImage.image.imageBytes) {
                 // Base64 format
                 images.push({
-                  b64_json: generatedImage.image.imageBytes,
+                  image_data: generatedImage.image.imageBytes,
                 });
               } else if (generatedImage.image.gcsUri) {
                 // GCS URI format

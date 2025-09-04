@@ -9,11 +9,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/radix/DropdownMenu';
 import { cn } from '@/lib/utils/utils';
-import { AiConfigDialog } from '../components/AiConfigDialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { useAIConfigurations } from '../hooks/useAIConfigurations';
-import { AIConfigurationSchema } from '@insforge/shared-schemas';
+import { PromptDialog } from '@/components/PromptDialog';
+import { useAIConfigs } from '../hooks/useAIConfigs';
+import {
+  AIConfigurationSchema,
+  CreateAIConfiguarationReqeust,
+  UpdateAIConfiguarationReqeust,
+} from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
+import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
+import { generateAIIntegrationPrompt } from '@/features/ai/helpers';
 
 const getModalityIcon = (modality: string) => {
   switch (modality) {
@@ -39,24 +45,30 @@ const formatTokenCount = (count: number): string => {
   return count.toString();
 };
 
-export default function AiPage() {
+export default function AIPage() {
   const {
     configurations,
     isLoadingConfigurations,
     createConfiguration,
     updateConfiguration,
     deleteConfiguration,
-  } = useAIConfigurations();
+  } = useAIConfigs();
 
   const { confirm, confirmDialogProps } = useConfirm();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [editingConfig, setEditingConfig] = useState<AIConfigurationSchema | undefined>();
+  const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const [selectedConfigForPrompt, setSelectedConfigForPrompt] =
+    useState<AIConfigurationSchema | null>(null);
 
   const handleConnect = (id: string) => {
-    // TODO: Implement connection logic when backend supports it
-    console.log('Connect configuration:', id);
+    const config = configurations.find((c) => c.id === id);
+    if (config) {
+      setSelectedConfigForPrompt(config);
+      setPromptDialogOpen(true);
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -88,19 +100,23 @@ export default function AiPage() {
     setDialogOpen(true);
   };
 
-  const handleDialogSuccess = (configData: any) => {
+  const handleDialogSuccess = (
+    configData: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust
+  ) => {
     if (dialogMode === 'create') {
+      const createData = configData as CreateAIConfiguarationReqeust;
       createConfiguration({
-        modality: configData.modality,
-        provider: configData.provider,
-        model: configData.model,
-        systemPrompt: configData.systemPrompt,
+        modality: createData.modality,
+        provider: createData.provider,
+        model: createData.model,
+        systemPrompt: createData.systemPrompt,
       });
     } else if (editingConfig) {
+      const updateData = configData as UpdateAIConfiguarationReqeust;
       updateConfiguration({
         id: editingConfig.id,
         data: {
-          systemPrompt: configData.systemPrompt || null,
+          systemPrompt: updateData.systemPrompt || null,
         },
       });
     }
@@ -157,10 +173,21 @@ export default function AiPage() {
                         </div>
                       </div>
 
-                      {/* Token Usage */}
+                      {/* Token Usage or Request Count */}
                       <div className="text-sm text-gray-500 dark:text-neutral-400">
-                        <span className="font-medium">{formatTokenCount(config.tokenUsed)}</span>
-                        {' tokens'}
+                        {config.modality === 'image' ? (
+                          <>
+                            <span className="font-medium">{config.requestsCount}</span>
+                            {config.requestsCount === 1 ? ' request' : ' requests'}
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-medium">
+                              {formatTokenCount(config.tokenUsed)}
+                            </span>
+                            {' tokens'}
+                          </>
+                        )}
                       </div>
 
                       {/* Actions */}
@@ -212,12 +239,19 @@ export default function AiPage() {
       </div>
 
       {/* AI Configuration Dialog */}
-      <AiConfigDialog
+      <AIConfigDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={dialogMode}
         editingConfig={editingConfig}
         onSuccess={handleDialogSuccess}
+      />
+
+      {/* Prompt Dialog */}
+      <PromptDialog
+        open={promptDialogOpen}
+        onOpenChange={setPromptDialogOpen}
+        prompt={selectedConfigForPrompt ? generateAIIntegrationPrompt(selectedConfigForPrompt) : ''}
       />
 
       {/* Confirm Dialog */}

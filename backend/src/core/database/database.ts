@@ -374,6 +374,7 @@ export class DatabaseManager {
         model VARCHAR(255) NOT NULL,
         system_prompt TEXT,
         token_used INTEGER DEFAULT 0 CHECK (token_used >= 0),
+        requests_count INTEGER DEFAULT 0 CHECK (requests_count >= 0),
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -437,6 +438,12 @@ export class DatabaseManager {
       await client.query(`
         INSERT INTO _metadata (key, value) VALUES ('created_at', NOW()::TEXT)
         ON CONFLICT (key) DO NOTHING;
+      `);
+
+      // Add requests_count column if it doesn't exist (for existing databases)
+      await client.query(`
+        ALTER TABLE _ai_configs 
+        ADD COLUMN IF NOT EXISTS requests_count INTEGER DEFAULT 0 CHECK (requests_count >= 0);
       `);
 
       await client.query('COMMIT');

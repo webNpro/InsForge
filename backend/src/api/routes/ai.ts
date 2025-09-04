@@ -52,6 +52,14 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Check if the model is enabled in AI configurations
+    const aiConfig = await aiConfigService.findByModelAndModality(model, 'text');
+    if (!aiConfig) {
+      return res.status(403).json({
+        error: `Model ${model} is not enabled. Please contact your administrator to enable this model.`,
+      });
+    }
+
     // Handle streaming requests
     if (stream) {
       // Set headers for SSE (Server-Sent Events)
@@ -61,13 +69,21 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 
       try {
         let streamGenerator;
+        let tokenUsage: { totalTokens?: number } | undefined;
+
+        // Prepare options with system prompt from AI config if available
+        const chatOptions = {
+          model,
+          ...options,
+          ...(aiConfig.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+        };
 
         if (messages && messages.length > 0) {
           // Multi-turn conversation with streaming
-          streamGenerator = chatService.streamChatWithHistory(messages, { model, ...options });
+          streamGenerator = chatService.streamChatWithHistory(messages, chatOptions);
         } else if (message) {
           // Single message with streaming
-          streamGenerator = chatService.streamChat(message, { model, ...options });
+          streamGenerator = chatService.streamChat(message, chatOptions);
         } else {
           res.write(
             `data: ${JSON.stringify({ error: 'Either message or messages array is required' })}\n\n`
@@ -77,9 +93,21 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
         }
 
         // Stream the response
-        for await (const chunk of streamGenerator) {
-          res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+        for await (const data of streamGenerator) {
+          if (data.chunk) {
+            res.write(`data: ${JSON.stringify({ chunk: data.chunk })}\n\n`);
+          }
+          // Capture token usage when provided (usually in the last chunk)
+          if (data.tokenUsage) {
+            tokenUsage = data.tokenUsage;
+          }
         }
+
+        // Update token usage if available and increment requests count
+        if (tokenUsage?.totalTokens) {
+          await aiConfigService.updateTokenUsageByModel(model, 'text', tokenUsage.totalTokens);
+        }
+        await aiConfigService.incrementRequestsCount(model, 'text');
 
         // Send completion signal
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
@@ -94,24 +122,38 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
     }
 
     // Non-streaming requests
-    let response: string;
+    let result: { content: string; tokenUsage?: { totalTokens?: number } };
+
+    // Prepare options with system prompt from AI config if available
+    const chatOptions = {
+      model,
+      ...options,
+      ...(aiConfig.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+    };
 
     if (messages && messages.length > 0) {
       // Multi-turn conversation
-      response = await chatService.chatWithHistory(messages, { model, ...options });
+      result = await chatService.chatWithHistory(messages, chatOptions);
     } else if (message) {
       // Single message
-      response = await chatService.chat(message, { model, ...options });
+      result = await chatService.chat(message, chatOptions);
     } else {
       return res.status(400).json({
         error: 'Either message or messages array is required',
       });
     }
 
+    // Update token usage if available and increment requests count
+    if (result.tokenUsage?.totalTokens) {
+      await aiConfigService.updateTokenUsageByModel(model, 'text', result.tokenUsage.totalTokens);
+    }
+    await aiConfigService.incrementRequestsCount(model, 'text');
+
     res.json({
       success: true,
-      response,
+      response: result.content,
       model,
+      tokenUsage: result.tokenUsage,
     });
   } catch (error) {
     console.error('Chat error:', error);
@@ -141,10 +183,23 @@ router.post(
         throw new AppError('Prompt is required', 400, ERROR_CODES.INVALID_INPUT);
       }
 
+      // Check if the model is enabled in AI configurations
+      const aiConfig = await aiConfigService.findByModelAndModality(model, 'image');
+      if (!aiConfig) {
+        throw new AppError(
+          `Model ${model} is not enabled. Please contact your administrator to enable this model.`,
+          403,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
+
       const images = await ImageService.generate({
         model,
         ...options,
       });
+
+      // Increment requests count for image generation
+      await aiConfigService.incrementRequestsCount(model, 'image');
 
       successResponse(
         res,

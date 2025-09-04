@@ -21,6 +21,7 @@ export const listModelsResponseSchema = z.object({
 export const createAIConfiguarationReqeustSchema = aiConfigurationSchema.omit({
   id: true,
   tokenUsed: true,
+  requestsCount: true,
 });
 
 export const updateAIConfiguarationReqeustSchema = z.object({
