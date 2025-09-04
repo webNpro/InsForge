@@ -6,8 +6,14 @@ import { ChatXAI } from '@langchain/xai';
 import { HumanMessage, SystemMessage, AIMessage, BaseMessage } from '@langchain/core/messages';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { ChatMessage, ChatOptions, ChatProvider, ChatModelConfig } from '@/types/ai';
+import { AIUsageService } from './usage';
+import { AIConfigService } from './config';
+import type { AIConfigurationSchema } from '@insforge/shared-schemas';
 
 export class ChatService {
+  private aiUsageService = new AIUsageService();
+  private aiConfigService = new AIConfigService();
+
   private static modelConfigs: Record<string, ChatModelConfig> = {
     // OpenAI Models
     'gpt-4-turbo': { provider: 'openai', modelId: 'gpt-4-turbo', displayName: 'GPT-4 Turbo' },
@@ -22,7 +28,7 @@ export class ChatService {
       modelId: 'claude-3-opus-20240229',
       displayName: 'Claude 3 Opus',
     },
-    'claude-3-sonnet': {
+    'claude-3.5-sonnet': {
       provider: 'anthropic',
       modelId: 'claude-3-5-sonnet-20241022',
       displayName: 'Claude 3.5 Sonnet',
@@ -62,29 +68,15 @@ export class ChatService {
       modelId: 'us.anthropic.claude-3-haiku-20240307-v1:0',
       displayName: 'Claude 3 Haiku (Bedrock)',
     },
-    'bedrock-titan': {
-      provider: 'bedrock',
-      modelId: 'us.amazon.titan-text-premier-v1:0',
-      displayName: 'Titan Text Premier',
-    },
-    'bedrock-llama3-70b': {
-      provider: 'bedrock',
-      modelId: 'us.meta.llama3-70b-instruct-v1:0',
-      displayName: 'Llama 3 70B',
-    },
-    'bedrock-mistral-large': {
-      provider: 'bedrock',
-      modelId: 'us.mistral.mistral-large-2402-v1:0',
-      displayName: 'Mistral Large',
-    },
 
     // xAI Models
+    'grok-1': { provider: 'xai', modelId: 'grok-1', displayName: 'Grok 1' },
+    'grok-2': { provider: 'xai', modelId: 'grok-2', displayName: 'Grok 2' },
     'grok-beta': { provider: 'xai', modelId: 'grok-beta', displayName: 'Grok Beta' },
-    'grok-2-beta': { provider: 'xai', modelId: 'grok-2-beta', displayName: 'Grok 2 Beta' },
-    'grok-2-vision-beta': {
+    'grok-vision-beta': {
       provider: 'xai',
-      modelId: 'grok-2-vision-beta',
-      displayName: 'Grok 2 Vision Beta',
+      modelId: 'grok-vision-beta',
+      displayName: 'Grok Vision Beta',
     },
   };
 
@@ -98,7 +90,7 @@ export class ChatService {
       const existing = providerMap.get(config.provider);
       if (!existing) {
         providerMap.set(config.provider, {
-          configured: this.isProviderConfigured(config.provider),
+          configured: this.isProviderConfigured(config.provider as ChatProvider),
           models: [key],
         });
       } else {
@@ -125,7 +117,7 @@ export class ChatService {
       case 'google':
         return !!process.env.GOOGLE_API_KEY;
       case 'bedrock':
-        return !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
+        return !!process.env.AWS_REGION;
       case 'xai':
         return !!process.env.XAI_API_KEY;
       default:
@@ -134,41 +126,43 @@ export class ChatService {
   }
 
   /**
-   * Create chat model instance based on provider
+   * Create a chat model instance based on provider
    */
-  private createChatModel(modelKey: string, options?: Partial<ChatOptions>): BaseChatModel {
-    const config = ChatService.modelConfigs[modelKey];
+  private createChatModel(model: string, options: Partial<ChatOptions> = {}): BaseChatModel {
+    const config = ChatService.modelConfigs[model];
     if (!config) {
-      throw new Error(`Unknown model: ${modelKey}`);
+      throw new Error(`Unsupported model: ${model}`);
     }
 
-    const temperature = options?.temperature ?? 0.7;
-    const maxTokens = options?.maxTokens ?? 2048;
+    const { provider, modelId } = config;
+    const temperature = options.temperature ?? 0.7;
+    const maxTokens = options.maxTokens ?? 4096;
 
-    if (!ChatService.isProviderConfigured(config.provider)) {
-      throw new Error(`${config.provider} provider not configured`);
+    // Check if provider is configured
+    if (!ChatService.isProviderConfigured(provider as ChatProvider)) {
+      throw new Error(`${provider} provider is not configured.`);
     }
 
-    switch (config.provider) {
+    switch (provider as ChatProvider) {
       case 'openai':
         return new ChatOpenAI({
-          modelName: config.modelId,
+          model: modelId,
           temperature,
           maxTokens,
-          openAIApiKey: process.env.OPENAI_API_KEY,
+          apiKey: process.env.OPENAI_API_KEY,
         });
 
       case 'anthropic':
         return new ChatAnthropic({
-          modelName: config.modelId,
+          model: modelId,
           temperature,
           maxTokens,
-          anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+          apiKey: process.env.ANTHROPIC_API_KEY,
         });
 
       case 'google':
         return new ChatGoogleGenerativeAI({
-          model: config.modelId,
+          model: modelId,
           temperature,
           maxOutputTokens: maxTokens,
           apiKey: process.env.GOOGLE_API_KEY,
@@ -176,26 +170,22 @@ export class ChatService {
 
       case 'bedrock':
         return new ChatBedrockConverse({
-          region: process.env.AWS_REGION || 'us-east-1',
-          model: config.modelId,
+          model: modelId,
           temperature,
           maxTokens,
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-          },
+          region: process.env.AWS_REGION,
         });
 
       case 'xai':
         return new ChatXAI({
-          model: config.modelId,
+          model: modelId,
           temperature,
           maxTokens,
           apiKey: process.env.XAI_API_KEY,
         });
 
       default:
-        throw new Error(`Unsupported provider: ${config.provider}`);
+        throw new Error(`Unsupported provider: ${provider}`);
     }
   }
 
@@ -229,6 +219,22 @@ export class ChatService {
   }
 
   /**
+   * Validate model and get config
+   */
+  async validateAndGetConfig(
+    model: string,
+    modality: string
+  ): Promise<AIConfigurationSchema | null> {
+    const aiConfig = await this.aiConfigService.findByModelAndModality(model, modality);
+    if (!aiConfig) {
+      throw new Error(
+        `Model ${model} is not enabled. Please contact your administrator to enable this model.`
+      );
+    }
+    return aiConfig;
+  }
+
+  /**
    * Send a chat message to the specified model
    */
   async chat(
@@ -239,10 +245,19 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      const chatModel = this.createChatModel(options.model, options);
+      // Validate model and get config
+      const aiConfig = await this.validateAndGetConfig(options.model, 'text');
+
+      // Apply system prompt from config if available
+      const chatOptions = {
+        ...options,
+        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+      };
+
+      const chatModel = this.createChatModel(chatOptions.model, chatOptions);
       const messages = this.formatMessages(
         [{ role: 'user', content: message }],
-        options.systemPrompt
+        chatOptions.systemPrompt
       );
       const response = await chatModel.invoke(messages);
 
@@ -254,6 +269,15 @@ export class ChatService {
             totalTokens: response.usage_metadata.total_tokens,
           }
         : undefined;
+
+      // Track usage if config is available
+      if (aiConfig?.id && tokenUsage) {
+        await this.aiUsageService.trackChatUsage(
+          aiConfig.id,
+          tokenUsage.promptTokens,
+          tokenUsage.completionTokens
+        );
+      }
 
       return {
         content: response.content.toString(),
@@ -278,8 +302,17 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      const chatModel = this.createChatModel(options.model, options);
-      const formattedMessages = this.formatMessages(messages, options.systemPrompt);
+      // Validate model and get config
+      const aiConfig = await this.validateAndGetConfig(options.model, 'text');
+
+      // Apply system prompt from config if available
+      const chatOptions = {
+        ...options,
+        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+      };
+
+      const chatModel = this.createChatModel(chatOptions.model, chatOptions);
+      const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
       const response = await chatModel.invoke(formattedMessages);
 
       // Extract token usage if available
@@ -290,6 +323,15 @@ export class ChatService {
             totalTokens: response.usage_metadata.total_tokens,
           }
         : undefined;
+
+      // Track usage if config is available
+      if (aiConfig?.id && tokenUsage) {
+        await this.aiUsageService.trackChatUsage(
+          aiConfig.id,
+          tokenUsage.promptTokens,
+          tokenUsage.completionTokens
+        );
+      }
 
       return {
         content: response.content.toString(),
@@ -314,27 +356,50 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      const chatModel = this.createChatModel(options.model, options);
+      // Validate model and get config
+      const aiConfig = await this.validateAndGetConfig(options.model, 'text');
+
+      // Apply system prompt from config if available
+      const chatOptions = {
+        ...options,
+        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+      };
+
+      const chatModel = this.createChatModel(chatOptions.model, chatOptions);
       const messages = this.formatMessages(
         [{ role: 'user', content: message }],
-        options.systemPrompt
+        chatOptions.systemPrompt
       );
       const stream = await chatModel.stream(messages);
+
+      let tokenUsage:
+        | { promptTokens?: number; completionTokens?: number; totalTokens?: number }
+        | undefined;
 
       for await (const chunk of stream) {
         // Check if this chunk contains token usage metadata (usually in the last chunk)
         if (chunk.usage_metadata) {
+          tokenUsage = {
+            promptTokens: chunk.usage_metadata.input_tokens,
+            completionTokens: chunk.usage_metadata.output_tokens,
+            totalTokens: chunk.usage_metadata.total_tokens,
+          };
           yield {
             chunk: chunk.content.toString(),
-            tokenUsage: {
-              promptTokens: chunk.usage_metadata.input_tokens,
-              completionTokens: chunk.usage_metadata.output_tokens,
-              totalTokens: chunk.usage_metadata.total_tokens,
-            },
+            tokenUsage,
           };
         } else {
           yield { chunk: chunk.content.toString() };
         }
+      }
+
+      // Track usage after streaming completes
+      if (aiConfig?.id && tokenUsage) {
+        await this.aiUsageService.trackChatUsage(
+          aiConfig.id,
+          tokenUsage.promptTokens,
+          tokenUsage.completionTokens
+        );
       }
     } catch (error) {
       console.error('Streaming error:', error);
@@ -355,24 +420,47 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      const chatModel = this.createChatModel(options.model, options);
-      const formattedMessages = this.formatMessages(messages, options.systemPrompt);
+      // Validate model and get config
+      const aiConfig = await this.validateAndGetConfig(options.model, 'text');
+
+      // Apply system prompt from config if available
+      const chatOptions = {
+        ...options,
+        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
+      };
+
+      const chatModel = this.createChatModel(chatOptions.model, chatOptions);
+      const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
       const stream = await chatModel.stream(formattedMessages);
+
+      let tokenUsage:
+        | { promptTokens?: number; completionTokens?: number; totalTokens?: number }
+        | undefined;
 
       for await (const chunk of stream) {
         // Check if this chunk contains token usage metadata (usually in the last chunk)
         if (chunk.usage_metadata) {
+          tokenUsage = {
+            promptTokens: chunk.usage_metadata.input_tokens,
+            completionTokens: chunk.usage_metadata.output_tokens,
+            totalTokens: chunk.usage_metadata.total_tokens,
+          };
           yield {
             chunk: chunk.content.toString(),
-            tokenUsage: {
-              promptTokens: chunk.usage_metadata.input_tokens,
-              completionTokens: chunk.usage_metadata.output_tokens,
-              totalTokens: chunk.usage_metadata.total_tokens,
-            },
+            tokenUsage,
           };
         } else {
           yield { chunk: chunk.content.toString() };
         }
+      }
+
+      // Track usage after streaming completes
+      if (aiConfig?.id && tokenUsage) {
+        await this.aiUsageService.trackChatUsage(
+          aiConfig.id,
+          tokenUsage.promptTokens,
+          tokenUsage.completionTokens
+        );
       }
     } catch (error) {
       console.error('Streaming with history error:', error);

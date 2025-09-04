@@ -4,9 +4,9 @@ import { aiService } from '@/features/ai/services/ai.service';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import {
   ListModelsResponse,
-  AIConfigurationSchema,
-  CreateAIConfiguarationReqeust,
-  UpdateAIConfiguarationReqeust,
+  AIConfigurationWithUsageSchema,
+  CreateAIConfigurationReqeust,
+  UpdateAIConfigurationReqeust,
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 
@@ -45,16 +45,16 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     isLoading: isLoadingConfigurations,
     error: configurationsError,
     refetch: refetchConfigurations,
-  } = useQuery<AIConfigurationSchema[]>({
+  } = useQuery<AIConfigurationWithUsageSchema[]>({
     queryKey: ['ai-configurations'],
-    queryFn: () => aiService.getConfigurations(),
+    queryFn: () => aiService.listConfigurations(),
     enabled: enabled && !!apiKey,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Create configuration mutation
   const createConfigurationMutation = useMutation({
-    mutationFn: (data: CreateAIConfiguarationReqeust) => aiService.createConfiguration(data),
+    mutationFn: (data: CreateAIConfigurationReqeust) => aiService.createConfiguration(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['ai-configurations'] });
       showToast('AI configuration created successfully', 'success');
@@ -66,7 +66,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
 
   // Update configuration mutation
   const updateConfigurationMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateAIConfiguarationReqeust }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateAIConfigurationReqeust }) =>
       aiService.updateConfiguration(id, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['ai-configurations'] });

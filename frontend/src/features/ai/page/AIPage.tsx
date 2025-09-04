@@ -13,9 +13,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PromptDialog } from '@/components/PromptDialog';
 import { useAIConfigs } from '../hooks/useAIConfigs';
 import {
-  AIConfigurationSchema,
-  CreateAIConfiguarationReqeust,
-  UpdateAIConfiguarationReqeust,
+  AIConfigurationWithUsageSchema,
+  CreateAIConfigurationReqeust,
+  UpdateAIConfigurationReqeust,
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
@@ -58,10 +58,10 @@ export default function AIPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [editingConfig, setEditingConfig] = useState<AIConfigurationSchema | undefined>();
+  const [editingConfig, setEditingConfig] = useState<AIConfigurationWithUsageSchema | undefined>();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const [selectedConfigForPrompt, setSelectedConfigForPrompt] =
-    useState<AIConfigurationSchema | null>(null);
+    useState<AIConfigurationWithUsageSchema | null>(null);
 
   const handleConnect = (id: string) => {
     const config = configurations.find((c) => c.id === id);
@@ -101,10 +101,10 @@ export default function AIPage() {
   };
 
   const handleDialogSuccess = (
-    configData: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust
+    configData: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust
   ) => {
     if (dialogMode === 'create') {
-      const createData = configData as CreateAIConfiguarationReqeust;
+      const createData = configData as CreateAIConfigurationReqeust;
       createConfiguration({
         modality: createData.modality,
         provider: createData.provider,
@@ -112,7 +112,7 @@ export default function AIPage() {
         systemPrompt: createData.systemPrompt,
       });
     } else if (editingConfig) {
-      const updateData = configData as UpdateAIConfiguarationReqeust;
+      const updateData = configData as UpdateAIConfigurationReqeust;
       updateConfiguration({
         id: editingConfig.id,
         data: {
@@ -173,20 +173,46 @@ export default function AIPage() {
                         </div>
                       </div>
 
-                      {/* Token Usage or Request Count */}
+                      {/* Usage Statistics */}
                       <div className="text-sm text-gray-500 dark:text-neutral-400">
-                        {config.modality === 'image' ? (
-                          <>
-                            <span className="font-medium">{config.requestsCount}</span>
-                            {config.requestsCount === 1 ? ' request' : ' requests'}
-                          </>
+                        {config.usageStats ? (
+                          <div className="flex items-center gap-4">
+                            {config.modality === 'image' ? (
+                              <>
+                                <span>
+                                  <span className="font-medium">
+                                    {config.usageStats.totalImageCount}
+                                  </span>
+                                  {config.usageStats.totalImageCount === 1 ? ' image' : ' images'}
+                                </span>
+                                <span className="text-gray-400">•</span>
+                                <span>
+                                  <span className="font-medium">
+                                    {config.usageStats.totalRequests}
+                                  </span>
+                                  {config.usageStats.totalRequests === 1 ? ' request' : ' requests'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span>
+                                  <span className="font-medium">
+                                    {formatTokenCount(config.usageStats.totalTokens)}
+                                  </span>
+                                  {' tokens'}
+                                </span>
+                                <span className="text-gray-400">•</span>
+                                <span>
+                                  <span className="font-medium">
+                                    {config.usageStats.totalRequests}
+                                  </span>
+                                  {config.usageStats.totalRequests === 1 ? ' request' : ' requests'}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         ) : (
-                          <>
-                            <span className="font-medium">
-                              {formatTokenCount(config.tokenUsed)}
-                            </span>
-                            {' tokens'}
-                          </>
+                          <span className="text-gray-400">No usage yet</span>
                         )}
                       </div>
 

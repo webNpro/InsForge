@@ -7,14 +7,18 @@ import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
 import { AIConfigService } from '@/core/ai/config';
+import { AIUsageService } from '@/core/ai/usage';
 import {
-  createAIConfiguarationReqeustSchema,
-  updateAIConfiguarationReqeustSchema,
+  createAIConfigurationReqeustSchema,
+  updateAIConfigurationReqeustSchema,
+  getAIUsageRequestSchema,
+  getAIUsageSummaryRequestSchema,
 } from '@insforge/shared-schemas';
 
 const router = Router();
 const chatService = new ChatService();
 const aiConfigService = new AIConfigService();
+const aiUsageService = new AIUsageService();
 
 /**
  * GET /api/ai/models
@@ -52,14 +56,6 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Check if the model is enabled in AI configurations
-    const aiConfig = await aiConfigService.findByModelAndModality(model, 'text');
-    if (!aiConfig) {
-      return res.status(403).json({
-        error: `Model ${model} is not enabled. Please contact your administrator to enable this model.`,
-      });
-    }
-
     // Handle streaming requests
     if (stream) {
       // Set headers for SSE (Server-Sent Events)
@@ -69,13 +65,10 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 
       try {
         let streamGenerator;
-        let tokenUsage: { totalTokens?: number } | undefined;
 
-        // Prepare options with system prompt from AI config if available
         const chatOptions = {
           model,
           ...options,
-          ...(aiConfig.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
         };
 
         if (messages && messages.length > 0) {
@@ -97,17 +90,11 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
           if (data.chunk) {
             res.write(`data: ${JSON.stringify({ chunk: data.chunk })}\n\n`);
           }
-          // Capture token usage when provided (usually in the last chunk)
+          // Send token usage if available
           if (data.tokenUsage) {
-            tokenUsage = data.tokenUsage;
+            res.write(`data: ${JSON.stringify({ tokenUsage: data.tokenUsage })}\n\n`);
           }
         }
-
-        // Update token usage if available and increment requests count
-        if (tokenUsage?.totalTokens) {
-          await aiConfigService.updateTokenUsageByModel(model, 'text', tokenUsage.totalTokens);
-        }
-        await aiConfigService.incrementRequestsCount(model, 'text');
 
         // Send completion signal
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
@@ -122,13 +109,14 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
     }
 
     // Non-streaming requests
-    let result: { content: string; tokenUsage?: { totalTokens?: number } };
+    let result: {
+      content: string;
+      tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+    };
 
-    // Prepare options with system prompt from AI config if available
     const chatOptions = {
       model,
       ...options,
-      ...(aiConfig.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
     };
 
     if (messages && messages.length > 0) {
@@ -142,12 +130,6 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
         error: 'Either message or messages array is required',
       });
     }
-
-    // Update token usage if available and increment requests count
-    if (result.tokenUsage?.totalTokens) {
-      await aiConfigService.updateTokenUsageByModel(model, 'text', result.tokenUsage.totalTokens);
-    }
-    await aiConfigService.incrementRequestsCount(model, 'text');
 
     res.json({
       success: true,
@@ -165,7 +147,7 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 });
 
 /**
- * POST /api/image/generate
+ * POST /api/image/generation
  * Generate images using specified model
  */
 router.post(
@@ -183,23 +165,10 @@ router.post(
         throw new AppError('Prompt is required', 400, ERROR_CODES.INVALID_INPUT);
       }
 
-      // Check if the model is enabled in AI configurations
-      const aiConfig = await aiConfigService.findByModelAndModality(model, 'image');
-      if (!aiConfig) {
-        throw new AppError(
-          `Model ${model} is not enabled. Please contact your administrator to enable this model.`,
-          403,
-          ERROR_CODES.FORBIDDEN
-        );
-      }
-
       const images = await ImageService.generate({
         model,
         ...options,
       });
-
-      // Increment requests count for image generation
-      await aiConfigService.incrementRequestsCount(model, 'image');
 
       successResponse(
         res,
@@ -237,7 +206,7 @@ router.post(
   verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const validationResult = createAIConfiguarationReqeustSchema.safeParse(req.body);
+      const validationResult = createAIConfigurationReqeustSchema.safeParse(req.body);
 
       if (!validationResult.success) {
         throw new AppError(
@@ -307,7 +276,7 @@ router.patch(
   verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const validationResult = updateAIConfiguarationReqeustSchema.safeParse(req.body);
+      const validationResult = updateAIConfigurationReqeustSchema.safeParse(req.body);
 
       if (!validationResult.success) {
         throw new AppError(
@@ -374,6 +343,113 @@ router.delete(
           )
         );
       }
+    }
+  }
+);
+
+/**
+ * GET /api/ai/usage/summary
+ * Get AI usage summary statistics
+ */
+router.get(
+  '/usage/summary',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const validationResult = getAIUsageSummaryRequestSchema.safeParse(req.query);
+
+      if (!validationResult.success) {
+        throw new AppError(
+          `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      const { configId, startDate, endDate } = validationResult.data;
+
+      const summary = await aiUsageService.getUsageSummary(
+        configId,
+        startDate ? new Date(startDate) : undefined,
+        endDate ? new Date(endDate) : undefined
+      );
+
+      successResponse(res, summary);
+    } catch (error) {
+      next(
+        new AppError(
+          error instanceof Error ? error.message : 'Failed to fetch usage summary',
+          500,
+          ERROR_CODES.INTERNAL_ERROR
+        )
+      );
+    }
+  }
+);
+
+/**
+ * GET /api/ai/usage
+ * Get AI usage records with pagination
+ */
+router.get('/usage', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const validationResult = getAIUsageRequestSchema.safeParse(req.query);
+
+    if (!validationResult.success) {
+      throw new AppError(
+        `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+
+    const { startDate, endDate, limit, offset } = validationResult.data;
+
+    const usage = await aiUsageService.getAllUsage(
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+      parseInt(limit),
+      parseInt(offset)
+    );
+
+    successResponse(res, usage);
+  } catch (error) {
+    next(
+      new AppError(
+        error instanceof Error ? error.message : 'Failed to fetch usage records',
+        500,
+        ERROR_CODES.INTERNAL_ERROR
+      )
+    );
+  }
+});
+
+/**
+ * GET /api/ai/usage/config/:configId
+ * Get usage records for a specific AI configuration
+ */
+router.get(
+  '/usage/config/:configId',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { startDate, endDate } = req.query;
+
+      const records = await aiUsageService.getUsageByConfig(
+        req.params.configId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+
+      successResponse(res, records);
+    } catch (error) {
+      next(
+        new AppError(
+          error instanceof Error ? error.message : 'Failed to fetch config usage records',
+          500,
+          ERROR_CODES.INTERNAL_ERROR
+        )
+      );
     }
   }
 );

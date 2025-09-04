@@ -5,8 +5,13 @@ import type {
   ImageProvider,
   ImageModelConfig,
 } from '@/types/ai';
+import { AIUsageService } from './usage';
+import { AIConfigService } from './config';
+import type { AIConfigurationSchema } from '@insforge/shared-schemas';
 
 export class ImageService {
+  private static aiUsageService = new AIUsageService();
+  private static aiConfigService = new AIConfigService();
   private static modelConfigs: Record<string, ImageModelConfig> = {
     // OpenAI Models (via LangChain)
     'dall-e-3': {
@@ -119,6 +124,22 @@ export class ImageService {
   }
 
   /**
+   * Validate model and get config
+   */
+  private static async validateAndGetConfig(
+    model: string,
+    modality: string
+  ): Promise<AIConfigurationSchema | null> {
+    const aiConfig = await ImageService.aiConfigService.findByModelAndModality(model, modality);
+    if (!aiConfig) {
+      throw new Error(
+        `Model ${model} is not enabled. Please contact your administrator to enable this model.`
+      );
+    }
+    return aiConfig;
+  }
+
+  /**
    * Generate images using the specified model
    */
   static async generate(options: ImageGenerationOptions): Promise<GeneratedImage[]> {
@@ -131,14 +152,28 @@ export class ImageService {
       throw new Error(`${config.provider} provider not configured`);
     }
 
+    // Validate model and get config
+    const aiConfig = await ImageService.validateAndGetConfig(options.model, 'image');
+
+    let images: GeneratedImage[];
     switch (config.provider) {
       case 'openai':
-        return ImageService.generateWithOpenAI(options);
+        images = await ImageService.generateWithOpenAI(options);
+        break;
       case 'google':
-        return ImageService.generateWithGoogle(options);
+        images = await ImageService.generateWithGoogle(options);
+        break;
       default:
         throw new Error(`Unsupported provider: ${config.provider}`);
     }
+
+    // Track usage if config is available
+    if (aiConfig?.id) {
+      const resolution = options.size || config.defaultSize || '1024x1024';
+      await ImageService.aiUsageService.trackImageUsage(aiConfig.id, images.length, resolution);
+    }
+
+    return images;
   }
 
   /**

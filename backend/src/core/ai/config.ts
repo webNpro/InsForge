@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
-import { AIConfigurationSchema } from '@insforge/shared-schemas';
+import { AIConfigurationSchema, AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 
 export class AIConfigService {
   private pool: Pool | null = null;
@@ -38,14 +38,26 @@ export class AIConfigService {
     }
   }
 
-  async findAll(): Promise<AIConfigurationSchema[]> {
+  async findAll(): Promise<AIConfigurationWithUsageSchema[]> {
     const client = await this.getPool().connect();
     try {
+      // Use a single query with aggregation to get configs with usage stats
       const result = await client.query(
-        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", 
-                token_used as "tokenUsed", requests_count as "requestsCount", created_at, updated_at
-         FROM _ai_configs
-         ORDER BY created_at DESC`
+        `SELECT 
+          c.id,
+          c.modality,
+          c.provider,
+          c.model,
+          c.system_prompt as "systemPrompt",
+          COALESCE(SUM(u.input_tokens), 0)::INTEGER as "totalInputTokens",
+          COALESCE(SUM(u.output_tokens), 0)::INTEGER as "totalOutputTokens",
+          COALESCE(SUM(u.input_tokens + u.output_tokens), 0)::INTEGER as "totalTokens",
+          COALESCE(SUM(u.image_count), 0)::INTEGER as "totalImageCount",
+          COALESCE(COUNT(u.id), 0)::INTEGER as "totalRequests"
+         FROM _ai_configs c
+         LEFT JOIN _ai_usage u ON c.id = u.config_id
+         GROUP BY c.id, c.modality, c.provider, c.model, c.system_prompt, c.created_at
+         ORDER BY c.created_at DESC`
       );
 
       return result.rows.map((row) => ({
@@ -54,11 +66,16 @@ export class AIConfigService {
         provider: row.provider,
         model: row.model,
         systemPrompt: row.systemPrompt,
-        tokenUsed: row.tokenUsed,
-        requestsCount: row.requestsCount,
+        usageStats: {
+          totalInputTokens: row.totalInputTokens,
+          totalOutputTokens: row.totalOutputTokens,
+          totalTokens: row.totalTokens,
+          totalImageCount: row.totalImageCount,
+          totalRequests: row.totalRequests,
+        },
       }));
     } catch (error) {
-      logger.error('Failed to fetch AI configurations', { error });
+      logger.error('Failed to fetch AI configurations with usage', { error });
       throw new Error('Failed to fetch AI configurations');
     } finally {
       client.release();
@@ -69,8 +86,7 @@ export class AIConfigService {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
-        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", 
-                token_used as "tokenUsed", requests_count as "requestsCount", created_at, updated_at
+        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", created_at, updated_at
          FROM _ai_configs
          WHERE id = $1`,
         [id]
@@ -87,8 +103,6 @@ export class AIConfigService {
         provider: row.provider,
         model: row.model,
         systemPrompt: row.systemPrompt,
-        tokenUsed: row.tokenUsed,
-        requestsCount: row.requestsCount,
       };
     } catch (error) {
       logger.error('Failed to fetch AI configuration', { error, id });
@@ -139,29 +153,6 @@ export class AIConfigService {
     }
   }
 
-  async updateTokenUsage(id: string, tokensToAdd: number): Promise<boolean> {
-    const client = await this.getPool().connect();
-    try {
-      const result = await client.query(
-        `UPDATE _ai_configs 
-         SET token_used = token_used + $1, updated_at = NOW()
-         WHERE id = $2`,
-        [tokensToAdd, id]
-      );
-
-      const success = (result.rowCount ?? 0) > 0;
-      if (success) {
-        logger.info('Token usage updated', { id, tokensAdded: tokensToAdd });
-      }
-      return success;
-    } catch (error) {
-      logger.error('Failed to update token usage', { error, id });
-      throw new Error('Failed to update token usage');
-    } finally {
-      client.release();
-    }
-  }
-
   async findByModelAndModality(
     model: string,
     modality: string
@@ -169,8 +160,7 @@ export class AIConfigService {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
-        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", 
-                token_used as "tokenUsed", requests_count as "requestsCount", created_at, updated_at
+        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", created_at, updated_at
          FROM _ai_configs
          WHERE model = $1 AND modality = $2`,
         [model, modality]
@@ -187,8 +177,6 @@ export class AIConfigService {
         provider: row.provider,
         model: row.model,
         systemPrompt: row.systemPrompt,
-        tokenUsed: row.tokenUsed,
-        requestsCount: row.requestsCount,
       };
     } catch (error) {
       logger.error('Failed to fetch AI configuration by model and modality', {
@@ -197,56 +185,6 @@ export class AIConfigService {
         modality,
       });
       throw new Error('Failed to fetch AI configuration');
-    } finally {
-      client.release();
-    }
-  }
-
-  async updateTokenUsageByModel(
-    model: string,
-    modality: string,
-    tokensToAdd: number
-  ): Promise<boolean> {
-    const client = await this.getPool().connect();
-    try {
-      const result = await client.query(
-        `UPDATE _ai_configs 
-         SET token_used = token_used + $1, updated_at = NOW()
-         WHERE model = $2 AND modality = $3`,
-        [tokensToAdd, model, modality]
-      );
-
-      const success = (result.rowCount ?? 0) > 0;
-      if (success) {
-        logger.info('Token usage updated', { model, modality, tokensAdded: tokensToAdd });
-      }
-      return success;
-    } catch (error) {
-      logger.error('Failed to update token usage', { error, model, modality });
-      throw new Error('Failed to update token usage');
-    } finally {
-      client.release();
-    }
-  }
-
-  async incrementRequestsCount(model: string, modality: string): Promise<boolean> {
-    const client = await this.getPool().connect();
-    try {
-      const result = await client.query(
-        `UPDATE _ai_configs 
-         SET requests_count = requests_count + 1, updated_at = NOW()
-         WHERE model = $1 AND modality = $2`,
-        [model, modality]
-      );
-
-      const success = (result.rowCount ?? 0) > 0;
-      if (success) {
-        logger.info('Requests count incremented', { model, modality });
-      }
-      return success;
-    } catch (error) {
-      logger.error('Failed to increment requests count', { error, model, modality });
-      throw new Error('Failed to increment requests count');
     } finally {
       client.release();
     }

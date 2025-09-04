@@ -20,11 +20,11 @@ import {
 } from '@/components/radix/Select';
 import { useAIConfigs } from '../hooks/useAIConfigs';
 import {
-  AIConfigurationSchema,
-  createAIConfiguarationReqeustSchema,
-  updateAIConfiguarationReqeustSchema,
-  CreateAIConfiguarationReqeust,
-  UpdateAIConfiguarationReqeust,
+  AIConfigurationWithUsageSchema,
+  createAIConfigurationReqeustSchema,
+  updateAIConfigurationReqeustSchema,
+  CreateAIConfigurationReqeust,
+  UpdateAIConfigurationReqeust,
   ModalitySchema,
 } from '@insforge/shared-schemas';
 
@@ -32,8 +32,8 @@ interface AIConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
-  editingConfig?: AIConfigurationSchema;
-  onSuccess?: (config: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust) => void;
+  editingConfig?: AIConfigurationWithUsageSchema;
+  onSuccess?: (config: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust) => void;
 }
 
 interface ModelOption {
@@ -72,6 +72,7 @@ export function AIConfigDialog({
       image: [],
       audio: [],
       video: [],
+      multi: [],
     };
 
     configuredTextProviders.forEach((provider) => {
@@ -99,6 +100,8 @@ export function AIConfigDialog({
 
   const modalityOptions = useMemo((): ModalityOption[] => {
     const options: ModalityOption[] = [];
+    console.log(configuredTextProviders);
+    console.log(configuredImageProviders);
     if (configuredTextProviders.length > 0) {
       options.push({ value: 'text', label: 'Text' });
     }
@@ -130,7 +133,7 @@ export function AIConfigDialog({
     [modelsByModality]
   );
 
-  const getInitialCreateValues = useCallback((): CreateAIConfiguarationReqeust => {
+  const getInitialCreateValues = useCallback((): CreateAIConfigurationReqeust => {
     if (editingConfig && mode === 'create') {
       const modality = editingConfig.modality as ModalitySchema;
       return {
@@ -149,19 +152,19 @@ export function AIConfigDialog({
     };
   }, [mode, editingConfig, findModelValue, getDefaultModality]);
 
-  const getInitialEditValues = useCallback((): UpdateAIConfiguarationReqeust => {
+  const getInitialEditValues = useCallback((): UpdateAIConfigurationReqeust => {
     return {
       systemPrompt: editingConfig?.systemPrompt ?? null,
     };
   }, [editingConfig]);
 
-  const createForm = useForm<CreateAIConfiguarationReqeust>({
-    resolver: zodResolver(createAIConfiguarationReqeustSchema),
+  const createForm = useForm<CreateAIConfigurationReqeust>({
+    resolver: zodResolver(createAIConfigurationReqeustSchema),
     defaultValues: getInitialCreateValues(),
   });
 
-  const editForm = useForm<UpdateAIConfiguarationReqeust>({
-    resolver: zodResolver(updateAIConfiguarationReqeustSchema),
+  const editForm = useForm<UpdateAIConfigurationReqeust>({
+    resolver: zodResolver(updateAIConfigurationReqeustSchema),
     defaultValues: getInitialEditValues(),
   });
 
@@ -205,7 +208,7 @@ export function AIConfigDialog({
   );
 
   const handleEditSubmit = useCallback(
-    (data: UpdateAIConfiguarationReqeust) => {
+    (data: UpdateAIConfigurationReqeust) => {
       onSuccess?.({
         systemPrompt: data.systemPrompt,
       });
@@ -214,7 +217,7 @@ export function AIConfigDialog({
   );
 
   const handleCreateSubmit = useCallback(
-    (data: CreateAIConfiguarationReqeust) => {
+    (data: CreateAIConfigurationReqeust) => {
       const selectedModelOption = modelsByModality[data.modality].find(
         (m) => m.value === data.model
       );
@@ -233,11 +236,11 @@ export function AIConfigDialog({
   );
 
   const handleSubmit = useCallback(
-    (data: CreateAIConfiguarationReqeust | UpdateAIConfiguarationReqeust) => {
+    (data: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust) => {
       if (mode === 'edit') {
-        handleEditSubmit(data as UpdateAIConfiguarationReqeust);
+        handleEditSubmit(data as UpdateAIConfigurationReqeust);
       } else {
-        handleCreateSubmit(data as CreateAIConfiguarationReqeust);
+        handleCreateSubmit(data as CreateAIConfigurationReqeust);
       }
       onOpenChange(false);
       form.reset();

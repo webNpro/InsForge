@@ -2,8 +2,12 @@ import { apiClient } from '@/lib/api/client';
 import {
   ListModelsResponse,
   AIConfigurationSchema,
-  CreateAIConfiguarationReqeust,
-  UpdateAIConfiguarationReqeust,
+  AIConfigurationWithUsageSchema,
+  CreateAIConfigurationReqeust,
+  UpdateAIConfigurationReqeust,
+  AIUsageSummary,
+  AIUsageRecord,
+  ListAIUsageResponse,
 } from '@insforge/shared-schemas';
 
 export class AiService {
@@ -15,7 +19,7 @@ export class AiService {
 
   // AI Configuration endpoints
   async createConfiguration(
-    data: CreateAIConfiguarationReqeust
+    data: CreateAIConfigurationReqeust
   ): Promise<{ id: string; message: string }> {
     return apiClient.request('/ai/configurations', {
       method: 'POST',
@@ -24,7 +28,7 @@ export class AiService {
     });
   }
 
-  async getConfigurations(): Promise<AIConfigurationSchema[]> {
+  async listConfigurations(): Promise<AIConfigurationWithUsageSchema[]> {
     return apiClient.request('/ai/configurations', {
       headers: apiClient.withApiKey(),
     });
@@ -38,7 +42,7 @@ export class AiService {
 
   async updateConfiguration(
     id: string,
-    data: UpdateAIConfiguarationReqeust
+    data: UpdateAIConfigurationReqeust
   ): Promise<{ message: string }> {
     return apiClient.request(`/ai/configurations/${id}`, {
       method: 'PATCH',
@@ -50,6 +54,82 @@ export class AiService {
   async deleteConfiguration(id: string): Promise<{ message: string }> {
     return apiClient.request(`/ai/configurations/${id}`, {
       method: 'DELETE',
+      headers: apiClient.withApiKey(),
+    });
+  }
+
+  // AI Usage endpoints
+  async getUsageSummary(params?: {
+    configId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<AIUsageSummary> {
+    const queryParams = new URLSearchParams();
+    if (params?.configId) {
+      queryParams.append('configId', params.configId);
+    }
+    if (params?.startDate) {
+      queryParams.append('startDate', params.startDate);
+    }
+    if (params?.endDate) {
+      queryParams.append('endDate', params.endDate);
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/ai/usage/summary${queryString ? `?${queryString}` : ''}`;
+
+    return apiClient.request(url, {
+      headers: apiClient.withApiKey(),
+    });
+  }
+
+  async getUsageRecords(params?: {
+    startDate?: string;
+    endDate?: string;
+    limit?: string;
+    offset?: string;
+  }): Promise<ListAIUsageResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.startDate) {
+      queryParams.append('startDate', params.startDate);
+    }
+    if (params?.endDate) {
+      queryParams.append('endDate', params.endDate);
+    }
+    if (params?.limit) {
+      queryParams.append('limit', params.limit);
+    }
+    if (params?.offset) {
+      queryParams.append('offset', params.offset);
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/ai/usage${queryString ? `?${queryString}` : ''}`;
+
+    return apiClient.request(url, {
+      headers: apiClient.withApiKey(),
+    });
+  }
+
+  async getConfigUsageRecords(
+    configId: string,
+    params?: {
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<AIUsageRecord[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.startDate) {
+      queryParams.append('startDate', params.startDate);
+    }
+    if (params?.endDate) {
+      queryParams.append('endDate', params.endDate);
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/ai/usage/config/${configId}${queryString ? `?${queryString}` : ''}`;
+
+    return apiClient.request(url, {
       headers: apiClient.withApiKey(),
     });
   }
