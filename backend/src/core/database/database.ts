@@ -47,7 +47,7 @@ export class DatabaseManager {
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
 
-    await client.query('COMMIT');  
+    await client.query('COMMIT');
   }
 
   // Initialize OAuth configuration from environment variables to database

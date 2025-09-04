@@ -54,6 +54,19 @@ CREATE TABLE IF NOT EXISTS _mcp_usage (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- AI configurations table
+CREATE TABLE IF NOT EXISTS _ai_configs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  modality VARCHAR(255) NOT NULL,
+  provider VARCHAR(255) NOT NULL,
+  model VARCHAR(255) NOT NULL,
+  system_prompt TEXT,
+  token_used INTEGER DEFAULT 0 CHECK (token_used >= 0),
+  requests_count INTEGER DEFAULT 0 CHECK (requests_count >= 0),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Index for efficient date range queries
 CREATE INDEX IF NOT EXISTS idx_mcp_usage_created_at ON _mcp_usage(created_at DESC);
 
