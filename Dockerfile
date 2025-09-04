@@ -25,5 +25,5 @@ RUN npm run build
 # Expose ports
 EXPOSE 7130 7131
 
-# Start the backend application
-CMD ["npm", "start"]
+# Run migrations and start the backend application
+CMD sh -c "cd backend && npm run migrate:up && cd .. && npm start"

@@ -86,7 +86,7 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
       socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED);
     }
     // When format is 'json', the data contains the tables object
-    const jsonData = schemaResponse.data as { tables: Record<string, any> };
+    const jsonData = schemaResponse.data as { tables: Record<string, unknown> };
     const metadata = jsonData.tables;
     successResponse(res, metadata);
   } catch (error) {
