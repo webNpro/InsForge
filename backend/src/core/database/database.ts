@@ -59,12 +59,12 @@ export class DatabaseManager {
   // Initialize OAuth configuration from environment variables to database
   private async migrateOAuthConfig(client: import('pg').PoolClient): Promise<void> {
     // Google OAuth configuration
-      const googleClientId = process.env.GOOGLE_CLIENT_ID;
-      const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-      const googleRedirectUri =
-        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const googleRedirectUri =
+      process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
 
-      if (googleClientId && googleClientSecret) {
+    if (googleClientId && googleClientSecret) {
       const googleConfig = {
         enabled: true,
         clientId: googleClientId,
