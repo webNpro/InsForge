@@ -1,5 +1,6 @@
 {
   "migrationsDirectory": "migrations",
+  "migrationsTable": "_migrations",
   "driver": "pg",
   "connectionString": "${DATABASE_URL}"
 }
