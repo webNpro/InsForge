@@ -3,8 +3,8 @@ import {
   ListModelsResponse,
   AIConfigurationSchema,
   AIConfigurationWithUsageSchema,
-  CreateAIConfigurationReqeust,
-  UpdateAIConfigurationReqeust,
+  CreateAIConfigurationRequest,
+  UpdateAIConfigurationRequest,
   AIUsageSummary,
   AIUsageRecord,
   ListAIUsageResponse,
@@ -19,7 +19,7 @@ export class AiService {
 
   // AI Configuration endpoints
   async createConfiguration(
-    data: CreateAIConfigurationReqeust
+    data: CreateAIConfigurationRequest
   ): Promise<{ id: string; message: string }> {
     return apiClient.request('/ai/configurations', {
       method: 'POST',
@@ -42,7 +42,7 @@ export class AiService {
 
   async updateConfiguration(
     id: string,
-    data: UpdateAIConfigurationReqeust
+    data: UpdateAIConfigurationRequest
   ): Promise<{ message: string }> {
     return apiClient.request(`/ai/configurations/${id}`, {
       method: 'PATCH',

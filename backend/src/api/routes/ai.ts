@@ -9,8 +9,8 @@ import { successResponse } from '@/utils/response';
 import { AIConfigService } from '@/core/ai/config';
 import { AIUsageService } from '@/core/ai/usage';
 import {
-  createAIConfigurationReqeustSchema,
-  updateAIConfigurationReqeustSchema,
+  createAIConfigurationRequestSchema,
+  updateAIConfigurationRequestSchema,
   getAIUsageRequestSchema,
   getAIUsageSummaryRequestSchema,
 } from '@insforge/shared-schemas';
@@ -206,7 +206,7 @@ router.post(
   verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const validationResult = createAIConfigurationReqeustSchema.safeParse(req.body);
+      const validationResult = createAIConfigurationRequestSchema.safeParse(req.body);
 
       if (!validationResult.success) {
         throw new AppError(
@@ -276,7 +276,7 @@ router.patch(
   verifyAdmin,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const validationResult = updateAIConfigurationReqeustSchema.safeParse(req.body);
+      const validationResult = updateAIConfigurationRequestSchema.safeParse(req.body);
 
       if (!validationResult.success) {
         throw new AppError(
