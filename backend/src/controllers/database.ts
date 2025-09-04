@@ -24,7 +24,7 @@ export class DatabaseController {
     rowLimit: number | undefined
   ): Promise<{ rows: Record<string, unknown>[]; totalRows: number; wasTruncated: boolean }> {
     const query = rowLimit ? `SELECT * FROM ${table} LIMIT ${rowLimit}` : `SELECT * FROM ${table}`;
-    
+
     let wasTruncated = false;
     let totalRows = 0;
 
@@ -41,7 +41,7 @@ export class DatabaseController {
 
     const result = await client.query(query);
     const rows = result.rows || [];
-    
+
     if (!rowLimit) {
       totalRows = rows.length;
     }
@@ -49,7 +49,7 @@ export class DatabaseController {
     return { rows, totalRows, wasTruncated };
   }
 
-  async executeRawSQL(query: string, params: unknown[] = []): Promise<RawSQLResponse> {
+  private sanitizeQuery(query: string): string {
     // Basic SQL injection prevention - check for dangerous patterns
     const dangerousPatterns = [
       /DROP\s+DATABASE/i,
@@ -61,10 +61,15 @@ export class DatabaseController {
 
     for (const pattern of dangerousPatterns) {
       if (pattern.test(query)) {
-        throw new AppError('Query contains restricted operations', 403, 'FORBIDDEN');
+        throw new AppError('Query contains restricted operations', 403, ERROR_CODES.FORBIDDEN);
       }
     }
 
+    return query;
+  }
+
+  async executeRawSQL(input_query: string, params: unknown[] = []): Promise<RawSQLResponse> {
+    const query = this.sanitizeQuery(input_query);
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -96,7 +101,8 @@ export class DatabaseController {
     }
   }
 
-  private async exportTableSchemaBySQL(client: any, table: string): Promise<string> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async exportTableSchemaBySQL(client: any, table: string): Promise<string> {
     let sqlExport = '';
     // Always export table schema with defaults
     const schemaResult = await client.query(
@@ -190,15 +196,17 @@ export class DatabaseController {
 
     // Check if RLS is enabled on the table
     const rlsResult = await client.query(
-        `
+      `
           SELECT relrowsecurity 
           FROM pg_class 
           WHERE relname = $1
           AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
         `,
-        [table]
-      );
-    const rlsEnabled = rlsResult.rows.length > 0 && (rlsResult.rows[0].relrowsecurity === true ||rlsResult.rows[0].relrowsecurity === 1);
+      [table]
+    );
+    const rlsEnabled =
+      rlsResult.rows.length > 0 &&
+      (rlsResult.rows[0].relrowsecurity === true || rlsResult.rows[0].relrowsecurity === 1);
     if (rlsEnabled) {
       sqlExport += `-- RLS enabled for table: ${table}\n`;
       sqlExport += `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;\n\n`;
@@ -308,7 +316,9 @@ export class DatabaseController {
         `);
         tablesToExport = tablesResult.rows.map((row: { tablename: string }) => row.tablename);
       }
-      logger.info(`Exporting tables: ${tablesToExport.join(', ')}, format: ${format}, includeData: ${includeData}, includeFunctions: ${includeFunctions}, includeSequences: ${includeSequences}, includeViews: ${includeViews}, rowLimit: ${rowLimit}`);
+      logger.info(
+        `Exporting tables: ${tablesToExport.join(', ')}, format: ${format}, includeData: ${includeData}, includeFunctions: ${includeFunctions}, includeSequences: ${includeSequences}, includeViews: ${includeViews}, rowLimit: ${rowLimit}`
+      );
 
       const timestamp = new Date().toISOString();
       const truncatedTables: string[] = [];
@@ -522,17 +532,19 @@ export class DatabaseController {
 
           // Check if RLS is enabled on the table
           const rlsResult = await client.query(
-              `
+            `
                 SELECT relrowsecurity 
                 FROM pg_class 
                 WHERE relname = $1
                 AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
               `,
-              [table]
-            );
-          
-          const rlsEnabled = rlsResult.rows.length > 0 && (rlsResult.rows[0].relrowsecurity === true ||rlsResult.rows[0].relrowsecurity === 1);
-          
+            [table]
+          );
+
+          const rlsEnabled =
+            rlsResult.rows.length > 0 &&
+            (rlsResult.rows[0].relrowsecurity === true || rlsResult.rows[0].relrowsecurity === 1);
+
           // Get policies
           const policiesResult = await client.query(
             `
@@ -575,10 +587,10 @@ export class DatabaseController {
 
           if (includeData) {
             const tableData = await this.getTableData(client, table, rowLimit);
-            
+
             rows.push(...tableData.rows);
             truncated = tableData.wasTruncated;
-            
+
             if (truncated) {
               totalRowCount = tableData.totalRows;
               truncatedTables.push(table);
@@ -678,12 +690,12 @@ export class DatabaseController {
     const fileExtension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
 
     if (!allowedExtensions.includes(fileExtension)) {
-      throw new AppError('Only .sql files are allowed', 400, 'INVALID_INPUT');
+      throw new AppError('Only .sql/.txt files are allowed', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     // Convert buffer to string
-    const data = fileBuffer.toString('utf-8');
-
+    const raw_data = fileBuffer.toString('utf-8');
+    const data = this.sanitizeQuery(raw_data);
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -704,7 +716,7 @@ export class DatabaseController {
         for (const row of tablesResult.rows) {
           try {
             await client.query(`TRUNCATE TABLE ${row.tablename} CASCADE`);
-            logger.warn(`Truncated table: ${row.tablename}`);
+            logger.info(`Truncated table: ${row.tablename}`);
           } catch (err) {
             logger.warn(`Could not truncate table ${row.tablename}:`, err);
           }
@@ -718,7 +730,7 @@ export class DatabaseController {
         statements = parseSQLStatements(data);
         logger.info(`Parsed ${statements.length} SQL statements from import file`);
       } catch (parseError) {
-        logger.error('Failed to parse SQL file:', parseError);
+        logger.warn('Failed to parse SQL file:', parseError);
         throw new AppError(
           'Invalid SQL file format. Please ensure the file contains valid SQL statements.',
           400,
@@ -728,13 +740,7 @@ export class DatabaseController {
 
       for (const statement of statements) {
         // Basic validation to prevent dangerous operations
-        if (
-          /DROP\s+DATABASE/i.test(statement) ||
-          /CREATE\s+DATABASE/i.test(statement) ||
-          /ALTER\s+DATABASE/i.test(statement)
-        ) {
-          throw new AppError('Import contains restricted operations', 403, 'FORBIDDEN');
-        }
+        this.sanitizeQuery(statement);
 
         try {
           const result = await client.query(statement);
