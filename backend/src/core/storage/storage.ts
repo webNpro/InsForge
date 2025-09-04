@@ -47,7 +47,7 @@ interface StorageBackend {
   deleteObject(bucket: string, key: string): Promise<void>;
   createBucket(bucket: string): Promise<void>;
   deleteBucket(bucket: string): Promise<void>;
-  
+
   // New methods for presigned URL support
   supportsPresignedUrls(): boolean;
   getUploadStrategy?(
@@ -113,30 +113,30 @@ class LocalStorageBackend implements StorageBackend {
     return false;
   }
 
-  async getUploadStrategy(
+  getUploadStrategy(
     bucket: string,
     key: string,
-    metadata: { contentType?: string; size?: number }
+    _metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategy> {
     // For local storage, return direct upload strategy
-    return {
+    return Promise.resolve({
       method: 'direct',
       uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       key,
-      confirmRequired: false
-    };
+      confirmRequired: false,
+    });
   }
 
-  async getDownloadStrategy(
+  getDownloadStrategy(
     bucket: string,
     key: string,
-    expiresIn?: number
+    _expiresIn?: number
   ): Promise<DownloadStrategy> {
     // For local storage, return direct download URL
-    return {
+    return Promise.resolve({
       method: 'direct',
-      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`
-    };
+      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+    });
   }
 }
 
@@ -281,9 +281,9 @@ class S3StorageBackend implements StorageBackend {
         Bucket: this.s3Bucket,
         Key: s3Key,
         Conditions: [
-          ['content-length-range', 0, metadata.size || 10485760] // Max 10MB by default
+          ['content-length-range', 0, metadata.size || 10485760], // Max 10MB by default
         ],
-        Expires: expiresIn
+        Expires: expiresIn,
       });
 
       return {
@@ -293,13 +293,13 @@ class S3StorageBackend implements StorageBackend {
         key,
         confirmRequired: true,
         confirmUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}/confirm-upload`,
-        expiresAt: new Date(Date.now() + expiresIn * 1000)
+        expiresAt: new Date(Date.now() + expiresIn * 1000),
       };
     } catch (error) {
       logger.error('Failed to generate presigned upload URL', {
         error: error instanceof Error ? error.message : String(error),
         bucket,
-        key
+        key,
       });
       throw error;
     }
@@ -319,7 +319,7 @@ class S3StorageBackend implements StorageBackend {
     try {
       const command = new GetObjectCommand({
         Bucket: this.s3Bucket,
-        Key: s3Key
+        Key: s3Key,
       });
 
       const url = await getSignedUrl(this.s3Client, command, { expiresIn });
@@ -327,13 +327,13 @@ class S3StorageBackend implements StorageBackend {
       return {
         method: 'presigned',
         url,
-        expiresAt: new Date(Date.now() + expiresIn * 1000)
+        expiresAt: new Date(Date.now() + expiresIn * 1000),
       };
     } catch (error) {
       logger.error('Failed to generate presigned download URL', {
         error: error instanceof Error ? error.message : String(error),
         bucket,
-        key
+        key,
       });
       throw error;
     }
@@ -349,7 +349,7 @@ class S3StorageBackend implements StorageBackend {
     try {
       const command = new HeadObjectCommand({
         Bucket: this.s3Bucket,
-        Key: s3Key
+        Key: s3Key,
       });
       await this.s3Client.send(command);
       return true;
@@ -711,13 +711,13 @@ export class StorageService {
     }
   ): Promise<UploadStrategy> {
     this.validateBucketName(bucket);
-    
+
     // Check if bucket exists
     const db = DatabaseManager.getInstance().getDb();
     const bucketExists = await db
       .prepare('SELECT name FROM _storage_buckets WHERE name = ?')
       .get(bucket);
-      
+
     if (!bucketExists) {
       throw new Error(`Bucket "${bucket}" does not exist`);
     }
@@ -733,7 +733,7 @@ export class StorageService {
       method: 'direct',
       uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       key,
-      confirmRequired: false
+      confirmRequired: false,
     };
   }
 
@@ -752,7 +752,7 @@ export class StorageService {
     // Fallback for backends without strategy support
     return {
       method: 'direct',
-      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`
+      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
   }
 
@@ -811,7 +811,7 @@ export class StorageService {
     await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
       size: metadata.size,
       mime_type: metadata.contentType,
-      method: 'presigned'
+      method: 'presigned',
     });
 
     return {

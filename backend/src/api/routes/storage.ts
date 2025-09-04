@@ -415,7 +415,7 @@ router.post(
       const strategy = await storageService.getUploadStrategy(bucketName, {
         filename,
         contentType,
-        size
+        size,
       });
 
       successResponse(res, strategy);
@@ -446,7 +446,7 @@ router.post(
       const fileInfo = await storageService.confirmUpload(bucketName, objectKey, {
         size,
         contentType,
-        etag
+        etag,
       });
 
       successResponse(res, fileInfo, 201);
@@ -473,7 +473,7 @@ router.post(
 
       const storageService = StorageService.getInstance();
       const strategy = await storageService.getDownloadStrategy(
-        bucketName, 
+        bucketName,
         objectKey,
         Number(expiresIn)
       );
