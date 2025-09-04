@@ -38,12 +38,6 @@ export class DatabaseManager {
       connectionTimeoutMillis: 2000,
     });
 
-    await this.initializeDb();
-
-    await this.migrateDb();
-  }
-
-  private async migrateDb(): Promise<void> {
     const client = await this.pool.connect();
     await client.query('BEGIN');
 
@@ -53,7 +47,7 @@ export class DatabaseManager {
     // Migrate OAuth configuration from environment variables to database
     await this.migrateOAuthConfig(client);
 
-    await client.query('COMMIT');
+    await client.query('COMMIT');  
   }
 
   // Initialize OAuth configuration from environment variables to database
@@ -151,166 +145,6 @@ export class DatabaseManager {
     }
 
     logger.info('OAuth configuration initialized in database');
-  }
-
-  private async initializeDb(): Promise<void> {
-    const client = await this.pool.connect();
-
-    try {
-      await client.query('BEGIN');
-
-      // Drop old auth tables if they exist - using Better Auth now
-      await client.query(`
-        DROP TABLE IF EXISTS _superuser CASCADE;
-        DROP TABLE IF EXISTS _identifies CASCADE;
-        DROP TABLE IF EXISTS _profiles CASCADE;
-        DROP TABLE IF EXISTS _auth CASCADE;
-        DROP TABLE IF EXISTS _superuser_profiles CASCADE;
-        DROP TABLE IF EXISTS _superuser_auth CASCADE;
-      `);
-
-      // Create all necessary tables
-      await client.query(`
-      -- System configuration
-      CREATE TABLE IF NOT EXISTS _config (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Using Better Auth tables for authentication
-
-      -- App metadata
-      CREATE TABLE IF NOT EXISTS _metadata (
-        key TEXT PRIMARY KEY,
-        value TEXT,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Logs table for activity tracking
-      CREATE TABLE IF NOT EXISTS logs (
-        id SERIAL PRIMARY KEY,
-        action TEXT NOT NULL,
-        table_name TEXT NOT NULL,
-        record_id TEXT,
-        details TEXT,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Storage table with bucket-based approach
-      -- Storage buckets table to track bucket-level settings
-      CREATE TABLE IF NOT EXISTS _storage_buckets (
-        name TEXT PRIMARY KEY,
-        public BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- Storage files table
-      CREATE TABLE IF NOT EXISTS _storage (
-        bucket TEXT NOT NULL,
-        key TEXT NOT NULL,
-        size INTEGER NOT NULL,
-        mime_type TEXT,
-        uploaded_at TIMESTAMPTZ DEFAULT NOW(),
-        PRIMARY KEY (bucket, key),
-        FOREIGN KEY (bucket) REFERENCES _storage_buckets(name) ON DELETE CASCADE
-      );
-
-      -- MCP usage tracking table
-      CREATE TABLE IF NOT EXISTS _mcp_usage (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        tool_name VARCHAR(255) NOT NULL,
-        success BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-      
-      -- Index for efficient date range queries
-      CREATE INDEX IF NOT EXISTS idx_mcp_usage_created_at ON _mcp_usage(created_at DESC);
-
-      -- Edge functions
-      CREATE TABLE IF NOT EXISTS _edge_functions (
-        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        slug VARCHAR(255) UNIQUE NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        code TEXT NOT NULL,
-        status VARCHAR(50) DEFAULT 'draft',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        deployed_at TIMESTAMPTZ
-      );
-
-      -- Auth Tables (2-table structure)
-      -- User table
-      CREATE TABLE IF NOT EXISTS _user (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        email TEXT UNIQUE NOT NULL,
-        password TEXT, -- NULL for OAuth-only users
-        name TEXT,
-        email_verified BOOLEAN DEFAULT false,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      -- Account table (for OAuth connections)
-      -- Links OAuth provider accounts to local users
-      CREATE TABLE IF NOT EXISTS _account (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES _user(id) ON DELETE CASCADE,
-        provider TEXT NOT NULL, -- OAuth provider name: 'google', 'github', etc.
-        provider_account_id TEXT NOT NULL, -- User's unique ID on the provider's system (e.g., Google's sub, GitHub's id)
-        access_token TEXT, -- OAuth access token for making API calls to provider
-        refresh_token TEXT, -- OAuth refresh token for renewing access
-        provider_data JSONB, -- OAuth provider's user profile (Google: sub/email/name/picture, GitHub: id/login/email/avatar_url)
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(provider, provider_account_id) -- Ensures one account per provider per user
-      );
-
-    `);
-
-      // Create update timestamp function
-      await client.query(`
-        CREATE OR REPLACE FUNCTION update_updated_at_column()
-        RETURNS TRIGGER AS $$
-        BEGIN
-          NEW.updated_at = NOW();
-          RETURN NEW;
-        END;
-        $$ language 'plpgsql';
-      `);
-
-      // Create triggers for updated_at
-      const tables = ['_config', '_metadata', '_edge_functions'];
-      for (const table of tables) {
-        await client.query(`
-          DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};
-          CREATE TRIGGER update_${table}_updated_at BEFORE UPDATE ON ${table}
-          FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-        `);
-      }
-
-      // Insert initial metadata
-      await client.query(`
-        INSERT INTO _metadata (key, value) VALUES ('version', '1.0.0')
-        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
-      `);
-
-      await client.query(`
-        INSERT INTO _metadata (key, value) VALUES ('created_at', NOW()::TEXT)
-        ON CONFLICT (key) DO NOTHING;
-      `);
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
   }
 
   // PostgreSQL-specific prepare method that returns a query object similar to better-sqlite3
