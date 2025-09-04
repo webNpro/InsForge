@@ -103,6 +103,7 @@ export const exportRequestSchema = z.object({
   includeFunctions: z.boolean().default(false),
   includeSequences: z.boolean().default(false),
   includeViews: z.boolean().default(false),
+  rowLimit: z.number().int().positive().max(10000).default(1000),
 });
 
 export const exportJsonDataSchema = z.object({
@@ -137,6 +138,7 @@ export const exportJsonDataSchema = z.object({
           updateRule: z.string().nullable(),
         })
       ),
+      rlsEnabled: z.boolean().optional(),
       policies: z.array(
         z.object({
           policyname: z.string(),
@@ -158,7 +160,7 @@ export const exportJsonDataSchema = z.object({
           oldTable: z.string().nullable(),
         })
       ),
-      rows: z.array(z.any()),
+      rows: z.array(z.any()).optional(),
     })
   ),
   functions: z.array(

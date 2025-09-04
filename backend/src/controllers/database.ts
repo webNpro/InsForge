@@ -9,11 +9,47 @@ import {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
+import { parseSQLStatements } from '@/utils/sql-parser.js';
 
 export class DatabaseController {
   private dbManager = DatabaseManager.getInstance();
 
-  async executeRawSQL(query: string, params: unknown[] = []): Promise<RawSQLResponse> {
+  /**
+   * Get table data using simple SELECT query
+   * More reliable than streaming for moderate datasets
+   */
+  private async getTableData(
+    client: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    table: string,
+    rowLimit: number | undefined
+  ): Promise<{ rows: Record<string, unknown>[]; totalRows: number; wasTruncated: boolean }> {
+    const query = rowLimit ? `SELECT * FROM ${table} LIMIT ${rowLimit}` : `SELECT * FROM ${table}`;
+
+    let wasTruncated = false;
+    let totalRows = 0;
+
+    // Check for truncation upfront if rowLimit is set
+    if (rowLimit) {
+      try {
+        const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
+        totalRows = parseInt(countResult.rows[0].count);
+        wasTruncated = totalRows > rowLimit;
+      } catch (err) {
+        logger.error('Error counting rows:', err);
+      }
+    }
+
+    const result = await client.query(query);
+    const rows = result.rows || [];
+
+    if (!rowLimit) {
+      totalRows = rows.length;
+    }
+
+    return { rows, totalRows, wasTruncated };
+  }
+
+  private sanitizeQuery(query: string): string {
     // Basic SQL injection prevention - check for dangerous patterns
     const dangerousPatterns = [
       /DROP\s+DATABASE/i,
@@ -25,10 +61,15 @@ export class DatabaseController {
 
     for (const pattern of dangerousPatterns) {
       if (pattern.test(query)) {
-        throw new AppError('Query contains restricted operations', 403, 'FORBIDDEN');
+        throw new AppError('Query contains restricted operations', 403, ERROR_CODES.FORBIDDEN);
       }
     }
 
+    return query;
+  }
+
+  async executeRawSQL(input_query: string, params: unknown[] = []): Promise<RawSQLResponse> {
+    const query = this.sanitizeQuery(input_query);
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -60,13 +101,203 @@ export class DatabaseController {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async exportTableSchemaBySQL(client: any, table: string): Promise<string> {
+    let sqlExport = '';
+    // Always export table schema with defaults
+    const schemaResult = await client.query(
+      `
+      SELECT 'CREATE TABLE IF NOT EXISTS ' || table_name || ' (' ||
+      string_agg(column_name || ' ' || 
+        CASE 
+          WHEN data_type = 'character varying' THEN 'varchar' || COALESCE('(' || character_maximum_length || ')', '')
+          WHEN data_type = 'timestamp with time zone' THEN 'timestamptz'
+          ELSE data_type
+        END || 
+        CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END ||
+        CASE WHEN column_default IS NOT NULL THEN ' DEFAULT ' || column_default ELSE '' END,
+        ', ') || ');' as create_statement
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = $1
+      GROUP BY table_name
+    `,
+      [table]
+    );
+
+    if (schemaResult.rows.length > 0) {
+      sqlExport += `-- Table: ${table}\n`;
+      sqlExport += schemaResult.rows[0].create_statement + '\n\n';
+    }
+
+    // Export indexes (excluding primary key indexes)
+    const indexesResult = await client.query(
+      `
+      SELECT 
+        indexname,
+        indexdef
+      FROM pg_indexes 
+      WHERE tablename = $1 
+      AND schemaname = 'public'
+      AND indexname NOT LIKE '%_pkey'
+      ORDER BY indexname
+    `,
+      [table]
+    );
+
+    if (indexesResult.rows.length > 0) {
+      sqlExport += `-- Indexes for table: ${table}\n`;
+      for (const indexRow of indexesResult.rows) {
+        sqlExport += indexRow.indexdef + ';\n';
+      }
+      sqlExport += '\n';
+    }
+
+    // Export foreign key constraints
+    const foreignKeysResult = await client.query(
+      `
+      SELECT 
+        'ALTER TABLE ' || quote_ident(tc.table_name) || 
+        ' ADD CONSTRAINT ' || quote_ident(tc.constraint_name) || 
+        ' FOREIGN KEY (' || quote_ident(kcu.column_name) || ')' ||
+        ' REFERENCES ' || quote_ident(ccu.table_name) || 
+        ' (' || quote_ident(ccu.column_name) || ')' ||
+        CASE 
+          WHEN rc.delete_rule != 'NO ACTION' THEN ' ON DELETE ' || rc.delete_rule
+          ELSE ''
+        END ||
+        CASE 
+          WHEN rc.update_rule != 'NO ACTION' THEN ' ON UPDATE ' || rc.update_rule  
+          ELSE ''
+        END || ';' as fk_statement
+      FROM information_schema.table_constraints AS tc 
+      JOIN information_schema.key_column_usage AS kcu
+        ON tc.constraint_name = kcu.constraint_name
+        AND tc.table_schema = kcu.table_schema
+      JOIN information_schema.constraint_column_usage AS ccu
+        ON ccu.constraint_name = tc.constraint_name
+        AND ccu.table_schema = tc.table_schema
+      LEFT JOIN information_schema.referential_constraints AS rc
+        ON tc.constraint_name = rc.constraint_name
+        AND tc.table_schema = rc.constraint_schema
+      WHERE tc.constraint_type = 'FOREIGN KEY' 
+      AND tc.table_name = $1
+      AND tc.table_schema = 'public'
+    `,
+      [table]
+    );
+
+    if (foreignKeysResult.rows.length > 0) {
+      sqlExport += `-- Foreign key constraints for table: ${table}\n`;
+      for (const fkRow of foreignKeysResult.rows) {
+        sqlExport += fkRow.fk_statement + '\n';
+      }
+      sqlExport += '\n';
+    }
+
+    // Check if RLS is enabled on the table
+    const rlsResult = await client.query(
+      `
+          SELECT relrowsecurity 
+          FROM pg_class 
+          WHERE relname = $1
+          AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+        `,
+      [table]
+    );
+    const rlsEnabled =
+      rlsResult.rows.length > 0 &&
+      (rlsResult.rows[0].relrowsecurity === true || rlsResult.rows[0].relrowsecurity === 1);
+    if (rlsEnabled) {
+      sqlExport += `-- RLS enabled for table: ${table}\n`;
+      sqlExport += `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;\n\n`;
+    }
+
+    // Export RLS policies
+    const policiesResult = await client.query(
+      `
+      SELECT 
+        'CREATE POLICY ' || quote_ident(policyname) || ' ON ' || quote_ident(tablename) ||
+        ' FOR ' || cmd ||
+        CASE 
+          WHEN roles != '{}'::name[] THEN ' TO ' || array_to_string(roles, ', ')
+          ELSE ''
+        END ||
+        CASE 
+          WHEN qual IS NOT NULL THEN ' USING (' || qual || ')'
+          ELSE ''
+        END ||
+        CASE 
+          WHEN with_check IS NOT NULL THEN ' WITH CHECK (' || with_check || ')'
+          ELSE ''
+        END || ';' as policy_statement
+      FROM pg_policies 
+      WHERE schemaname = 'public' AND tablename = $1
+      ORDER BY policyname
+    `,
+      [table]
+    );
+
+    if (policiesResult.rows.length > 0) {
+      sqlExport += `-- RLS policies for table: ${table}\n`;
+      for (const policyRow of policiesResult.rows) {
+        sqlExport += policyRow.policy_statement + '\n';
+      }
+      sqlExport += '\n';
+    }
+
+    // Export triggers for this table
+    const triggersResult = await client.query(
+      `
+      SELECT 
+        'CREATE TRIGGER ' || quote_ident(trigger_name) || 
+        ' ' || action_timing || ' ' || event_manipulation ||
+        ' ON ' || quote_ident(event_object_table) ||
+        CASE 
+          WHEN action_reference_new_table IS NOT NULL OR action_reference_old_table IS NOT NULL 
+          THEN ' REFERENCING ' ||
+            CASE WHEN action_reference_new_table IS NOT NULL 
+              THEN 'NEW TABLE AS ' || quote_ident(action_reference_new_table) 
+              ELSE '' 
+            END ||
+            CASE WHEN action_reference_old_table IS NOT NULL 
+              THEN ' OLD TABLE AS ' || quote_ident(action_reference_old_table) 
+              ELSE '' 
+            END
+          ELSE ''
+        END ||
+        ' FOR EACH ' || action_orientation ||
+        CASE 
+          WHEN action_condition IS NOT NULL 
+          THEN ' WHEN (' || action_condition || ')'
+          ELSE ''
+        END ||
+        ' ' || action_statement || ';' as trigger_statement
+      FROM information_schema.triggers
+      WHERE event_object_schema = 'public' 
+      AND event_object_table = $1
+      ORDER BY trigger_name
+    `,
+      [table]
+    );
+
+    if (triggersResult.rows.length > 0) {
+      sqlExport += `-- Triggers for table: ${table}\n`;
+      for (const triggerRow of triggersResult.rows) {
+        sqlExport += triggerRow.trigger_statement + '\n';
+      }
+      sqlExport += '\n';
+    }
+    return sqlExport;
+  }
+
   async exportDatabase(
     tables?: string[],
     format: 'sql' | 'json' = 'sql',
     includeData: boolean = true,
     includeFunctions: boolean = false,
     includeSequences: boolean = false,
-    includeViews: boolean = false
+    includeViews: boolean = false,
+    rowLimit?: number
   ): Promise<ExportDatabaseResponse> {
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
@@ -85,185 +316,33 @@ export class DatabaseController {
         `);
         tablesToExport = tablesResult.rows.map((row: { tablename: string }) => row.tablename);
       }
+      logger.info(
+        `Exporting tables: ${tablesToExport.join(', ')}, format: ${format}, includeData: ${includeData}, includeFunctions: ${includeFunctions}, includeSequences: ${includeSequences}, includeViews: ${includeViews}, rowLimit: ${rowLimit}`
+      );
 
       const timestamp = new Date().toISOString();
+      const truncatedTables: string[] = [];
 
       if (format === 'sql') {
-        let sqlExport = `-- Database Export\n-- Generated on: ${timestamp}\n-- Format: SQL\n-- Include Data: ${includeData}\n\n`;
+        let sqlExport = `-- Database Export\n-- Generated on: ${timestamp}\n-- Format: SQL\n-- Include Data: ${includeData}\n`;
+        if (rowLimit) {
+          sqlExport += `-- Row Limit: ${rowLimit} rows per table\n`;
+        }
+        sqlExport += '\n';
 
         for (const table of tablesToExport) {
-          // Always export table schema with defaults
-          const schemaResult = await client.query(
-            `
-            SELECT 'CREATE TABLE IF NOT EXISTS ' || table_name || ' (' ||
-            string_agg(column_name || ' ' || 
-              CASE 
-                WHEN data_type = 'character varying' THEN 'varchar' || COALESCE('(' || character_maximum_length || ')', '')
-                WHEN data_type = 'timestamp with time zone' THEN 'timestamptz'
-                ELSE data_type
-              END || 
-              CASE WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END ||
-              CASE WHEN column_default IS NOT NULL THEN ' DEFAULT ' || column_default ELSE '' END,
-              ', ') || ');' as create_statement
-            FROM information_schema.columns 
-            WHERE table_schema = 'public' AND table_name = $1
-            GROUP BY table_name
-          `,
-            [table]
-          );
+          sqlExport += await this.exportTableSchemaBySQL(client, table);
 
-          if (schemaResult.rows.length > 0) {
-            sqlExport += `-- Table: ${table}\n`;
-            sqlExport += schemaResult.rows[0].create_statement + '\n\n';
-          }
-
-          // Export indexes (excluding primary key indexes)
-          const indexesResult = await client.query(
-            `
-            SELECT 
-              indexname,
-              indexdef
-            FROM pg_indexes 
-            WHERE tablename = $1 
-            AND schemaname = 'public'
-            AND indexname NOT LIKE '%_pkey'
-            ORDER BY indexname
-          `,
-            [table]
-          );
-
-          if (indexesResult.rows.length > 0) {
-            sqlExport += `-- Indexes for table: ${table}\n`;
-            for (const indexRow of indexesResult.rows) {
-              sqlExport += indexRow.indexdef + ';\n';
-            }
-            sqlExport += '\n';
-          }
-
-          // Export foreign key constraints
-          const foreignKeysResult = await client.query(
-            `
-            SELECT 
-              'ALTER TABLE ' || quote_ident(tc.table_name) || 
-              ' ADD CONSTRAINT ' || quote_ident(tc.constraint_name) || 
-              ' FOREIGN KEY (' || quote_ident(kcu.column_name) || ')' ||
-              ' REFERENCES ' || quote_ident(ccu.table_name) || 
-              ' (' || quote_ident(ccu.column_name) || ')' ||
-              CASE 
-                WHEN rc.delete_rule != 'NO ACTION' THEN ' ON DELETE ' || rc.delete_rule
-                ELSE ''
-              END ||
-              CASE 
-                WHEN rc.update_rule != 'NO ACTION' THEN ' ON UPDATE ' || rc.update_rule  
-                ELSE ''
-              END || ';' as fk_statement
-            FROM information_schema.table_constraints AS tc 
-            JOIN information_schema.key_column_usage AS kcu
-              ON tc.constraint_name = kcu.constraint_name
-              AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage AS ccu
-              ON ccu.constraint_name = tc.constraint_name
-              AND ccu.table_schema = tc.table_schema
-            LEFT JOIN information_schema.referential_constraints AS rc
-              ON tc.constraint_name = rc.constraint_name
-              AND tc.table_schema = rc.constraint_schema
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
-            AND tc.table_name = $1
-            AND tc.table_schema = 'public'
-          `,
-            [table]
-          );
-
-          if (foreignKeysResult.rows.length > 0) {
-            sqlExport += `-- Foreign key constraints for table: ${table}\n`;
-            for (const fkRow of foreignKeysResult.rows) {
-              sqlExport += fkRow.fk_statement + '\n';
-            }
-            sqlExport += '\n';
-          }
-
-          // Export RLS policies
-          const policiesResult = await client.query(
-            `
-            SELECT 
-              'CREATE POLICY ' || quote_ident(policyname) || ' ON ' || quote_ident(tablename) ||
-              ' FOR ' || cmd ||
-              CASE 
-                WHEN roles != '{}'::name[] THEN ' TO ' || array_to_string(roles, ', ')
-                ELSE ''
-              END ||
-              CASE 
-                WHEN qual IS NOT NULL THEN ' USING (' || qual || ')'
-                ELSE ''
-              END ||
-              CASE 
-                WHEN with_check IS NOT NULL THEN ' WITH CHECK (' || with_check || ')'
-                ELSE ''
-              END || ';' as policy_statement
-            FROM pg_policies 
-            WHERE schemaname = 'public' AND tablename = $1
-            ORDER BY policyname
-          `,
-            [table]
-          );
-
-          if (policiesResult.rows.length > 0) {
-            sqlExport += `-- RLS policies for table: ${table}\n`;
-            for (const policyRow of policiesResult.rows) {
-              sqlExport += policyRow.policy_statement + '\n';
-            }
-            sqlExport += '\n';
-          }
-
-          // Export triggers for this table
-          const triggersResult = await client.query(
-            `
-            SELECT 
-              'CREATE TRIGGER ' || quote_ident(trigger_name) || 
-              ' ' || action_timing || ' ' || event_manipulation ||
-              ' ON ' || quote_ident(event_object_table) ||
-              CASE 
-                WHEN action_reference_new_table IS NOT NULL OR action_reference_old_table IS NOT NULL 
-                THEN ' REFERENCING ' ||
-                  CASE WHEN action_reference_new_table IS NOT NULL 
-                    THEN 'NEW TABLE AS ' || quote_ident(action_reference_new_table) 
-                    ELSE '' 
-                  END ||
-                  CASE WHEN action_reference_old_table IS NOT NULL 
-                    THEN ' OLD TABLE AS ' || quote_ident(action_reference_old_table) 
-                    ELSE '' 
-                  END
-                ELSE ''
-              END ||
-              ' FOR EACH ' || action_orientation ||
-              CASE 
-                WHEN action_condition IS NOT NULL 
-                THEN ' WHEN (' || action_condition || ')'
-                ELSE ''
-              END ||
-              ' ' || action_statement || ';' as trigger_statement
-            FROM information_schema.triggers
-            WHERE event_object_schema = 'public' 
-            AND event_object_table = $1
-            ORDER BY trigger_name
-          `,
-            [table]
-          );
-
-          if (triggersResult.rows.length > 0) {
-            sqlExport += `-- Triggers for table: ${table}\n`;
-            for (const triggerRow of triggersResult.rows) {
-              sqlExport += triggerRow.trigger_statement + '\n';
-            }
-            sqlExport += '\n';
-          }
-
-          // Export data if requested
+          // Export data if requested - using simple SELECT query
           if (includeData) {
-            const dataResult = await client.query(`SELECT * FROM ${table}`);
-            if (dataResult.rows.length > 0) {
-              sqlExport += `-- Data for table: ${table}\n`;
-              for (const row of dataResult.rows) {
+            let tableDataSql = '';
+
+            const { rows, wasTruncated } = await this.getTableData(client, table, rowLimit);
+
+            if (rows.length > 0) {
+              tableDataSql += `-- Data for table: ${table}\n`;
+
+              for (const row of rows) {
                 const columns = Object.keys(row);
                 const values = Object.values(row).map((val) => {
                   if (val === null) {
@@ -281,9 +360,21 @@ export class DatabaseController {
                     return String(val);
                   }
                 });
-                sqlExport += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+                tableDataSql += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
               }
-              sqlExport += '\n';
+            }
+
+            if (wasTruncated) {
+              const countResult = await client.query(`SELECT COUNT(*) FROM ${table}`);
+              const totalRowsInTable = parseInt(countResult.rows[0].count);
+              tableDataSql =
+                `-- WARNING: Table contains ${totalRowsInTable} rows, but only ${rowLimit} rows exported due to row limit\n` +
+                tableDataSql;
+              truncatedTables.push(table);
+            }
+
+            if (tableDataSql) {
+              sqlExport += tableDataSql + '\n';
             }
           }
         }
@@ -366,6 +457,10 @@ export class DatabaseController {
           format: 'sql',
           data: sqlExport,
           timestamp,
+          ...(truncatedTables.length > 0 && {
+            truncatedTables,
+            rowLimit,
+          }),
         };
       } else {
         // JSON format
@@ -435,6 +530,21 @@ export class DatabaseController {
             [table]
           );
 
+          // Check if RLS is enabled on the table
+          const rlsResult = await client.query(
+            `
+                SELECT relrowsecurity 
+                FROM pg_class 
+                WHERE relname = $1
+                AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+              `,
+            [table]
+          );
+
+          const rlsEnabled =
+            rlsResult.rows.length > 0 &&
+            (rlsResult.rows[0].relrowsecurity === true || rlsResult.rows[0].relrowsecurity === 1);
+
           // Get policies
           const policiesResult = await client.query(
             `
@@ -470,20 +580,36 @@ export class DatabaseController {
             [table]
           );
 
-          // Get data if requested
-          let rows: unknown[] = [];
+          // Get data if requested - using streaming to avoid memory issues
+          const rows: unknown[] = [];
+          let truncated = false;
+          let totalRowCount: number | undefined;
+
           if (includeData) {
-            const dataResult = await client.query(`SELECT * FROM ${table}`);
-            rows = dataResult.rows;
+            const tableData = await this.getTableData(client, table, rowLimit);
+
+            rows.push(...tableData.rows);
+            truncated = tableData.wasTruncated;
+
+            if (truncated) {
+              totalRowCount = tableData.totalRows;
+              truncatedTables.push(table);
+            }
           }
 
           jsonData.tables[table] = {
             schema: schemaResult.rows,
             indexes: indexesResult.rows,
             foreignKeys: foreignKeysResult.rows,
+            rlsEnabled,
             policies: policiesResult.rows,
             triggers: triggersResult.rows,
             rows,
+            ...(truncated && {
+              truncated: true,
+              exportedRowCount: rows.length,
+              totalRowCount,
+            }),
           };
         }
 
@@ -542,6 +668,10 @@ export class DatabaseController {
           format: 'json',
           data: jsonData,
           timestamp,
+          ...(truncatedTables.length > 0 && {
+            truncatedTables,
+            rowLimit,
+          }),
         };
       }
     } finally {
@@ -560,12 +690,12 @@ export class DatabaseController {
     const fileExtension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
 
     if (!allowedExtensions.includes(fileExtension)) {
-      throw new AppError('Only .sql files are allowed', 400, 'INVALID_INPUT');
+      throw new AppError('Only .sql/.txt files are allowed', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     // Convert buffer to string
-    const data = fileBuffer.toString('utf-8');
-
+    const raw_data = fileBuffer.toString('utf-8');
+    const data = this.sanitizeQuery(raw_data);
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -586,37 +716,31 @@ export class DatabaseController {
         for (const row of tablesResult.rows) {
           try {
             await client.query(`TRUNCATE TABLE ${row.tablename} CASCADE`);
-            logger.warn(`Truncated table: ${row.tablename}`);
+            logger.info(`Truncated table: ${row.tablename}`);
           } catch (err) {
             logger.warn(`Could not truncate table ${row.tablename}:`, err);
           }
         }
       }
 
-      // Process SQL file
-      // Split SQL into individual statements, handling multi-line statements and comments
-      const statements = data
-        .split(';')
-        .map((s) => {
-          // Remove single-line comments and trim whitespace
-          return s
-            .split('\n')
-            .map((line) => line.replace(/--.*$/, '').trim())
-            .filter((line) => line.length > 0)
-            .join(' ')
-            .trim();
-        })
-        .filter((s) => s.length > 0);
+      // Process SQL file using our SQL parser utility
+      let statements: string[] = [];
+
+      try {
+        statements = parseSQLStatements(data);
+        logger.info(`Parsed ${statements.length} SQL statements from import file`);
+      } catch (parseError) {
+        logger.warn('Failed to parse SQL file:', parseError);
+        throw new AppError(
+          'Invalid SQL file format. Please ensure the file contains valid SQL statements.',
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
 
       for (const statement of statements) {
         // Basic validation to prevent dangerous operations
-        if (
-          /DROP\s+DATABASE/i.test(statement) ||
-          /CREATE\s+DATABASE/i.test(statement) ||
-          /ALTER\s+DATABASE/i.test(statement)
-        ) {
-          throw new AppError('Import contains restricted operations', 403, 'FORBIDDEN');
-        }
+        this.sanitizeQuery(statement);
 
         try {
           const result = await client.query(statement);

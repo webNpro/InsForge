@@ -70,7 +70,14 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
     const includeFunctions = false;
     const includeSequences = false;
     const includeViews = false;
-    const schemaResponse = await databaseController.exportDatabase([tableName], 'json', includeData, includeFunctions, includeSequences, includeViews);
+    const schemaResponse = await databaseController.exportDatabase(
+      [tableName],
+      'json',
+      includeData,
+      includeFunctions,
+      includeSequences,
+      includeViews
+    );
 
     // Trigger Socket.IO event to notify frontend that MCP is connected
     if (req.query.mcp === 'true') {
@@ -79,7 +86,7 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
       socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED);
     }
     // When format is 'json', the data contains the tables object
-    const jsonData = schemaResponse.data as { tables: Record<string, any> };
+    const jsonData = schemaResponse.data as { tables: Record<string, unknown> };
     const metadata = jsonData.tables;
     successResponse(res, metadata);
   } catch (error) {
