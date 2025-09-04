@@ -398,11 +398,9 @@ router.delete(
   }
 );
 
-// === New Universal Endpoints for Presigned URL Support ===
-
-// POST /api/storage/buckets/:bucketName/upload - Get upload strategy (presigned or direct)
+// POST /api/storage/buckets/:bucketName/upload-strategy - Get upload strategy (presigned or direct)
 router.post(
-  '/buckets/:bucketName/upload',
+  '/buckets/:bucketName/upload-strategy',
   verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -431,13 +429,13 @@ router.post(
   }
 );
 
-// POST /api/storage/buckets/:bucketName/objects/:key/confirm - Confirm presigned upload
+// POST /api/storage/buckets/:bucketName/objects/:objectKey/confirm-upload - Confirm presigned upload
 router.post(
-  '/buckets/:bucketName/objects/:key/confirm',
+  '/buckets/:bucketName/objects/:objectKey/confirm-upload',
   verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { bucketName, key } = req.params;
+      const { bucketName, objectKey } = req.params;
       const { size, contentType, etag } = req.body;
 
       if (!size) {
@@ -445,7 +443,7 @@ router.post(
       }
 
       const storageService = StorageService.getInstance();
-      const fileInfo = await storageService.confirmUpload(bucketName, key, {
+      const fileInfo = await storageService.confirmUpload(bucketName, objectKey, {
         size,
         contentType,
         etag
@@ -464,19 +462,19 @@ router.post(
   }
 );
 
-// POST /api/storage/buckets/:bucketName/objects/:key/download-url - Get download URL (presigned or direct)
+// POST /api/storage/buckets/:bucketName/objects/:objectKey/download-strategy - Get download URL (presigned or direct)
 router.post(
-  '/buckets/:bucketName/objects/:key/download-url',
+  '/buckets/:bucketName/objects/:objectKey/download-strategy',
   conditionalAuth,
   async (req: AuthRequest | Request, res: Response, next: NextFunction) => {
     try {
-      const { bucketName, key } = req.params;
+      const { bucketName, objectKey } = req.params;
       const { expiresIn = 3600 } = req.body;
 
       const storageService = StorageService.getInstance();
       const strategy = await storageService.getDownloadStrategy(
         bucketName, 
-        key,
+        objectKey,
         Number(expiresIn)
       );
 
@@ -490,5 +488,4 @@ router.post(
     }
   }
 );
-
 export { router as storageRouter };

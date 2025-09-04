@@ -281,12 +281,8 @@ class S3StorageBackend implements StorageBackend {
         Bucket: this.s3Bucket,
         Key: s3Key,
         Conditions: [
-          ['content-length-range', 0, metadata.size || 10485760], // Max 10MB by default
-          ...(metadata.contentType ? [['starts-with', '$Content-Type', metadata.contentType]] : [])
+          ['content-length-range', 0, metadata.size || 10485760] // Max 10MB by default
         ],
-        Fields: {
-          ...(metadata.contentType ? { 'Content-Type': metadata.contentType } : {})
-        },
         Expires: expiresIn
       });
 
@@ -296,7 +292,7 @@ class S3StorageBackend implements StorageBackend {
         fields,
         key,
         confirmRequired: true,
-        confirmUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}/confirm`,
+        confirmUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}/confirm-upload`,
         expiresAt: new Date(Date.now() + expiresIn * 1000)
       };
     } catch (error) {
