@@ -41,16 +41,16 @@ curl -s -X POST $API_URL/api/storage/buckets \
     \"isPublic\": true
   }" | jq .
 
-# Step 3: Request presigned URL
+# Step 3: Request upload strategy (presigned URL for S3)
 echo ""
-echo "3. Requesting presigned upload URL..."
-PRESIGNED_RESPONSE=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/objects/presigned-url \
+echo "3. Requesting upload strategy..."
+PRESIGNED_RESPONSE=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/upload-strategy \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "filename": "test-file.txt",
     "contentType": "text/plain",
-    "fileSize": 42
+    "size": 42
   }')
 
 echo "Presigned URL Response:"

@@ -50,13 +50,13 @@ interface StorageBackend {
 
   // New methods for presigned URL support
   supportsPresignedUrls(): boolean;
-  getUploadStrategy?(
+  getUploadStrategy(
     bucket: string,
     key: string,
     metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategy>;
-  getDownloadStrategy?(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategy>;
-  verifyObjectExists?(bucket: string, key: string): Promise<boolean>;
+  getDownloadStrategy(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategy>;
+  verifyObjectExists(bucket: string, key: string): Promise<boolean>;
 }
 
 // Local filesystem storage implementation
@@ -137,6 +137,18 @@ class LocalStorageBackend implements StorageBackend {
       method: 'direct',
       url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     });
+  }
+
+  async verifyObjectExists(bucket: string, key: string): Promise<boolean> {
+    // For local storage, check if file exists on disk
+    try {
+      const filePath = this.getFilePath(bucket, key);
+      await fs.access(filePath);
+      return true;
+    } catch {
+      // File doesn't exist
+      return false;
+    }
   }
 }
 
@@ -723,18 +735,7 @@ export class StorageService {
     }
 
     const key = this.generateUniqueKey(metadata.filename);
-
-    if (this.backend.getUploadStrategy) {
-      return this.backend.getUploadStrategy(bucket, key, metadata);
-    }
-
-    // Fallback for backends without strategy support
-    return {
-      method: 'direct',
-      uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
-      key,
-      confirmRequired: false,
-    };
+    return this.backend.getUploadStrategy(bucket, key, metadata);
   }
 
   async getDownloadStrategy(
@@ -744,16 +745,7 @@ export class StorageService {
   ): Promise<DownloadStrategy> {
     this.validateBucketName(bucket);
     this.validateKey(key);
-
-    if (this.backend.getDownloadStrategy) {
-      return this.backend.getDownloadStrategy(bucket, key, expiresIn);
-    }
-
-    // Fallback for backends without strategy support
-    return {
-      method: 'direct',
-      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
-    };
+    return this.backend.getDownloadStrategy(bucket, key, expiresIn);
   }
 
   async confirmUpload(
@@ -768,12 +760,10 @@ export class StorageService {
     this.validateBucketName(bucket);
     this.validateKey(key);
 
-    // Verify the file exists in S3 (for S3 backend)
-    if (this.backend.verifyObjectExists) {
-      const exists = await this.backend.verifyObjectExists(bucket, key);
-      if (!exists) {
-        throw new Error(`Upload not found for key "${key}" in bucket "${bucket}"`);
-      }
+    // Verify the file exists in storage
+    const exists = await this.backend.verifyObjectExists(bucket, key);
+    if (!exists) {
+      throw new Error(`Upload not found for key "${key}" in bucket "${bucket}"`);
     }
 
     const db = DatabaseManager.getInstance().getDb();
