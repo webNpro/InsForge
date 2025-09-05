@@ -54,6 +54,32 @@ CREATE TABLE IF NOT EXISTS _mcp_usage (
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- AI configurations table
+CREATE TABLE IF NOT EXISTS _ai_configs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  modality VARCHAR(255) NOT NULL,
+  provider VARCHAR(255) NOT NULL,
+  model VARCHAR(255) NOT NULL,
+  system_prompt TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS _ai_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  config_id UUID NOT NULL,
+  input_tokens INT,
+  output_tokens INT,
+  image_count INT,
+  image_resolution TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY (config_id) REFERENCES _ai_configs(id) ON DELETE NO ACTION
+);
+
+-- Indexes for AI tables
+CREATE INDEX IF NOT EXISTS idx_ai_usage_config_id ON _ai_usage(config_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_created_at ON _ai_usage(created_at DESC);
+
 -- Index for efficient date range queries
 CREATE INDEX IF NOT EXISTS idx_mcp_usage_created_at ON _mcp_usage(created_at DESC);
 
