@@ -24,11 +24,11 @@ FILE_SIZE=$(stat -f%z "$TEST_FILE" 2>/dev/null || stat -c%s "$TEST_FILE" 2>/dev/
 
 # Step 1: Login to get auth token
 echo "1. Logging in..."
-LOGIN_RESPONSE=$(curl -s -X POST $API_URL/api/auth/sessions \
+LOGIN_RESPONSE=$(curl -s -X POST $API_URL/api/auth/admin/sessions \
   -H 'Content-Type: application/json' \
   -d '{
     "email": "admin@example.com",
-    "password": "password123"
+    "password": "change-this-password"
   }')
 
 TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.accessToken')
@@ -55,7 +55,7 @@ echo $CREATE_RESPONSE | jq .
 # Step 3: Request upload strategy
 echo ""
 echo "3. Requesting upload strategy (backend decides)..."
-UPLOAD_STRATEGY=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/upload \
+UPLOAD_STRATEGY=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/upload-strategy \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d "{
@@ -154,7 +154,7 @@ if [ "$CONFIRM_REQUIRED" == "true" ]; then
   echo ""
   echo "5. Confirming upload..."
   
-  CONFIRM_RESPONSE=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/objects/$KEY/confirm \
+  CONFIRM_RESPONSE=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/objects/$KEY/confirm-upload \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
     -d "{
@@ -179,7 +179,7 @@ fi
 # Step 6: Get download URL
 echo ""
 echo "6. Getting download URL..."
-DOWNLOAD_STRATEGY=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/objects/$KEY/download-url \
+DOWNLOAD_STRATEGY=$(curl -s -X POST $API_URL/api/storage/buckets/$BUCKET_NAME/objects/$KEY/download-strategy \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
