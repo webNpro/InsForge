@@ -21,10 +21,10 @@ import {
 import { useAIConfigs } from '../hooks/useAIConfigs';
 import {
   AIConfigurationWithUsageSchema,
-  createAIConfigurationReqeustSchema,
-  updateAIConfigurationReqeustSchema,
-  CreateAIConfigurationReqeust,
-  UpdateAIConfigurationReqeust,
+  createAIConfigurationRequestSchema,
+  updateAIConfigurationRequestSchema,
+  CreateAIConfigurationRequest,
+  UpdateAIConfigurationRequest,
   ModalitySchema,
 } from '@insforge/shared-schemas';
 
@@ -33,7 +33,7 @@ interface AIConfigDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   editingConfig?: AIConfigurationWithUsageSchema;
-  onSuccess?: (config: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust) => void;
+  onSuccess?: (config: CreateAIConfigurationRequest | UpdateAIConfigurationRequest) => void;
 }
 
 interface ModelOption {
@@ -133,7 +133,7 @@ export function AIConfigDialog({
     [modelsByModality]
   );
 
-  const getInitialCreateValues = useCallback((): CreateAIConfigurationReqeust => {
+  const getInitialCreateValues = useCallback((): CreateAIConfigurationRequest => {
     if (editingConfig && mode === 'create') {
       const modality = editingConfig.modality as ModalitySchema;
       return {
@@ -152,19 +152,19 @@ export function AIConfigDialog({
     };
   }, [mode, editingConfig, findModelValue, getDefaultModality]);
 
-  const getInitialEditValues = useCallback((): UpdateAIConfigurationReqeust => {
+  const getInitialEditValues = useCallback((): UpdateAIConfigurationRequest => {
     return {
       systemPrompt: editingConfig?.systemPrompt ?? null,
     };
   }, [editingConfig]);
 
-  const createForm = useForm<CreateAIConfigurationReqeust>({
-    resolver: zodResolver(createAIConfigurationReqeustSchema),
+  const createForm = useForm<CreateAIConfigurationRequest>({
+    resolver: zodResolver(createAIConfigurationRequestSchema),
     defaultValues: getInitialCreateValues(),
   });
 
-  const editForm = useForm<UpdateAIConfigurationReqeust>({
-    resolver: zodResolver(updateAIConfigurationReqeustSchema),
+  const editForm = useForm<UpdateAIConfigurationRequest>({
+    resolver: zodResolver(updateAIConfigurationRequestSchema),
     defaultValues: getInitialEditValues(),
   });
 
@@ -208,7 +208,7 @@ export function AIConfigDialog({
   );
 
   const handleEditSubmit = useCallback(
-    (data: UpdateAIConfigurationReqeust) => {
+    (data: UpdateAIConfigurationRequest) => {
       onSuccess?.({
         systemPrompt: data.systemPrompt,
       });
@@ -217,7 +217,7 @@ export function AIConfigDialog({
   );
 
   const handleCreateSubmit = useCallback(
-    (data: CreateAIConfigurationReqeust) => {
+    (data: CreateAIConfigurationRequest) => {
       const selectedModelOption = modelsByModality[data.modality].find(
         (m) => m.value === data.model
       );
@@ -236,11 +236,11 @@ export function AIConfigDialog({
   );
 
   const handleSubmit = useCallback(
-    (data: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust) => {
+    (data: CreateAIConfigurationRequest | UpdateAIConfigurationRequest) => {
       if (mode === 'edit') {
-        handleEditSubmit(data as UpdateAIConfigurationReqeust);
+        handleEditSubmit(data as UpdateAIConfigurationRequest);
       } else {
-        handleCreateSubmit(data as CreateAIConfigurationReqeust);
+        handleCreateSubmit(data as CreateAIConfigurationRequest);
       }
       onOpenChange(false);
       form.reset();

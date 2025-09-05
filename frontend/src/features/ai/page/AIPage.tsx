@@ -14,8 +14,8 @@ import { PromptDialog } from '@/components/PromptDialog';
 import { useAIConfigs } from '../hooks/useAIConfigs';
 import {
   AIConfigurationWithUsageSchema,
-  CreateAIConfigurationReqeust,
-  UpdateAIConfigurationReqeust,
+  CreateAIConfigurationRequest,
+  UpdateAIConfigurationRequest,
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
@@ -101,10 +101,10 @@ export default function AIPage() {
   };
 
   const handleDialogSuccess = (
-    configData: CreateAIConfigurationReqeust | UpdateAIConfigurationReqeust
+    configData: CreateAIConfigurationRequest | UpdateAIConfigurationRequest
   ) => {
     if (dialogMode === 'create') {
-      const createData = configData as CreateAIConfigurationReqeust;
+      const createData = configData as CreateAIConfigurationRequest;
       createConfiguration({
         modality: createData.modality,
         provider: createData.provider,
@@ -112,7 +112,7 @@ export default function AIPage() {
         systemPrompt: createData.systemPrompt,
       });
     } else if (editingConfig) {
-      const updateData = configData as UpdateAIConfigurationReqeust;
+      const updateData = configData as UpdateAIConfigurationRequest;
       updateConfiguration({
         id: editingConfig.id,
         data: {

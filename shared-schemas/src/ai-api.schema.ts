@@ -18,11 +18,11 @@ export const listModelsResponseSchema = z.object({
   ),
 });
 
-export const createAIConfigurationReqeustSchema = aiConfigurationSchema.omit({
+export const createAIConfigurationRequestSchema = aiConfigurationSchema.omit({
   id: true,
 });
 
-export const updateAIConfigurationReqeustSchema = z.object({
+export const updateAIConfigurationRequestSchema = z.object({
   systemPrompt: z.string().nullable(),
 });
 
@@ -45,8 +45,8 @@ export const getAIUsageSummaryRequestSchema = z.object({
 });
 
 export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
-export type CreateAIConfigurationReqeust = z.infer<typeof createAIConfigurationReqeustSchema>;
-export type UpdateAIConfigurationReqeust = z.infer<typeof updateAIConfigurationReqeustSchema>;
+export type CreateAIConfigurationRequest = z.infer<typeof createAIConfigurationRequestSchema>;
+export type UpdateAIConfigurationRequest = z.infer<typeof updateAIConfigurationRequestSchema>;
 export type ListAIUsageResponse = z.infer<typeof listAIUsageResponseSchema>;
 export type GetAIUsageRequest = z.infer<typeof getAIUsageRequestSchema>;
 export type GetAIUsageSummaryRequest = z.infer<typeof getAIUsageSummaryRequestSchema>;
