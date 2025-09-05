@@ -43,7 +43,7 @@ router.get('/models', verifyAdmin, (req: AuthRequest, res: Response) => {
 });
 
 /**
- * POST /api/chat
+ * POST /api/ai/chat
  * Send a chat message to any supported model
  */
 router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
@@ -147,7 +147,7 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 });
 
 /**
- * POST /api/image/generation
+ * POST /api/ai/image/generation
  * Generate images using specified model
  */
 router.post(

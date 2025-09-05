@@ -15,7 +15,7 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   \`Authorization: Bearer <your-jwt-token>\`
 
   ## Chat Endpoint
-  **POST** \`/api/chat\`
+  **POST** \`/api/ai/chat\`
 
   ### Request Body
   \`\`\`json
@@ -66,7 +66,7 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   \`Authorization: Bearer <your-jwt-token>\`
 
   ## Image Generation Endpoint
-  **POST** \`/api/image/generation\`
+  **POST** \`/api/ai/image/generation\`
 
   ### Request Body
   \`\`\`json
