@@ -3,7 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import { StorageRecord, BucketRecord } from '@/types/storage.js';
-import { StorageFileSchema } from '@insforge/shared-schemas';
+import { 
+  StorageFileSchema,
+  UploadStrategyResponse,
+  DownloadStrategyResponse
+} from '@insforge/shared-schemas';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import {
   S3Client,
@@ -21,24 +25,6 @@ import logger from '@/utils/logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Types for upload/download strategies
-export interface UploadStrategy {
-  method: 'presigned' | 'direct';
-  uploadUrl: string;
-  fields?: Record<string, string>;
-  key: string;
-  confirmRequired: boolean;
-  confirmUrl?: string;
-  expiresAt?: Date;
-}
-
-export interface DownloadStrategy {
-  method: 'presigned' | 'direct';
-  url: string;
-  expiresAt?: Date;
-  headers?: Record<string, string>;
-}
-
 // Storage backend interface
 interface StorageBackend {
   initialize(): void | Promise<void>;
@@ -54,8 +40,8 @@ interface StorageBackend {
     bucket: string,
     key: string,
     metadata: { contentType?: string; size?: number }
-  ): Promise<UploadStrategy>;
-  getDownloadStrategy(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategy>;
+  ): Promise<UploadStrategyResponse>;
+  getDownloadStrategy(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategyResponse>;
   verifyObjectExists(bucket: string, key: string): Promise<boolean>;
 }
 
@@ -117,7 +103,7 @@ class LocalStorageBackend implements StorageBackend {
     bucket: string,
     key: string,
     _metadata: { contentType?: string; size?: number }
-  ): Promise<UploadStrategy> {
+  ): Promise<UploadStrategyResponse> {
     // For local storage, return direct upload strategy
     return Promise.resolve({
       method: 'direct',
@@ -131,7 +117,7 @@ class LocalStorageBackend implements StorageBackend {
     bucket: string,
     key: string,
     _expiresIn?: number
-  ): Promise<DownloadStrategy> {
+  ): Promise<DownloadStrategyResponse> {
     // For local storage, return direct download URL
     return Promise.resolve({
       method: 'direct',
@@ -279,7 +265,7 @@ class S3StorageBackend implements StorageBackend {
     bucket: string,
     key: string,
     metadata: { contentType?: string; size?: number }
-  ): Promise<UploadStrategy> {
+  ): Promise<UploadStrategyResponse> {
     if (!this.s3Client) {
       throw new Error('S3 client not initialized');
     }
@@ -321,7 +307,7 @@ class S3StorageBackend implements StorageBackend {
     bucket: string,
     key: string,
     expiresIn: number = 3600
-  ): Promise<DownloadStrategy> {
+  ): Promise<DownloadStrategyResponse> {
     if (!this.s3Client) {
       throw new Error('S3 client not initialized');
     }
@@ -721,7 +707,7 @@ export class StorageService {
       contentType?: string;
       size?: number;
     }
-  ): Promise<UploadStrategy> {
+  ): Promise<UploadStrategyResponse> {
     this.validateBucketName(bucket);
 
     // Check if bucket exists
@@ -742,7 +728,7 @@ export class StorageService {
     bucket: string,
     key: string,
     expiresIn?: number
-  ): Promise<DownloadStrategy> {
+  ): Promise<DownloadStrategyResponse> {
     this.validateBucketName(bucket);
     this.validateKey(key);
     return this.backend.getDownloadStrategy(bucket, key, expiresIn);
