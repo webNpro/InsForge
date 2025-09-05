@@ -41,7 +41,7 @@ interface StorageBackend {
     key: string,
     metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategyResponse>;
-  getDownloadStrategy(bucket: string, key: string, expiresIn?: number): Promise<DownloadStrategyResponse>;
+  getDownloadStrategy(bucket: string, key: string, expiresIn?: number, isPublic?: boolean): Promise<DownloadStrategyResponse>;
   verifyObjectExists(bucket: string, key: string): Promise<boolean>;
 }
 
@@ -116,7 +116,8 @@ class LocalStorageBackend implements StorageBackend {
   getDownloadStrategy(
     bucket: string,
     key: string,
-    _expiresIn?: number
+    _expiresIn?: number,
+    _isPublic?: boolean
   ): Promise<DownloadStrategyResponse> {
     // For local storage, return direct download URL
     return Promise.resolve({
@@ -306,7 +307,8 @@ class S3StorageBackend implements StorageBackend {
   async getDownloadStrategy(
     bucket: string,
     key: string,
-    expiresIn: number = 3600
+    expiresIn: number = 3600,
+    isPublic: boolean = false
   ): Promise<DownloadStrategyResponse> {
     if (!this.s3Client) {
       throw new Error('S3 client not initialized');
@@ -315,20 +317,31 @@ class S3StorageBackend implements StorageBackend {
     const s3Key = this.getS3Key(bucket, key);
 
     try {
-      const command = new GetObjectCommand({
-        Bucket: this.s3Bucket,
-        Key: s3Key,
-      });
+      if (isPublic) {
+        // For public buckets, return direct S3 URL (no presigning needed)
+        const directUrl = `https://${this.s3Bucket}.s3.${this.region}.amazonaws.com/${s3Key}`;
+        
+        return {
+          method: 'direct',
+          url: directUrl,
+        };
+      } else {
+        // For private buckets, generate presigned URL
+        const command = new GetObjectCommand({
+          Bucket: this.s3Bucket,
+          Key: s3Key,
+        });
 
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+        const url = await getSignedUrl(this.s3Client, command, { expiresIn });
 
-      return {
-        method: 'presigned',
-        url,
-        expiresAt: new Date(Date.now() + expiresIn * 1000),
-      };
+        return {
+          method: 'presigned',
+          url,
+          expiresAt: new Date(Date.now() + expiresIn * 1000),
+        };
+      }
     } catch (error) {
-      logger.error('Failed to generate presigned download URL', {
+      logger.error('Failed to generate download URL', {
         error: error instanceof Error ? error.message : String(error),
         bucket,
         key,
@@ -731,7 +744,11 @@ export class StorageService {
   ): Promise<DownloadStrategyResponse> {
     this.validateBucketName(bucket);
     this.validateKey(key);
-    return this.backend.getDownloadStrategy(bucket, key, expiresIn);
+    
+    // Check if bucket is public
+    const isPublic = await this.isBucketPublic(bucket);
+    
+    return this.backend.getDownloadStrategy(bucket, key, expiresIn, isPublic);
   }
 
   async confirmUpload(
