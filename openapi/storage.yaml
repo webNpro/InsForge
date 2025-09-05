@@ -634,7 +634,11 @@ paths:
   /api/storage/buckets/{bucketName}/objects/{objectKey}/download-strategy:
     post:
       summary: Get Download Strategy (Direct or Presigned URL)
-      description: Returns download strategy based on storage backend (S3 returns presigned URLs, local returns direct endpoints)
+      description: |
+        Returns download strategy based on storage backend and bucket visibility.
+        - S3 with public bucket: Direct URLs (no presigning, better performance)
+        - S3 with private bucket: Presigned URLs with expiration
+        - Local storage: Always direct endpoints
       security:
         - apiKey: []
       parameters:
@@ -670,11 +674,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/DownloadStrategy'
               examples:
-                s3:
-                  summary: S3 Backend Response
+                s3-public:
+                  summary: S3 Public Bucket Response
+                  value:
+                    method: direct
+                    url: https://s3-bucket.s3.us-east-2.amazonaws.com/app-key/public-assets/logo.png
+                s3-private:
+                  summary: S3 Private Bucket Response
                   value:
                     method: presigned
-                    url: https://s3-bucket.amazonaws.com/app-key/avatars/profile-photo.jpg?X-Amz-Algorithm=...
+                    url: https://s3-bucket.s3.us-east-2.amazonaws.com/app-key/avatars/profile.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
                     expiresAt: "2025-09-05T01:00:00Z"
                 local:
                   summary: Local Storage Response
@@ -800,16 +809,19 @@ components:
         method:
           type: string
           enum: [presigned, direct]
-          description: Download method - presigned for S3, direct for local storage
-          example: presigned
+          description: |
+            Download method:
+            - `direct`: Direct URL access (S3 public buckets or local storage)
+            - `presigned`: Secure URL with signature and expiration (S3 private buckets)
+          example: direct
         url:
           type: string
           description: URL to download the file from
-          example: https://s3-bucket.amazonaws.com/app-key/avatars/profile.jpg?X-Amz-Algorithm=...
+          example: https://s3-bucket.s3.us-east-2.amazonaws.com/app-key/public-assets/logo.png
         expiresAt:
           type: string
           format: date-time
-          description: Expiration time for presigned URL (S3 only)
+          description: Expiration time for presigned URLs (only present when method is 'presigned')
           example: "2025-09-05T01:00:00Z"
         headers:
           type: object
