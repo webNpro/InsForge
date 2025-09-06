@@ -134,7 +134,7 @@ export function RecordFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[640px] p-0 gap-0 overflow-hidden flex flex-col">
+      <DialogContent className="w-160 p-0 gap-0 overflow-hidden flex flex-col">
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
           <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
             <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">

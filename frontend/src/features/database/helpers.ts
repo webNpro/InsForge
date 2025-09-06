@@ -133,6 +133,20 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
           values[column.columnName] = '';
         }
         break;
+      case ColumnType.DATETIME:
+        if (column.defaultValue) {
+          if (column.defaultValue.endsWith('()')) {
+            values[column.columnName] = new Date().toISOString();
+          } else {
+            values[column.columnName] = new Date(column.defaultValue).toISOString();
+          }
+        } else {
+          values[column.columnName] = '';
+        }
+        break;
+      case ColumnType.JSON:
+        values[column.columnName] = column.defaultValue ?? '';
+        break;
       default:
         values[column.columnName] = '';
     }
