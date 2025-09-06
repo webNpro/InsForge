@@ -34,9 +34,6 @@ export const aiUsageDataSchema = z.object({
 export const aiUsageRecordSchema = aiUsageDataSchema.extend({
   id: z.string().uuid(),
   createdAt: z.date(),
-  model: z.string(),
-  provider: z.string(),
-  modality: z.string(),
 });
 
 export const aiUsageSummarySchema = z.object({
