@@ -12,21 +12,6 @@ import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { convertValueForColumn, cn } from '@/lib/utils/utils';
 import { TypeBadge } from '@/components/TypeBadge';
 
-function getUuidPlaceholder(field: ColumnSchema): string {
-  //If there is a foreign key, it is required to be linked
-  if (field.foreignKey) {
-    return 'Required';
-  }
-
-  //If default value is gen_random_uuid()
-  if (field.defaultValue?.endsWith('()')) {
-    return 'Auto-generated if empty';
-  }
-
-  // If it is nullable, it is optional. If not, it is required. No matter if there is a default value.
-  return field.isNullable ? 'Optional' : 'Required';
-}
-
 // Type for database records
 type DatabaseRecord = Record<string, any>;
 
@@ -528,7 +513,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder={getUuidPlaceholder(field)}
+                  placeholder={field.isNullable ? 'Optional' : 'Required'}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
