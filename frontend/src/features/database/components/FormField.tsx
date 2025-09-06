@@ -221,10 +221,11 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
       if (keys.length === 0) {
         return '{}';
       }
-      if (keys.length === 1) {
-        return `{ ${keys[0]}: ... }`;
+      if (keys.length >= 2) {
+        return `{ ${keys.length} properties }`;
       }
-      return `{ ${keys.length} properties }`;
+
+      return value;
     } catch {
       return 'Invalid JSON';
     }
