@@ -84,7 +84,7 @@ export default function AIPage() {
     const config = configurations.find((c) => c.id === id);
     const shouldDelete = await confirm({
       title: 'Delete AI Configuration',
-      description: `Are you sure you want to delete the configuration "${config?.provider} - ${config?.model}"? This action cannot be undone.`,
+      description: `Are you sure you want to delete the configuration "${config?.provider} - ${config?.modelId}"? This action cannot be undone.`,
       confirmText: 'Delete',
       destructive: true,
     });
@@ -108,7 +108,7 @@ export default function AIPage() {
       createConfiguration({
         modality: createData.modality,
         provider: createData.provider,
-        model: createData.model,
+        modelId: createData.modelId,
         systemPrompt: createData.systemPrompt,
       });
     } else if (editingConfig) {
@@ -169,7 +169,7 @@ export default function AIPage() {
 
                         {/* Provider and Model */}
                         <div className="w-80 font-medium text-black dark:text-white">
-                          {config.provider} - {config.model}
+                          {config.provider} - {config.modelId}
                         </div>
                       </div>
 
@@ -185,6 +185,17 @@ export default function AIPage() {
                                   </span>
                                   {config.usageStats.totalImageCount === 1 ? ' image' : ' images'}
                                 </span>
+                                {config.usageStats.totalTokens > 0 && (
+                                  <>
+                                    <span className="text-gray-400">•</span>
+                                    <span>
+                                      <span className="font-medium">
+                                        {formatTokenCount(config.usageStats.totalTokens)}
+                                      </span>
+                                      {' tokens'}
+                                    </span>
+                                  </>
+                                )}
                                 <span className="text-gray-400">•</span>
                                 <span>
                                   <span className="font-medium">

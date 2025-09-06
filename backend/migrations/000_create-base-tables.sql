@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS _ai_configs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   modality VARCHAR(255) NOT NULL,
   provider VARCHAR(255) NOT NULL,
-  model VARCHAR(255) NOT NULL,
+  model_id VARCHAR(255) UNIQUE NOT NULL,
   system_prompt TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

@@ -1,7 +1,12 @@
 import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
-import type { ChatRequest, ImageGenerationOptions } from '@/types/ai';
+import type {
+  ChatRequest,
+  ChatCompletionResponse,
+  ImageGenerationOptions,
+  OpenRouterModel,
+} from '@/types/ai';
 import { ImageService } from '@/core/ai/image';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
@@ -24,14 +29,73 @@ const aiUsageService = new AIUsageService();
  * GET /api/ai/models
  * Get all available AI models in ListModelsResponse format
  */
-router.get('/models', verifyAdmin, (req: AuthRequest, res: Response) => {
+router.get('/models', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const textModels = ChatService.getAvailableModels();
-    const imageModels = ImageService.getAvailableModels();
+    const configured = !!process.env.OPENROUTER_API_KEY;
+
+    if (!configured) {
+      res.json({
+        text: [
+          {
+            provider: 'openrouter',
+            configured: false,
+            models: [],
+          },
+        ],
+        image: [
+          {
+            provider: 'openrouter',
+            configured: false,
+            models: [],
+          },
+        ],
+      });
+      return;
+    }
+
+    // Fetch models once and classify them
+    const response = await fetch('https://openrouter.ai/api/v1/models/user', {
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch models: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as { data: OpenRouterModel[] };
+    const models = data.data || [];
+
+    const textModels: OpenRouterModel[] = [];
+    const imageModels: OpenRouterModel[] = [];
+
+    for (const model of models) {
+      // Classify based on output modality
+      if (model.architecture?.output_modalities?.includes('image')) {
+        imageModels.push(model);
+      }
+
+      if (model.architecture?.output_modalities?.includes('text')) {
+        textModels.push(model);
+      }
+    }
 
     res.json({
-      text: textModels,
-      image: imageModels,
+      text: [
+        {
+          provider: 'openrouter',
+          configured: true,
+          models: textModels,
+        },
+      ],
+      image: [
+        {
+          provider: 'openrouter',
+          configured: true,
+          models: imageModels,
+        },
+      ],
     });
   } catch (error) {
     console.error('Error getting models:', error);
@@ -43,12 +107,12 @@ router.get('/models', verifyAdmin, (req: AuthRequest, res: Response) => {
 });
 
 /**
- * POST /api/ai/chat
+ * POST /api/ai/chat/completion
  * Send a chat message to any supported model
  */
-router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
+router.post('/chat/completion', verifyUser, async (req: AuthRequest, res: Response) => {
   try {
-    const { model, message, messages, stream, ...options } = req.body as ChatRequest;
+    const { model, messages, stream, ...options } = req.body as ChatRequest;
 
     if (!model) {
       return res.status(400).json({
@@ -73,10 +137,7 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 
         if (messages && messages.length > 0) {
           // Multi-turn conversation with streaming
-          streamGenerator = chatService.streamChatWithHistory(messages, chatOptions);
-        } else if (message) {
-          // Single message with streaming
-          streamGenerator = chatService.streamChat(message, chatOptions);
+          streamGenerator = chatService.streamChat(messages, chatOptions);
         } else {
           res.write(
             `data: ${JSON.stringify({ error: 'Either message or messages array is required' })}\n\n`
@@ -121,22 +182,22 @@ router.post('/chat', verifyUser, async (req: AuthRequest, res: Response) => {
 
     if (messages && messages.length > 0) {
       // Multi-turn conversation
-      result = await chatService.chatWithHistory(messages, chatOptions);
-    } else if (message) {
-      // Single message
-      result = await chatService.chat(message, chatOptions);
+      result = await chatService.chat(messages, chatOptions);
     } else {
       return res.status(400).json({
         error: 'Either message or messages array is required',
       });
     }
 
-    res.json({
+    const response: ChatCompletionResponse = {
       success: true,
-      response: result.content,
-      model,
-      tokenUsage: result.tokenUsage,
-    });
+      content: result.content,
+      metadata: {
+        model,
+        usage: result.tokenUsage,
+      },
+    };
+    res.json(response);
   } catch (error) {
     console.error('Chat error:', error);
     res.status(500).json({
@@ -165,7 +226,7 @@ router.post(
         throw new AppError('Prompt is required', 400, ERROR_CODES.INVALID_INPUT);
       }
 
-      const images = await ImageService.generate({
+      const result = await ImageService.generate({
         model,
         ...options,
       });
@@ -174,10 +235,12 @@ router.post(
         res,
         {
           model,
-          images,
-          count: images.length,
+          images: result.images,
+          text: result.text,
+          count: result.images.length,
+          metadata: result.metadata,
           nextActions:
-            'Images have been generated successfully. Use the returned URLs to access them.',
+            'Images have been generated successfully. Use the returned URLs or base64 data to access them.',
         },
         201
       );
@@ -215,9 +278,9 @@ router.post(
           ERROR_CODES.INVALID_INPUT
         );
       }
-      const { modality, provider, model, systemPrompt } = validationResult.data;
+      const { modality, provider, modelId, systemPrompt } = validationResult.data;
 
-      const result = await aiConfigService.create(modality, provider, model, systemPrompt);
+      const result = await aiConfigService.create(modality, provider, modelId, systemPrompt);
 
       successResponse(
         res,

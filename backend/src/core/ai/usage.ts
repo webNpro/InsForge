@@ -2,9 +2,9 @@ import { Pool } from 'pg';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
 import type {
-  AIUsageData,
-  AIUsageRecord,
-  AIUsageSummary,
+  AIUsageDataSchema,
+  AIUsageRecordSchema,
+  AIUsageSummarySchema,
   ListAIUsageResponse,
 } from '@insforge/shared-schemas';
 
@@ -18,7 +18,7 @@ export class AIUsageService {
     return this.pool;
   }
 
-  async trackUsage(data: AIUsageData): Promise<{ id: string }> {
+  async trackUsage(data: AIUsageDataSchema): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
@@ -84,18 +84,20 @@ export class AIUsageService {
     }
   }
 
-  async trackImageUsage(
+  async trackImageGeneartionUsage(
     configId: string,
     imageCount: number,
-    imageResolution?: string
+    imageResolution?: string,
+    inputTokens?: number,
+    outputTokens?: number
   ): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const usageResult = await client.query(
-        `INSERT INTO _ai_usage (config_id, image_count, image_resolution)
-         VALUES ($1, $2, $3)
+        `INSERT INTO _ai_usage (config_id, image_count, image_resolution, input_tokens, output_tokens)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
-        [configId, imageCount, imageResolution || null]
+        [configId, imageCount, imageResolution || null, inputTokens || null, outputTokens || null]
       );
 
       logger.info('Image usage tracked', {
@@ -103,6 +105,8 @@ export class AIUsageService {
         configId,
         imageCount,
         imageResolution,
+        inputTokens,
+        outputTokens,
       });
 
       return { id: usageResult.rows[0].id };
@@ -118,7 +122,7 @@ export class AIUsageService {
     configId: string,
     startDate?: Date,
     endDate?: Date
-  ): Promise<AIUsageRecord[]> {
+  ): Promise<AIUsageRecordSchema[]> {
     const client = await this.getPool().connect();
     try {
       let query = `
@@ -158,7 +162,7 @@ export class AIUsageService {
     configId?: string,
     startDate?: Date,
     endDate?: Date
-  ): Promise<AIUsageSummary> {
+  ): Promise<AIUsageSummarySchema> {
     const client = await this.getPool().connect();
     try {
       let query = `

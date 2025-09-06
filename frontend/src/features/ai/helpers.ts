@@ -15,13 +15,12 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   \`Authorization: Bearer <your-jwt-token>\`
 
   ## Chat Endpoint
-  **POST** \`/api/ai/chat\`
+  **POST** \`/api/ai/chat/completion\`
 
   ### Request Body
   \`\`\`json
   {
-    "model": "${config.model}",
-    "message": "your message",     // For single message
+    "model": "${config.modelId}",
     "messages": [{                 // For conversation history
       "role": "user|assistant",
       "content": "text"
@@ -36,16 +35,24 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   \`\`\`json
   {
     "success": true,
-    "response": "AI response text",
-    "model": "${config.model}",
-    "tokenUsage": { "totalTokens": 100 }
+    "content": "AI response text",
+    "metadata": {
+      "model": "${config.modelId}",
+      "usage": {
+        "promptTokens": 50,
+        "completionTokens": 50,
+        "totalTokens": 100
+      }
+    }
   }
   \`\`\`
 
   ### Streaming Response (SSE)
   When \`stream: true\`:
   - Text chunks: \`data: {"chunk": "partial text"}\`
+  - Token usage: \`data: {"tokenUsage": {"promptTokens": 50, "completionTokens": 50, "totalTokens": 100}}\`
   - Completion signal: \`data: {"done": true}\`
+  - Error: \`data: {"error": "Error message"}\`
 
   ## Error Codes
   - 400: Invalid input
@@ -71,13 +78,8 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   ### Request Body
   \`\`\`json
   {
-    "model": "${config.model}",
-    "prompt": "detailed image description",
-    "numImages": 1,                // Optional, number of images
-    "size": "1024x1024",           // Optional, depends on model
-    "quality": "standard",         // Optional: "standard" or "hd"
-    "style": "vivid",              // Optional: "vivid" or "natural"
-    "responseFormat": "url"        // Optional: "url" or "b64_json"
+    "model": "${config.modelId}",
+    "prompt": "detailed image description"
   }
   \`\`\`
 
@@ -86,24 +88,36 @@ export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): stri
   {
     "success": true,
     "data": {
-      "model": "${config.model}",
-      "images": [
-        "https://image-url.com/..."  // When responseFormat is "url"
-      ],
-      // OR
+      "model": "${config.modelId}",
       "images": [
         {
-          "image_data": "base64string..."  // When responseFormat is "b64_json"
+          "type": "image_url",
+          "image_url": {
+            "url": "https://image-url.com/..." // URL or data:image/png;base64,... format
+          }
         }
       ],
-      "count": 1
+      "text": "Optional text response from multimodal models",
+      "count": 1,
+      "metadata": {
+        "model": "${config.modelId}",
+        "revisedPrompt": "Enhanced prompt if available",
+        "usage": {
+          "promptTokens": 10,
+          "completionTokens": 5,
+          "totalTokens": 15
+        }
+      },
+      "nextActions": "Images have been generated successfully. Use the returned URLs or base64 data to access them."
     }
   }
   \`\`\`
 
   ## Response Format Notes
-  - \`responseFormat: "url"\`: Returns array of image URLs
-  - \`responseFormat: "b64_json"\`: Returns array with base64 encoded image data
+  - Images follow OpenRouter's format with type "image_url"
+  - URLs can be direct links or data:image base64 format
+  - Multimodal models may include text alongside generated images
+  - Metadata includes token usage and revised prompts when available
 
   ## Error Codes
   - 400: Invalid input
