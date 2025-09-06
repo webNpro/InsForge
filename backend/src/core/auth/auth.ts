@@ -142,7 +142,7 @@ export class AuthService {
           config[provider].clientId = value.clientId || '';
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
-          config[provider].enabled = value.enabled || false;
+          config[provider].enabled = value.enabled || enableSharedKeys;
           config[provider].useSharedKeys = value.useSharedKeys || enableSharedKeys;
         }
       } catch (e) {
