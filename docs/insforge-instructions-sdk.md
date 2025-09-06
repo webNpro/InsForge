@@ -1,5 +1,15 @@
 # InsForge SDK Documentation
 
+## What Insforge OSS Does
+
+Backend-as-a-service with database, authentication, and file storage. 
+
+**Key Concept**: InsForge replaces your traditional backend - implement business logic by calling database operations directly. Instead of building API endpoints, use our database API as your application's backend.
+
+## Critical Rule: Check Metadata First
+
+Before ANY database operation, call `get-backend-metadata` to get the current database state.
+
 ## When to Use SDK vs MCP Tools
 
 ### Use SDK for:
