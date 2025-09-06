@@ -249,7 +249,7 @@ export function LinkRecordModal({
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search records..."
-            className="w-60 dark:bg-neutral-900 dark:border-neutral-700"
+            className="w-60 dark:text-white dark:bg-neutral-900 dark:border-neutral-700"
             debounceTime={300}
           />
         </div>

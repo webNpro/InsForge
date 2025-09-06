@@ -17,12 +17,12 @@ function getUuidPlaceholder(field: ColumnSchema): string {
   if (field.foreignKey) {
     return 'Required';
   }
-  
+
   //If default value is gen_random_uuid()
   if (field.defaultValue?.endsWith('()')) {
     return 'Auto-generated if empty';
   }
-  
+
   // If it is nullable, it is optional. If not, it is required. No matter if there is a default value.
   return field.isNullable ? 'Optional' : 'Required';
 }
