@@ -8,6 +8,7 @@
     --rdg-row-hover-color: #f5f5f5;
     --rdg-background-color-edit: #ffffff;
     --rdg-header-row-background-color: #f9fafb;
+    --rdg-outline-color: #262626;
   }
 
   .rdg-dark {
@@ -16,14 +17,8 @@
     --rdg-row-hover-color: #171717;
     --rdg-background-color-edit: #262626;
     --rdg-header-row-background-color: #171717;
+    --rdg-outline-color: #ffffff;
   }
-}
-
-/* Custom react-data-grid styling to match our design */
-.rdg-header-row {
-  font-weight: 600;
-  font-size: 13px;
-  height: 60px; /* Increased height to accommodate column types */
 }
 
 .rdg-cell {
@@ -44,10 +39,6 @@
   justify-content: center;
 }
 
-.rdg-header-row .rdg-cell {
-  background-color: var(--rdg-header-row-background-color) !important;
-}
-
 .rdg-header-row .rdg-cell[data-column-key='rdg-select-column'],
 .rdg-header-row .rdg-cell[data-colindex='0'] {
   padding: 0;
@@ -66,7 +57,12 @@
 
 /* Remove cell focus outline and use custom styling */
 .rdg-cell[aria-selected='true'] {
-  outline: 2px solid #2c7fff;
+  outline: 2px solid var(--rdg-outline-color);
+}
+
+/* Disable selection styling for disabled cells in link modal */
+.rdg-cell.link-modal-disabled-cell[aria-selected='true'] {
+  outline: none !important;
 }
 
 /* Editor cell styling */
@@ -141,7 +137,7 @@
 /* React Data Grid Header Styling */
 .rdg-header-row .rdg-cell {
   border-bottom: 1px solid var(--rdg-border-color);
-  background-color: var(--rdg-background-color);
+  background-color: var(--rdg-header-row-background-color) !important;
   font-weight: 500;
   color: var(--rdg-text-color);
 }

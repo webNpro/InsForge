@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/r
 import { Button } from '@/components/radix/Button';
 import { databaseService } from '@/features/database/services/database.service';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
-import { SearchInput, DataGrid } from '@/components';
+import { SortableHeaderRenderer } from '@/components/DataGrid';
+import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import { SortColumn } from 'react-data-grid';
+import { ColumnType } from '@insforge/shared-schemas';
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -13,7 +15,7 @@ type DatabaseRecord = Record<string, any>;
 interface LinkRecordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tableName: string;
+  referenceTable: string;
   referenceColumn: string;
   onSelectRecord: (record: DatabaseRecord) => void;
   currentValue?: string | null;
@@ -22,7 +24,7 @@ interface LinkRecordModalProps {
 export function LinkRecordModal({
   open,
   onOpenChange,
-  tableName,
+  referenceTable,
   referenceColumn,
   onSelectRecord,
 }: LinkRecordModalProps) {
@@ -34,8 +36,8 @@ export function LinkRecordModal({
 
   // Fetch table schema
   const { data: schema } = useQuery({
-    queryKey: ['table-schema', tableName],
-    queryFn: () => databaseService.getTableSchema(tableName),
+    queryKey: ['table-schema', referenceTable],
+    queryFn: () => databaseService.getTableSchema(referenceTable),
     enabled: open,
   });
 
@@ -43,7 +45,7 @@ export function LinkRecordModal({
   const { data: recordsData, isLoading } = useQuery({
     queryKey: [
       'records',
-      tableName,
+      referenceTable,
       currentPage,
       pageSize,
       searchQuery,
@@ -52,7 +54,7 @@ export function LinkRecordModal({
     queryFn: async () => {
       const offset = (currentPage - 1) * pageSize;
       const response = await databaseService.getTableRecords(
-        tableName,
+        referenceTable,
         pageSize,
         offset,
         searchQuery || undefined,
@@ -119,32 +121,96 @@ export function LinkRecordModal({
         editable: false,
       };
 
+      // Helper function to render cell value properly based on type
+      const renderCellValue = (value: any, type: string | undefined) => {
+        if (value === null || value === undefined) {
+          return 'null';
+        }
+
+        if (type === ColumnType.JSON) {
+          // Use the same JSON rendering logic as DefaultCellRenderers.json
+          try {
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            if (parsed && typeof parsed === 'object') {
+              return JSON.stringify(parsed);
+            } else {
+              return String(parsed);
+            }
+          } catch {
+            return 'Invalid JSON';
+          }
+        }
+
+        if (type === ColumnType.BOOLEAN) {
+          return value === null ? 'null' : value ? 'true' : 'false';
+        }
+
+        if (type === ColumnType.DATETIME) {
+          if (!value) return 'null';
+          try {
+            const date = new Date(value);
+            return date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+          } catch {
+            return 'Invalid date';
+          }
+        }
+
+        return String(value);
+      };
+
       if (col.key === referenceColumn) {
         return {
           ...baseCol,
-          renderCell: (props: any) => (
-            <div className="w-full h-full flex items-center cursor-pointer">
-              <span className="truncate font-medium" title={props.row[col.key]}>
-                {props.row[col.key] === null || props.row[col.key] === undefined
-                  ? 'null'
-                  : String(props.row[col.key])}
-              </span>
-            </div>
+          renderCell: (props: any) => {
+            const displayValue = renderCellValue(props.row[col.key], col.type);
+            return (
+              <div className="w-full h-full flex items-center cursor-pointer">
+                <span className="truncate font-medium" title={displayValue}>
+                  {displayValue}
+                </span>
+              </div>
+            );
+          },
+          renderHeaderCell: (props: any) => (
+            <SortableHeaderRenderer
+              column={col}
+              sortDirection={props.sortDirection}
+              columnType={col.type}
+              showTypeBadge={true}
+              mutedHeader={false}
+            />
           ),
         };
       }
 
       return {
         ...baseCol,
-        renderCell: (props: any) => (
-          <div className="w-full h-full flex items-center cursor-default relative">
-            <span className="truncate dark:text-zinc-300 opacity-70" title={props.row[col.key]}>
-              {props.row[col.key] === null || props.row[col.key] === undefined
-                ? 'null'
-                : String(props.row[col.key])}
-            </span>
-            <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
-          </div>
+        cellClass: 'link-modal-disabled-cell',
+        renderCell: (props: any) => {
+          const displayValue = renderCellValue(props.row[col.key], col.type);
+          return (
+            <div className="w-full h-full flex items-center cursor-not-allowed relative">
+              <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity z-5" />
+              <span className="truncate dark:text-zinc-300 opacity-70" title={displayValue}>
+                {displayValue}
+              </span>
+            </div>
+          );
+        },
+        renderHeaderCell: (props: any) => (
+          <SortableHeaderRenderer
+            column={col}
+            sortDirection={props.sortDirection}
+            columnType={col.type}
+            showTypeBadge={true}
+            mutedHeader={true}
+          />
         ),
       };
     });
@@ -168,12 +234,12 @@ export function LinkRecordModal({
           <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
             Link Record
           </DialogTitle>
-          <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1">
-            Click on the
-            <span className="font-mono bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded text-xs font-medium">
-              {referenceColumn}
-            </span>
-            column to select a record from {tableName}
+          <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1.5">
+            Select a record to reference from
+            <TypeBadge
+              type={`${referenceTable}.${referenceColumn}`}
+              className="dark:bg-neutral-700"
+            />
           </p>
         </DialogHeader>
 
@@ -183,13 +249,12 @@ export function LinkRecordModal({
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search records..."
-            className="w-60 dark:bg-neutral-900 dark:border-neutral-700"
+            className="w-60 dark:text-white dark:bg-neutral-900 dark:border-neutral-700"
             debounceTime={300}
           />
         </div>
 
         {/* Records DataGrid */}
-
         <div className="flex-1 overflow-hidden">
           <DataGrid
             data={records}

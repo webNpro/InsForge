@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
-import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { Button } from '@/components/radix/Button';
 import { Calendar, Link2, X } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
@@ -10,7 +9,8 @@ import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
 import { LinkRecordModal } from './LinkRecordModal';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
-import { convertValueForColumn } from '@/lib/utils/utils';
+import { convertValueForColumn, cn } from '@/lib/utils/utils';
+import { TypeBadge } from '@/components/TypeBadge';
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -55,7 +55,7 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-10 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={`w-full justify-start h-9 dark:text-white dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
     >
       {value === null ? 'null' : value ? 'true' : 'false'}
     </Button>
@@ -121,7 +121,11 @@ function FormDateEditor({
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-10 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={cn(
+        'w-full justify-start h-9 text-black dark:text-white dark:bg-neutral-900 dark:border-neutral-700',
+        (!value || value === 'null') && 'text-muted-foreground dark:text-neutral-400',
+        hasForeignKey && 'pr-20'
+      )}
     >
       <Calendar className="mr-2 h-4 w-4" />
       {formatDisplayValue()}
@@ -134,6 +138,47 @@ interface FormJsonEditorProps {
   nullable: boolean;
   onChange: (value: string | null) => void;
   hasForeignKey?: boolean;
+}
+
+interface FormNumberEditorProps {
+  value: number | null;
+  type: 'integer' | 'float';
+  nullable: boolean;
+  onChange: (value: number | null) => void;
+  hasForeignKey?: boolean;
+  tableName: string;
+  fieldName: string;
+}
+
+function FormNumberEditor({
+  value,
+  type,
+  nullable,
+  onChange,
+  hasForeignKey,
+  tableName,
+  fieldName,
+}: FormNumberEditorProps) {
+  return (
+    <Input
+      id={`${tableName}-${fieldName}`}
+      type="number"
+      step={type === 'float' ? '0.01' : '1'}
+      value={value ?? ''}
+      onChange={(e) => {
+        const inputValue = e.target.value;
+        if (inputValue === '') {
+          // Handle empty value based on nullability
+          onChange(nullable ? null : 0);
+        } else {
+          const numValue = type === 'integer' ? parseInt(inputValue, 10) : parseFloat(inputValue);
+          onChange(isNaN(numValue) ? (nullable ? null : 0) : numValue);
+        }
+      }}
+      placeholder={nullable ? 'Optional' : 'Required'}
+      className={`dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-16' : ''}`}
+    />
+  );
 }
 
 function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEditorProps) {
@@ -165,7 +210,14 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
     }
 
     try {
-      const keys = Object.keys(value);
+      // Ensure we're working with an object, not a string
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+
+      if (!parsed || typeof parsed !== 'object') {
+        return String(parsed);
+      }
+
+      const keys = Object.keys(parsed);
       if (keys.length === 0) {
         return '{}';
       }
@@ -183,7 +235,11 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-10 dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={cn(
+        'w-full justify-start h-9 text-black dark:text-white dark:bg-neutral-900 dark:border-neutral-700',
+        (!value || value === 'null') && 'text-muted-foreground dark:text-neutral-400',
+        hasForeignKey && 'pr-20'
+      )}
     >
       {formatDisplayValue()}
     </Button>
@@ -208,7 +264,7 @@ function FieldLabel({
 }) {
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2">
-      <TypeBadge type={field.type} className="w-12 h-6" />
+      <TypeBadge type={field.type} className="h-6 dark:bg-neutral-900 dark:border-neutral-700" />
       <span className="text-sm text-black dark:text-white truncate block w-9/10">
         {field.columnName}
         {!field.isNullable && field.columnName !== 'id' && (
@@ -243,14 +299,11 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
         name={field.columnName}
         render={({ field: formField }) => {
           const hasLinkedValue = formField.value && formField.value !== '';
-
-          // Clone children and add disabled state and padding for linked values
           const childElement = children as React.ReactElement<any>;
           const existingClassName = childElement.props.className || '';
-          const paddingClass = hasLinkedValue ? 'pr-20' : 'pr-11';
+          const paddingClass = hasLinkedValue ? 'pr-16' : 'pr-11';
           const modifiedChildren = React.cloneElement(childElement, {
             value: formField.value,
-            disabled: hasLinkedValue,
             className: `${existingClassName} ${paddingClass}`.trim(),
           });
 
@@ -292,20 +345,20 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 {/* Foreign Key Relationship Info */}
                 <div className="text-xs text-medium text-black dark:text-neutral-400 flex items-center gap-1.5">
                   <span>Has a Foreign Key relation to</span>
-                  <span className="font-mono bg-zinc-200 text-black dark:bg-neutral-700 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs">
-                    {field.foreignKey?.referenceTable}.{field.foreignKey?.referenceColumn}
-                  </span>
+                  <TypeBadge
+                    type={`${field.foreignKey?.referenceTable}.${field.foreignKey?.referenceColumn}`}
+                    className="dark:bg-neutral-700"
+                  />
                 </div>
               </div>
 
               <LinkRecordModal
                 open={showLinkModal}
                 onOpenChange={setShowLinkModal}
-                tableName={field.foreignKey!.referenceTable}
+                referenceTable={field.foreignKey!.referenceTable}
                 referenceColumn={field.foreignKey!.referenceColumn}
                 currentValue={formField.value}
                 onSelectRecord={(record: DatabaseRecord) => {
-                  // Use the referenced column value instead of id
                   const referenceValue = record[field.foreignKey!.referenceColumn];
                   formField.onChange(referenceValue);
                 }}
@@ -368,28 +421,14 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   control={control}
                   name={field.columnName}
                   render={({ field: formField }) => (
-                    <Input
-                      id={`${tableName}-${field.columnName}`}
-                      type="number"
-                      step={field.type === ColumnType.FLOAT ? '0.01' : '1'}
-                      value={formField.value ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          // Handle empty value based on nullability
-                          formField.onChange(field.isNullable ? null : 0);
-                        } else {
-                          const numValue =
-                            field.type === ColumnType.INTEGER
-                              ? parseInt(value, 10)
-                              : parseFloat(value);
-                          formField.onChange(
-                            isNaN(numValue) ? (field.isNullable ? null : 0) : numValue
-                          );
-                        }
-                      }}
-                      placeholder={field.isNullable ? 'Optional' : 'Required'}
-                      className="dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700"
+                    <FormNumberEditor
+                      value={formField.value}
+                      type={field.type === ColumnType.INTEGER ? 'integer' : 'float'}
+                      nullable={field.isNullable}
+                      onChange={formField.onChange}
+                      hasForeignKey={!!field.foreignKey}
+                      tableName={tableName}
+                      fieldName={field.columnName}
                     />
                   )}
                 />
@@ -438,7 +477,11 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   render={({ field: formField }) => {
                     return (
                       <FormJsonEditor
-                        value={formField.value}
+                        value={
+                          typeof formField.value === 'object'
+                            ? JSON.stringify(formField.value)
+                            : formField.value
+                        }
                         nullable={field.isNullable}
                         onChange={(newValue) => {
                           const result = convertValueForColumn(ColumnType.JSON, newValue);
@@ -470,7 +513,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder="Auto-generated if empty"
+                  placeholder={field.isNullable ? 'Optional' : 'Required'}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
