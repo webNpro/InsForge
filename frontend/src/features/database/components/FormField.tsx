@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
-import { Badge } from '@/components/radix/Badge';
 import { Button } from '@/components/radix/Button';
 import { Calendar, Link2, X } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
@@ -10,7 +9,23 @@ import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
 import { LinkRecordModal } from './LinkRecordModal';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
-import { convertValueForColumn } from '@/lib/utils/utils';
+import { convertValueForColumn, cn } from '@/lib/utils/utils';
+import { TypeBadge } from '@/components/TypeBadge';
+
+function getUuidPlaceholder(field: ColumnSchema): string {
+  //If there is a foreign key, it is required to be linked
+  if (field.foreignKey) {
+    return 'Required';
+  }
+  
+  //If default value is gen_random_uuid()
+  if (field.defaultValue?.endsWith('()')) {
+    return 'Auto-generated if empty';
+  }
+  
+  // If it is nullable, it is optional. If not, it is required. No matter if there is a default value.
+  return field.isNullable ? 'Optional' : 'Required';
+}
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -121,7 +136,11 @@ function FormDateEditor({
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-9 ${!value || value === 'null' ? 'text-muted-foreground dark:text-neutral-400' : 'text-black dark:text-white'}  dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={cn(
+        'w-full justify-start h-9 text-black dark:text-white dark:bg-neutral-900 dark:border-neutral-700',
+        (!value || value === 'null') && 'text-muted-foreground dark:text-neutral-400',
+        hasForeignKey && 'pr-20'
+      )}
     >
       <Calendar className="mr-2 h-4 w-4" />
       {formatDisplayValue()}
@@ -231,7 +250,11 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
       type="button"
       variant="outline"
       onClick={() => setShowEditor(true)}
-      className={`w-full justify-start h-9 ${!value || value === 'null' ? 'text-muted-foreground dark:text-neutral-400' : 'text-black dark:text-white'}  dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-20' : ''}`}
+      className={cn(
+        'w-full justify-start h-9 text-black dark:text-white dark:bg-neutral-900 dark:border-neutral-700',
+        (!value || value === 'null') && 'text-muted-foreground dark:text-neutral-400',
+        hasForeignKey && 'pr-20'
+      )}
     >
       {formatDisplayValue()}
     </Button>
@@ -256,13 +279,7 @@ function FieldLabel({
 }) {
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2">
-      <Badge
-        variant="database"
-        size="sm"
-        className="h-6 dark:bg-neutral-900 dark:border-neutral-700"
-      >
-        {field.type}
-      </Badge>
+      <TypeBadge type={field.type} className="h-6 dark:bg-neutral-900 dark:border-neutral-700" />
       <span className="text-sm text-black dark:text-white truncate block w-9/10">
         {field.columnName}
         {!field.isNullable && field.columnName !== 'id' && (
@@ -343,9 +360,10 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 {/* Foreign Key Relationship Info */}
                 <div className="text-xs text-medium text-black dark:text-neutral-400 flex items-center gap-1.5">
                   <span>Has a Foreign Key relation to</span>
-                  <Badge variant="database" size="sm" className="dark:bg-neutral-700">
-                    {field.foreignKey?.referenceTable}.{field.foreignKey?.referenceColumn}
-                  </Badge>
+                  <TypeBadge
+                    type={`${field.foreignKey?.referenceTable}.${field.foreignKey?.referenceColumn}`}
+                    className="dark:bg-neutral-700"
+                  />
                 </div>
               </div>
 
@@ -356,7 +374,6 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 referenceColumn={field.foreignKey!.referenceColumn}
                 currentValue={formField.value}
                 onSelectRecord={(record: DatabaseRecord) => {
-                  // Use the referenced column value instead of id
                   const referenceValue = record[field.foreignKey!.referenceColumn];
                   formField.onChange(referenceValue);
                 }}
@@ -511,13 +528,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder={
-                    field.isNullable
-                      ? 'Optional'
-                      : field.foreignKey
-                        ? 'Required'
-                        : 'Auto-generated if empty'
-                  }
+                  placeholder={getUuidPlaceholder(field)}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>

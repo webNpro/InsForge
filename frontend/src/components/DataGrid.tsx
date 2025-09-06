@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils/utils';
 import { PaginationControls } from './PaginationControls';
 import { Checkbox } from './Checkbox';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { TypeBadge } from './TypeBadge';
 
 // Types
 export interface DataGridColumn {
@@ -169,7 +170,7 @@ export const DefaultCellRenderers = {
   badge: ({ row, column, options }: any) => {
     const value = row[column.key];
     const variant = options?.getVariant ? options.getVariant(value) : 'secondary';
-    const label = options?.getLabel ? options.getLabel(value) : value;
+    const label = options?.getLabel ? options.getLabel(value) : String(value || '');
 
     return (
       <div className="w-full h-full flex items-center">
@@ -258,9 +259,7 @@ export function SortableHeaderRenderer({
         </span>
 
         {columnType && showTypeBadge && (
-          <Badge variant="database" size="sm">
-            {columnType}
-          </Badge>
+          <TypeBadge type={columnType} className="dark:bg-neutral-800" />
         )}
 
         {/* Show sort arrow with hover effect */}
@@ -342,13 +341,13 @@ export function DataGrid({
         resizable: false,
         renderCell: ({ row, tabIndex }) => (
           <Checkbox
-            checked={selectedRows.has(row.id)}
+            checked={selectedRows.has(String(row.id))}
             onChange={(checked) => {
               const newSelectedRows = new Set(selectedRows);
               if (checked) {
-                newSelectedRows.add(row.id);
+                newSelectedRows.add(String(row.id));
               } else {
-                newSelectedRows.delete(row.id);
+                newSelectedRows.delete(String(row.id));
               }
               onSelectedRowsChange(newSelectedRows);
             }}
@@ -356,7 +355,7 @@ export function DataGrid({
           />
         ),
         renderHeaderCell: () => {
-          const selectedCount = data.filter((row) => selectedRows.has(row.id)).length;
+          const selectedCount = data.filter((row) => selectedRows.has(String(row.id))).length;
           const totalCount = data.length;
           const isAllSelected = totalCount > 0 && selectedCount === totalCount;
           const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
@@ -369,10 +368,10 @@ export function DataGrid({
                 const newSelectedRows = new Set(selectedRows);
                 if (checked) {
                   // Select all
-                  data.forEach((row) => newSelectedRows.add(row.id));
+                  data.forEach((row) => newSelectedRows.add(String(row.id)));
                 } else {
                   // Unselect all
-                  data.forEach((row) => newSelectedRows.delete(row.id));
+                  data.forEach((row) => newSelectedRows.delete(String(row.id)));
                 }
                 onSelectedRowsChange(newSelectedRows);
               }}
@@ -388,6 +387,7 @@ export function DataGrid({
       const sortDirection = currentSort?.direction;
 
       const gridColumn: Column<any> = {
+        ...col,
         key: col.key,
         name: col.name,
         width: col.width,
@@ -448,7 +448,7 @@ export function DataGrid({
         className
       )}
     >
-      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg border border-border-gray dark:border-transparent">
+      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
           rows={data || []}

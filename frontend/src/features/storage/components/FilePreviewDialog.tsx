@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Download, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
-import { Badge } from '@/components/radix/Badge';
 import { LoadingState } from '@/components';
 import { storageService } from '@/features/storage/services/storage.service';
 import { StorageFileSchema } from '@insforge/shared-schemas';
+import { TypeBadge } from '@/components/TypeBadge';
 
 interface FilePreviewDialogProps {
   open: boolean;
@@ -213,9 +213,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
                   {formatFileSize(file.size)}
                 </span>
                 {file.mimeType && (
-                  <Badge variant="database" size="sm" className="dark:bg-neutral-700">
-                    {file.mimeType}
-                  </Badge>
+                  <TypeBadge type={file.mimeType} className="dark:bg-neutral-700" />
                 )}
               </div>
             </div>

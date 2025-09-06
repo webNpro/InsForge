@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link2, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
-import { Badge } from '@/components/radix/Badge';
+import { TypeBadge } from '@/components/TypeBadge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/radix/Popover';
 import {
   Tooltip,
@@ -148,9 +148,7 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-gray dark:border-neutral-700">
               <p className="text-xs font-medium text-muted-foreground dark:text-white flex items-center gap-1.5">
                 Referencing record from
-                <Badge variant="database" size="sm">
-                  {foreignKey.table}.{foreignKey.column}
-                </Badge>
+                <TypeBadge type={`${foreignKey.table}.${foreignKey.column}`} className="dark:bg-neutral-800" />
               </p>
             </div>
 

@@ -2,11 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
-import { Badge } from '@/components/radix/Badge';
 import { databaseService } from '@/features/database/services/database.service';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
 import { SortableHeaderRenderer } from '@/components/DataGrid';
-import { SearchInput, DataGrid } from '@/components';
+import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { ColumnType } from '@insforge/shared-schemas';
 
@@ -192,14 +191,15 @@ export function LinkRecordModal({
 
       return {
         ...baseCol,
+        cellClass: 'link-modal-disabled-cell',
         renderCell: (props: any) => {
           const displayValue = renderCellValue(props.row[col.key], col.type);
           return (
             <div className="w-full h-full flex items-center cursor-not-allowed relative">
+              <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity z-5" />
               <span className="truncate dark:text-zinc-300 opacity-70" title={displayValue}>
                 {displayValue}
               </span>
-              <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-10 bg-gray-200 dark:bg-gray-600 transition-opacity" />
             </div>
           );
         },
@@ -236,9 +236,10 @@ export function LinkRecordModal({
           </DialogTitle>
           <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1.5">
             Select a record to reference from
-            <Badge variant="database" size="sm" className="dark:bg-neutral-700">
-              {referenceTable}.{referenceColumn}
-            </Badge>
+            <TypeBadge
+              type={`${referenceTable}.${referenceColumn}`}
+              className="dark:bg-neutral-700"
+            />
           </p>
         </DialogHeader>
 

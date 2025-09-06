@@ -126,6 +126,13 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
       case ColumnType.STRING:
         values[column.columnName] = column.defaultValue ?? '';
         break;
+      case ColumnType.UUID:
+        if (column.defaultValue && !column.defaultValue.endsWith('()')) {
+          values[column.columnName] = column.defaultValue;
+        } else {
+          values[column.columnName] = '';
+        }
+        break;
       default:
         values[column.columnName] = '';
     }
