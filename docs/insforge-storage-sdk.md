@@ -97,14 +97,14 @@ const { data, error } = await client.storage
   .upload('hello.txt', blob);
 ```
 
-### Upload FormData
+### Upload with Custom Name
 ```javascript
-const formData = new FormData();
-formData.append('file', file);
+// Simple file upload - SDK handles FormData creation
+const file = fileInput.files[0];
 
 const { data, error } = await client.storage
   .from('uploads')
-  .uploadAuto(formData);
+  .upload('custom-name.jpg', file);
 ```
 
 ## Download & Display

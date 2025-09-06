@@ -105,24 +105,27 @@ const { data, error } = await client.database
 ## Storage Operations
 
 ```javascript
-// Upload file
-const formData = new FormData();
-formData.append('file', fileObject);
+// Upload file with auto-generated key
+const { data, error } = await client.storage
+  .from('images')
+  .uploadAuto(fileObject);
 
-// Get session for token
-const { data: sessionData } = await client.auth.getCurrentSession();
+// data.url = "http://localhost:7130/api/storage/buckets/images/objects/file-timestamp-random.jpg"
 
-const response = await fetch(`http://localhost:7130/api/storage/buckets/images/objects`, {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${sessionData.session.accessToken}`
-  },
-  body: formData
-});
+// Or upload with specific key
+const { data, error } = await client.storage
+  .from('images')
+  .upload('custom-name.jpg', fileObject);
 
-// Response includes full URL
-const { url } = await response.json();
-// url = "http://localhost:7130/api/storage/buckets/images/objects/file.jpg"
+// Download file
+const { data: blob, error } = await client.storage
+  .from('images')
+  .download('file.jpg');
+
+// Get public URL (no API call)
+const url = client.storage
+  .from('images')
+  .getPublicUrl('file.jpg');
 ```
 
 ## Complete Example
