@@ -32,6 +32,47 @@ const reservedColumns = {
 
 const userTableFrozenColumns = ['nickname', 'avatar_url'];
 
+const SAFE_FUNCS = new Set(['now()', 'gen_random_uuid()']);
+const FUNC_RE = /^(?:[a-z_][a-z0-9_]*\.)?[a-z_][a-z0-9_]*\(\)$/i;
+
+function dollarQuote(s: string) {
+  let tag = 'val';
+  while (s.includes(`$${tag}$`)) tag += '_';
+  return `$${tag}$${s}$${tag}$`;
+}
+
+export function formatDefaultValue(
+  input: string | null | undefined,
+  columnType?: ColumnType,
+  isNullable?: boolean
+): string {
+  // If no input provided, check if we should use system default
+  if (!input) {
+    if (columnType && !isNullable) {
+      const fieldType = COLUMN_TYPES[columnType];
+      if (fieldType?.defaultValue) {
+        if (fieldType.defaultValue === 'gen_random_uuid()' && columnType === ColumnType.UUID) {
+          return 'DEFAULT gen_random_uuid()';
+        } else if (fieldType.defaultValue === 'now()') {
+          return 'DEFAULT now()';
+        } else {
+          return `DEFAULT ${fieldType.defaultValue}`;
+        }
+      }
+    }
+    return ''; // No default needed
+  }
+
+  const value = input.trim();
+
+  // Check if it's a safe function
+  if (FUNC_RE.test(value) && SAFE_FUNCS.has(value.toLowerCase())) {
+    return `DEFAULT ${value}`;
+  }
+
+  // Otherwise, safely quote the literal value
+  return `DEFAULT ${dollarQuote(value)}`;
+}
 export class TablesController {
   private dbManager: DatabaseManager;
   private metadataService: MetadataService;
@@ -134,21 +175,7 @@ export class TablesController {
         const sqlType = fieldType.sqlType;
 
         // Handle default values
-        let defaultClause = '';
-        if (col.defaultValue) {
-          // User-specified default
-          defaultClause = `DEFAULT '${col.defaultValue}'`;
-        } else if (fieldType.defaultValue && !col.isNullable) {
-          // Type-specific default for non-nullable fields
-          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
-            // PostgreSQL UUID generation
-            defaultClause = `DEFAULT gen_random_uuid()`;
-          } else if (fieldType.defaultValue === 'CURRENT_TIMESTAMP') {
-            defaultClause = `DEFAULT CURRENT_TIMESTAMP`;
-          } else {
-            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
-          }
-        }
+        const defaultClause = formatDefaultValue(col.defaultValue, col.type, col.isNullable);
 
         const nullable = col.isNullable ? '' : 'NOT NULL';
         const unique = col.isUnique ? 'UNIQUE' : '';
@@ -167,8 +194,8 @@ export class TablesController {
     const tableDefinition = [
       'id UUID PRIMARY KEY DEFAULT gen_random_uuid()',
       columnDefs,
-      'created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
-      'updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
+      'created_at TIMESTAMPTZ DEFAULT now()',
+      'updated_at TIMESTAMPTZ DEFAULT now()',
       foreignKeyConstraints,
     ]
       .filter(Boolean)
@@ -485,7 +512,7 @@ export class TablesController {
               .prepare(
                 `
                 ALTER TABLE ${safeTableName} 
-                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET DEFAULT '${column.defaultValue}'
+                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET ${formatDefaultValue(column.defaultValue)}
               `
               )
               .exec();
@@ -521,17 +548,11 @@ export class TablesController {
 
         const nullable = col.isNullable !== false ? '' : 'NOT NULL';
         const unique = col.isUnique ? 'UNIQUE' : '';
-        let defaultClause = '';
-
-        if (col.defaultValue !== undefined) {
-          defaultClause = `DEFAULT '${col.defaultValue}'`;
-        } else if (col.isNullable === false && fieldType.defaultValue) {
-          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
-            defaultClause = 'DEFAULT gen_random_uuid()';
-          } else {
-            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
-          }
-        }
+        const defaultClause = formatDefaultValue(
+          col.defaultValue,
+          col.type as ColumnType,
+          col.isNullable
+        );
 
         await db
           .prepare(
