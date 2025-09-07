@@ -15,22 +15,14 @@ export default function DashboardPage() {
     queryFn: () => metadataService.getDashboardMetadata(),
   });
 
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['users-count'],
     queryFn: () => authService.getUsers(),
-    enabled: !!apiKey,
   });
 
   const { data: fullMetadata, isLoading: isLoadingFullMetadata } = useQuery({
     queryKey: ['full-metadata'],
     queryFn: () => metadataService.getFullMetadata(),
-    enabled: !!apiKey,
   });
 
   return (

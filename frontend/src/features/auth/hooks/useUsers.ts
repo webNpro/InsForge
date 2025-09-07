@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { authService } from '@/features/auth/services/auth.service';
-import { metadataService } from '@/features/metadata/services/metadata.service';
 
 interface UseUsersOptions {
   pageSize?: number;
@@ -12,13 +11,6 @@ interface UseUsersOptions {
 export function useUsers(options: UseUsersOptions = {}) {
   const { pageSize = 20, enabled = true, searchQuery = '' } = options;
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
 
   // Fetch users data
   const {
@@ -36,7 +28,7 @@ export function useUsers(options: UseUsersOptions = {}) {
       // Use the auth service to get users with search, backend handles filtering
       return authService.getUsers(params.toString(), searchQuery);
     },
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     placeholderData: (previousData) => previousData, // Keep previous data while loading
   });
 

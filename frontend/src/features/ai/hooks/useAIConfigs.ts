@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
-import { metadataService } from '@/features/metadata/services/metadata.service';
 import {
   ListModelsResponse,
   AIConfigurationWithUsageSchema,
@@ -19,13 +18,6 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   // Fetch AI models configuration
   const {
     data: modelsData,
@@ -35,7 +27,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   } = useQuery<ListModelsResponse>({
     queryKey: ['ai-models'],
     queryFn: () => aiService.getModels(),
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
@@ -48,7 +40,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   } = useQuery<AIConfigurationWithUsageSchema[]>({
     queryKey: ['ai-configurations'],
     queryFn: () => aiService.listConfigurations(),
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 

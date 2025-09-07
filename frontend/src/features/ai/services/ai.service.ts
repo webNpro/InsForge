@@ -13,7 +13,7 @@ import {
 export class AiService {
   getModels(): Promise<ListModelsResponse> {
     return apiClient.request('/ai/models', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -23,20 +23,20 @@ export class AiService {
   ): Promise<{ id: string; message: string }> {
     return apiClient.request('/ai/configurations', {
       method: 'POST',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
       body: JSON.stringify(data),
     });
   }
 
   async listConfigurations(): Promise<AIConfigurationWithUsageSchema[]> {
     return apiClient.request('/ai/configurations', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
   async getConfiguration(id: string): Promise<AIConfigurationSchema> {
     return apiClient.request(`/ai/configurations/${id}`, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -46,7 +46,7 @@ export class AiService {
   ): Promise<{ message: string }> {
     return apiClient.request(`/ai/configurations/${id}`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
       body: JSON.stringify(data),
     });
   }
@@ -54,7 +54,7 @@ export class AiService {
   async deleteConfiguration(id: string): Promise<{ message: string }> {
     return apiClient.request(`/ai/configurations/${id}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -79,7 +79,7 @@ export class AiService {
     const url = `/ai/usage/summary${queryString ? `?${queryString}` : ''}`;
 
     return apiClient.request(url, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -107,7 +107,7 @@ export class AiService {
     const url = `/ai/usage${queryString ? `?${queryString}` : ''}`;
 
     return apiClient.request(url, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -130,7 +130,7 @@ export class AiService {
     const url = `/ai/usage/config/${configId}${queryString ? `?${queryString}` : ''}`;
 
     return apiClient.request(url, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 }

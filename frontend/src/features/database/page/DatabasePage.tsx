@@ -94,13 +94,6 @@ export default function DatabasePage() {
     [showToast]
   );
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   // Fetch metadata
   const {
     data: metadata,
@@ -110,7 +103,6 @@ export default function DatabasePage() {
   } = useQuery({
     queryKey: ['database-metadata'],
     queryFn: () => metadataService.getDatabaseMetadata(),
-    enabled: !!apiKey,
   });
 
   // Fetch table data when selected
@@ -175,7 +167,7 @@ export default function DatabasePage() {
         throw error;
       }
     },
-    enabled: !!selectedTable && !!apiKey,
+    enabled: !!selectedTable,
     placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
   });
 
@@ -437,7 +429,7 @@ export default function DatabasePage() {
       }
       return await databaseService.getTableSchema(selectedTable);
     },
-    enabled: !!selectedTable && !!apiKey,
+    enabled: !!selectedTable,
     staleTime: 30 * 1000, // 30 seconds
   });
 
@@ -451,7 +443,7 @@ export default function DatabasePage() {
       const editingTableSchema = await databaseService.getTableSchema(editingTable);
       return editingTableSchema;
     },
-    enabled: !!editingTable && !!apiKey,
+    enabled: !!editingTable,
   });
 
   // Calculate pagination
