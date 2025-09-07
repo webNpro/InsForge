@@ -11,7 +11,7 @@ COPY frontend/package*.json ./frontend/
 COPY shared-schemas/package*.json ./shared-schemas/
 
 # Install all dependencies (workspaces will handle both backend and frontend)
-RUN npm ci --production=false
+RUN npm ci --production=false && npm cache clean --force && rm -rf /tmp/*
 
 # Copy source code
 COPY . .
