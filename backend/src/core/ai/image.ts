@@ -6,24 +6,13 @@ import type {
 } from '@/types/ai';
 import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
+import { AIClientService } from './client';
 import type { AIConfigurationSchema } from '@insforge/shared-schemas';
 
 export class ImageService {
   private static aiUsageService = new AIUsageService();
   private static aiConfigService = new AIConfigService();
-  private static openRouterClient: OpenAI;
-
-  static {
-    // Initialize OpenRouter client
-    this.openRouterClient = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      defaultHeaders: {
-        'HTTP-Referer': 'https://insforge.dev',
-        'X-Title': 'InsForge',
-      },
-    });
-  }
+  private static aiCredentialsService = AIClientService.getInstance();
 
   /**
    * Validate model and get config
@@ -44,9 +33,8 @@ export class ImageService {
    * Generate images using the specified model
    */
   static async generate(options: ImageGenerationOptions): Promise<ImageGenerationResponse> {
-    if (!process.env.OPENROUTER_API_KEY) {
-      throw new Error(`OpenRouter API key not configured`);
-    }
+    // Get the client (handles validation and initialization automatically)
+    const client = await this.aiCredentialsService.getClient();
 
     // Validate model and get config
     const aiConfig = await ImageService.validateAndGetConfig(options.model);
@@ -70,7 +58,7 @@ export class ImageService {
 
       // Use OpenRouter's standard chat completions API
       // Cast the extended request to the base OpenAI type for the SDK call
-      const response = (await this.openRouterClient.chat.completions.create(
+      const response = (await client.chat.completions.create(
         request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
       )) as OpenAI.Chat.ChatCompletion;
 
