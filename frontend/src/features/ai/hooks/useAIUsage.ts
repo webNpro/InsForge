@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
 import { metadataService } from '@/features/metadata/services/metadata.service';
-import { AIUsageSummary, AIUsageRecord, ListAIUsageResponse } from '@insforge/shared-schemas';
+import {
+  AIUsageSummarySchema,
+  AIUsageRecordSchema,
+  ListAIUsageResponse,
+} from '@insforge/shared-schemas';
 
 interface UseAIUsageSummaryOptions {
   configId?: string;
@@ -20,7 +24,7 @@ export function useAIUsageSummary(options: UseAIUsageSummaryOptions = {}) {
     staleTime: Infinity,
   });
 
-  return useQuery<AIUsageSummary>({
+  return useQuery<AIUsageSummarySchema>({
     queryKey: ['ai-usage-summary', configId, startDate, endDate],
     queryFn: () => aiService.getUsageSummary({ configId, startDate, endDate }),
     enabled: enabled && !!apiKey,
@@ -71,7 +75,7 @@ export function useAIConfigUsage(options: UseAIConfigUsageOptions) {
     staleTime: Infinity,
   });
 
-  return useQuery<AIUsageRecord[]>({
+  return useQuery<AIUsageRecordSchema[]>({
     queryKey: ['ai-config-usage', configId, startDate, endDate],
     queryFn: () => aiService.getConfigUsageRecords(configId, { startDate, endDate }),
     enabled: enabled && !!apiKey && !!configId,

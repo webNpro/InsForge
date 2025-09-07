@@ -5,8 +5,8 @@ import {
   AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
-  AIUsageSummary,
-  AIUsageRecord,
+  AIUsageSummarySchema,
+  AIUsageRecordSchema,
   ListAIUsageResponse,
 } from '@insforge/shared-schemas';
 
@@ -63,7 +63,7 @@ export class AiService {
     configId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<AIUsageSummary> {
+  }): Promise<AIUsageSummarySchema> {
     const queryParams = new URLSearchParams();
     if (params?.configId) {
       queryParams.append('configId', params.configId);
@@ -117,7 +117,7 @@ export class AiService {
       startDate?: string;
       endDate?: string;
     }
-  ): Promise<AIUsageRecord[]> {
+  ): Promise<AIUsageRecordSchema[]> {
     const queryParams = new URLSearchParams();
     if (params?.startDate) {
       queryParams.append('startDate', params.startDate);

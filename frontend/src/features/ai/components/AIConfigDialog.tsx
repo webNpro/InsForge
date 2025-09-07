@@ -39,22 +39,12 @@ interface AIConfigDialogProps {
 interface ModelOption {
   value: string;
   label: string;
-  provider: string;
 }
 
 interface ModalityOption {
-  value: string;
+  value: ModalitySchema;
   label: string;
 }
-
-const buildModelKey = (provider: string, model: string): string => `${provider}-${model}`;
-
-const parseModelKey = (key: string): { provider: string; model: string } => {
-  const [provider, ...modelParts] = key.split('-');
-  return { provider, model: modelParts.join('-') };
-};
-
-const buildModelLabel = (provider: string, model: string): string => `${provider} - ${model}`;
 
 export function AIConfigDialog({
   open,
@@ -63,7 +53,7 @@ export function AIConfigDialog({
   editingConfig,
   onSuccess,
 }: AIConfigDialogProps) {
-  const { configuredTextProviders, configuredImageProviders } = useAIConfigs();
+  const { configuredTextProviders, configuredImageProviders, configurations } = useAIConfigs();
   const [selectedModality, setSelectedModality] = useState<ModalitySchema>('text');
 
   const modelsByModality = useMemo(() => {
@@ -75,24 +65,33 @@ export function AIConfigDialog({
       multi: [],
     };
 
+    // Text models
     configuredTextProviders.forEach((provider) => {
-      provider.models.forEach((model) => {
-        models.text.push({
-          value: buildModelKey(provider.provider, model),
-          label: buildModelLabel(provider.provider, model),
-          provider: provider.provider,
+      if (provider.configured) {
+        provider.models.forEach((model) => {
+          models.text.push({
+            value: model.id,
+            label: model.name,
+          });
         });
-      });
+      }
     });
 
+    // Image models
     configuredImageProviders.forEach((provider) => {
-      provider.models.forEach((model) => {
-        models.image.push({
-          value: buildModelKey(provider.provider, model),
-          label: buildModelLabel(provider.provider, model),
-          provider: provider.provider,
+      if (provider.configured) {
+        provider.models.forEach((model) => {
+          models.image.push({
+            value: model.id,
+            label: model.name,
+          });
         });
-      });
+      }
+    });
+
+    // Sort all model arrays by model id (value)
+    Object.keys(models).forEach((modality) => {
+      models[modality as ModalitySchema].sort((a, b) => a.value.localeCompare(b.value));
     });
 
     return models;
@@ -100,57 +99,50 @@ export function AIConfigDialog({
 
   const modalityOptions = useMemo((): ModalityOption[] => {
     const options: ModalityOption[] = [];
-    console.log(configuredTextProviders);
-    console.log(configuredImageProviders);
-    if (configuredTextProviders.length > 0) {
+
+    // Check if OpenRouter is configured and has models
+    const hasTextModels = configuredTextProviders.some((p) => p.configured && p.models.length > 0);
+
+    const hasImageModels = configuredImageProviders.some(
+      (p) => p.configured && p.models.length > 0
+    );
+
+    if (hasTextModels) {
       options.push({ value: 'text', label: 'Text' });
     }
-    if (configuredImageProviders.length > 0) {
+    if (hasImageModels) {
       options.push({ value: 'image', label: 'Image' });
     }
+
     return options;
   }, [configuredTextProviders, configuredImageProviders]);
 
-  const hasProviders = modalityOptions.length > 0;
+  const hasModel = modalityOptions.length > 0;
 
   const getDefaultModality = useCallback((): ModalitySchema => {
-    if (configuredTextProviders.length > 0) {
-      return 'text';
-    }
-    if (configuredImageProviders.length > 0) {
-      return 'image';
+    if (modalityOptions.length > 0) {
+      return modalityOptions[0].value;
     }
     return 'text';
-  }, [configuredTextProviders, configuredImageProviders]);
-
-  const findModelValue = useCallback(
-    (modality: ModalitySchema, model: string, provider: string): string => {
-      const modelOption = modelsByModality[modality]?.find(
-        (m) => m.label.includes(model) && m.provider === provider
-      );
-      return modelOption?.value ?? '';
-    },
-    [modelsByModality]
-  );
+  }, [modalityOptions]);
 
   const getInitialCreateValues = useCallback((): CreateAIConfigurationRequest => {
     if (editingConfig && mode === 'create') {
-      const modality = editingConfig.modality as ModalitySchema;
       return {
-        modality,
-        provider: editingConfig.provider,
-        model: findModelValue(modality, editingConfig.model, editingConfig.provider),
+        modality: editingConfig.modality,
+        provider: 'openrouter', // Always OpenRouter now
+        modelId: editingConfig.modelId,
         systemPrompt: editingConfig.systemPrompt,
       };
     }
 
     return {
       modality: getDefaultModality(),
-      provider: '',
-      model: '',
+      provider: 'openrouter', // Always OpenRouter now
+      modelId: '',
       systemPrompt: undefined,
     };
-  }, [mode, editingConfig, findModelValue, getDefaultModality]);
+  }, [mode, editingConfig, getDefaultModality]);
 
   const getInitialEditValues = useCallback((): UpdateAIConfigurationRequest => {
     return {
@@ -176,12 +168,12 @@ export function AIConfigDialog({
       if (isCreateMode) {
         const initialValues = getInitialCreateValues();
         const modality = editingConfig?.modality || initialValues.modality;
-        setSelectedModality(modality as ModalitySchema);
+        setSelectedModality(modality);
         createForm.reset(initialValues);
       } else {
         const initialValues = getInitialEditValues();
         const modality = editingConfig?.modality || 'text';
-        setSelectedModality(modality as ModalitySchema);
+        setSelectedModality(modality);
         editForm.reset(initialValues);
       }
     }
@@ -201,7 +193,10 @@ export function AIConfigDialog({
       setSelectedModality(modality);
       if (isCreateMode) {
         createForm.setValue('modality', modality);
-        createForm.setValue('model', '');
+        // Clear the model selection when modality changes
+        createForm.setValue('modelId', '');
+        // Force the form to update by triggering validation
+        void createForm.trigger('modelId');
       }
     },
     [createForm, isCreateMode]
@@ -218,24 +213,17 @@ export function AIConfigDialog({
 
   const handleCreateSubmit = useCallback(
     (data: CreateAIConfigurationRequest) => {
-      const selectedModelOption = modelsByModality[data.modality].find(
-        (m) => m.value === data.model
-      );
-
-      if (selectedModelOption) {
-        const { model } = parseModelKey(selectedModelOption.value);
-        onSuccess?.({
-          modality: data.modality,
-          model,
-          provider: selectedModelOption.provider,
-          systemPrompt: data.systemPrompt,
-        });
-      }
+      onSuccess?.({
+        modality: data.modality,
+        modelId: data.modelId,
+        provider: 'openrouter', // Always OpenRouter now
+        systemPrompt: data.systemPrompt,
+      });
     },
-    [modelsByModality, onSuccess]
+    [onSuccess]
   );
 
-  const handleSubmit = useCallback(
+  const onFormSubmit = useCallback(
     (data: CreateAIConfigurationRequest | UpdateAIConfigurationRequest) => {
       if (mode === 'edit') {
         handleEditSubmit(data as UpdateAIConfigurationRequest);
@@ -255,6 +243,21 @@ export function AIConfigDialog({
 
   const availableModels = modelsByModality[selectedModality];
 
+  // Check if a model is already configured
+  const isModelConfigured = useCallback(
+    (modelId: string) => {
+      if (!configurations) {
+        return false;
+      }
+
+      // When editing, exclude the current config from the check
+      return configurations.some(
+        (config) => config.modelId === modelId && (!editingConfig || config.id !== editingConfig.id)
+      );
+    },
+    [configurations, editingConfig]
+  );
+
   const renderModalityField = () => {
     if (!isCreateMode) {
       return (
@@ -273,7 +276,7 @@ export function AIConfigDialog({
     return (
       <div className="flex flex-col flex-1 space-y-2">
         <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">Output</Label>
-        <Select value={modality || undefined} onValueChange={handleModalityChange}>
+        <Select value={modality || ''} onValueChange={handleModalityChange}>
           <SelectTrigger
             id="modality"
             className="h-9 bg-transparent dark:bg-neutral-900 dark:border-neutral-700 dark:text-white"
@@ -305,27 +308,26 @@ export function AIConfigDialog({
         <div className="flex flex-col flex-1 space-y-2">
           <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">AI Model</Label>
           <div className="w-100 flex items-center h-9 px-3 py-2 text-sm bg-zinc-50 dark:bg-neutral-900 border border-zinc-200 dark:border-neutral-700 rounded-md text-zinc-600 dark:text-zinc-400">
-            {editingConfig?.provider} - {editingConfig?.model}
+            {editingConfig?.modelId}
           </div>
         </div>
       );
     }
 
-    const model = createForm.watch('model');
-    const modelError = createForm.formState.errors.model;
+    const modelId = createForm.watch('modelId');
+    const modelError = createForm.formState.errors.modelId;
     const hasModels = availableModels.length > 0;
 
     return (
       <div className="flex flex-col flex-1 space-y-2">
         <Label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">AI Model</Label>
         <Select
-          value={model || undefined}
+          key={selectedModality}
+          value={modelId || ''}
           onValueChange={(value) => {
-            createForm.setValue('model', value);
-            const selectedModel = availableModels.find((m) => m.value === value);
-            if (selectedModel) {
-              createForm.setValue('provider', selectedModel.provider);
-            }
+            createForm.setValue('modelId', value);
+            // Provider is always OpenRouter now
+            createForm.setValue('provider', 'openrouter');
           }}
           disabled={!hasModels}
         >
@@ -337,15 +339,24 @@ export function AIConfigDialog({
           </SelectTrigger>
           <SelectContent className="dark:bg-neutral-900 dark:border-neutral-700">
             {hasModels ? (
-              availableModels.map((modelOption) => (
-                <SelectItem
-                  key={modelOption.value}
-                  value={modelOption.value}
-                  className="dark:text-white dark:hover:bg-neutral-700"
-                >
-                  {modelOption.label}
-                </SelectItem>
-              ))
+              availableModels.map((modelOption) => {
+                const isConfigured = isModelConfigured(modelOption.value);
+                return (
+                  <SelectItem
+                    key={modelOption.value}
+                    value={modelOption.value}
+                    disabled={isConfigured}
+                    className={
+                      isConfigured
+                        ? 'dark:text-zinc-500 text-zinc-400 cursor-not-allowed'
+                        : 'dark:text-white dark:hover:bg-neutral-700'
+                    }
+                  >
+                    {modelOption.label}
+                    {isConfigured && ' (Already configured)'}
+                  </SelectItem>
+                );
+              })
             ) : (
               <SelectItem value="no-models" disabled className="dark:text-zinc-400">
                 No models available for this modality
@@ -394,7 +405,7 @@ export function AIConfigDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void form.handleSubmit(handleSubmit)();
+            void form.handleSubmit(onFormSubmit)();
           }}
           className="flex flex-col"
         >
@@ -405,10 +416,10 @@ export function AIConfigDialog({
           </DialogHeader>
 
           <div className="flex flex-col gap-6 p-6">
-            {!hasProviders ? (
+            {!hasModel ? (
               <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-8">
-                No AI providers are configured. Please configure at least one provider to create AI
-                configurations.
+                No AI models available. Please configure your OpenRouter API key to access AI
+                models.
               </div>
             ) : (
               <>
@@ -432,7 +443,7 @@ export function AIConfigDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!hasProviders}
+              disabled={!hasModel}
               className="w-30 h-9 px-3 py-2 text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
             >
               {isCreateMode ? 'Create' : 'Save'}

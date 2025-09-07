@@ -1,9 +1,8 @@
-import { DallEAPIWrapper } from '@langchain/openai';
+import OpenAI from 'openai';
 import type {
   ImageGenerationOptions,
-  GeneratedImage,
-  ImageProvider,
-  ImageModelConfig,
+  ImageGenerationResponse,
+  OpenRouterImageMessage,
 } from '@/types/ai';
 import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
@@ -12,128 +11,30 @@ import type { AIConfigurationSchema } from '@insforge/shared-schemas';
 export class ImageService {
   private static aiUsageService = new AIUsageService();
   private static aiConfigService = new AIConfigService();
-  private static modelConfigs: Record<string, ImageModelConfig> = {
-    // OpenAI Models (via LangChain)
-    'dall-e-3': {
-      provider: 'openai',
-      modelId: 'dall-e-3',
-      displayName: 'DALL-E 3',
-      supportedSizes: ['1024x1024', '1024x1792', '1792x1024'],
-      defaultSize: '1024x1024',
-    },
-    'dall-e-2': {
-      provider: 'openai',
-      modelId: 'dall-e-2',
-      displayName: 'DALL-E 2',
-      supportedSizes: ['256x256', '512x512', '1024x1024'],
-      defaultSize: '1024x1024',
-    },
+  private static openRouterClient: OpenAI;
 
-    // Google Imagen Models via Gemini API
-    'imagen-4-ultra': {
-      provider: 'google',
-      modelId: 'imagen-4.0-ultra-generate-001',
-      displayName: 'Google Imagen 4 Ultra',
-      supportedSizes: ['1024x1024', '1024x768', '768x1024', '1536x1024', '1024x1536'],
-      defaultSize: '1024x1024',
-    },
-    'imagen-4': {
-      provider: 'google',
-      modelId: 'imagen-4.0-generate-001',
-      displayName: 'Google Imagen 4',
-      supportedSizes: ['1024x1024', '1024x768', '768x1024', '1536x1024', '1024x1536'],
-      defaultSize: '1024x1024',
-    },
-    'imagen-4-fast': {
-      provider: 'google',
-      modelId: 'imagen-4.0-fast-generate-001',
-      displayName: 'Google Imagen 4 Fast',
-      supportedSizes: ['1024x1024', '512x512'],
-      defaultSize: '1024x1024',
-    },
-    'imagen-3': {
-      provider: 'google',
-      modelId: 'imagen-3.0-generate-002',
-      displayName: 'Google Imagen 3',
-      supportedSizes: ['1024x1024', '1024x768', '768x1024', '1536x1024', '1024x1536'],
-      defaultSize: '1024x1024',
-    },
-
-    // Gemini Image Models (Nano Banana)
-    'gemini-2.5-flash-image': {
-      provider: 'google',
-      modelId: 'gemini-2.5-flash-image-preview',
-      displayName: 'Gemini 2.5 Flash Image (Nano Banana)',
-      supportedSizes: ['1024x1024', '1024x768', '768x1024', '1536x1024', '1024x1536'],
-      defaultSize: '1024x1024',
-    },
-    'gemini-2.0-flash-image': {
-      provider: 'google',
-      modelId: 'gemini-2.0-flash-preview-image-generation',
-      displayName: 'Gemini 2.0 Flash Image',
-      supportedSizes: ['1024x1024', '1024x768', '768x1024', '1536x1024', '1024x1536'],
-      defaultSize: '1024x1024',
-    },
-  };
-
-  /**
-   * Get available image generation models grouped by provider
-   */
-  static getAvailableModels() {
-    const providerMap = new Map<string, { configured: boolean; models: string[] }>();
-
-    for (const [key, config] of Object.entries(this.modelConfigs)) {
-      const existing = providerMap.get(config.provider);
-      if (!existing) {
-        providerMap.set(config.provider, {
-          configured: this.isProviderConfigured(config.provider),
-          models: [key],
-        });
-      } else {
-        existing.models.push(key);
-      }
-    }
-
-    return Array.from(providerMap.entries()).map(([provider, data]) => ({
-      provider,
-      configured: data.configured,
-      models: data.models,
-    }));
-  }
-
-  /**
-   * Check if provider is configured
-   */
-  private static isProviderConfigured(provider: ImageProvider): boolean {
-    switch (provider) {
-      case 'openai':
-        return !!process.env.OPENAI_API_KEY;
-      case 'google':
-        return !!process.env.GOOGLE_API_KEY;
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * Parse size string to width and height
-   */
-  private static parseSize(sizeStr: string): { width: number; height: number } {
-    const [width, height] = sizeStr.split('x').map(Number);
-    return { width, height };
+  static {
+    // Initialize OpenRouter client
+    this.openRouterClient = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+      defaultHeaders: {
+        'HTTP-Referer': 'https://insforge.dev',
+        'X-Title': 'InsForge',
+      },
+    });
   }
 
   /**
    * Validate model and get config
    */
   private static async validateAndGetConfig(
-    model: string,
-    modality: string
+    modelId: string
   ): Promise<AIConfigurationSchema | null> {
-    const aiConfig = await ImageService.aiConfigService.findByModelAndModality(model, modality);
+    const aiConfig = await ImageService.aiConfigService.findByModelId(modelId);
     if (!aiConfig) {
       throw new Error(
-        `Model ${model} is not enabled. Please contact your administrator to enable this model.`
+        `Model ${modelId} is not enabled. Please contact your administrator to enable this model.`
       );
     }
     return aiConfig;
@@ -142,222 +43,103 @@ export class ImageService {
   /**
    * Generate images using the specified model
    */
-  static async generate(options: ImageGenerationOptions): Promise<GeneratedImage[]> {
-    const config = ImageService.modelConfigs[options.model];
-    if (!config) {
-      throw new Error(`Unknown model: ${options.model}`);
-    }
-
-    if (!ImageService.isProviderConfigured(config.provider)) {
-      throw new Error(`${config.provider} provider not configured`);
+  static async generate(options: ImageGenerationOptions): Promise<ImageGenerationResponse> {
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error(`OpenRouter API key not configured`);
     }
 
     // Validate model and get config
-    const aiConfig = await ImageService.validateAndGetConfig(options.model, 'image');
+    const aiConfig = await ImageService.validateAndGetConfig(options.model);
 
-    let images: GeneratedImage[];
-    switch (config.provider) {
-      case 'openai':
-        images = await ImageService.generateWithOpenAI(options);
-        break;
-      case 'google':
-        images = await ImageService.generateWithGoogle(options);
-        break;
-      default:
-        throw new Error(`Unsupported provider: ${config.provider}`);
-    }
-
-    // Track usage if config is available
-    if (aiConfig?.id) {
-      const resolution = options.size || config.defaultSize || '1024x1024';
-      await ImageService.aiUsageService.trackImageUsage(aiConfig.id, images.length, resolution);
-    }
-
-    return images;
-  }
-
-  /**
-   * Generate image using OpenAI DALL-E via LangChain
-   */
-  private static async generateWithOpenAI(
-    options: ImageGenerationOptions
-  ): Promise<GeneratedImage[]> {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    const config = ImageService.modelConfigs[options.model];
-    const size = options.size || config.defaultSize || '1024x1024';
-
-    // Validate size for the model
-    if (config.supportedSizes && !config.supportedSizes.includes(size)) {
-      throw new Error(
-        `Size ${size} not supported for ${config.displayName}. Supported sizes: ${config.supportedSizes.join(', ')}`
-      );
-    }
+    const model = options.model;
 
     try {
-      // Create DallEAPIWrapper with configuration
-      const dalle = new DallEAPIWrapper({
-        model: config.modelId as 'dall-e-2' | 'dall-e-3',
-        n: options.numImages || 1,
-        size: size as '256x256' | '512x512' | '1024x1024' | '1024x1792' | '1792x1024',
-        quality: options.quality || 'standard',
-        style: options.style || 'vivid',
-        responseFormat: options.responseFormat || 'url',
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-
-      // Generate image(s)
-      const result = await dalle.invoke(options.prompt);
-
-      // DallEAPIWrapper returns a URL string for single image or JSON for b64
-      if (options.responseFormat === 'b64_json') {
-        // When using b64_json, the result is a JSON string
-        try {
-          const parsed = JSON.parse(result);
-          if (Array.isArray(parsed)) {
-            return parsed.map((item) => ({
-              image_data: item.b64_json,
-              revised_prompt: item.revised_prompt,
-            }));
-          }
-          return [
-            {
-              image_data: parsed.b64_json,
-              revised_prompt: parsed.revised_prompt,
-            },
-          ];
-        } catch {
-          return [{ image_data: result }];
-        }
-      } else {
-        // URL format - result is a URL string or comma-separated URLs
-        const urls = result.split(',').map((url: string) => url.trim());
-        return urls.map((url: string) => ({ url }));
-      }
-    } catch (error) {
-      console.error('OpenAI image generation error:', error);
-      throw new Error(
-        `Failed to generate image with OpenAI: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-
-  /**
-   * Generate image using Google Imagen
-   */
-  private static async generateWithGoogle(
-    options: ImageGenerationOptions
-  ): Promise<GeneratedImage[]> {
-    if (!process.env.GOOGLE_API_KEY) {
-      throw new Error('Google API key not configured');
-    }
-
-    const config = ImageService.modelConfigs[options.model];
-    const size = options.size || config.defaultSize || '1024x1024';
-    const { width, height } = ImageService.parseSize(size);
-
-    try {
-      // Import Google GenAI SDK dynamically
-      const { GoogleGenAI } = await import('@google/genai');
-
-      // Initialize the SDK
-      const genAI = new GoogleGenAI({
-        apiKey: process.env.GOOGLE_API_KEY,
-      });
-
-      // Get the models API
-      const models = genAI.models;
-
-      // Check if this is a Gemini model (uses generateContent) or Imagen model (uses generateImages)
-      const isGeminiModel = config.modelId.startsWith('gemini-');
-
-      if (isGeminiModel) {
-        // Use generateContent for Gemini models (Nano Banana)
-        const result = await models.generateContent({
-          model: config.modelId,
-          contents: options.prompt,
-        });
-
-        // Process Gemini response
-        const images: GeneratedImage[] = [];
-
-        if (result && result.candidates && Array.isArray(result.candidates)) {
-          for (const candidate of result.candidates) {
-            if (candidate.content && candidate.content.parts) {
-              for (const part of candidate.content.parts) {
-                if (part.inlineData && part.inlineData.data) {
-                  // Base64 format
-                  images.push({
-                    image_data: part.inlineData.data,
-                  });
-                } else if (part.fileData && part.fileData.fileUri) {
-                  // File URI format
-                  images.push({
-                    url: part.fileData.fileUri,
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        if (images.length === 0) {
-          throw new Error('No images generated from Gemini model');
-        }
-
-        return images;
-      } else {
-        // Use generateImages for standard Imagen models
-        const result = await models.generateImages({
-          model: `models/${config.modelId}`,
-          prompt: options.prompt,
-          config: {
-            numberOfImages: options.numImages || 1,
-            aspectRatio: `${width}:${height}`,
-            // Add negative prompt if provided
-            ...(options.negativePrompt && { negativePrompt: options.negativePrompt }),
-            // Add guidance scale if provided
-            ...(options.guidanceScale && { guidanceScale: options.guidanceScale }),
-            // Add seed if provided
-            ...(options.seed && { seed: options.seed }),
+      // Build the request - OpenRouter extends OpenAI's API with additional fields
+      const request = {
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: options.prompt,
           },
-        });
+        ],
+        stream: false, // Explicitly disable streaming
+        // OpenRouter-specific field for image generation
+        modalities: ['text', 'image'],
+      };
 
-        // Process Imagen response
-        const images: GeneratedImage[] = [];
+      // Use OpenRouter's standard chat completions API
+      // Cast the extended request to the base OpenAI type for the SDK call
+      const response = (await this.openRouterClient.chat.completions.create(
+        request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+      )) as OpenAI.Chat.ChatCompletion;
 
-        if (result && result.generatedImages && Array.isArray(result.generatedImages)) {
-          for (const generatedImage of result.generatedImages) {
-            if (generatedImage.image) {
-              // Check if it's base64 or GCS URI
-              if (generatedImage.image.imageBytes) {
-                // Base64 format
-                images.push({
-                  image_data: generatedImage.image.imageBytes,
-                });
-              } else if (generatedImage.image.gcsUri) {
-                // GCS URI format
-                images.push({
-                  url: generatedImage.image.gcsUri,
-                });
+      // Initialize the result
+      const result: ImageGenerationResponse = {
+        images: [],
+        metadata: {
+          model: model,
+          usage: response.usage
+            ? {
+                promptTokens: response.usage.prompt_tokens || 0,
+                completionTokens: response.usage.completion_tokens || 0,
+                totalTokens: response.usage.total_tokens || 0,
+              }
+            : undefined,
+        },
+      };
+
+      // Process the OpenAI-compatible response
+      if (response.choices && response.choices.length > 0) {
+        for (const choice of response.choices) {
+          const message = choice.message;
+
+          // Extract text content if present (for multimodal responses)
+          if (message.content) {
+            result.text = message.content;
+            // Use text as revised prompt if available
+            if (result.metadata) {
+              result.metadata.revisedPrompt = message.content;
+            }
+          }
+
+          // OpenRouter adds an 'images' field to the assistant message for image generation
+          // Cast the message to include the extended OpenRouter fields
+          const extendedMessage = message as typeof message & {
+            images?: OpenRouterImageMessage[];
+          };
+
+          // Check for images in the OpenRouter format
+          if (extendedMessage.images && Array.isArray(extendedMessage.images)) {
+            for (const image of extendedMessage.images) {
+              if (image.type === 'image_url' && image.image_url?.url) {
+                result.images.push(image);
               }
             }
           }
         }
-
-        if (images.length === 0) {
-          throw new Error('No images generated from Imagen model');
-        }
-
-        return images;
       }
-    } catch (error) {
-      console.error('Google Imagen generation error:', error);
 
+      // Track usage if config is available
+      if (aiConfig?.id) {
+        // Pass token usage information if available
+        const inputTokens = result.metadata?.usage?.promptTokens;
+        const outputTokens = result.metadata?.usage?.completionTokens;
+
+        await ImageService.aiUsageService.trackImageGeneartionUsage(
+          aiConfig.id,
+          result.images.length,
+          undefined, // image resolution not available from OpenRouter
+          inputTokens,
+          outputTokens
+        );
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Image generation error:', error);
       throw new Error(
-        `Failed to generate image with Google Imagen: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to generate image: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }

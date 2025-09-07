@@ -1,19 +1,52 @@
 import { z } from 'zod';
 import { aiConfigurationSchema, aiUsageRecordSchema } from './ai.schema';
 
+// OpenRouter-specific model schema
+export const openRouterModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  created: z.number(),
+  description: z.string().optional(),
+  architecture: z
+    .object({
+      inputModalities: z.array(z.string()),
+      outputModalities: z.array(z.string()),
+      tokenizer: z.string(),
+      instructType: z.string(),
+    })
+    .optional(),
+  topProvider: z
+    .object({
+      isModerated: z.boolean(),
+      contextLength: z.number(),
+      maxCompletionTokens: z.number(),
+    })
+    .optional(),
+  pricing: z.object({
+    prompt: z.string(),
+    completion: z.string(),
+    image: z.string().optional(),
+    request: z.string().optional(),
+    webSearch: z.string().optional(),
+    internalReasoning: z.string().optional(),
+    inputCacheRead: z.string().optional(),
+    inputCacheWrite: z.string().optional(),
+  }),
+});
+
 export const listModelsResponseSchema = z.object({
   text: z.array(
     z.object({
       provider: z.string(),
       configured: z.boolean(),
-      models: z.array(z.string()),
+      models: z.array(openRouterModelSchema),
     })
   ),
   image: z.array(
     z.object({
       provider: z.string(),
       configured: z.boolean(),
-      models: z.array(z.string()),
+      models: z.array(openRouterModelSchema),
     })
   ),
 });
@@ -44,6 +77,8 @@ export const getAIUsageSummaryRequestSchema = z.object({
   endDate: z.string().datetime().optional(),
 });
 
+// Export types
+export type OpenRouterModel = z.infer<typeof openRouterModelSchema>;
 export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
 export type CreateAIConfigurationRequest = z.infer<typeof createAIConfigurationRequestSchema>;
 export type UpdateAIConfigurationRequest = z.infer<typeof updateAIConfigurationRequestSchema>;

@@ -16,16 +16,16 @@ export class AIConfigService {
   async create(
     modality: string,
     provider: string,
-    model: string,
+    modelId: string,
     systemPrompt?: string
   ): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
-        `INSERT INTO _ai_configs (modality, provider, model, system_prompt)
+        `INSERT INTO _ai_configs (modality, provider, model_id, system_prompt)
          VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [modality, provider, model, systemPrompt || null]
+        [modality, provider, modelId, systemPrompt || null]
       );
 
       logger.info('AI configuration created', { id: result.rows[0].id });
@@ -47,7 +47,7 @@ export class AIConfigService {
           c.id,
           c.modality,
           c.provider,
-          c.model,
+          c.model_id as "modelId",
           c.system_prompt as "systemPrompt",
           COALESCE(SUM(u.input_tokens), 0)::INTEGER as "totalInputTokens",
           COALESCE(SUM(u.output_tokens), 0)::INTEGER as "totalOutputTokens",
@@ -56,7 +56,7 @@ export class AIConfigService {
           COALESCE(COUNT(u.id), 0)::INTEGER as "totalRequests"
          FROM _ai_configs c
          LEFT JOIN _ai_usage u ON c.id = u.config_id
-         GROUP BY c.id, c.modality, c.provider, c.model, c.system_prompt, c.created_at
+         GROUP BY c.id, c.modality, c.provider, c.model_id, c.system_prompt, c.created_at
          ORDER BY c.created_at DESC`
       );
 
@@ -64,7 +64,7 @@ export class AIConfigService {
         id: row.id,
         modality: row.modality,
         provider: row.provider,
-        model: row.model,
+        modelId: row.modelId,
         systemPrompt: row.systemPrompt,
         usageStats: {
           totalInputTokens: row.totalInputTokens,
@@ -77,36 +77,6 @@ export class AIConfigService {
     } catch (error) {
       logger.error('Failed to fetch AI configurations with usage', { error });
       throw new Error('Failed to fetch AI configurations');
-    } finally {
-      client.release();
-    }
-  }
-
-  async findById(id: string): Promise<AIConfigurationSchema | null> {
-    const client = await this.getPool().connect();
-    try {
-      const result = await client.query(
-        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", created_at, updated_at
-         FROM _ai_configs
-         WHERE id = $1`,
-        [id]
-      );
-
-      if (result.rows.length === 0) {
-        return null;
-      }
-
-      const row = result.rows[0];
-      return {
-        id: row.id,
-        modality: row.modality,
-        provider: row.provider,
-        model: row.model,
-        systemPrompt: row.systemPrompt,
-      };
-    } catch (error) {
-      logger.error('Failed to fetch AI configuration', { error, id });
-      throw new Error('Failed to fetch AI configuration');
     } finally {
       client.release();
     }
@@ -153,17 +123,14 @@ export class AIConfigService {
     }
   }
 
-  async findByModelAndModality(
-    model: string,
-    modality: string
-  ): Promise<AIConfigurationSchema | null> {
+  async findByModelId(modelId: string): Promise<AIConfigurationSchema | null> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
-        `SELECT id, modality, provider, model, system_prompt as "systemPrompt", created_at, updated_at
+        `SELECT id, modality, provider, model_id as "modelId", system_prompt as "systemPrompt", created_at, updated_at
          FROM _ai_configs
-         WHERE model = $1 AND modality = $2`,
-        [model, modality]
+         WHERE model_id = $1`,
+        [modelId]
       );
 
       if (result.rows.length === 0) {
@@ -175,14 +142,13 @@ export class AIConfigService {
         id: row.id,
         modality: row.modality,
         provider: row.provider,
-        model: row.model,
+        modelId: row.modelId,
         systemPrompt: row.systemPrompt,
       };
     } catch (error) {
-      logger.error('Failed to fetch AI configuration by model and modality', {
+      logger.error('Failed to fetch AI configuration by modelId', {
         error,
-        model,
-        modality,
+        modelId,
       });
       throw new Error('Failed to fetch AI configuration');
     } finally {
