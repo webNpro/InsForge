@@ -10,23 +10,19 @@ import {
 export class MetadataService {
   async fetchApiKey() {
     const data = await apiClient.request('/metadata/api-key');
-    // data is already unwrapped by request method
-    if (data.apiKey) {
-      apiClient.setApiKey(data.apiKey);
-    }
     return data.apiKey;
   }
   // Get full metadata (complete structured format)
   async getFullMetadata(): Promise<AppMetadataSchema> {
     return apiClient.request('/metadata', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
   // Get dashboard metadata only
   async getDashboardMetadata(): Promise<DashboardMetadataSchema> {
     return apiClient.request('/metadata/dashboard', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 

@@ -9,13 +9,11 @@ interface ApiError extends Error {
 
 export class ApiClient {
   private token: string | null = null;
-  private apiKey: string | null = null;
   private tokenRefreshPromise: Promise<void> | null = null;
   private onAuthError?: () => void;
 
   constructor() {
     this.token = localStorage.getItem('insforge_token');
-    this.apiKey = localStorage.getItem('insforge_api_key');
   }
 
   setToken(token: string) {
@@ -30,15 +28,6 @@ export class ApiClient {
 
   getToken() {
     return this.token;
-  }
-
-  setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-    localStorage.setItem('insforge_api_key', apiKey);
-  }
-
-  getApiKey(): string | null {
-    return this.apiKey;
   }
 
   setAuthErrorHandler(handler?: () => void) {
@@ -80,7 +69,7 @@ export class ApiClient {
         let errorData;
         try {
           errorData = await response.json();
-        } catch (e) {
+        } catch {
           // If parsing JSON fails, throw a generic error
           const error: ApiError = new Error(`HTTP ${response.status}: ${response.statusText}`);
           error.response = { data: null, status: response.status };
@@ -119,7 +108,7 @@ export class ApiClient {
       let responseData = null;
       try {
         responseData = text ? JSON.parse(text) : null;
-      } catch (e) {
+      } catch {
         responseData = text;
       }
 
@@ -166,9 +155,9 @@ export class ApiClient {
     return makeRequest();
   }
 
-  // Helper method to add API key header
-  withApiKey(headers: Record<string, string> = {}) {
-    return this.apiKey ? { ...headers, 'x-api-key': this.apiKey } : headers;
+  // Helper method to add authorization header with token
+  withAccessToken(headers: Record<string, string> = {}) {
+    return this.token ? { ...headers, Authorization: `Bearer ${this.token}` } : headers;
   }
 }
 

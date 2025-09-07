@@ -11,7 +11,7 @@ export class DatabaseService {
   // Table operations
   async listTables(): Promise<string[]> {
     const data = await apiClient.request('/database/tables', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
     // data is already unwrapped by request method and should be an array
     return Array.isArray(data) ? data : [];
@@ -19,7 +19,7 @@ export class DatabaseService {
 
   getTableSchema(tableName: string): Promise<GetTableSchemaResponse> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -27,7 +27,7 @@ export class DatabaseService {
     const body: CreateTableRequest = { tableName: tableName, columns, rlsEnabled: true };
     return apiClient.request('/database/tables', {
       method: 'POST',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(body),
@@ -37,7 +37,7 @@ export class DatabaseService {
   deleteTable(tableName: string) {
     return apiClient.request(`/database/tables/${tableName}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -47,7 +47,7 @@ export class DatabaseService {
   ): Promise<UpdateTableSchemaResponse | void> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(operations),
@@ -99,7 +99,7 @@ export class DatabaseService {
     const response = await apiClient.request(
       `/database/records/${tableName}?${params.toString()}`,
       {
-        headers: apiClient.withApiKey(),
+        headers: apiClient.withAccessToken(),
       }
     );
 
@@ -125,7 +125,7 @@ export class DatabaseService {
   async getRecords(tableName: string, queryParams: string = '') {
     const url = `/database/records/${tableName}${queryParams ? `?${queryParams}` : ''}`;
     const response = await apiClient.request(url, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
 
     // Traditional REST: check if response is array (direct data) or wrapped
@@ -149,7 +149,7 @@ export class DatabaseService {
 
   getRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -163,7 +163,7 @@ export class DatabaseService {
     });
     return apiClient.request(`/database/records/${table}`, {
       method: 'POST',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(records),
@@ -181,7 +181,7 @@ export class DatabaseService {
   updateRecord(table: string, id: string, data: any) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(data),
@@ -191,7 +191,7 @@ export class DatabaseService {
   deleteRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 }

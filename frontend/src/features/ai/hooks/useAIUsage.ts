@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
-import { metadataService } from '@/features/metadata/services/metadata.service';
 import {
   AIUsageSummarySchema,
   AIUsageRecordSchema,
@@ -17,17 +16,10 @@ interface UseAIUsageSummaryOptions {
 export function useAIUsageSummary(options: UseAIUsageSummaryOptions = {}) {
   const { configId, startDate, endDate, enabled = true } = options;
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   return useQuery<AIUsageSummarySchema>({
     queryKey: ['ai-usage-summary', configId, startDate, endDate],
     queryFn: () => aiService.getUsageSummary({ configId, startDate, endDate }),
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     staleTime: 60 * 1000, // Cache for 1 minute
   });
 }
@@ -43,17 +35,10 @@ interface UseAIUsageRecordsOptions {
 export function useAIUsageRecords(options: UseAIUsageRecordsOptions = {}) {
   const { startDate, endDate, limit = '50', offset = '0', enabled = true } = options;
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   return useQuery<ListAIUsageResponse>({
     queryKey: ['ai-usage-records', startDate, endDate, limit, offset],
     queryFn: () => aiService.getUsageRecords({ startDate, endDate, limit, offset }),
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     staleTime: 60 * 1000, // Cache for 1 minute
   });
 }
@@ -68,17 +53,10 @@ interface UseAIConfigUsageOptions {
 export function useAIConfigUsage(options: UseAIConfigUsageOptions) {
   const { configId, startDate, endDate, enabled = true } = options;
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   return useQuery<AIUsageRecordSchema[]>({
     queryKey: ['ai-config-usage', configId, startDate, endDate],
     queryFn: () => aiService.getConfigUsageRecords(configId, { startDate, endDate }),
-    enabled: enabled && !!apiKey && !!configId,
+    enabled: enabled && !!configId,
     staleTime: 60 * 1000, // Cache for 1 minute
   });
 }
