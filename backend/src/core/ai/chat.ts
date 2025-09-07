@@ -2,24 +2,13 @@ import OpenAI from 'openai';
 import type { ChatMessage, ChatOptions } from '@/types/ai';
 import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
+import { AIClientService } from './client';
 import type { AIConfigurationSchema } from '@insforge/shared-schemas';
 
 export class ChatService {
   private aiUsageService = new AIUsageService();
   private aiConfigService = new AIConfigService();
-  private openRouterClient: OpenAI;
-
-  constructor() {
-    // Initialize OpenRouter client
-    this.openRouterClient = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      defaultHeaders: {
-        'HTTP-Referer': 'https://insforge.dev',
-        'X-Title': 'InsForge',
-      },
-    });
-  }
+  private aiCredentialsService = AIClientService.getInstance();
 
   /**
    * Format messages for OpenAI API
@@ -72,6 +61,9 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
+      // Get the client (handles validation and initialization automatically)
+      const client = await this.aiCredentialsService.getClient();
+
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
@@ -89,7 +81,7 @@ export class ChatService {
 
       const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
 
-      const response = await this.openRouterClient.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: options.model,
         messages: formattedMessages,
         temperature: chatOptions.temperature ?? 0.7,
@@ -140,6 +132,9 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
+      // Get the client (handles validation and initialization automatically)
+      const client = await this.aiCredentialsService.getClient();
+
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
@@ -157,7 +152,7 @@ export class ChatService {
 
       const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
 
-      const stream = await this.openRouterClient.chat.completions.create({
+      const stream = await client.chat.completions.create({
         model: options.model,
         messages: formattedMessages,
         temperature: chatOptions.temperature ?? 0.7,

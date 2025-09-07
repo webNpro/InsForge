@@ -1,13 +1,9 @@
 import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
-import type {
-  ChatRequest,
-  ChatCompletionResponse,
-  ImageGenerationOptions,
-  OpenRouterModel,
-} from '@/types/ai';
+import type { ChatRequest, ChatCompletionResponse, ImageGenerationOptions } from '@/types/ai';
 import { ImageService } from '@/core/ai/image';
+import { ModelService } from '@/core/ai/model';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
@@ -31,72 +27,8 @@ const aiUsageService = new AIUsageService();
  */
 router.get('/models', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const configured = !!process.env.OPENROUTER_API_KEY;
-
-    if (!configured) {
-      res.json({
-        text: [
-          {
-            provider: 'openrouter',
-            configured: false,
-            models: [],
-          },
-        ],
-        image: [
-          {
-            provider: 'openrouter',
-            configured: false,
-            models: [],
-          },
-        ],
-      });
-      return;
-    }
-
-    // Fetch models once and classify them
-    const response = await fetch('https://openrouter.ai/api/v1/models/user', {
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch models: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as { data: OpenRouterModel[] };
-    const models = data.data || [];
-
-    const textModels: OpenRouterModel[] = [];
-    const imageModels: OpenRouterModel[] = [];
-
-    for (const model of models) {
-      // Classify based on output modality
-      if (model.architecture?.output_modalities?.includes('image')) {
-        imageModels.push(model);
-      }
-
-      if (model.architecture?.output_modalities?.includes('text')) {
-        textModels.push(model);
-      }
-    }
-
-    res.json({
-      text: [
-        {
-          provider: 'openrouter',
-          configured: true,
-          models: textModels,
-        },
-      ],
-      image: [
-        {
-          provider: 'openrouter',
-          configured: true,
-          models: imageModels,
-        },
-      ],
-    });
+    const models = await ModelService.getModels();
+    res.json(models);
   } catch (error) {
     console.error('Error getting models:', error);
     res.status(500).json({
