@@ -15,6 +15,16 @@ import { TypeBadge } from '@/components/TypeBadge';
 // Type for database records
 type DatabaseRecord = Record<string, any>;
 
+// Helper function to get appropriate placeholder text
+function getPlaceholderText(field: ColumnSchema, nullable?: boolean): string {
+  // Check if default value is a function
+  if (field.defaultValue && field.defaultValue.endsWith('()')) {
+    return 'Auto-generated on submit';
+  }
+  // Static default value or no default value
+  return (nullable ?? field.isNullable) ? 'Optional' : 'Required';
+}
+
 // Form adapters for edit cell components
 interface FormBooleanEditorProps {
   value: boolean | null;
@@ -68,6 +78,7 @@ interface FormDateEditorProps {
   nullable: boolean;
   onChange: (value: string | null) => void;
   hasForeignKey?: boolean;
+  field: ColumnSchema;
 }
 
 function FormDateEditor({
@@ -76,6 +87,7 @@ function FormDateEditor({
   nullable,
   onChange,
   hasForeignKey,
+  field,
 }: FormDateEditorProps) {
   const [showEditor, setShowEditor] = useState(false);
 
@@ -106,7 +118,7 @@ function FormDateEditor({
 
   const formatDisplayValue = () => {
     if (!value || value === 'null') {
-      return 'Select date...';
+      return getPlaceholderText(field, nullable);
     }
 
     const d = new Date(value);
@@ -148,6 +160,7 @@ interface FormNumberEditorProps {
   hasForeignKey?: boolean;
   tableName: string;
   fieldName: string;
+  field: ColumnSchema;
 }
 
 function FormNumberEditor({
@@ -158,24 +171,25 @@ function FormNumberEditor({
   hasForeignKey,
   tableName,
   fieldName,
+  field,
 }: FormNumberEditorProps) {
   return (
     <Input
       id={`${tableName}-${fieldName}`}
       type="number"
-      step={type === 'float' ? '0.01' : '1'}
-      value={value ?? ''}
+      step={type === 'integer' ? '1' : undefined}
+      value={!value ? '' : value}
       onChange={(e) => {
         const inputValue = e.target.value;
         if (inputValue === '') {
-          // Handle empty value based on nullability
-          onChange(nullable ? null : 0);
+          // Handle empty value - let form validation handle required fields
+          onChange(null);
         } else {
           const numValue = type === 'integer' ? parseInt(inputValue, 10) : parseFloat(inputValue);
-          onChange(isNaN(numValue) ? (nullable ? null : 0) : numValue);
+          onChange(isNaN(numValue) ? null : numValue);
         }
       }}
-      placeholder={nullable ? 'Optional' : 'Required'}
+      placeholder={getPlaceholderText(field, nullable)}
       className={`dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-16' : ''}`}
     />
   );
@@ -266,12 +280,12 @@ function FieldLabel({
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2">
       <TypeBadge type={field.type} className="h-6 dark:bg-neutral-900 dark:border-neutral-700" />
-      <span className="text-sm text-black dark:text-white truncate block w-9/10">
+      <span className="text-sm text-black dark:text-white truncate block" title={field.columnName}>
         {field.columnName}
-        {!field.isNullable && field.columnName !== 'id' && (
-          <span className="text-red-500 dark:text-red-400 ml-1">*</span>
-        )}
       </span>
+      {!field.isNullable && field.columnName !== 'id' && (
+        <span className="text-red-500 dark:text-red-400">*</span>
+      )}
       {children}
     </Label>
   );
@@ -430,6 +444,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                       hasForeignKey={!!field.foreignKey}
                       tableName={tableName}
                       fieldName={field.columnName}
+                      field={field}
                     />
                   )}
                 />
@@ -456,6 +471,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                       nullable={field.isNullable}
                       onChange={formField.onChange}
                       hasForeignKey={!!field.foreignKey}
+                      field={field}
                     />
                   )}
                 />
@@ -514,7 +530,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder={field.isNullable ? 'Optional' : 'Required'}
+                  placeholder={getPlaceholderText(field)}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
@@ -535,7 +551,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type={field.columnName === 'password' ? 'password' : 'text'}
                   {...register(field.columnName)}
-                  placeholder={field.isNullable ? 'Optional' : 'Required'}
+                  placeholder={getPlaceholderText(field)}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
