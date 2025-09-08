@@ -4,6 +4,7 @@ import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
 import { AIClientService } from './client';
 import type { AIConfigurationSchema } from '@insforge/shared-schemas';
+import logger from '@/utils/logger.js';
 
 export class ChatService {
   private aiUsageService = new AIUsageService();
@@ -112,7 +113,7 @@ export class ChatService {
         tokenUsage,
       };
     } catch (error) {
-      console.error('Chat error:', error);
+      logger.error('Chat error', { error });
       throw new Error(
         `Failed to get response: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -190,7 +191,7 @@ export class ChatService {
         );
       }
     } catch (error) {
-      console.error('Streaming error:', error);
+      logger.error('Streaming error', { error });
       throw new Error(
         `Failed to stream response: ${error instanceof Error ? error.message : String(error)}`
       );

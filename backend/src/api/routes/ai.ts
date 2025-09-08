@@ -52,38 +52,32 @@ router.post('/chat/completion', verifyUser, async (req: AuthRequest, res: Respon
       });
     }
 
+    if (!messages || messages.length === 0) {
+      return res.status(400).json({
+        error: 'Either message or messages array is required',
+      });
+    }
+
     // Handle streaming requests
     if (stream) {
-      // Set headers for SSE (Server-Sent Events)
+      const chatOptions = {
+        model,
+        ...options,
+      };
+
+      // Now we know the model is valid, set headers for SSE
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
+      // Create and process the stream
       try {
-        let streamGenerator;
+        const streamGenerator = chatService.streamChat(messages, chatOptions);
 
-        const chatOptions = {
-          model,
-          ...options,
-        };
-
-        if (messages && messages.length > 0) {
-          // Multi-turn conversation with streaming
-          streamGenerator = chatService.streamChat(messages, chatOptions);
-        } else {
-          res.write(
-            `data: ${JSON.stringify({ error: 'Either message or messages array is required' })}\n\n`
-          );
-          res.end();
-          return;
-        }
-
-        // Stream the response
         for await (const data of streamGenerator) {
           if (data.chunk) {
             res.write(`data: ${JSON.stringify({ chunk: data.chunk })}\n\n`);
           }
-          // Send token usage if available
           if (data.tokenUsage) {
             res.write(`data: ${JSON.stringify({ tokenUsage: data.tokenUsage })}\n\n`);
           }
@@ -91,35 +85,25 @@ router.post('/chat/completion', verifyUser, async (req: AuthRequest, res: Respon
 
         // Send completion signal
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-        res.end();
-      } catch (error) {
+      } catch (streamError) {
+        // If error occurs during streaming, send it in SSE format
+        console.error('Stream error:', streamError);
         res.write(
-          `data: ${JSON.stringify({ error: error instanceof Error ? error.message : String(error) })}\n\n`
+          `data: ${JSON.stringify({ error: true, meesage: streamError instanceof Error ? streamError.message : String(streamError) })}\n\n`
         );
-        res.end();
       }
+
+      res.end();
       return;
     }
 
     // Non-streaming requests
-    let result: {
-      content: string;
-      tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
-    };
-
     const chatOptions = {
       model,
       ...options,
     };
 
-    if (messages && messages.length > 0) {
-      // Multi-turn conversation
-      result = await chatService.chat(messages, chatOptions);
-    } else {
-      return res.status(400).json({
-        error: 'Either message or messages array is required',
-      });
-    }
+    const result = await chatService.chat(messages, chatOptions);
 
     const response: ChatCompletionResponse = {
       success: true,
