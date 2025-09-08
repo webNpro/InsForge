@@ -110,15 +110,8 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
     // Set default values based on type and defaultValue setting
     switch (column.type) {
       case ColumnType.BOOLEAN:
-        if (column.defaultValue !== undefined) {
-          // User explicitly set a default value - use it regardless of nullable setting
-          values[column.columnName] =
-            column.defaultValue === 'true' || column.defaultValue === 'false'
-              ? column.defaultValue === 'true'
-              : Boolean(column.defaultValue);
-        } else {
-          // User didn't set default value - use system defaults
-          values[column.columnName] = column.isNullable ? null : false;
+        if (column.defaultValue !== undefined && column.defaultValue !== null) {
+          values[column.columnName] = column.defaultValue === 'true';
         }
         break;
       case ColumnType.INTEGER:
@@ -144,7 +137,6 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
         }
         break;
       case ColumnType.DATETIME:
-        console.log('column.defaultValue', column.defaultValue);
         if (column.defaultValue && !column.defaultValue.endsWith('()')) {
           values[column.columnName] = new Date(column.defaultValue).toISOString();
         } else {
