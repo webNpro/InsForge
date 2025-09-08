@@ -102,18 +102,18 @@ const fetchDocumentation = async (docType: string): Promise<string> => {
 };
 
 // Helper function to fetch insforge-project.md content
-const fetchInsforgeProjectContext = async (): Promise<string | null> => {
+const fetchInsforgeInstructionsContext = async (): Promise<string | null> => {
   try {
-    return await fetchDocumentation('project');
+    return await fetchDocumentation('instructions');
   } catch (error) {
-    console.error('Failed to fetch insforge-project.md:', error);
+    console.error('Failed to fetch insforge-instructions.md:', error);
     return null;
   }
 };
 
 // Helper function to add background context to responses
 const addBackgroundContext = async (response: any): Promise<any> => {
-  const context = await fetchInsforgeProjectContext();
+  const context = await fetchInsforgeInstructionsContext();
   if (context && response.content && Array.isArray(response.content)) {
     // Add the background context as a separate text content item
     response.content.push({
