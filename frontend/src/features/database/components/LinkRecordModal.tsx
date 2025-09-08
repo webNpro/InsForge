@@ -9,6 +9,8 @@ import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { ColumnType } from '@insforge/shared-schemas';
 
+const PAGE_SIZE = 50;
+
 // Type for database records
 type DatabaseRecord = Record<string, any>;
 
@@ -32,7 +34,6 @@ export function LinkRecordModal({
   const [selectedRecord, setSelectedRecord] = useState<DatabaseRecord | null>(null);
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
 
   // Fetch table schema
   const { data: schema } = useQuery({
@@ -44,45 +45,43 @@ export function LinkRecordModal({
   // Fetch records from the reference table
   const { data: recordsData, isLoading } = useQuery({
     queryKey: [
-      'records',
+      'table',
       referenceTable,
       currentPage,
-      pageSize,
+      PAGE_SIZE,
       searchQuery,
       JSON.stringify(sortColumns),
     ],
     queryFn: async () => {
-      const offset = (currentPage - 1) * pageSize;
-      const response = await databaseService.getTableRecords(
-        referenceTable,
-        pageSize,
-        offset,
-        searchQuery || undefined,
-        sortColumns
-      );
-      return response;
+      const offset = (currentPage - 1) * PAGE_SIZE;
+      const [schema, records] = await Promise.all([
+        databaseService.getTableSchema(referenceTable),
+        databaseService.getTableRecords(
+          referenceTable,
+          PAGE_SIZE,
+          offset,
+          searchQuery || undefined,
+          sortColumns
+        ),
+      ]);
+
+      return {
+        schema,
+        records: records.records,
+        totalRecords: schema.recordCount,
+      };
     },
     enabled: open,
   });
-
-  // Reset selection when modal opens/closes
-  useEffect(() => {
-    if (!open) {
-      setSelectedRecord(null);
-      setSearchQuery('');
-      setSortColumns([]);
-      setCurrentPage(1);
-    }
-  }, [open]);
 
   // Reset page when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  const records = recordsData?.records || [];
-  const totalRecords = recordsData?.total || 0;
-  const totalPages = Math.ceil(totalRecords / pageSize);
+  const records = useMemo(() => recordsData?.records || [], [recordsData?.records]);
+  const totalRecords = recordsData?.totalRecords || 0;
+  const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
   // Create selected rows set for highlighting
   const selectedRows = useMemo(() => {
@@ -146,7 +145,9 @@ export function LinkRecordModal({
         }
 
         if (type === ColumnType.DATETIME) {
-          if (!value) return 'null';
+          if (!value) {
+            return 'null';
+          }
           try {
             const date = new Date(value);
             return date.toLocaleDateString('en-US', {
@@ -279,7 +280,7 @@ export function LinkRecordModal({
             searchQuery={searchQuery}
             currentPage={currentPage}
             totalPages={totalPages}
-            pageSize={pageSize}
+            pageSize={PAGE_SIZE}
             totalRecords={totalRecords}
             onPageChange={setCurrentPage}
             showSelection={false}

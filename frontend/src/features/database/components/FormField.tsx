@@ -15,6 +15,16 @@ import { TypeBadge } from '@/components/TypeBadge';
 // Type for database records
 type DatabaseRecord = Record<string, any>;
 
+// Helper function to get appropriate placeholder text
+function getPlaceholderText(field: ColumnSchema): string {
+  // Check if default value is a function
+  if (field.defaultValue && field.defaultValue.endsWith('()')) {
+    return 'Auto-generated on submit';
+  }
+  // Static default value or no default value
+  return field.isNullable ? 'Optional' : 'Required';
+}
+
 // Form adapters for edit cell components
 interface FormBooleanEditorProps {
   value: boolean | null;
@@ -65,18 +75,11 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
 interface FormDateEditorProps {
   value: string | null;
   type?: 'date' | 'datetime';
-  nullable: boolean;
   onChange: (value: string | null) => void;
-  hasForeignKey?: boolean;
+  field: ColumnSchema;
 }
 
-function FormDateEditor({
-  value,
-  type = 'datetime',
-  nullable,
-  onChange,
-  hasForeignKey,
-}: FormDateEditorProps) {
+function FormDateEditor({ value, type = 'datetime', onChange, field }: FormDateEditorProps) {
   const [showEditor, setShowEditor] = useState(false);
 
   const handleValueChange = (newValue: string | null) => {
@@ -97,7 +100,7 @@ function FormDateEditor({
       <DateCellEditor
         value={value}
         type={type}
-        nullable={nullable}
+        nullable={field.isNullable}
         onValueChange={handleValueChange}
         onCancel={handleCancel}
       />
@@ -106,7 +109,7 @@ function FormDateEditor({
 
   const formatDisplayValue = () => {
     if (!value || value === 'null') {
-      return 'Select date...';
+      return getPlaceholderText(field);
     }
 
     const d = new Date(value);
@@ -124,7 +127,7 @@ function FormDateEditor({
       className={cn(
         'w-full justify-start h-9 text-black dark:text-white dark:bg-neutral-900 dark:border-neutral-700',
         (!value || value === 'null') && 'text-muted-foreground dark:text-neutral-400',
-        hasForeignKey && 'pr-20'
+        !!field.foreignKey && 'pr-20'
       )}
     >
       <Calendar className="mr-2 h-4 w-4" />
@@ -133,52 +136,42 @@ function FormDateEditor({
   );
 }
 
-interface FormJsonEditorProps {
-  value: string | null;
-  nullable: boolean;
-  onChange: (value: string | null) => void;
-  hasForeignKey?: boolean;
-}
-
 interface FormNumberEditorProps {
   value: number | null;
   type: 'integer' | 'float';
-  nullable: boolean;
   onChange: (value: number | null) => void;
-  hasForeignKey?: boolean;
   tableName: string;
-  fieldName: string;
+  field: ColumnSchema;
 }
 
-function FormNumberEditor({
-  value,
-  type,
-  nullable,
-  onChange,
-  hasForeignKey,
-  tableName,
-  fieldName,
-}: FormNumberEditorProps) {
+function FormNumberEditor({ value, type, onChange, tableName, field }: FormNumberEditorProps) {
   return (
     <Input
-      id={`${tableName}-${fieldName}`}
-      type="number"
-      step={type === 'float' ? '0.01' : '1'}
+      id={`${tableName}-${field.columnName}`}
+      type={type === 'integer' ? 'number' : 'text'}
+      step={type === 'integer' ? '1' : undefined}
       value={value ?? ''}
       onChange={(e) => {
         const inputValue = e.target.value;
         if (inputValue === '') {
-          // Handle empty value based on nullability
-          onChange(nullable ? null : 0);
+          // Handle empty value - let form validation handle required fields
+          onChange(null);
         } else {
           const numValue = type === 'integer' ? parseInt(inputValue, 10) : parseFloat(inputValue);
-          onChange(isNaN(numValue) ? (nullable ? null : 0) : numValue);
+          onChange(isNaN(numValue) ? null : numValue);
         }
       }}
-      placeholder={nullable ? 'Optional' : 'Required'}
-      className={`dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${hasForeignKey ? 'pr-16' : ''}`}
+      placeholder={getPlaceholderText(field)}
+      className={`dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700 ${field.foreignKey ? 'pr-16' : ''}`}
     />
   );
+}
+
+interface FormJsonEditorProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  nullable: boolean;
+  hasForeignKey: boolean;
 }
 
 function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEditorProps) {
@@ -224,6 +217,7 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
       if (keys.length === 1) {
         return `{ ${keys[0]}: ... }`;
       }
+
       return `{ ${keys.length} properties }`;
     } catch {
       return 'Invalid JSON';
@@ -265,12 +259,10 @@ function FieldLabel({
   return (
     <Label htmlFor={`${tableName}-${field.columnName}`} className="flex items-center gap-2">
       <TypeBadge type={field.type} className="h-6 dark:bg-neutral-900 dark:border-neutral-700" />
-      <span className="text-sm text-black dark:text-white truncate block w-9/10">
+      <span className="text-sm text-black dark:text-white truncate block" title={field.columnName}>
         {field.columnName}
-        {!field.isNullable && field.columnName !== 'id' && (
-          <span className="text-red-500 dark:text-red-400 ml-1">*</span>
-        )}
       </span>
+      {!field.isNullable && <span className="text-red-500 dark:text-red-400">*</span>}
       {children}
     </Label>
   );
@@ -424,11 +416,9 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                     <FormNumberEditor
                       value={formField.value}
                       type={field.type === ColumnType.INTEGER ? 'integer' : 'float'}
-                      nullable={field.isNullable}
                       onChange={formField.onChange}
-                      hasForeignKey={!!field.foreignKey}
                       tableName={tableName}
-                      fieldName={field.columnName}
+                      field={field}
                     />
                   )}
                 />
@@ -452,9 +442,8 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                     <FormDateEditor
                       value={formField.value}
                       type="datetime"
-                      nullable={field.isNullable}
                       onChange={formField.onChange}
-                      hasForeignKey={!!field.foreignKey}
+                      field={field}
                     />
                   )}
                 />
@@ -483,6 +472,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                             : formField.value
                         }
                         nullable={field.isNullable}
+                        hasForeignKey={!!field.foreignKey}
                         onChange={(newValue) => {
                           const result = convertValueForColumn(ColumnType.JSON, newValue);
                           if (result.success) {
@@ -513,7 +503,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type="text"
                   {...register(field.columnName)}
-                  placeholder={field.isNullable ? 'Optional' : 'Required'}
+                  placeholder={getPlaceholderText(field)}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>
@@ -534,7 +524,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   id={`${tableName}-${field.columnName}`}
                   type={field.columnName === 'password' ? 'password' : 'text'}
                   {...register(field.columnName)}
-                  placeholder={field.isNullable ? 'Optional' : 'Required'}
+                  placeholder={getPlaceholderText(field)}
                   className="dark:text-white dark:placeholder:text-neutral-400 dark:bg-neutral-900 dark:border-neutral-700"
                 />
               </FieldWithLink>

@@ -37,7 +37,7 @@ export const COLUMN_TYPES: Record<ColumnType, ColumnTypeInfo> = {
   [ColumnType.DATETIME]: {
     type: ColumnType.DATETIME,
     sqlType: 'TIMESTAMPTZ',
-    defaultValue: 'CURRENT_TIMESTAMP',
+    defaultValue: 'now()',
     description: 'Date and time with timezone',
     icon: 'calendar',
   },
