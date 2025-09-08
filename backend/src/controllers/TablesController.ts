@@ -40,38 +40,35 @@ function getSafeDollarQuotedLiteral(s: string) {
   return `$${tag}$${s}$${tag}$`;
 }
 
+function getSystemDefault(columnType?: ColumnType, isNullable?: boolean): string | null {
+  if (!columnType || isNullable) return null;
+  const fieldType = COLUMN_TYPES[columnType];
+  if (!fieldType?.defaultValue) return null;
+
+  const def = fieldType.defaultValue.trim().toLowerCase();
+  if (SAFE_FUNCS.has(def)) {
+    return `DEFAULT ${def}`;
+  }
+  return `DEFAULT ${getSafeDollarQuotedLiteral(def)}`;
+}
+
 export function formatDefaultValue(
   input: string | null | undefined,
   columnType?: ColumnType,
   isNullable?: boolean
 ): string {
-  // If no input provided, check if we should use system default
   if (!input) {
-    if (columnType && !isNullable) {
-      const fieldType = COLUMN_TYPES[columnType];
-      if (fieldType?.defaultValue) {
-        if (fieldType.defaultValue === 'gen_random_uuid()' && columnType === ColumnType.UUID) {
-          return 'DEFAULT gen_random_uuid()';
-        } else if (fieldType.defaultValue === 'now()') {
-          return 'DEFAULT now()';
-        } else {
-          return `DEFAULT ${fieldType.defaultValue}`;
-        }
-      }
-    }
-    return ''; // No default needed
+    return getSystemDefault(columnType, isNullable) ?? '';
   }
-
   const value = input.trim();
+  const lowered = value.toLowerCase();
 
-  // Check if it's a safe function
-  if (SAFE_FUNCS.has(value.toLowerCase())) {
-    return `DEFAULT ${value}`;
+  if (SAFE_FUNCS.has(lowered)) {
+    return `DEFAULT ${lowered}`;
   }
-
-  // Otherwise, safely quote the literal value
   return `DEFAULT ${getSafeDollarQuotedLiteral(value)}`;
 }
+
 export class TablesController {
   private dbManager: DatabaseManager;
   private metadataService: MetadataService;
