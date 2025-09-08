@@ -36,14 +36,20 @@ const SAFE_FUNCS = new Set(['now()', 'gen_random_uuid()']);
 
 function getSafeDollarQuotedLiteral(s: string) {
   let tag = 'val';
-  while (s.includes(`$${tag}$`)) tag += '_';
+  while (s.includes(`$${tag}$`)) {
+    tag += '_';
+  }
   return `$${tag}$${s}$${tag}$`;
 }
 
 function getSystemDefault(columnType?: ColumnType, isNullable?: boolean): string | null {
-  if (!columnType || isNullable) return null;
+  if (!columnType || isNullable) {
+    return null;
+  }
   const fieldType = COLUMN_TYPES[columnType];
-  if (!fieldType?.defaultValue) return null;
+  if (!fieldType?.defaultValue) {
+    return null;
+  }
 
   const def = fieldType.defaultValue.trim().toLowerCase();
   if (SAFE_FUNCS.has(def)) {

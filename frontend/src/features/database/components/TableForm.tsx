@@ -17,9 +17,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
 import { ColumnType, TableSchema, UpdateTableSchemaRequest } from '@insforge/shared-schemas';
-
-// System fields that cannot be modified
-const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
+import { SYSTEM_FIELDS } from '../helpers';
 
 const newColumn: TableFormColumnSchema = {
   columnName: '',

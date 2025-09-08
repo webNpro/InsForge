@@ -148,7 +148,7 @@ function FormNumberEditor({ value, type, onChange, tableName, field }: FormNumbe
   return (
     <Input
       id={`${tableName}-${field.columnName}`}
-      type="number"
+      type={type === 'integer' ? 'number' : 'text'}
       step={type === 'integer' ? '1' : undefined}
       value={value ?? ''}
       onChange={(e) => {
