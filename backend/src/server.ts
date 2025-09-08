@@ -26,7 +26,7 @@ import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { SocketService } from '@/core/socket/socket.js';
-import { seedAdmin } from '@/utils/seed.js';
+import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
 import { isProduction } from './utils/environment';
 
@@ -249,7 +249,7 @@ export async function createApp() {
   }
 
   app.use(errorMiddleware);
-  await seedAdmin();
+  await seedBackend();
 
   return app;
 }
