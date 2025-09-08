@@ -43,13 +43,24 @@ export class ImageService {
     const model = options.model;
 
     try {
+      // Build content for the message
+      const userContent = options.images?.length
+        ? [
+            { type: 'text', text: options.prompt },
+            ...options.images.map((image) => ({
+              type: 'image_url',
+              image_url: { url: image.url },
+            })),
+          ]
+        : options.prompt;
+
       // Build the request - OpenRouter extends OpenAI's API with additional fields
       const request = {
         model: model,
         messages: [
           {
             role: 'user',
-            content: options.prompt,
+            content: userContent,
           },
         ],
         stream: false, // Explicitly disable streaming

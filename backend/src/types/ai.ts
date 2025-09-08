@@ -6,7 +6,10 @@
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string; // Text content of the message
+  images?: Array<{
+    url: string; // Direct URL or data URL (e.g., 'https://...' or 'data:image/jpeg;base64,...')
+  }>;
 }
 
 export interface ChatOptions {
@@ -40,7 +43,10 @@ export interface ChatCompletionResponse {
 export interface ImageGenerationOptions {
   model: string;
   prompt: string;
-  // OpenRouter's image generation API currently only supports model, prompt, and modalities
+  images?: Array<{
+    url: string;
+  }>;
+  // OpenRouter's image generation API supports model, prompt, images, and modalities
 }
 
 export interface GeneratedImage {

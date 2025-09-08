@@ -12,7 +12,7 @@ export class ChatService {
   private aiCredentialsService = AIClientService.getInstance();
 
   /**
-   * Format messages for OpenAI API
+   * Format messages for OpenAI API with multimodal support
    */
   private formatMessages(
     messages: ChatMessage[],
@@ -27,10 +27,28 @@ export class ChatService {
 
     // Format conversation messages
     for (const msg of messages) {
-      formattedMessages.push({
-        role: msg.role as 'system' | 'user' | 'assistant',
-        content: msg.content,
-      });
+      // Check if message has images
+      if (msg.images && msg.images.length > 0) {
+        // Build multimodal content array
+        const content = [
+          { type: 'text', text: msg.content },
+          ...msg.images.map((image) => ({
+            type: 'image_url',
+            image_url: { url: image.url },
+          })),
+        ];
+
+        formattedMessages.push({
+          role: msg.role as 'system' | 'user' | 'assistant',
+          content,
+        } as OpenAI.Chat.ChatCompletionMessageParam);
+      } else {
+        // Simple text message
+        formattedMessages.push({
+          role: msg.role as 'system' | 'user' | 'assistant',
+          content: msg.content,
+        });
+      }
     }
 
     return formattedMessages;
@@ -51,11 +69,11 @@ export class ChatService {
 
   /**
    * Send a chat message to the specified model
-   * @param messageOrMessages - Either a string for single message or array of messages for conversation
+   * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
    */
   async chat(
-    messageOrMessages: string | ChatMessage[],
+    messages: ChatMessage[],
     options: ChatOptions
   ): Promise<{
     content: string;
@@ -73,12 +91,6 @@ export class ChatService {
         ...options,
         ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
       };
-
-      // Handle both single message and message array
-      const messages =
-        typeof messageOrMessages === 'string'
-          ? [{ role: 'user' as const, content: messageOrMessages }]
-          : messageOrMessages;
 
       const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
 
@@ -122,11 +134,11 @@ export class ChatService {
 
   /**
    * Stream a chat response
-   * @param messageOrMessages - Either a string for single message or array of messages for conversation
+   * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
    */
   async *streamChat(
-    messageOrMessages: string | ChatMessage[],
+    messages: ChatMessage[],
     options: ChatOptions
   ): AsyncGenerator<{
     chunk?: string;
@@ -144,12 +156,6 @@ export class ChatService {
         ...options,
         ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
       };
-
-      // Handle both single message and message array
-      const messages =
-        typeof messageOrMessages === 'string'
-          ? [{ role: 'user' as const, content: messageOrMessages }]
-          : messageOrMessages;
 
       const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
 
