@@ -140,22 +140,23 @@ const url = client.storage
   .getPublicUrl('file.jpg');
 ```
 
-## AI Operations
+## AI Operations (OpenAI-Compatible Format)
 
 ### Chat Completions
 
 ```javascript
-// Non-streaming chat completion
-const { data, error } = await client.ai.chat.completions.create({
+// Non-streaming chat completion (OpenAI-compatible response)
+const completion = await client.ai.chat.completions.create({
   model: 'anthropic/claude-3.5-haiku',
   messages: [
     { role: 'system', content: 'You are a helpful assistant' },
     { role: 'user', content: 'What is the capital of France?' }
   ],
-  temperature: 0.7,
-  maxTokens: 500
 });
-// Returns: { success: true, content: '...', metadata: { model, usage } }
+
+// Access response - OpenAI format
+console.log(completion.choices[0].message.content);  // "The capital of France is Paris"
+console.log(completion.usage.total_tokens);          // Token usage
 
 // Streaming chat completion
 const stream = await client.ai.chat.completions.create({
@@ -166,13 +167,10 @@ const stream = await client.ai.chat.completions.create({
   stream: true
 });
 
-// Process stream events
-for await (const event of stream) {
-  if (event.chunk) {
-    process.stdout.write(event.chunk); // Partial response
-  }
-  if (event.done) {
-    console.log('\nStream complete');
+// Process stream chunks - OpenAI format
+for await (const chunk of stream) {
+  if (chunk.choices[0]?.delta?.content) {
+    process.stdout.write(chunk.choices[0].delta.content);
   }
 }
 ```
@@ -180,16 +178,15 @@ for await (const event of stream) {
 ### Image Generation
 
 ```javascript
-// Generate images
-const { data, error } = await client.ai.images.generate({
+// Generate images (OpenAI-compatible response)
+const response = await client.ai.images.generate({
   model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',
   size: '1024x1024',
-  numImages: 1,
-  quality: 'hd'
 });
-// Returns: { images: [{ url, ... }] }
-console.log(data.images[0].url); // Image URL
+
+// Access response - OpenAI format
+console.log(response.data[0].url);  // Image URL
 ```
 
 ## Complete Example
@@ -234,6 +231,12 @@ console.log(otherUser.nickname); // Direct access to properties
 ```
 
 ## Key Points
+
+### AI Operations - OpenAI Compatibility
+- **Response Format**: AI module returns OpenAI-compatible response structures
+- **Easy Migration**: Same access patterns as OpenAI SDK (`choices[0].message.content`)
+- **Multiple Providers**: Works with various models (OpenAI, Anthropic, Google) while maintaining consistent format
+- **Parameter Naming**: Uses same conventions as OpenAI (camelCase for chat, `n` and `response_format` for images)
 
 ### Profile Management
 - **Auto-creation**: When users sign up/sign in, backend automatically creates a record in `users` table
