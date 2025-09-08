@@ -180,7 +180,7 @@ for await (const chunk of stream) {
 ```javascript
 // Generate images (OpenAI-compatible response)
 const response = await client.ai.images.generate({
-  model: 'dall-e-3',  // or 'google/gemini-2.5-flash-image-preview'
+  model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',
   size: '1024x1024',
 });
