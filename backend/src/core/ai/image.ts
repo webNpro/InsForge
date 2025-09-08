@@ -8,6 +8,7 @@ import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
 import { AIClientService } from './client';
 import type { AIConfigurationSchema } from '@insforge/shared-schemas';
+import logger from '@/utils/logger.js';
 
 export class ImageService {
   private static aiUsageService = new AIUsageService();
@@ -125,7 +126,7 @@ export class ImageService {
 
       return result;
     } catch (error) {
-      console.error('Image generation error:', error);
+      logger.error('Image generation error', { error });
       throw new Error(
         `Failed to generate image: ${error instanceof Error ? error.message : String(error)}`
       );
