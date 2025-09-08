@@ -33,9 +33,8 @@ const reservedColumns = {
 const userTableFrozenColumns = ['nickname', 'avatar_url'];
 
 const SAFE_FUNCS = new Set(['now()', 'gen_random_uuid()']);
-const FUNC_RE = /^(?:[a-z_][a-z0-9_]*\.)?[a-z_][a-z0-9_]*\(\)$/i;
 
-function dollarQuote(s: string) {
+function getSafeDollarQuotedLiteral(s: string) {
   let tag = 'val';
   while (s.includes(`$${tag}$`)) tag += '_';
   return `$${tag}$${s}$${tag}$`;
@@ -66,12 +65,12 @@ export function formatDefaultValue(
   const value = input.trim();
 
   // Check if it's a safe function
-  if (FUNC_RE.test(value) && SAFE_FUNCS.has(value.toLowerCase())) {
+  if (SAFE_FUNCS.has(value.toLowerCase())) {
     return `DEFAULT ${value}`;
   }
 
   // Otherwise, safely quote the literal value
-  return `DEFAULT ${dollarQuote(value)}`;
+  return `DEFAULT ${getSafeDollarQuotedLiteral(value)}`;
 }
 export class TablesController {
   private dbManager: DatabaseManager;
