@@ -5,6 +5,10 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
   js.configs.recommended,
@@ -19,7 +23,7 @@ export default tseslint.config(
       sourceType: 'module',
       parserOptions: {
         project: './frontend/tsconfig.json',
-        tsconfigRootDir: '.',
+        tsconfigRootDir: __dirname,
         ecmaFeatures: {
           jsx: true,
         },
@@ -135,7 +139,7 @@ export default tseslint.config(
       sourceType: 'module',
       parserOptions: {
         project: './backend/tsconfig.json',
-        tsconfigRootDir: '.',
+        tsconfigRootDir: __dirname,
       },
       globals: {
         ...globals.node,
@@ -194,7 +198,7 @@ export default tseslint.config(
       sourceType: 'module',
       parserOptions: {
         project: './shared-schemas/tsconfig.json',
-        tsconfigRootDir: '.',
+        tsconfigRootDir: __dirname,
       },
       globals: {
         ...globals.node,
