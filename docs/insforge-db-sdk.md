@@ -62,6 +62,26 @@ client.database.from('posts')  // Returns QueryBuilder
 .ilike('col', '%pat%') // ILIKE pattern
 .is('col', null)       // IS NULL
 .in('col', [1,2,3])    // IN array
+
+.or('status.eq.active,status.eq.pending')  // OR condition
+.and('price.gte.100,price.lte.500')        // Explicit AND
+.not('deleted', 'is.true')                 // NOT condition
+```
+
+### OR Examples
+```javascript
+// Simple OR
+.or('status.eq.active,status.eq.pending')
+// WHERE status = 'active' OR status = 'pending'
+
+// OR with other filters (implicit AND)
+.eq('user_id', '123')
+.or('status.eq.draft,status.eq.published')
+// WHERE user_id = '123' AND (status = 'draft' OR status = 'published')
+
+// Complex OR with NOT
+.or('age.lt.18,age.gt.65,not.is_active.is.true')
+// WHERE age < 18 OR age > 65 OR NOT is_active
 ```
 
 ## Modifiers
