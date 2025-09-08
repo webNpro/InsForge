@@ -84,7 +84,7 @@ router.post('/chat/completion', verifyUser, async (req: AuthRequest, res: Respon
         }
 
         // Send completion signal
-        res.write({ done: true });
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       } catch (streamError) {
         // If error occurs during streaming, send it in SSE format
         console.error('Stream error:', streamError);
