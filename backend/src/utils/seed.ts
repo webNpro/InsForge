@@ -21,7 +21,9 @@ async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Prom
  */
 async function seedDefaultAIConfigs(): Promise<void> {
   // Only seed default AI configs in cloud environment
-
+  if (!isCloudEnvironment()) {
+    return;
+  }
   
   const aiConfigService = new AIConfigService();
   
