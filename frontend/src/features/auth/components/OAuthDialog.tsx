@@ -50,14 +50,14 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: 
         clientSecret: '',
         redirectUri: getCallbackUrl('google'),
         enabled: false,
-        useSharedKeys: true,
+        useSharedKeys: false,
       },
       github: {
         clientId: '',
         clientSecret: '',
         redirectUri: getCallbackUrl('github'),
         enabled: false,
-        useSharedKeys: true,
+        useSharedKeys: false,
       },
     },
   });
