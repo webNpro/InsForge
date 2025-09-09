@@ -29,7 +29,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
-  const [selectedPromptProvider, setSelectedPromptProvider] = useState<OAuthProviderInfo>();
   const [oauthConfig, setOauthConfig] = useState<OAuthConfigSchema>();
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
@@ -134,7 +133,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     }
 
     // Show prompt dialog
-    setSelectedPromptProvider(provider);
+    setSelectedProvider(provider);
     setIsPromptDialogOpen(true);
   };
 
@@ -295,9 +294,9 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
       <PromptDialog
         open={isPromptDialogOpen}
         onOpenChange={setIsPromptDialogOpen}
-        title={selectedPromptProvider ? `Add ${selectedPromptProvider.name}` : 'OAuth Integration'}
+        title={selectedProvider ? `Add ${selectedProvider.name}` : 'OAuth Integration'}
         subtitle="Copy this prompt to your agent"
-        prompt={selectedPromptProvider ? generateAIAuthPrompt(selectedPromptProvider) : ''}
+        prompt={selectedProvider ? generateAIAuthPrompt(selectedProvider) : ''}
         additionalAction={
           <Button
             variant="ghost"
