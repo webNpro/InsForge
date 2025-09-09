@@ -759,6 +759,10 @@ export class TablesController {
     // Create a map of column names to their foreign key info
     const foreignKeyMap = new Map<string, ForeignKeyInfo>();
     foreignKeys.forEach((fk: ForeignKeyRow) => {
+      if (fk.foreign_table.startsWith('_')) {
+        // hiden internal table.
+        return;
+      }
       foreignKeyMap.set(fk.from_column, {
         constraint_name: fk.constraint_name,
         referenceTable: fk.foreign_table,
