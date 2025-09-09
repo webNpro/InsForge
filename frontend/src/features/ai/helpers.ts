@@ -95,45 +95,52 @@ await client.auth.signInWithPassword({
 });
 \`\`\`
 
-## Image Generation (OpenAI-Compatible)
+## Image Generation
 
 \`\`\`javascript
-// Generate images - OpenAI format
+// Generate images
 const response = await client.ai.images.generate({
   model: "${config.modelId}",
   prompt: "A serene mountain landscape at sunset, oil painting style",
   size: "1024x1024",  // Optional
-  n: 1                // Number of images (default: 1)
+  images: [           // Optional: input images for image-to-image models
+    { url: 'https://example.com/reference.jpg' }
+  ]
 });
 
-// Access response - OpenAI format
-console.log(response.data[0].url);  // Image URL
+// Access response
+console.log(response.images[0].imageUrl);   // Generated image URL
+console.log(response.text);                 // Optional description from model
 \`\`\`
 
 ## Working with Generated Images
 
 \`\`\`javascript
-// 1. Generate image - OpenAI format
+// 1. Generate image
 const response = await client.ai.images.generate({
   model: "${config.modelId}",
   prompt: "A futuristic city skyline"
 });
 
-// 2. Get the image URL
-const imageUrl = response.data[0].url;
+// 2. Get the image URL and description
+const imageUrl = response.images[0].imageUrl;   // Generated image URL
+const description = response.text;               // Optional model description
 
 // 3. Save to storage (if base64)
 if (imageUrl.startsWith('data:image')) {
   // Convert base64 to blob
-  const base64Data = imageUrl.split(',')[1];
-  const blob = new Blob([atob(base64Data)], { type: 'image/png' });
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
   
-  // Upload to InsForge storage
-  const { data: upload } = await client.storage
-    .from('generated-images')
-    .uploadAuto(blob);
+  // Upload to InsForge storage using the correct SDK method
+  // Use uploadAuto() for auto-generated filename or upload('path', blob) for specific path
+  const uploadResult = await client.storage.from('images').uploadAuto(blob);
   
-  console.log('Stored at:', upload.url);
+  if (uploadResult.data) {
+    console.log('Stored at:', uploadResult.data.url);
+  } else {
+    console.error('Upload failed:', uploadResult.error);
+  }
 }
 
 // 4. Display in UI
