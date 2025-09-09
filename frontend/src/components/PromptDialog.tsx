@@ -8,6 +8,7 @@ interface PromptDialogProps {
   title?: string;
   subtitle?: string;
   prompt: string;
+  additionalAction?: React.ReactNode;
 }
 
 export function PromptDialog({
@@ -16,6 +17,7 @@ export function PromptDialog({
   title = 'Integrate with your application',
   subtitle = 'Paste the prompt below into your cloud agent',
   prompt,
+  additionalAction,
 }: PromptDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -27,33 +29,36 @@ export function PromptDialog({
             </DialogTitle>
           </DialogHeader>
           {/* Content */}
-          <div className="px-6 py-3 flex flex-col">
+          <div className="p-6 flex flex-col gap-2.5">
             <p className="text-sm text-zinc-500 font-normal leading-5 mb-4 dark:text-neutral-400">
               {subtitle}
             </p>
-            {/* Action buttons */}
-            <div className="flex gap-2 mb-4">
-              <CopyButton
-                text={prompt}
-                variant="default"
-                size="default"
-                showText={true}
-                copyText="Copy Prompt"
-                copiedText="Copied!"
-              />
-            </div>
             {/* Prompt display */}
             <div className="relative">
               <pre
                 className={cn(
                   'px-6 py-4 font-mono text-sm leading-5 overflow-y-auto whitespace-pre-wrap break-words rounded',
                   'max-h-96',
-                  'bg-zinc-50 text-zinc-900 border border-zinc-200',
-                  'dark:bg-neutral-900 dark:text-zinc-100 dark:border-neutral-700'
+                  'bg-zinc-50 text-zinc-900 dark:bg-neutral-700 dark:text-white',
+                  'border border-zinc-200 dark:border-neutral-700'
                 )}
               >
                 {prompt}
               </pre>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2.5">
+              {additionalAction}
+              <CopyButton
+                text={prompt}
+                variant="default"
+                size="default"
+                showText={true}
+                className="h-9 pl-2 pr-3 py-2 text-sm font-medium"
+                copyText="Copy Prompt"
+                copiedText="Copied!"
+              />
             </div>
           </div>
         </div>

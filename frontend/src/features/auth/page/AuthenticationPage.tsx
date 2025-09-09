@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { UserPlus, Users, Key } from 'lucide-react';
 import { Button, SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { UsersManagement } from '@/features/auth/components/UsersManagement';
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
 
 export default function AuthenticationPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSection, setSelectedSection] = useState<string>('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -20,6 +22,18 @@ export default function AuthenticationPage() {
 
   const { showToast } = useToast();
   const { refetch } = useUsers();
+
+  // Handle URL search parameters for tab navigation
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'auth-methods') {
+      setSelectedSection('auth-methods');
+      // Remove the search parameter after using it
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('tab');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleBulkDelete = async () => {
     if (selectedRows.size === 0) {
@@ -141,7 +155,9 @@ export default function AuthenticationPage() {
           />
         )}
 
-        {selectedSection === 'auth-methods' && <OAuthConfiguration />}
+        {selectedSection === 'auth-methods' && (
+          <OAuthConfiguration onNavigateToUsers={() => setSelectedSection('users')} />
+        )}
       </div>
 
       <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />

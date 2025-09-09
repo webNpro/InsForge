@@ -29,12 +29,16 @@ interface OAuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onSubmit?: (
+    providerId: 'google' | 'github',
+    config: OAuthConfigSchema,
+    useSharedKeys: boolean
+  ) => Promise<boolean>;
 }
 
-export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
+export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: OAuthDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
@@ -46,14 +50,14 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
         clientSecret: '',
         redirectUri: getCallbackUrl('google'),
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: true,
       },
       github: {
         clientId: '',
         clientSecret: '',
         redirectUri: getCallbackUrl('github'),
         enabled: false,
-        useSharedKeys: false,
+        useSharedKeys: true,
       },
     },
   });
@@ -89,8 +93,8 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
-  const onSubmit = async (data: OAuthConfigSchema) => {
-    if (!provider) {
+  const handleSubmitData = async (data: OAuthConfigSchema) => {
+    if (!provider || !onSubmit) {
       return;
     }
 
@@ -98,43 +102,17 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
       setSaving(true);
       setError(null);
 
-      // Transform data to ensure required fields are present
-      const transformedData = {
-        ...data,
-        [currentProviderKey]: {
-          ...data[currentProviderKey],
-          clientId: data[currentProviderKey].clientId || '',
-          clientSecret: data[currentProviderKey].clientSecret || '',
-          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(currentProviderKey),
-          enabled: !!data[currentProviderKey].clientId,
-          useSharedKeys: data[currentProviderKey].useSharedKeys,
-        },
-      };
+      // Call the parent's submit handler
+      const success = await onSubmit(currentProviderKey, data, useSharedKeys ?? true);
 
-      await configService.updateOAuthConfig(transformedData);
-
-      // Reload OAuth configuration to apply changes
-      setReloading(true);
-      try {
-        await configService.reloadOAuthConfig();
-        // Show success message only after both save and reload succeed
-        const configType = useSharedKeys ? 'shared keys' : 'custom OAuth credentials';
-        showToast(`${provider.name} ${configType} updated and applied successfully!`, 'success');
-      } catch (reloadError) {
-        // Config was saved but reload failed
-        showToast('Configuration saved but failed to apply. Please try again.', 'warn');
-        console.error('Failed to reload OAuth:', reloadError);
-      } finally {
-        setReloading(false);
+      if (success) {
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
+        // Close dialog
+        onClose();
       }
-
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-
-      // Close dialog
-      onClose();
     } catch (error) {
       const errorMessage = `Failed to update ${provider.name} configuration`;
       setError(errorMessage);
@@ -146,12 +124,12 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   };
 
   const handleSubmit = () => {
-    void onSubmit(form.getValues() as OAuthConfigSchema);
+    void handleSubmitData(form.getValues() as OAuthConfigSchema);
   };
 
   // Determine if the update button should be disabled
   const isUpdateDisabled = () => {
-    if (saving || reloading) {
+    if (saving) {
       return true;
     }
     if (useSharedKeys) {
@@ -283,7 +261,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 disabled={isUpdateDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Saving...' : reloading ? 'Reloading...' : 'Update'}
+                {saving ? 'Saving...' : 'Update'}
               </Button>
             </DialogFooter>
           </>
