@@ -137,10 +137,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
       // If not enabled, enable it first with shared keys
       const success = await handleToggleSubmit(provider.id, 'connected');
       if (!success) {
-        showToast(
-          `Failed to connect ${provider.id === 'google' ? 'Google' : 'GitHub'} OAuth. Please check running environment and try again.`,
-          'error'
-        );
         return;
       }
     }
