@@ -140,18 +140,32 @@ const url = client.storage
   .getPublicUrl('file.jpg');
 ```
 
-## AI Operations (OpenAI-Compatible Format)
+## AI Operations
 
-### Chat Completions
+### Chat Completions (OpenAI-compatible response)
 
 ```javascript
 // Non-streaming chat completion (OpenAI-compatible response)
 const completion = await client.ai.chat.completions.create({
   model: 'anthropic/claude-3.5-haiku',
   messages: [
-    { role: 'system', content: 'You are a helpful assistant' },
-    { role: 'user', content: 'What is the capital of France?' }
+    { 
+      role: 'system', 
+      content: 'You are a helpful assistant' 
+    },
+    { 
+      role: 'user', 
+      content: 'What is the capital of France?',
+      images: [  // Optional: attach images for vision models
+        { url: 'https://example.com/image.jpg' },
+        { url: 'data:image/jpeg;base64,...' }  // Base64 also supported
+      ]
+    }
   ],
+  temperature: 0.7,      // Optional: 0-2
+  maxTokens: 1000,       // Optional: max completion tokens
+  topP: 0.9,            // Optional: 0-1
+  stream: false         // Optional: enable streaming
 });
 
 // Access response - OpenAI format
@@ -178,15 +192,17 @@ for await (const chunk of stream) {
 ### Image Generation
 
 ```javascript
-// Generate images (OpenAI-compatible response)
+// Image generation request
 const response = await client.ai.images.generate({
   model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',
-  size: '1024x1024',
+  images: [  // Optional: input images for image-to-image models
+    { url: 'https://example.com/reference.jpg' }
+  ]
 });
 
-// Access response - OpenAI format
-console.log(response.data[0].url);  // Image URL
+console.log(data.images[0].imageUrl);  // Generated image URL
+console.log(data.text);                 // Optional description from model
 ```
 
 ## Complete Example
@@ -233,10 +249,13 @@ console.log(otherUser.nickname); // Direct access to properties
 ## Key Points
 
 ### AI Operations - OpenAI Compatibility
-- **Response Format**: AI module returns OpenAI-compatible response structures
-- **Easy Migration**: Same access patterns as OpenAI SDK (`choices[0].message.content`)
-- **Multiple Providers**: Works with various models (OpenAI, Anthropic, Google) while maintaining consistent format
-- **Parameter Naming**: Uses same conventions as OpenAI (camelCase for chat, `n` and `response_format` for images)
+- **Request Format**: Consistent structure across chat and image generation
+  - `model`: Model identifier (provider/model-name format)
+  - `messages` for chat, `prompt` for images
+  - Optional `images` array for multimodal inputs
+- **Response Format**: AI module returns OpenAI-compatible response structures for Chat Completion
+- **Multimodal Support**: Both endpoints accept image inputs via `images` array
+- **Streaming**: Chat completions support streaming with `stream: true`
 
 ### Profile Management
 - **Auto-creation**: When users sign up/sign in, backend automatically creates a record in `users` table
