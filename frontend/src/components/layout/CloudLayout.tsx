@@ -50,15 +50,13 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
       // Send the current route to the parent cloud application
       window.parent.postMessage(
         {
-          type: 'IFRAME_ROUTE_CHANGE',
+          type: 'APP_ROUTE_CHANGE',
           path: location.pathname,
-          search: location.search,
-          fullPath: location.pathname + location.search,
         },
         targetOrigin
       );
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   return (
     <ThemeProvider forcedTheme="dark">

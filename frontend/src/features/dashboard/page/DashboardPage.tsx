@@ -9,10 +9,10 @@ import { Users, Database, HardDrive, Lock, Box, ChevronRight } from 'lucide-reac
 import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
 import GithubDark from '@/assets/icons/github_dark.svg';
-import OpenAI from '@/assets/icons/openai.svg';
+import OpenAI from '@/assets/icons/openai.svg?react';
 import Gemini from '@/assets/icons/gemini.svg';
 import Claude from '@/assets/icons/claude_code_logo.svg';
-import Grok from '@/assets/icons/grok.svg';
+import Grok from '@/assets/icons/grok.svg?react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export default function DashboardPage() {
     const basePath = location.pathname.includes('/cloud')
       ? location.pathname.replace('/dashboard', '')
       : location.pathname;
-    navigate(`${basePath}/${to}`);
+    void navigate(`${basePath}/${to}`);
   };
 
   return (
@@ -227,10 +227,10 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <img src={OpenAI} alt="OpenAI" className="w-5 h-5" />
+                      <OpenAI className="w-5 h-5 fill-black dark:fill-white" />
                       <img src={Gemini} alt="Gemini" className="w-5 h-5" />
                       <img src={Claude} alt="Claude" className="w-5 h-5" />
-                      <img src={Grok} alt="Grok" className="w-5 h-5" />
+                      <Grok className="w-5 h-5 fill-black dark:fill-white" />
                       <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                     </div>
                   </div>
