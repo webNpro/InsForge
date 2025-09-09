@@ -2,13 +2,13 @@
 
 ## What Insforge OSS Does
 
-Backend-as-a-service with database, authentication, and file storage. 
+Backend-as-a-service with database, authentication, file storage, out of box AI abilities
 
 **Key Concept**: InsForge replaces your traditional backend - implement business logic by calling database operations directly. Instead of building API endpoints, use our database API as your application's backend.
 
 ## Critical Rule: Check Metadata First
 
-Before ANY database operation, call `get-backend-metadata` to get the current database state.
+Before ANY database operation, call `get-backend-metadata` to get the current database state. 
 
 ## When to Use SDK vs MCP Tools
 
@@ -27,6 +27,11 @@ Before ANY database operation, call `get-backend-metadata` to get the current da
 - Storage bucket creation
 
 ## Setup
+
+```bash
+npm install @insforge/sdk
+```
+
 ```javascript
 import { createClient } from '@insforge/sdk';
 const client = createClient({ baseUrl: 'http://localhost:7130' });

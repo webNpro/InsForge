@@ -1,129 +1,147 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
 
 export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): string => {
-  const baseUrl = `${window.location.origin}/api`;
+  const baseUrl = window.location.origin;
 
   // Text modality - Chat endpoint only
   if (config.modality === 'text') {
-    return `# InsForge AI Chat API Integration
+    return `# InsForge AI SDK - Chat Integration
 
-  ## Base URL
-  \`${baseUrl}\`
+## Setup
 
-  ## Authentication
-  Include JWT Bearer token in Authorization header:
-  \`Authorization: Bearer <your-jwt-token>\`
+\`\`\`bash
+npm install @insforge/sdk
+\`\`\`
 
-  ## Chat Endpoint
-  **POST** \`/api/ai/chat/completion\`
+\`\`\`javascript
+import { createClient } from '@insforge/sdk';
 
-  ### Request Body
-  \`\`\`json
-  {
-    "model": "${config.modelId}",
-    "messages": [{                 // For conversation history
-      "role": "user|assistant",
-      "content": "text"
-    }],
-    "stream": false,               // Set true for SSE streaming
-    "temperature": 0.7,            // Optional (0-2)
-    "maxTokens": 2000             // Optional
+const client = createClient({ 
+  baseUrl: '${baseUrl}'
+});
+
+// Ensure user is authenticated first
+await client.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password123'
+});
+\`\`\`
+
+## Chat Completion (OpenAI-Compatible)
+
+\`\`\`javascript
+// Simple chat completion - OpenAI format
+const completion = await client.ai.chat.completions.create({
+  model: "${config.modelId}",
+  messages: [
+    { role: "user", content: "Hello, how are you?" }
+  ]
+});
+// Access response - OpenAI format
+console.log(completion.choices[0].message.content);  // AI response text
+console.log(completion.usage.total_tokens);          // Token usage
+
+// With conversation history and parameters
+const completion = await client.ai.chat.completions.create({
+  model: "${config.modelId}",
+  messages: [
+    { role: "system", content: "You are a helpful assistant" },
+    { role: "user", content: "What is TypeScript?" },
+    { role: "assistant", content: "TypeScript is a typed superset of JavaScript..." },
+    { role: "user", content: "Can you give me an example?" }
+  ],
+});
+
+// Streaming response
+const stream = await client.ai.chat.completions.create({
+  model: "${config.modelId}",
+  messages: [
+    { role: "user", content: "Write a story" }
+  ],
+  stream: true
+});
+
+// Process stream chunks - OpenAI format
+for await (const chunk of stream) {
+  if (chunk.choices[0]?.delta?.content) {
+    process.stdout.write(chunk.choices[0].delta.content);
   }
-  \`\`\`
-
-  ### Response (Non-streaming)
-  \`\`\`json
-  {
-    "success": true,
-    "content": "AI response text",
-    "metadata": {
-      "model": "${config.modelId}",
-      "usage": {
-        "promptTokens": 50,
-        "completionTokens": 50,
-        "totalTokens": 100
-      }
-    }
-  }
-  \`\`\`
-
-  ### Streaming Response (SSE)
-  When \`stream: true\`:
-  - Text chunks: \`data: {"chunk": "partial text"}\`
-  - Token usage: \`data: {"tokenUsage": {"promptTokens": 50, "completionTokens": 50, "totalTokens": 100}}\`
-  - Completion signal: \`data: {"done": true}\`
-  - Error: \`data: {"error": "Error message"}\`
-
-  ## Error Codes
-  - 400: Invalid input
-  - 401: Unauthorized token
-  - 403: Model not enabled
-  - 500: Server error`;
+}
+\`\`\`
+`;
   }
 
   // Image modality - Image generation endpoint only
   if (config.modality === 'image') {
-    return `# InsForge AI Image Generation API
+    return `# InsForge AI SDK - Image Generation
 
-  ## Base URL
-  \`${baseUrl}\`
+## Setup
 
-  ## Authentication
-  Include JWT Bearer token in Authorization header:
-  \`Authorization: Bearer <your-jwt-token>\`
+\`\`\`bash
+npm install @insforge/sdk
+\`\`\`
 
-  ## Image Generation Endpoint
-  **POST** \`/api/ai/image/generation\`
+\`\`\`javascript
+import { createClient } from '@insforge/sdk';
 
-  ### Request Body
-  \`\`\`json
-  {
-    "model": "${config.modelId}",
-    "prompt": "detailed image description"
-  }
-  \`\`\`
+const client = createClient({ 
+  baseUrl: '${baseUrl}'
+});
 
-  ### Response
-  \`\`\`json
-  {
-    "success": true,
-    "data": {
-      "model": "${config.modelId}",
-      "images": [
-        {
-          "type": "image_url",
-          "image_url": {
-            "url": "https://image-url.com/..." // URL or data:image/png;base64,... format
-          }
-        }
-      ],
-      "text": "Optional text response from multimodal models",
-      "count": 1,
-      "metadata": {
-        "model": "${config.modelId}",
-        "revisedPrompt": "Enhanced prompt if available",
-        "usage": {
-          "promptTokens": 10,
-          "completionTokens": 5,
-          "totalTokens": 15
-        }
-      },
-      "nextActions": "Images have been generated successfully. Use the returned URLs or base64 data to access them."
-    }
-  }
-  \`\`\`
+// Ensure user is authenticated first
+await client.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password123'
+});
+\`\`\`
 
-  ## Response Format Notes
-  - Images follow OpenRouter's format with type "image_url"
-  - URLs can be direct links or data:image base64 format
-  - Multimodal models may include text alongside generated images
-  - Metadata includes token usage and revised prompts when available
+## Image Generation (OpenAI-Compatible)
 
-  ## Error Codes
-  - 400: Invalid input
-  - 401: Unauthorized token
-  - 403: Model not enabled
-  - 500: Server error`;
+\`\`\`javascript
+// Generate images - OpenAI format
+const response = await client.ai.images.generate({
+  model: "${config.modelId}",
+  prompt: "A serene mountain landscape at sunset, oil painting style",
+  size: "1024x1024",  // Optional
+  n: 1                // Number of images (default: 1)
+});
+
+// Access response - OpenAI format
+console.log(response.data[0].url);  // Image URL
+\`\`\`
+
+## Working with Generated Images
+
+\`\`\`javascript
+// 1. Generate image - OpenAI format
+const response = await client.ai.images.generate({
+  model: "${config.modelId}",
+  prompt: "A futuristic city skyline"
+});
+
+// 2. Get the image URL
+const imageUrl = response.data[0].url;
+
+// 3. Save to storage (if base64)
+if (imageUrl.startsWith('data:image')) {
+  // Convert base64 to blob
+  const base64Data = imageUrl.split(',')[1];
+  const blob = new Blob([atob(base64Data)], { type: 'image/png' });
+  
+  // Upload to InsForge storage
+  const { data: upload } = await client.storage
+    .from('generated-images')
+    .uploadAuto(blob);
+  
+  console.log('Stored at:', upload.url);
+}
+
+// 4. Display in UI
+const img = document.createElement('img');
+img.src = imageUrl;
+document.body.appendChild(img);
+\`\`\`
+`;
   }
   return '';
 };
