@@ -201,8 +201,8 @@ const response = await client.ai.images.generate({
   ]
 });
 
-console.log(data.images[0].imageUrl);  // Generated image URL
-console.log(data.text);                 // Optional description from model
+console.log(response.images[0].imageUrl);  // Generated image URL
+console.log(response.text);                 // Optional description from model
 ```
 
 ## Complete Example
