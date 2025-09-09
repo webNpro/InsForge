@@ -1,10 +1,14 @@
 import OpenAI from 'openai';
-import type { ChatMessage, ChatOptions } from '@/types/ai';
 import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
 import { AIClientService } from './client';
-import type { AIConfigurationSchema } from '@insforge/shared-schemas';
+import type {
+  AIConfigurationSchema,
+  ChatCompletionResponse,
+  ChatMessageSchema,
+} from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
+import { ChatCompletionOptions } from '@/types/ai';
 
 export class ChatService {
   private aiUsageService = new AIUsageService();
@@ -12,10 +16,10 @@ export class ChatService {
   private aiCredentialsService = AIClientService.getInstance();
 
   /**
-   * Format messages for OpenAI API
+   * Format messages for OpenAI API with multimodal support
    */
   private formatMessages(
-    messages: ChatMessage[],
+    messages: ChatMessageSchema[],
     systemPrompt?: string
   ): OpenAI.Chat.ChatCompletionMessageParam[] {
     const formattedMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
@@ -27,10 +31,28 @@ export class ChatService {
 
     // Format conversation messages
     for (const msg of messages) {
-      formattedMessages.push({
-        role: msg.role as 'system' | 'user' | 'assistant',
-        content: msg.content,
-      });
+      // Check if message has images
+      if (msg.images && msg.images.length > 0) {
+        // Build multimodal content array
+        const content = [
+          { type: 'text', text: msg.content },
+          ...msg.images.map((image) => ({
+            type: 'image_url',
+            image_url: { url: image.url },
+          })),
+        ];
+
+        formattedMessages.push({
+          role: msg.role as 'system' | 'user' | 'assistant',
+          content,
+        } as OpenAI.Chat.ChatCompletionMessageParam);
+      } else {
+        // Simple text message
+        formattedMessages.push({
+          role: msg.role as 'system' | 'user' | 'assistant',
+          content: msg.content,
+        });
+      }
     }
 
     return formattedMessages;
@@ -51,16 +73,13 @@ export class ChatService {
 
   /**
    * Send a chat message to the specified model
-   * @param messageOrMessages - Either a string for single message or array of messages for conversation
+   * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
    */
   async chat(
-    messageOrMessages: string | ChatMessage[],
-    options: ChatOptions
-  ): Promise<{
-    content: string;
-    tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
-  }> {
+    messages: ChatMessageSchema[],
+    options: ChatCompletionOptions
+  ): Promise<ChatCompletionResponse> {
     try {
       // Get the client (handles validation and initialization automatically)
       const client = await this.aiCredentialsService.getClient();
@@ -69,24 +88,14 @@ export class ChatService {
       const aiConfig = await this.validateAndGetConfig(options.model);
 
       // Apply system prompt from config if available
-      const chatOptions = {
-        ...options,
-        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
-      };
-
-      // Handle both single message and message array
-      const messages =
-        typeof messageOrMessages === 'string'
-          ? [{ role: 'user' as const, content: messageOrMessages }]
-          : messageOrMessages;
-
-      const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
+      const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
       const response = await client.chat.completions.create({
         model: options.model,
         messages: formattedMessages,
-        temperature: chatOptions.temperature ?? 0.7,
-        max_tokens: chatOptions.maxTokens ?? 4096,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 4096,
+        top_p: options.topP,
         stream: false,
       });
 
@@ -109,8 +118,11 @@ export class ChatService {
       }
 
       return {
-        content: response.choices[0]?.message?.content || '',
-        tokenUsage,
+        text: response.choices[0]?.message?.content || '',
+        metadata: {
+          model: options.model,
+          ...tokenUsage,
+        },
       };
     } catch (error) {
       logger.error('Chat error', { error });
@@ -122,12 +134,12 @@ export class ChatService {
 
   /**
    * Stream a chat response
-   * @param messageOrMessages - Either a string for single message or array of messages for conversation
+   * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
    */
   async *streamChat(
-    messageOrMessages: string | ChatMessage[],
-    options: ChatOptions
+    messages: ChatMessageSchema[],
+    options: ChatCompletionOptions
   ): AsyncGenerator<{
     chunk?: string;
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
@@ -140,30 +152,22 @@ export class ChatService {
       const aiConfig = await this.validateAndGetConfig(options.model);
 
       // Apply system prompt from config if available
-      const chatOptions = {
-        ...options,
-        ...(aiConfig?.systemPrompt && { systemPrompt: aiConfig.systemPrompt }),
-      };
-
-      // Handle both single message and message array
-      const messages =
-        typeof messageOrMessages === 'string'
-          ? [{ role: 'user' as const, content: messageOrMessages }]
-          : messageOrMessages;
-
-      const formattedMessages = this.formatMessages(messages, chatOptions.systemPrompt);
+      const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
       const stream = await client.chat.completions.create({
         model: options.model,
         messages: formattedMessages,
-        temperature: chatOptions.temperature ?? 0.7,
-        max_tokens: chatOptions.maxTokens ?? 4096,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 4096,
+        top_p: options.topP,
         stream: true,
       });
 
-      let tokenUsage:
-        | { promptTokens?: number; completionTokens?: number; totalTokens?: number }
-        | undefined;
+      const tokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      };
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
@@ -173,17 +177,18 @@ export class ChatService {
 
         // Check if this chunk contains usage data
         if (chunk.usage) {
-          tokenUsage = {
-            promptTokens: chunk.usage.prompt_tokens,
-            completionTokens: chunk.usage.completion_tokens,
-            totalTokens: chunk.usage.total_tokens,
-          };
-          yield { tokenUsage };
+          // Accumulate tokens instead of replacing
+          tokenUsage.promptTokens += chunk.usage.prompt_tokens || 0;
+          tokenUsage.completionTokens += chunk.usage.completion_tokens || 0;
+          tokenUsage.totalTokens += chunk.usage.total_tokens || 0;
+
+          // Yield the accumulated usage
+          yield { tokenUsage: { ...tokenUsage } };
         }
       }
 
       // Track usage after streaming completes
-      if (aiConfig?.id && tokenUsage) {
+      if (aiConfig?.id && tokenUsage.totalTokens > 0) {
         await this.aiUsageService.trackChatUsage(
           aiConfig.id,
           tokenUsage.promptTokens,

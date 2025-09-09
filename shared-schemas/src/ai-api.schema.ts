@@ -1,6 +1,81 @@
 import { z } from 'zod';
 import { aiConfigurationSchema, aiUsageRecordSchema } from './ai.schema';
 
+// ============= Chat Completion Schemas =============
+
+export const chatMessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string(),
+  images: z
+    .array(
+      z.object({
+        url: z.string(),
+      })
+    )
+    .optional(),
+});
+
+export const chatCompletionRequestSchema = z.object({
+  model: z.string(),
+  messages: z.array(chatMessageSchema),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().positive().optional(),
+  topP: z.number().min(0).max(1).optional(),
+  stream: z.boolean().optional(),
+});
+
+export const chatCompletionResponseSchema = z.object({
+  text: z.string(),
+  metadata: z
+    .object({
+      model: z.string(),
+      usage: z
+        .object({
+          promptTokens: z.number().optional(),
+          completionTokens: z.number().optional(),
+          totalTokens: z.number().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+// ============= Image Generation Schemas =============
+
+export const imageGenerationRequestSchema = z.object({
+  model: z.string(),
+  prompt: z.string(),
+  images: z
+    .array(
+      z.object({
+        url: z.string(),
+      })
+    )
+    .optional(),
+});
+
+export const imageGenerationResponseSchema = z.object({
+  text: z.string().optional(),
+  images: z.array(
+    z.object({
+      type: z.literal('imageUrl'),
+      imageUrl: z.string(),
+    })
+  ),
+  metadata: z
+    .object({
+      model: z.string(),
+      usage: z
+        .object({
+          promptTokens: z.number().optional(),
+          completionTokens: z.number().optional(),
+          totalTokens: z.number().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
 // OpenRouter-specific model schema
 export const openRouterModelSchema = z.object({
   id: z.string(),
@@ -78,6 +153,11 @@ export const getAIUsageSummaryRequestSchema = z.object({
 });
 
 // Export types
+export type ChatMessageSchema = z.infer<typeof chatMessageSchema>;
+export type ChatCompletionRequest = z.infer<typeof chatCompletionRequestSchema>;
+export type ChatCompletionResponse = z.infer<typeof chatCompletionResponseSchema>;
+export type ImageGenerationRequest = z.infer<typeof imageGenerationRequestSchema>;
+export type ImageGenerationResponse = z.infer<typeof imageGenerationResponseSchema>;
 export type OpenRouterModel = z.infer<typeof openRouterModelSchema>;
 export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
 export type CreateAIConfigurationRequest = z.infer<typeof createAIConfigurationRequestSchema>;

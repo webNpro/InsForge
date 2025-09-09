@@ -1,75 +1,13 @@
-/**
- * AI types for OpenRouter integration
- */
+// Additional types that are backend-specific or internal
 
-// ============= Chat Types =============
+import { ChatCompletionRequest } from '@insforge/shared-schemas';
 
-export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
+export type ChatCompletionOptions = Omit<ChatCompletionRequest, 'stream' | 'messages'>;
 
-export interface ChatOptions {
-  model: string;
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  systemPrompt?: string;
-}
-
-export interface ChatRequest extends Omit<ChatOptions, 'model'> {
-  model: string;
-  messages?: ChatMessage[];
-  stream?: boolean;
-}
-
-export interface ChatCompletionResponse {
-  success: boolean;
-  content: string;
-  metadata?: {
-    model: string;
-    usage?: {
-      promptTokens?: number;
-      completionTokens?: number;
-      totalTokens?: number;
-    };
-  };
-}
-// ============= Image Types =============
-
-export interface ImageGenerationOptions {
-  model: string;
-  prompt: string;
-  // OpenRouter's image generation API currently only supports model, prompt, and modalities
-}
-
-export interface GeneratedImage {
-  url?: string;
-  imageData?: string;
-  revisedPrompt?: string;
-}
-
-// OpenRouter image generation response format
-// According to OpenRouter docs, they add an 'images' field to the assistant message
 export interface OpenRouterImageMessage {
   type: 'image_url';
   image_url: {
     url: string; // Can be a direct URL or data:image base64 URL
-  };
-}
-
-// Image Generation response format
-export interface ImageGenerationResponse {
-  text?: string; // Text content from multimodal models
-  images: Array<OpenRouterImageMessage>;
-  metadata?: {
-    model: string;
-    revisedPrompt?: string;
-    usage?: {
-      promptTokens?: number;
-      completionTokens?: number;
-      totalTokens?: number;
-    };
   };
 }
 

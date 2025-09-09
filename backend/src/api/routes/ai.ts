@@ -1,7 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
-import type { ChatRequest, ChatCompletionResponse, ImageGenerationOptions } from '@/types/ai';
 import { ImageService } from '@/core/ai/image';
 import { ModelService } from '@/core/ai/model';
 import { AppError } from '@/api/middleware/error';
@@ -14,6 +13,8 @@ import {
   updateAIConfigurationRequestSchema,
   getAIUsageRequestSchema,
   getAIUsageSummaryRequestSchema,
+  chatCompletionRequestSchema,
+  imageGenerationRequestSchema,
 } from '@insforge/shared-schemas';
 
 const router = Router();
@@ -42,86 +43,74 @@ router.get('/models', verifyAdmin, async (req: AuthRequest, res: Response) => {
  * POST /api/ai/chat/completion
  * Send a chat message to any supported model
  */
-router.post('/chat/completion', verifyUser, async (req: AuthRequest, res: Response) => {
-  try {
-    const { model, messages, stream, ...options } = req.body as ChatRequest;
-
-    if (!model) {
-      return res.status(400).json({
-        error: 'Model parameter is required',
-      });
-    }
-
-    if (!messages || messages.length === 0) {
-      return res.status(400).json({
-        error: 'Either message or messages array is required',
-      });
-    }
-
-    // Handle streaming requests
-    if (stream) {
-      const chatOptions = {
-        model,
-        ...options,
-      };
-
-      // Now we know the model is valid, set headers for SSE
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
-      // Create and process the stream
-      try {
-        const streamGenerator = chatService.streamChat(messages, chatOptions);
-
-        for await (const data of streamGenerator) {
-          if (data.chunk) {
-            res.write(`data: ${JSON.stringify({ chunk: data.chunk })}\n\n`);
-          }
-          if (data.tokenUsage) {
-            res.write(`data: ${JSON.stringify({ tokenUsage: data.tokenUsage })}\n\n`);
-          }
-        }
-
-        // Send completion signal
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-      } catch (streamError) {
-        // If error occurs during streaming, send it in SSE format
-        console.error('Stream error:', streamError);
-        res.write(
-          `data: ${JSON.stringify({ error: true, meesage: streamError instanceof Error ? streamError.message : String(streamError) })}\n\n`
+router.post(
+  '/chat/completion',
+  verifyUser,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const validationResult = chatCompletionRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new AppError(
+          `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+          400,
+          ERROR_CODES.INVALID_INPUT
         );
       }
 
-      res.end();
-      return;
+      const { stream, messages, ...options } = validationResult.data;
+
+      // Handle streaming requests
+      if (stream) {
+        // Now we know the model is valid, set headers for SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        // Create and process the stream
+        try {
+          const streamGenerator = chatService.streamChat(messages, options);
+
+          for await (const data of streamGenerator) {
+            if (data.chunk) {
+              res.write(`data: ${JSON.stringify({ chunk: data.chunk })}\n\n`);
+            }
+            if (data.tokenUsage) {
+              res.write(`data: ${JSON.stringify({ tokenUsage: data.tokenUsage })}\n\n`);
+            }
+          }
+
+          // Send completion signal
+          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        } catch (streamError) {
+          // If error occurs during streaming, send it in SSE format
+          console.error('Stream error:', streamError);
+          res.write(
+            `data: ${JSON.stringify({ error: true, meesage: streamError instanceof Error ? streamError.message : String(streamError) })}\n\n`
+          );
+        }
+
+        res.end();
+        return;
+      }
+
+      // Non-streaming requests
+      const result = await chatService.chat(messages, options);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError(
+            error instanceof Error ? error.message : 'Failed to generate chat',
+            500,
+            ERROR_CODES.INTERNAL_ERROR
+          )
+        );
+      }
     }
-
-    // Non-streaming requests
-    const chatOptions = {
-      model,
-      ...options,
-    };
-
-    const result = await chatService.chat(messages, chatOptions);
-
-    const response: ChatCompletionResponse = {
-      success: true,
-      content: result.content,
-      metadata: {
-        model,
-        usage: result.tokenUsage,
-      },
-    };
-    res.json(response);
-  } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({
-      error: 'Failed to get response',
-      details: error instanceof Error ? error.message : String(error),
-    });
   }
-});
+);
 
 /**
  * POST /api/ai/image/generation
@@ -132,34 +121,18 @@ router.post(
   verifyUser,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { model, ...options } = req.body as ImageGenerationOptions;
-
-      if (!model) {
-        throw new AppError('Model parameter is required', 400, ERROR_CODES.INVALID_INPUT);
+      const validationResult = imageGenerationRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new AppError(
+          `Validation error: ${validationResult.error.errors.map((e) => e.message).join(', ')}`,
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
       }
 
-      if (!options.prompt) {
-        throw new AppError('Prompt is required', 400, ERROR_CODES.INVALID_INPUT);
-      }
+      const result = await ImageService.generate(validationResult.data);
 
-      const result = await ImageService.generate({
-        model,
-        ...options,
-      });
-
-      successResponse(
-        res,
-        {
-          model,
-          images: result.images,
-          text: result.text,
-          count: result.images.length,
-          metadata: result.metadata,
-          nextActions:
-            'Images have been generated successfully. Use the returned URLs or base64 data to access them.',
-        },
-        201
-      );
+      res.json(result);
     } catch (error) {
       if (error instanceof AppError) {
         next(error);

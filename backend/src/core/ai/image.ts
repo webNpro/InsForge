@@ -1,14 +1,15 @@
 import OpenAI from 'openai';
-import type {
-  ImageGenerationOptions,
-  ImageGenerationResponse,
-  OpenRouterImageMessage,
-} from '@/types/ai';
+
 import { AIUsageService } from './usage';
 import { AIConfigService } from './config';
 import { AIClientService } from './client';
-import type { AIConfigurationSchema } from '@insforge/shared-schemas';
+import type {
+  AIConfigurationSchema,
+  ImageGenerationRequest,
+  ImageGenerationResponse,
+} from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
+import { OpenRouterImageMessage } from '@/types/ai';
 
 export class ImageService {
   private static aiUsageService = new AIUsageService();
@@ -33,7 +34,7 @@ export class ImageService {
   /**
    * Generate images using the specified model
    */
-  static async generate(options: ImageGenerationOptions): Promise<ImageGenerationResponse> {
+  static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
     // Get the client (handles validation and initialization automatically)
     const client = await this.aiCredentialsService.getClient();
 
@@ -43,13 +44,24 @@ export class ImageService {
     const model = options.model;
 
     try {
+      // Build content for the message
+      const userContent = options.images?.length
+        ? [
+            { type: 'text', text: options.prompt },
+            ...options.images.map((image) => ({
+              type: 'image_url',
+              image_url: { url: image.url },
+            })),
+          ]
+        : options.prompt;
+
       // Build the request - OpenRouter extends OpenAI's API with additional fields
       const request = {
-        model: model,
+        model,
         messages: [
           {
             role: 'user',
-            content: options.prompt,
+            content: userContent,
           },
         ],
         stream: false, // Explicitly disable streaming
@@ -87,9 +99,6 @@ export class ImageService {
           if (message.content) {
             result.text = message.content;
             // Use text as revised prompt if available
-            if (result.metadata) {
-              result.metadata.revisedPrompt = message.content;
-            }
           }
 
           // OpenRouter adds an 'images' field to the assistant message for image generation
@@ -102,7 +111,10 @@ export class ImageService {
           if (extendedMessage.images && Array.isArray(extendedMessage.images)) {
             for (const image of extendedMessage.images) {
               if (image.type === 'image_url' && image.image_url?.url) {
-                result.images.push(image);
+                result.images.push({
+                  type: 'imageUrl',
+                  imageUrl: image.image_url?.url,
+                });
               }
             }
           }
