@@ -38,11 +38,11 @@ export default function DashboardPage() {
     queryFn: () => metadataService.getFullMetadata(),
   });
 
-  const handleNavigateTo = (to: string) => {
+  const handleNavigateTo = (to: string, state?: { initialTab?: string }) => {
     const basePath = location.pathname.includes('/cloud')
       ? location.pathname.replace('/dashboard', '')
       : location.pathname;
-    void navigate(`${basePath}/${to}`);
+    void navigate(`${basePath}/${to}`, { state });
   };
 
   return (
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               <Card className="h-18 flex-1 bg-white dark:bg-[#363636] dark:hover:bg-transparent rounded-lg border border-gray-200 dark:border-neutral-700 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent
                   className="py-6 px-8"
-                  onClick={() => handleNavigateTo('authentication?tab=auth-methods')}
+                  onClick={() => handleNavigateTo('authentication', { initialTab: 'auth-methods' })}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
