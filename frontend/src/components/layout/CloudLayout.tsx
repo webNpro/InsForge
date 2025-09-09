@@ -45,7 +45,7 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
     // Only send messages if we're in an iframe (not the main window)
     if (window.parent !== window) {
       const targetOrigin = window.location.origin.includes('localhost')
-        ? 'http://localhost:5173'
+        ? '*'
         : 'https://insforge.dev';
       // Send the current route to the parent cloud application
       window.parent.postMessage(
