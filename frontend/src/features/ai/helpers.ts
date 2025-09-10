@@ -19,6 +19,7 @@ import { createClient } from '@insforge/sdk';
 const client = createClient({ 
   baseUrl: '${baseUrl}'
 });
+// Token stored and managed automatically for all requests
 
 // Ensure user is authenticated first
 await client.auth.signInWithPassword({
@@ -94,6 +95,8 @@ await client.auth.signInWithPassword({
   password: 'password123'
 });
 \`\`\`
+// Token stored and managed automatically for all requests
+
 
 ## Image Generation
 
@@ -102,7 +105,6 @@ await client.auth.signInWithPassword({
 const response = await client.ai.images.generate({
   model: "${config.modelId}",
   prompt: "A serene mountain landscape at sunset, oil painting style",
-  size: "1024x1024",  // Optional
   images: [           // Optional: input images for image-to-image models
     { url: 'https://example.com/reference.jpg' }
   ]

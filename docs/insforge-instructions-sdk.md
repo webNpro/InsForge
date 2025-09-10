@@ -207,7 +207,6 @@ for await (const chunk of stream) {
 const response = await client.ai.images.generate({
   model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',
-  size: "1024x1024",  // Optional
   images: [  // Optional: input images for image-to-image models
     { url: 'https://example.com/reference.jpg' }
   ]
