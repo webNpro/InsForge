@@ -11,7 +11,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
-import type { ConfigRecord } from '@/types/auth.js';
+import type { ConfigRecord, OAuthConfig } from '@/types/auth.js';
 import type {
   UserSchema,
   CreateUserResponse,
@@ -80,22 +80,7 @@ export class AuthService {
   /**
    * Load OAuth configuration from database - NO CACHING, always fresh
    */
-  private async loadOAuthConfig(): Promise<{
-    google: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-    github: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-  }> {
+  private async loadOAuthConfig(): Promise<OAuthConfig> {
     let configRows: ConfigRecord[];
     try {
       const rows = await this.db
@@ -147,8 +132,8 @@ export class AuthService {
           config[provider].clientId = value.clientId || '';
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
-          config[provider].enabled = value.enabled || false;
-          config[provider].useSharedKeys = value.useSharedKeys || false;
+          config[provider].enabled = value.enabled;
+          config[provider].useSharedKeys = value.useSharedKeys;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
@@ -175,22 +160,7 @@ export class AuthService {
    * Get OAuth configuration for API responses (with optional secret masking)
    * Public method that can be used by config routes
    */
-  async getOAuthConfigForAPI(maskSecrets: boolean = true): Promise<{
-    google: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-    github: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-  }> {
+  async getOAuthConfigForAPI(maskSecrets: boolean = true): Promise<OAuthConfig> {
     const config = await this.loadOAuthConfig();
 
     // Optionally mask client secrets for security
@@ -618,7 +588,7 @@ export class AuthService {
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.set('client_id', config.google.clientId);
-    authUrl.searchParams.set('redirect_uri', config.google.redirectUri);
+    authUrl.searchParams.set('redirect_uri', config.google.redirectUri || '');
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'openid email profile');
     authUrl.searchParams.set('access_type', 'offline');
@@ -675,7 +645,7 @@ export class AuthService {
 
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.set('client_id', config.github.clientId);
-    authUrl.searchParams.set('redirect_uri', config.github.redirectUri);
+    authUrl.searchParams.set('redirect_uri', config.github.redirectUri || '');
     authUrl.searchParams.set('scope', 'user:email');
     if (state) {
       authUrl.searchParams.set('state', state);

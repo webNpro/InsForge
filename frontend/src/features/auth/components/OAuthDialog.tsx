@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
@@ -34,7 +34,6 @@ interface OAuthDialogProps {
 export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [initialFormData, setInitialFormData] = useState<OAuthConfigSchema | null>(null);
   const { showToast } = useToast();
 
   const form = useForm<OAuthConfigSchema>({
@@ -62,12 +61,16 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   const clientId = form.watch(`${currentProviderKey}.clientId`);
   const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
 
+  // Use useFormState hook for better reactivity
+  const { isDirty } = useFormState({
+    control: form.control,
+  });
+
   const loadOAuthConfig = useCallback(async () => {
     try {
       setLoading(true);
       const config = await configService.getOAuthConfig();
       form.reset(config);
-      setInitialFormData(config);
     } catch (error) {
       const errorMessage = 'Failed to load OAuth configuration';
       showToast(errorMessage, 'error');
@@ -107,8 +110,8 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
       showToast(`${provider.name} configuration updated successfully!`, 'success');
 
-      // Update initial form data to reflect the new saved state
-      setInitialFormData(updatedConfig);
+      // Reset form state to mark as clean (not dirty)
+      form.reset(updatedConfig);
 
       // Call success callback if provided
       if (onSuccess) {
@@ -117,7 +120,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
       // Close dialog
       onClose();
     } catch (error) {
-      const errorMessage = `Failed to update ${provider.name} configuration`;
+      const errorMessage = `Failed to update ${provider.name} configuration. Please check running environment and try again.`;
       showToast(errorMessage, 'error');
       console.error('Error saving OAuth config:', error);
     } finally {
@@ -129,37 +132,18 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     void handleSubmitData(form.getValues() as OAuthConfigSchema);
   };
 
-  // Check if form values have changed from initial state
-  const hasFormChanged = () => {
-    if (!initialFormData) {
-      return false;
-    }
-
-    const currentData = form.getValues();
-    const currentProviderData = currentData[currentProviderKey];
-    const initialProviderData = initialFormData[currentProviderKey];
-
-    return (
-      currentProviderData.useSharedKeys !== initialProviderData.useSharedKeys ||
-      currentProviderData.clientId !== initialProviderData.clientId ||
-      currentProviderData.clientSecret !== initialProviderData.clientSecret
-    );
-  };
-
-  // Determine if the update button should be disabled
+  // Use RHF's built-in validation and dirty state
   const isUpdateDisabled = () => {
-    if (saving) {
+    if (saving || !isDirty) {
       return true;
     }
 
-    if (!hasFormChanged()) {
-      return true;
-    }
-
+    // If using shared keys, always allow (no credential validation needed)
     if (useSharedKeys) {
       return false;
     }
 
+    // If NOT using shared keys, require both clientId and clientSecret
     return !clientId || !clientSecret;
   };
 
@@ -183,11 +167,19 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
               <div className="space-y-6 p-6">
                 {/* Shared Keys Toggle */}
                 <div className="flex items-center justify-start gap-2">
-                  <Switch
-                    checked={useSharedKeys}
-                    onCheckedChange={(checked) =>
-                      form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
-                    }
+                  <Controller
+                    name={`${currentProviderKey}.useSharedKeys`}
+                    control={form.control}
+                    render={({ field }) => {
+                      return (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        />
+                      );
+                    }}
                   />
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
                     Shared Keys

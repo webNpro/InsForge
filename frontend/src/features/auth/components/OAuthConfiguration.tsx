@@ -80,6 +80,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
   // Enable OAuth provider with shared keys by default
   const enableOAuthProvider = async (
     providerId: 'google' | 'github',
+    providerName: string,
     actionText: string = 'enabled'
   ) => {
     if (!oauthConfig) {
@@ -102,34 +103,25 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
         await configService.reloadOAuthConfig();
         setOauthConfig(updatedConfig);
 
-        showToast(
-          `${providerId === 'google' ? 'Google' : 'GitHub'} OAuth ${actionText} successfully!`,
-          'success'
-        );
+        showToast(`${providerName} ${actionText} successfully!`, 'success');
 
         return true;
       } catch (error) {
-        console.error(
-          `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth:`,
-          error
-        );
+        console.error(`Failed to ${actionText} ${providerName} :`, error);
         showToast(
-          `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth. Please check running environment and try again.`,
+          `Failed to ${actionText} ${providerName}. Please check running environment and try again.`,
           'error'
         );
         return false;
       }
     } else {
-      showToast(
-        `Please configure ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth first`,
-        'error'
-      );
+      showToast(`Please configure ${providerName} first`, 'error');
       return false;
     }
   };
 
   // Disable OAuth provider
-  const disableOAuthProvider = async (providerId: 'google' | 'github') => {
+  const disableOAuthProvider = async (providerId: 'google' | 'github', providerName: string) => {
     if (!oauthConfig) {
       return false;
     }
@@ -146,14 +138,11 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
       await configService.updateOAuthConfig(updatedConfig);
       await configService.reloadOAuthConfig();
       setOauthConfig(updatedConfig);
-      showToast(`${providerId === 'google' ? 'Google' : 'GitHub'} OAuth disabled`, 'success');
+      showToast(`${providerName} disabled`, 'success');
       return true;
     } catch (error) {
       console.error(`Failed to disable ${providerId} OAuth:`, error);
-      showToast(
-        `Failed to disable ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth`,
-        'error'
-      );
+      showToast(`Failed to disable ${providerName}`, 'error');
       return false;
     }
   };
@@ -163,7 +152,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
 
     if (!enabled) {
       // If not enabled, enable it first with shared keys
-      const success = await enableOAuthProvider(provider.id, 'connected');
+      const success = await enableOAuthProvider(provider.id, provider.name, 'connected');
       if (!success) {
         return;
       }
@@ -179,13 +168,17 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     setSelectedProvider(undefined);
   };
 
-  const handleToggleProvider = async (providerId: 'google' | 'github', enabled: boolean) => {
+  const handleToggleProvider = async (
+    providerId: 'google' | 'github',
+    providerName: string,
+    enabled: boolean
+  ) => {
     if (enabled) {
       // If turning on, enable OAuth with shared keys by default
-      await enableOAuthProvider(providerId);
+      await enableOAuthProvider(providerId, providerName);
     } else {
       // If turning off, disable it
-      await disableOAuthProvider(providerId);
+      await disableOAuthProvider(providerId, providerName);
     }
   };
 
@@ -243,7 +236,9 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
                     {/* Toggle Switch */}
                     <Switch
                       checked={enabled}
-                      onCheckedChange={(checked) => handleToggleProvider(provider.id, checked)}
+                      onCheckedChange={(checked) =>
+                        handleToggleProvider(provider.id, provider.name, checked)
+                      }
                       onClick={(e) => e.stopPropagation()}
                     />
 
