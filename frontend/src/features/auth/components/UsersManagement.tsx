@@ -3,6 +3,7 @@ import { useUsers } from '@/features/auth/hooks/useUsers';
 import { authService } from '@/features/auth/services/auth.service';
 import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
+import type { User } from '../types';
 
 interface UserManagementProps {
   searchQuery?: string;
@@ -75,8 +76,8 @@ export function UsersManagement({
     return [...users].sort((a, b) => {
       for (const sort of sortColumns) {
         const { columnKey, direction } = sort;
-        let aVal = a[columnKey];
-        let bVal = b[columnKey];
+        let aVal = a[columnKey as keyof User];
+        let bVal = b[columnKey as keyof User];
 
         // Handle null/undefined values
         if (aVal === null && bVal === null) {

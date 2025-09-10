@@ -68,7 +68,7 @@ export function LinkRecordModal({
       return {
         schema,
         records: records.records,
-        totalRecords: schema.recordCount,
+        totalRecords: records.pagination.total || schema.recordCount,
       };
     },
     enabled: open,

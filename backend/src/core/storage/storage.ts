@@ -3,10 +3,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import { StorageRecord, BucketRecord } from '@/types/storage.js';
-import { 
+import {
   StorageFileSchema,
   UploadStrategyResponse,
-  DownloadStrategyResponse
+  DownloadStrategyResponse,
 } from '@insforge/shared-schemas';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import {
@@ -41,7 +41,12 @@ interface StorageBackend {
     key: string,
     metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategyResponse>;
-  getDownloadStrategy(bucket: string, key: string, expiresIn?: number, isPublic?: boolean): Promise<DownloadStrategyResponse>;
+  getDownloadStrategy(
+    bucket: string,
+    key: string,
+    expiresIn?: number,
+    isPublic?: boolean
+  ): Promise<DownloadStrategyResponse>;
   verifyObjectExists(bucket: string, key: string): Promise<boolean>;
 }
 
@@ -320,7 +325,7 @@ class S3StorageBackend implements StorageBackend {
       if (isPublic) {
         // For public buckets, return direct S3 URL (no presigning needed)
         const directUrl = `https://${this.s3Bucket}.s3.${this.region}.amazonaws.com/${s3Key}`;
-        
+
         return {
           method: 'direct',
           url: directUrl,
@@ -744,10 +749,10 @@ export class StorageService {
   ): Promise<DownloadStrategyResponse> {
     this.validateBucketName(bucket);
     this.validateKey(key);
-    
+
     // Check if bucket is public
     const isPublic = await this.isBucketPublic(bucket);
-    
+
     return this.backend.getDownloadStrategy(bucket, key, expiresIn, isPublic);
   }
 

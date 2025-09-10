@@ -143,7 +143,7 @@ export default function DatabasePage() {
           name: selectedTable,
           schema,
           records: records.records,
-          totalRecords: schema.recordCount,
+          totalRecords: records.pagination.total || schema.recordCount,
         };
       } catch (error) {
         // If sorting caused the error, retry without sorting
@@ -161,7 +161,7 @@ export default function DatabasePage() {
             name: selectedTable,
             schema,
             records: records.records,
-            totalRecords: schema.recordCount,
+            totalRecords: records.pagination.total || schema.recordCount,
           };
         }
         throw error;
@@ -562,7 +562,7 @@ export default function DatabasePage() {
                         <SearchInput
                           value={searchQuery}
                           onChange={setSearchQuery}
-                          placeholder="Search Records by any Text Field"
+                          placeholder="Search Records by any String Field"
                           className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
                           debounceTime={300}
                         />

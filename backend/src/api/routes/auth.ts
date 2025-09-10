@@ -224,8 +224,12 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     const { count } = await db.prepare(countQuery).get(...countParams);
 
     const response: ListUsersResponse = {
-      users,
-      total: count,
+      data: users,
+      pagination: {
+        start: parseInt(offset as string),
+        end: Math.min(parseInt(offset as string) + parseInt(limit as string) - 1, count - 1),
+        total: count,
+      },
     };
 
     res.json(response);

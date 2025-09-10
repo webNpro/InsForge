@@ -32,18 +32,13 @@ export function useUsers(options: UseUsersOptions = {}) {
     placeholderData: (previousData) => previousData, // Keep previous data while loading
   });
 
-  // No need for client-side filtering - backend handles search
-  const filteredUsers = usersData?.records || [];
-
   // Pagination calculations
-  const totalPages = Math.ceil((usersData?.total || 0) / pageSize);
-  const startRecord = (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, usersData?.total || 0);
+  const totalPages = Math.ceil((usersData?.pagination.total || 0) / pageSize);
 
   return {
     // Data
-    users: filteredUsers,
-    totalUsers: usersData?.total || 0,
+    users: usersData?.users || [],
+    totalUsers: usersData?.pagination.total || 0,
     isLoading,
     error,
 
@@ -51,8 +46,6 @@ export function useUsers(options: UseUsersOptions = {}) {
     currentPage,
     setCurrentPage,
     totalPages,
-    startRecord,
-    endRecord,
     pageSize,
 
     // Search

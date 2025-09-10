@@ -11,12 +11,10 @@ export const updateBucketRequestSchema = z.object({
 });
 
 export const listObjectsResponseSchema = z.object({
-  bucketName: z.string().min(1, 'Bucket name cannot be empty'),
-  prefix: z.string().optional(),
   objects: z.array(storageFileSchema),
   pagination: z.object({
-    limit: z.number(),
-    offset: z.number(),
+    start: z.number(),
+    end: z.number(),
     total: z.number(),
   }),
 });

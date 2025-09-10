@@ -322,8 +322,12 @@ export class AnalyticsManager {
           .filter((s) => (s.logStreamName || '').includes(src.token))
           .reduce<number | null>((acc, s) => {
             const t = s.lastIngestionTime ?? s.creationTime ?? null;
-            if (t == null) return acc;
-            if (acc == null) return t;
+            if (t == null) {
+              return acc;
+            }
+            if (acc == null) {
+              return t;
+            }
             return Math.max(acc, t);
           }, null);
         stats.push({

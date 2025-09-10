@@ -96,29 +96,18 @@ export class DatabaseService {
       params.set('order', orderParam);
     }
 
-    const response = await apiClient.request(
-      `/database/records/${tableName}?${params.toString()}`,
-      {
-        headers: apiClient.withAccessToken(),
-      }
-    );
+    const response: {
+      data: { [key: string]: string | boolean | number | JSON | null }[];
+      pagination: { start: number; end: number; total: number };
+    } = await apiClient.request(`/database/records/${tableName}?${params.toString()}`, {
+      headers: {
+        Prefer: 'count=exact',
+      },
+    });
 
-    // Traditional REST: check if response is array (direct data) or wrapped
-    if (Array.isArray(response)) {
-      return {
-        records: response,
-        total: response.length,
-      };
-    }
-
-    if (response.records && Array.isArray(response.records)) {
-      return response;
-    }
-
-    // Fallback
     return {
-      records: [],
-      total: 0,
+      records: response.data,
+      pagination: response.pagination,
     };
   }
 

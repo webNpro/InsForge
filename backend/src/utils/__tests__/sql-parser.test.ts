@@ -19,7 +19,9 @@ describe('SQL Parser', () => {
 
     it('should handle null/undefined input', () => {
       expect(() => parseSQLStatements(null as any)).toThrow('SQL text must be a non-empty string');
-      expect(() => parseSQLStatements(undefined as any)).toThrow('SQL text must be a non-empty string');
+      expect(() => parseSQLStatements(undefined as any)).toThrow(
+        'SQL text must be a non-empty string'
+      );
     });
 
     it('should parse simple SQL statements', () => {
@@ -28,9 +30,9 @@ describe('SQL Parser', () => {
         INSERT INTO users (name) VALUES ('John Doe');
         SELECT * FROM users;
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(3);
       expect(statements[0]).toContain('CREATE TABLE users');
       expect(statements[1]).toContain('INSERT INTO users');
@@ -42,9 +44,9 @@ describe('SQL Parser', () => {
         INSERT INTO messages (content) VALUES ('Hello; World');
         INSERT INTO logs (data) VALUES ('Error: Connection failed; retrying...');
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(2);
       expect(statements[0]).toContain("'Hello; World'");
       expect(statements[1]).toContain("'Error: Connection failed; retrying...'");
@@ -55,9 +57,9 @@ describe('SQL Parser', () => {
         INSERT INTO quotes (text) VALUES ('He said: ''Hello; World''');
         INSERT INTO data (json) VALUES ('{"key": "value; with semicolon"}');
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(2);
       expect(statements[0]).toContain("''Hello; World''");
       expect(statements[1]).toContain('"value; with semicolon"');
@@ -70,9 +72,9 @@ describe('SQL Parser', () => {
         /* This is a block comment with; semicolon */
         INSERT INTO test (id) VALUES (1);
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(2);
       expect(statements[0]).toContain('CREATE TABLE test');
       expect(statements[1]).toContain('INSERT INTO test');
@@ -80,7 +82,7 @@ describe('SQL Parser', () => {
 
     it('should handle complex SQL file with all edge cases', () => {
       const statements = parseSQLStatements(complexSqlContent);
-      
+
       // Expected statements from test-sql-with-semicolons.sql:
       // 1. CREATE TABLE test_complex
       // 2. INSERT with semicolon in string
@@ -89,7 +91,7 @@ describe('SQL Parser', () => {
       // 5. CREATE FUNCTION with semicolons in body
       // 6. CREATE VIEW with complex CASE
       expect(statements).toHaveLength(6);
-      
+
       // Verify specific statements
       expect(statements[0]).toContain('CREATE TABLE test_complex');
       expect(statements[1]).toContain('This message contains a; semicolon');
@@ -110,9 +112,9 @@ describe('SQL Parser', () => {
         END;
         $$ LANGUAGE plpgsql;
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(1);
       expect(statements[0]).toContain('CREATE FUNCTION test()');
       expect(statements[0]).toContain('RAISE NOTICE');
@@ -127,9 +129,9 @@ describe('SQL Parser', () => {
            and semicolons; */
         INSERT INTO test VALUES (1);
       `;
-      
+
       const statements = parseSQLStatements(sql);
-      
+
       expect(statements).toHaveLength(2);
       expect(statements[0]).toContain('CREATE TABLE test');
       expect(statements[1]).toContain('INSERT INTO test VALUES');
