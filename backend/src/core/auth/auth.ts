@@ -147,8 +147,8 @@ export class AuthService {
           config[provider].clientId = value.clientId || '';
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
-          config[provider].enabled = value.enabled || enableSharedKeys;
-          config[provider].useSharedKeys = value.useSharedKeys || enableSharedKeys;
+          config[provider].enabled = value.enabled || false;
+          config[provider].useSharedKeys = value.useSharedKeys || false;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
