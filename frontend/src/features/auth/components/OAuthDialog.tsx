@@ -230,7 +230,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
                     <div className="space-x-3">
                       <div className="flex items-center gap-2">
-                        <code className="h-9 flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                        <code className="flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
                           {getCallbackUrl(provider?.id)}
                         </code>
                         <CopyButton className="h-9" text={getCallbackUrl(provider?.id)} />
