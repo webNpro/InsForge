@@ -207,13 +207,15 @@ for await (const chunk of stream) {
 const response = await client.ai.images.generate({
   model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',
+  size: "1024x1024",  // Optional
   images: [  // Optional: input images for image-to-image models
     { url: 'https://example.com/reference.jpg' }
   ]
 });
 
-console.log(response.images[0].imageUrl);  // Generated image URL
-console.log(response.text);                 // Optional description from model
+// Access response - OpenAI format
+console.log(response.data[0].b64_json);  // Base64 encoded image string (OpenAI format)
+console.log(response.data[0].content);   // AI's text response about the image or prompt
 ```
 
 ## Complete Example

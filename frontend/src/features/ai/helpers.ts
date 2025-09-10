@@ -108,56 +108,9 @@ const response = await client.ai.images.generate({
   ]
 });
 
-// Important: Response may contain only text without images
-if (response.images && response.images.length > 0) {
-  console.log(response.images[0].imageUrl);   // Generated image URL
-} else {
-  console.log('Text-only response:', response.text);  // Model response without images
-}
-\`\`\`
-
-## Working with Generated Images
-
-\`\`\`javascript
-// 1. Generate image
-const response = await client.ai.images.generate({
-  model: "${config.modelId}",
-  prompt: "A futuristic city skyline"
-});
-
-// 2. Get the image URL and description (check if images exist first)
-if (response.images && response.images.length > 0) {
-  const imageUrl = response.images[0].imageUrl;   // Generated image URL
-  const description = response.text;               // Optional model description
-} else {
-  // Handle text-only response
-  console.log('Model returned text only:', response.text);
-}
-
-// 3. Save to storage (if base64 and images exist)
-if (response.images && response.images.length > 0) {
-  const imageUrl = response.images[0].imageUrl;
-  
-  if (imageUrl.startsWith('data:image')) {
-  // Convert base64 to blob
-  const response = await fetch(imageUrl);
-  const blob = await response.blob();
-  
-  // Upload to InsForge storage using the correct SDK method
-  // Use uploadAuto() for auto-generated filename or upload('path', blob) for specific path
-  const uploadResult = await client.storage.from('images').uploadAuto(blob);
-  
-  if (uploadResult.data) {
-    console.log('Stored at:', uploadResult.data.url);
-  } else {
-    console.error('Upload failed:', uploadResult.error);
-  }
-  
-  // 4. Display in UI
-  const img = document.createElement('img');
-  img.src = imageUrl;
-  document.body.appendChild(img);
-}
+// Access response - OpenAI format
+console.log(response.data[0].b64_json);  // Base64 encoded image string (OpenAI format)
+console.log(response.data[0].content);   // AI's text response about the image or prompt
 \`\`\`
 `;
   }
