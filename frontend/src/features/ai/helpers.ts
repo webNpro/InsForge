@@ -1,7 +1,9 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 
-export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): string => {
+export const generateAIIntegrationPrompt = async (config: AIConfigurationSchema): Promise<string> => {
   const baseUrl = window.location.origin;
+  const anonKey = await metadataService.fetchApiKey();
 
   // Text modality - Chat endpoint only
   if (config.modality === 'text') {
@@ -17,14 +19,8 @@ npm install @insforge/sdk
 import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
-  baseUrl: '${baseUrl}'
-});
-// Token stored and managed automatically for all requests
-
-// Ensure user is authenticated first
-await client.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password123'
+  baseUrl: '${baseUrl}',
+  anonKey: '${anonKey}'
 });
 \`\`\`
 
@@ -86,17 +82,10 @@ npm install @insforge/sdk
 import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
-  baseUrl: '${baseUrl}'
-});
-
-// Ensure user is authenticated first
-await client.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password123'
+  baseUrl: '${baseUrl}',
+  anonKey: '${anonKey}'
 });
 \`\`\`
-// Token stored and managed automatically for all requests
-
 
 ## Image Generation
 
