@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
+import { Switch } from '@/components/radix/Switch';
+import { PromptDialog } from '@/components/PromptDialog';
 import { OAuthDialog } from './OAuthDialog';
 import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { MoreVertical } from 'lucide-react';
 import GithubDark from '@/assets/icons/github_dark.svg';
 import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
 import { OAuthConfigSchema } from '@insforge/shared-schemas';
+import { generateAIAuthPrompt } from '@/features/auth/helpers';
 
 export interface OAuthProviderInfo {
   id: 'google' | 'github';
@@ -18,25 +21,14 @@ export interface OAuthProviderInfo {
   setupUrl: string;
 }
 
-const NotConfirgured = () => {
-  return (
-    <p className="bg-zinc-100 text-xs font-medium text-zinc-500 py-2 px-3 rounded-sm dark:bg-neutral-600 dark:text-zinc-50">
-      Disabled
-    </p>
-  );
-};
+interface OAuthConfigurationProps {
+  onNavigateToUsers?: () => void;
+}
 
-const Configured = () => {
-  return (
-    <p className="bg-green-100 text-xs font-medium text-green-700 py-2 px-3 rounded-sm dark:bg-lime-200 dark:text-lime-900">
-      Enabled
-    </p>
-  );
-};
-
-export function OAuthConfiguration() {
+export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProps) {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfigSchema>();
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
@@ -85,9 +77,109 @@ export function OAuthConfiguration() {
     setIsDialogOpen(true);
   };
 
+  // Enable OAuth provider with shared keys by default
+  const enableOAuthProvider = async (
+    providerId: 'google' | 'github',
+    providerName: string,
+    actionText: string = 'enabled'
+  ) => {
+    if (!oauthConfig) {
+      return false;
+    }
+    if (
+      oauthConfig[providerId]?.useSharedKeys ||
+      (oauthConfig[providerId]?.clientId && oauthConfig[providerId]?.clientSecret)
+    ) {
+      try {
+        const updatedConfig = {
+          ...oauthConfig,
+          [providerId]: {
+            ...oauthConfig[providerId],
+            enabled: true,
+          },
+        };
+
+        await configService.updateOAuthConfig(updatedConfig);
+        await configService.reloadOAuthConfig();
+        setOauthConfig(updatedConfig);
+
+        showToast(`${providerName} ${actionText} successfully!`, 'success');
+
+        return true;
+      } catch (error) {
+        console.error(`Failed to ${actionText} ${providerName} :`, error);
+        showToast(
+          `Failed to ${actionText} ${providerName}. Please check running environment and try again.`,
+          'error'
+        );
+        return false;
+      }
+    } else {
+      showToast(`Please configure ${providerName} first`, 'error');
+      return false;
+    }
+  };
+
+  // Disable OAuth provider
+  const disableOAuthProvider = async (providerId: 'google' | 'github', providerName: string) => {
+    if (!oauthConfig) {
+      return false;
+    }
+
+    try {
+      const updatedConfig = {
+        ...oauthConfig,
+        [providerId]: {
+          ...oauthConfig[providerId],
+          enabled: false,
+        },
+      };
+
+      await configService.updateOAuthConfig(updatedConfig);
+      await configService.reloadOAuthConfig();
+      setOauthConfig(updatedConfig);
+      showToast(`${providerName} disabled`, 'success');
+      return true;
+    } catch (error) {
+      console.error(`Failed to disable ${providerId} OAuth:`, error);
+      showToast(`Failed to disable ${providerName}`, 'error');
+      return false;
+    }
+  };
+
+  const handleConnect = async (provider: OAuthProviderInfo) => {
+    const enabled = isProviderEnabled(provider.id);
+
+    if (!enabled) {
+      // If not enabled, enable it first with shared keys
+      const success = await enableOAuthProvider(provider.id, provider.name, 'connected');
+      if (!success) {
+        return;
+      }
+    }
+
+    // Show prompt dialog
+    setSelectedProvider(provider);
+    setIsPromptDialogOpen(true);
+  };
+
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedProvider(undefined);
+  };
+
+  const handleToggleProvider = async (
+    providerId: 'google' | 'github',
+    providerName: string,
+    enabled: boolean
+  ) => {
+    if (enabled) {
+      // If turning on, enable OAuth with shared keys by default
+      await enableOAuthProvider(providerId, providerName);
+    } else {
+      // If turning off, disable it
+      await disableOAuthProvider(providerId, providerName);
+    }
   };
 
   const handleSuccess = useCallback(() => {
@@ -95,17 +187,16 @@ export function OAuthConfiguration() {
     void loadOAuthConfig();
   }, [loadOAuthConfig]);
 
-  const getProviderStatus = (providerId: 'google' | 'github') => {
+  const handleViewUsers = () => {
+    setIsPromptDialogOpen(false);
+    onNavigateToUsers?.();
+  };
+
+  const isProviderEnabled = (providerId: 'google' | 'github') => {
     if (!oauthConfig) {
-      return <NotConfirgured />;
+      return false;
     }
-
-    const config = oauthConfig[providerId];
-    if (!config || (!config.clientId && !config.useSharedKeys)) {
-      return <NotConfirgured />;
-    }
-
-    return <Configured />;
+    return oauthConfig[providerId]?.enabled;
   };
 
   if (loading) {
@@ -131,25 +222,61 @@ export function OAuthConfiguration() {
         </div>
 
         <div className="flex-1">
-          <div className="flex flex-col gap-3 w-full">
-            {providers.map((provider) => (
-              <Button
-                className="h-auto w-full py-4 px-6 flex items-center justify-between bg-white hover:bg-zinc-100 border border-border-gray dark:bg-neutral-700 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-600"
-                key={provider.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleConfigureProvider(provider)}
-              >
-                <div className="flex items-center gap-3">
-                  <img src={provider.icon} alt={provider.name} className="h-6 w-6" />
-                  <p className="text-sm font-medium">{provider.name}</p>
+          <div className="space-y-3">
+            {providers.map((provider) => {
+              const enabled = isProviderEnabled(provider.id);
+
+              return (
+                <div
+                  key={provider.id}
+                  className="flex items-center justify-between px-6 py-3 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333] dark:hover:bg-neutral-600 hover:shadow-sm transition-shadow cursor-pointer"
+                  onClick={() => handleConfigureProvider(provider)}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Toggle Switch */}
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(checked) =>
+                        handleToggleProvider(provider.id, provider.name, checked)
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                    />
+
+                    <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
+
+                    {/* Provider Name */}
+                    <div className="h-6 w-80 text-sm font-medium text-black dark:text-white">
+                      {provider.name}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="sm"
+                      className="h-9 px-3 py-2 dark:bg-emerald-300 dark:hover:bg-emerald-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleConnect(provider);
+                      }}
+                    >
+                      Connect
+                    </Button>
+                    <Button
+                      className="p-2 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-500"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleConfigureProvider(provider);
+                      }}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {getProviderStatus(provider.id as 'google' | 'github')}
-                  <ChevronRight className="h-4 w-4 ml-auto" />
-                </div>
-              </Button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -159,6 +286,24 @@ export function OAuthConfiguration() {
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleSuccess}
+      />
+
+      <PromptDialog
+        open={isPromptDialogOpen}
+        onOpenChange={setIsPromptDialogOpen}
+        title={selectedProvider ? `Add ${selectedProvider.name}` : 'OAuth Integration'}
+        subtitle="Copy this prompt to your agent"
+        prompt={selectedProvider ? generateAIAuthPrompt(selectedProvider) : ''}
+        additionalAction={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 px-3 py-2 text-sm font-medium bg-zinc-50 dark:bg-neutral-700 dark:text-white border-border-gray dark:border-neutral-700 border shadow"
+            onClick={handleViewUsers}
+          >
+            View Users
+          </Button>
+        }
       />
     </>
   );

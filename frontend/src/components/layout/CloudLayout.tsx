@@ -41,6 +41,23 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    // Only send messages if we're in an iframe (not the main window)
+    if (window.parent !== window) {
+      const targetOrigin = window.location.origin.includes('localhost')
+        ? '*'
+        : 'https://insforge.dev';
+      // Send the current route to the parent cloud application
+      window.parent.postMessage(
+        {
+          type: 'APP_ROUTE_CHANGE',
+          path: location.pathname,
+        },
+        targetOrigin
+      );
+    }
+  }, [location.pathname]);
+
   return (
     <ThemeProvider forcedTheme="dark">
       <div

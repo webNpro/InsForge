@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
@@ -34,8 +34,6 @@ interface OAuthDialogProps {
 export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [reloading, setReloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const form = useForm<OAuthConfigSchema>({
@@ -63,15 +61,18 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   const clientId = form.watch(`${currentProviderKey}.clientId`);
   const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
 
+  // Use useFormState hook for better reactivity
+  const { isDirty } = useFormState({
+    control: form.control,
+  });
+
   const loadOAuthConfig = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const config = await configService.getOAuthConfig();
       form.reset(config);
     } catch (error) {
       const errorMessage = 'Failed to load OAuth configuration';
-      setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Error loading OAuth config:', error);
     } finally {
@@ -83,61 +84,43 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   useEffect(() => {
     if (isOpen && provider) {
       void loadOAuthConfig();
-    } else if (!isOpen) {
-      // Clear error when dialog closes
-      setError(null);
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
-  const onSubmit = async (data: OAuthConfigSchema) => {
+  const handleSubmitData = async (data: OAuthConfigSchema) => {
     if (!provider) {
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
 
-      // Transform data to ensure required fields are present
-      const transformedData = {
+      // Create updated config without enabling the OAuth method
+      const updatedConfig = {
         ...data,
         [currentProviderKey]: {
           ...data[currentProviderKey],
-          clientId: data[currentProviderKey].clientId || '',
-          clientSecret: data[currentProviderKey].clientSecret || '',
-          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(currentProviderKey),
-          enabled: !!data[currentProviderKey].clientId,
-          useSharedKeys: data[currentProviderKey].useSharedKeys,
+          useSharedKeys: useSharedKeys ?? true,
         },
       };
 
-      await configService.updateOAuthConfig(transformedData);
+      // Update OAuth configuration (only config data, not enable status)
+      await configService.updateOAuthConfig(updatedConfig);
+      await configService.reloadOAuthConfig();
 
-      // Reload OAuth configuration to apply changes
-      setReloading(true);
-      try {
-        await configService.reloadOAuthConfig();
-        // Show success message only after both save and reload succeed
-        const configType = useSharedKeys ? 'shared keys' : 'custom OAuth credentials';
-        showToast(`${provider.name} ${configType} updated and applied successfully!`, 'success');
-      } catch (reloadError) {
-        // Config was saved but reload failed
-        showToast('Configuration saved but failed to apply. Please try again.', 'warn');
-        console.error('Failed to reload OAuth:', reloadError);
-      } finally {
-        setReloading(false);
-      }
+      showToast(`${provider.name} configuration updated successfully!`, 'success');
+
+      // Reset form state to mark as clean (not dirty)
+      form.reset(updatedConfig);
 
       // Call success callback if provided
       if (onSuccess) {
         onSuccess();
       }
-
       // Close dialog
       onClose();
     } catch (error) {
-      const errorMessage = `Failed to update ${provider.name} configuration`;
-      setError(errorMessage);
+      const errorMessage = `Failed to update ${provider.name} configuration. Please check running environment and try again.`;
       showToast(errorMessage, 'error');
       console.error('Error saving OAuth config:', error);
     } finally {
@@ -146,23 +129,27 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   };
 
   const handleSubmit = () => {
-    void onSubmit(form.getValues() as OAuthConfigSchema);
+    void handleSubmitData(form.getValues() as OAuthConfigSchema);
   };
 
-  // Determine if the update button should be disabled
+  // Use RHF's built-in validation and dirty state
   const isUpdateDisabled = () => {
-    if (saving || reloading) {
+    if (saving || !isDirty) {
       return true;
     }
+
+    // If using shared keys, always allow (no credential validation needed)
     if (useSharedKeys) {
       return false;
     }
+
+    // If NOT using shared keys, require both clientId and clientSecret
     return !clientId || !clientSecret;
   };
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white p-0 gap-0">
+      <DialogContent className="max-w-[700px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
         <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
@@ -176,21 +163,23 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
           </div>
         ) : (
           <>
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
-                <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
               <div className="space-y-6 p-6">
                 {/* Shared Keys Toggle */}
                 <div className="flex items-center justify-start gap-2">
-                  <Switch
-                    checked={useSharedKeys}
-                    onCheckedChange={(checked) =>
-                      form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
-                    }
+                  <Controller
+                    name={`${currentProviderKey}.useSharedKeys`}
+                    control={form.control}
+                    render={({ field }) => {
+                      return (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        />
+                      );
+                    }}
                   />
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
                     Shared Keys
@@ -233,7 +222,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
                     <div className="space-x-3">
                       <div className="flex items-center gap-2">
-                        <code className="h-9 flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                        <code className="flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
                           {getCallbackUrl(provider?.id)}
                         </code>
                         <CopyButton className="h-9" text={getCallbackUrl(provider?.id)} />
@@ -283,7 +272,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 disabled={isUpdateDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Saving...' : reloading ? 'Reloading...' : 'Update'}
+                {saving ? 'Saving...' : 'Update'}
               </Button>
             </DialogFooter>
           </>

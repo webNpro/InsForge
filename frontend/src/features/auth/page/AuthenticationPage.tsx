@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { UserPlus, Users, Key } from 'lucide-react';
 import { Button, SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { UsersManagement } from '@/features/auth/components/UsersManagement';
@@ -12,7 +13,10 @@ import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
 
 export default function AuthenticationPage() {
-  const [selectedSection, setSelectedSection] = useState<string>('users');
+  const location = useLocation();
+  const [selectedSection, setSelectedSection] = useState<string>(
+    location.state?.initialTab || 'users'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -141,7 +145,9 @@ export default function AuthenticationPage() {
           />
         )}
 
-        {selectedSection === 'auth-methods' && <OAuthConfiguration />}
+        {selectedSection === 'auth-methods' && (
+          <OAuthConfiguration onNavigateToUsers={() => setSelectedSection('users')} />
+        )}
       </div>
 
       <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
