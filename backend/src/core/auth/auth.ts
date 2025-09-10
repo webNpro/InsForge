@@ -119,7 +119,7 @@ export class AuthService {
         clientSecret: '',
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
-        enabled: false,
+        enabled: enableSharedKeys,
         useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
       github: {
@@ -127,7 +127,7 @@ export class AuthService {
         clientSecret: '',
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
-        enabled: false,
+        enabled: enableSharedKeys,
         useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
     };
