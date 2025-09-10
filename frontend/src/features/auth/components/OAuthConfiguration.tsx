@@ -77,53 +77,81 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     setIsDialogOpen(true);
   };
 
-  // Unified OAuth submit logic for both dialog and toggle operations
-  const submitOAuthConfig = async (
+  // Enable OAuth provider with shared keys by default
+  const enableOAuthProvider = async (
     providerId: 'google' | 'github',
-    configData: OAuthConfigSchema,
-    useSharedKeys?: boolean,
     actionText: string = 'enabled'
   ) => {
+    if (!oauthConfig) {
+      return false;
+    }
+    if (
+      oauthConfig[providerId]?.useSharedKeys ||
+      (oauthConfig[providerId]?.clientId && oauthConfig[providerId]?.clientSecret)
+    ) {
+      try {
+        const updatedConfig = {
+          ...oauthConfig,
+          [providerId]: {
+            ...oauthConfig[providerId],
+            enabled: true,
+          },
+        };
+
+        await configService.updateOAuthConfig(updatedConfig);
+        await configService.reloadOAuthConfig();
+        setOauthConfig(updatedConfig);
+
+        showToast(
+          `${providerId === 'google' ? 'Google' : 'GitHub'} OAuth ${actionText} successfully!`,
+          'success'
+        );
+
+        return true;
+      } catch (error) {
+        console.error(
+          `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth:`,
+          error
+        );
+        showToast(
+          `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth. Please check running environment and try again.`,
+          'error'
+        );
+        return false;
+      }
+    } else {
+      showToast(
+        `Please configure ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth first`,
+        'error'
+      );
+      return false;
+    }
+  };
+
+  // Disable OAuth provider
+  const disableOAuthProvider = async (providerId: 'google' | 'github') => {
+    if (!oauthConfig) {
+      return false;
+    }
+
     try {
-      // Transform data to ensure required fields are present
-      const transformedData = {
-        ...configData,
+      const updatedConfig = {
+        ...oauthConfig,
         [providerId]: {
-          ...configData[providerId],
-          clientId: configData[providerId].clientId || '',
-          clientSecret: configData[providerId].clientSecret || '',
-          redirectUri:
-            configData[providerId].redirectUri ||
-            `${window.location.origin}/api/auth/oauth/${providerId}/callback`,
-          enabled: true,
-          useSharedKeys: useSharedKeys ?? !configData[providerId].clientId,
+          ...oauthConfig[providerId],
+          enabled: false,
         },
       };
 
-      await configService.updateOAuthConfig(transformedData);
-
-      // Reload OAuth configuration to apply changes
+      await configService.updateOAuthConfig(updatedConfig);
       await configService.reloadOAuthConfig();
-
-      // Update local state
-      setOauthConfig(transformedData);
-
-      const configType = !configData[providerId].clientId
-        ? 'shared keys'
-        : 'custom OAuth credentials';
-      showToast(
-        `${providerId === 'google' ? 'Google' : 'GitHub'} OAuth ${configType} ${actionText} successfully!`,
-        'success'
-      );
-
+      setOauthConfig(updatedConfig);
+      showToast(`${providerId === 'google' ? 'Google' : 'GitHub'} OAuth disabled`, 'success');
       return true;
     } catch (error) {
-      console.error(
-        `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth:`,
-        error
-      );
+      console.error(`Failed to disable ${providerId} OAuth:`, error);
       showToast(
-        `Failed to ${actionText} ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth. Please check running environment and try again.`,
+        `Failed to disable ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth`,
         'error'
       );
       return false;
@@ -135,7 +163,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
 
     if (!enabled) {
       // If not enabled, enable it first with shared keys
-      const success = await handleToggleSubmit(provider.id, 'connected');
+      const success = await enableOAuthProvider(provider.id, 'connected');
       if (!success) {
         return;
       }
@@ -146,51 +174,18 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     setIsPromptDialogOpen(true);
   };
 
-  const handleToggleSubmit = async (
-    providerId: 'google' | 'github',
-    actionText: string = 'enabled'
-  ) => {
-    if (!oauthConfig) {
-      return false;
-    }
-    return await submitOAuthConfig(providerId, oauthConfig, undefined, actionText);
-  };
-
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedProvider(undefined);
   };
 
   const handleToggleProvider = async (providerId: 'google' | 'github', enabled: boolean) => {
-    if (!oauthConfig) {
-      return;
-    }
-
     if (enabled) {
       // If turning on, enable OAuth with shared keys by default
-      await handleToggleSubmit(providerId);
+      await enableOAuthProvider(providerId);
     } else {
-      // If turning off, just disable it
-      try {
-        const updatedConfig = {
-          ...oauthConfig,
-          [providerId]: {
-            ...oauthConfig[providerId],
-            enabled: false,
-          },
-        };
-
-        await configService.updateOAuthConfig(updatedConfig);
-        await configService.reloadOAuthConfig();
-        setOauthConfig(updatedConfig);
-        showToast(`${providerId === 'google' ? 'Google' : 'GitHub'} OAuth disabled`, 'success');
-      } catch (error) {
-        console.error(`Failed to disable ${providerId} OAuth:`, error);
-        showToast(
-          `Failed to disable ${providerId === 'google' ? 'Google' : 'GitHub'} OAuth`,
-          'error'
-        );
-      }
+      // If turning off, disable it
+      await disableOAuthProvider(providerId);
     }
   };
 
@@ -198,18 +193,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     // Refresh configuration after successful update
     void loadOAuthConfig();
   }, [loadOAuthConfig]);
-
-  // Callback function for dialog submission
-  const handleDialogSubmit = useCallback(
-    async (
-      providerId: 'google' | 'github',
-      configData: OAuthConfigSchema,
-      useSharedKeys: boolean
-    ) => {
-      return await submitOAuthConfig(providerId, configData, useSharedKeys, 'updated and applied');
-    },
-    [submitOAuthConfig]
-  );
 
   const handleViewUsers = () => {
     setIsPromptDialogOpen(false);
@@ -220,7 +203,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     if (!oauthConfig) {
       return false;
     }
-    return oauthConfig[providerId]?.enabled || false;
+    return oauthConfig[providerId]?.enabled;
   };
 
   if (loading) {
@@ -284,9 +267,17 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
                     >
                       Connect
                     </Button>
-                    <div className="flex items-center justify-center p-2 text-neutral-400">
+                    <Button
+                      className="p-2 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-500"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleConfigureProvider(provider);
+                      }}
+                    >
                       <MoreVertical className="w-4 h-4" />
-                    </div>
+                    </Button>
                   </div>
                 </div>
               );
@@ -300,7 +291,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleSuccess}
-        onSubmit={handleDialogSubmit}
       />
 
       <PromptDialog

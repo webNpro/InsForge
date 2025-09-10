@@ -29,17 +29,12 @@ interface OAuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  onSubmit?: (
-    providerId: 'google' | 'github',
-    config: OAuthConfigSchema,
-    useSharedKeys: boolean
-  ) => Promise<boolean>;
 }
 
-export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: OAuthDialogProps) {
+export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [initialFormData, setInitialFormData] = useState<OAuthConfigSchema | null>(null);
   const { showToast } = useToast();
 
   const form = useForm<OAuthConfigSchema>({
@@ -70,12 +65,11 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: 
   const loadOAuthConfig = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const config = await configService.getOAuthConfig();
       form.reset(config);
+      setInitialFormData(config);
     } catch (error) {
       const errorMessage = 'Failed to load OAuth configuration';
-      setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Error loading OAuth config:', error);
     } finally {
@@ -87,35 +81,43 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: 
   useEffect(() => {
     if (isOpen && provider) {
       void loadOAuthConfig();
-    } else if (!isOpen) {
-      // Clear error when dialog closes
-      setError(null);
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
   const handleSubmitData = async (data: OAuthConfigSchema) => {
-    if (!provider || !onSubmit) {
+    if (!provider) {
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
 
-      // Call the parent's submit handler
-      const success = await onSubmit(currentProviderKey, data, useSharedKeys ?? true);
+      // Create updated config without enabling the OAuth method
+      const updatedConfig = {
+        ...data,
+        [currentProviderKey]: {
+          ...data[currentProviderKey],
+          useSharedKeys: useSharedKeys ?? true,
+        },
+      };
 
-      if (success) {
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-        // Close dialog
-        onClose();
+      // Update OAuth configuration (only config data, not enable status)
+      await configService.updateOAuthConfig(updatedConfig);
+      await configService.reloadOAuthConfig();
+
+      showToast(`${provider.name} configuration updated successfully!`, 'success');
+
+      // Update initial form data to reflect the new saved state
+      setInitialFormData(updatedConfig);
+
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
       }
+      // Close dialog
+      onClose();
     } catch (error) {
       const errorMessage = `Failed to update ${provider.name} configuration`;
-      setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Error saving OAuth config:', error);
     } finally {
@@ -127,14 +129,37 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: 
     void handleSubmitData(form.getValues() as OAuthConfigSchema);
   };
 
+  // Check if form values have changed from initial state
+  const hasFormChanged = () => {
+    if (!initialFormData) {
+      return false;
+    }
+
+    const currentData = form.getValues();
+    const currentProviderData = currentData[currentProviderKey];
+    const initialProviderData = initialFormData[currentProviderKey];
+
+    return (
+      currentProviderData.useSharedKeys !== initialProviderData.useSharedKeys ||
+      currentProviderData.clientId !== initialProviderData.clientId ||
+      currentProviderData.clientSecret !== initialProviderData.clientSecret
+    );
+  };
+
   // Determine if the update button should be disabled
   const isUpdateDisabled = () => {
     if (saving) {
       return true;
     }
+
+    if (!hasFormChanged()) {
+      return true;
+    }
+
     if (useSharedKeys) {
       return false;
     }
+
     return !clientId || !clientSecret;
   };
 
@@ -154,12 +179,6 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess, onSubmit }: 
           </div>
         ) : (
           <>
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
-                <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
               <div className="space-y-6 p-6">
                 {/* Shared Keys Toggle */}

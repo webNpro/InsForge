@@ -11,6 +11,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
+import type { ConfigRecord } from '@/types/auth.js';
 import type {
   UserSchema,
   CreateUserResponse,
@@ -95,12 +96,16 @@ export class AuthService {
       useSharedKeys: boolean;
     };
   }> {
-    let configRows: any[];
+    let configRows: ConfigRecord[];
     try {
       const rows = await this.db
         .prepare(`SELECT key, value FROM _config WHERE key LIKE 'auth.oauth.provider.%'`)
         .all();
-      configRows = rows || [];
+      if (!Array.isArray(rows)) {
+        throw new Error('Expected array from database query');
+      }
+
+      configRows = rows;
     } catch (error) {
       logger.error('Failed to load OAuth config from database:', error);
       configRows = [];
@@ -164,6 +169,60 @@ export class AuthService {
     });
 
     return config;
+  }
+
+  /**
+   * Get OAuth configuration for API responses (with optional secret masking)
+   * Public method that can be used by config routes
+   */
+  async getOAuthConfigForAPI(maskSecrets: boolean = true): Promise<{
+    google: {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      enabled: boolean;
+      useSharedKeys: boolean;
+    };
+    github: {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      enabled: boolean;
+      useSharedKeys: boolean;
+    };
+  }> {
+    const config = await this.loadOAuthConfig();
+
+    // Optionally mask client secrets for security
+    if (maskSecrets) {
+      if (config.google.clientSecret) {
+        config.google.clientSecret = config.google.clientSecret.substring(0, 4) + '****';
+      }
+      if (config.github.clientSecret) {
+        config.github.clientSecret = config.github.clientSecret.substring(0, 4) + '****';
+      }
+    }
+
+    return config;
+  }
+
+  /**
+   * Get OAuth status for public API (only enabled status)
+   */
+  async getOAuthStatus(): Promise<{
+    google: { enabled: boolean };
+    github: { enabled: boolean };
+  }> {
+    const config = await this.loadOAuthConfig();
+
+    return {
+      google: {
+        enabled: !!(config.google.enabled && config.google.clientId && config.google.clientSecret),
+      },
+      github: {
+        enabled: !!(config.github.enabled && config.github.clientId && config.github.clientSecret),
+      },
+    };
   }
 
   /**
