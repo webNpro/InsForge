@@ -108,9 +108,12 @@ const response = await client.ai.images.generate({
   ]
 });
 
-// Access response
-console.log(response.images[0].imageUrl);   // Generated image URL
-console.log(response.text);                 // Optional description from model
+// Important: Response may contain only text without images
+if (response.images && response.images.length > 0) {
+  console.log(response.images[0].imageUrl);   // Generated image URL
+} else {
+  console.log('Text-only response:', response.text);  // Model response without images
+}
 \`\`\`
 
 ## Working with Generated Images
@@ -122,12 +125,20 @@ const response = await client.ai.images.generate({
   prompt: "A futuristic city skyline"
 });
 
-// 2. Get the image URL and description
-const imageUrl = response.images[0].imageUrl;   // Generated image URL
-const description = response.text;               // Optional model description
+// 2. Get the image URL and description (check if images exist first)
+if (response.images && response.images.length > 0) {
+  const imageUrl = response.images[0].imageUrl;   // Generated image URL
+  const description = response.text;               // Optional model description
+} else {
+  // Handle text-only response
+  console.log('Model returned text only:', response.text);
+}
 
-// 3. Save to storage (if base64)
-if (imageUrl.startsWith('data:image')) {
+// 3. Save to storage (if base64 and images exist)
+if (response.images && response.images.length > 0) {
+  const imageUrl = response.images[0].imageUrl;
+  
+  if (imageUrl.startsWith('data:image')) {
   // Convert base64 to blob
   const response = await fetch(imageUrl);
   const blob = await response.blob();
@@ -141,12 +152,12 @@ if (imageUrl.startsWith('data:image')) {
   } else {
     console.error('Upload failed:', uploadResult.error);
   }
+  
+  // 4. Display in UI
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  document.body.appendChild(img);
 }
-
-// 4. Display in UI
-const img = document.createElement('img');
-img.src = imageUrl;
-document.body.appendChild(img);
 \`\`\`
 `;
   }

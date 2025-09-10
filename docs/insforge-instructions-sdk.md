@@ -8,7 +8,7 @@ Backend-as-a-service with database, authentication, file storage, out of box AI 
 
 ## Critical Rule: Check Metadata First
 
-Before ANY database operation, call `get-backend-metadata` to get the current database state. 
+Before ANY operation, call `get-backend-metadata` to get the current backend state. 
 
 ## When to Use SDK vs MCP Tools
 
@@ -84,6 +84,8 @@ await client.auth.signOut();
 
 ## Database Operations
 
+Before ANY operation, call `get-backend-metadata` to get the current backend state. 
+
 ```javascript
 // Select with filters
 const { data, error } = await client.database
@@ -121,6 +123,8 @@ const { data, error } = await client.database
 
 ## Storage Operations
 
+Before ANY operation, call `get-backend-metadata` to get the current backend state. 
+
 ```javascript
 // Upload file with auto-generated key
 const { data, error } = await client.storage
@@ -146,6 +150,8 @@ const url = client.storage
 ```
 
 ## AI Operations
+
+Before ANY operation, call `get-backend-metadata` to get the current backend state. 
 
 ### Chat Completions (OpenAI-compatible response)
 
@@ -278,3 +284,16 @@ console.log(otherUser.nickname); // Direct access to properties
 ### When to Use What
 - **SDK**: Authentication, database CRUD, profile management, AI operations, storage
 - **MCP Tools**: Table creation/modification, schema management
+
+### Storage Best Practices
+- **ALWAYS use Storage for**:
+  - Images (URLs, base64, binary data)
+  - Files and documents
+  - Large text content (>1KB)
+  - AI-generated images
+  - Chat message attachments
+- **Store in Database**:
+  - Storage URLs only (not the actual data)
+  - Small text fields (<1KB)
+  - Metadata and references
+- **Example**: For chat with images, store image in storage bucket, save only the URL in database
