@@ -149,7 +149,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white p-0 gap-0">
+      <DialogContent className="max-w-[700px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
         <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
