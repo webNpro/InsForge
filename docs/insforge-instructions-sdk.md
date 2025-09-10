@@ -200,10 +200,11 @@ for await (const chunk of stream) {
 }
 ```
 
-### Image Generation
+### Image + Chat Completions Generation
 
 ```javascript
-// Image generation request
+// Image + chat completion generation request
+// This model can generate images AND provide text responses 
 const response = await client.ai.images.generate({
   model: 'google/gemini-2.5-flash-image-preview',
   prompt: 'A serene landscape with mountains at sunset',

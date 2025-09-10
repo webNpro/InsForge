@@ -70,7 +70,9 @@ for await (const chunk of stream) {
 
   // Image modality - Image generation endpoint only
   if (config.modality === 'image') {
-    return `# InsForge AI SDK - Image Generation
+    return `# InsForge AI SDK - Image + Text Generation
+    
+This model can generate images AND provide text responses 
 
 ## Setup
 
@@ -87,10 +89,10 @@ const client = createClient({
 });
 \`\`\`
 
-## Image Generation
+## Image + Text Generation
 
 \`\`\`javascript
-// Generate images
+// Generate images and text
 const response = await client.ai.images.generate({
   model: "${config.modelId}",
   prompt: "A serene mountain landscape at sunset, oil painting style",
