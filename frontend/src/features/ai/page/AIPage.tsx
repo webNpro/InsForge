@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, MoreVertical, FileText, Image, Mic, Video, Loader2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -60,13 +60,13 @@ export default function AIPage() {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [editingConfig, setEditingConfig] = useState<AIConfigurationWithUsageSchema | undefined>();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
-  const [selectedConfigForPrompt, setSelectedConfigForPrompt] =
-    useState<AIConfigurationWithUsageSchema | null>(null);
+  const [integrationPrompt, setIntegrationPrompt] = useState<string>('');
 
-  const handleConnect = (id: string) => {
+  const handleConnect = async (id: string) => {
     const config = configurations.find((c) => c.id === id);
     if (config) {
-      setSelectedConfigForPrompt(config);
+      const prompt = await generateAIIntegrationPrompt(config);
+      setIntegrationPrompt(prompt);
       setPromptDialogOpen(true);
     }
   };
@@ -288,7 +288,7 @@ export default function AIPage() {
       <PromptDialog
         open={promptDialogOpen}
         onOpenChange={setPromptDialogOpen}
-        prompt={selectedConfigForPrompt ? generateAIIntegrationPrompt(selectedConfigForPrompt) : ''}
+        prompt={integrationPrompt}
       />
 
       {/* Confirm Dialog */}

@@ -1,7 +1,9 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
+import { metadataService } from '@/features/metadata/services/metadata.service';
 
-export const generateAIIntegrationPrompt = (config: AIConfigurationSchema): string => {
+export const generateAIIntegrationPrompt = async (config: AIConfigurationSchema): Promise<string> => {
   const baseUrl = window.location.origin;
+  const anonKey = await metadataService.fetchApiKey();
 
   // Text modality - Chat endpoint only
   if (config.modality === 'text') {
@@ -17,13 +19,8 @@ npm install @insforge/sdk
 import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
-  baseUrl: '${baseUrl}'
-});
-
-// Ensure user is authenticated first
-await client.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password123'
+  baseUrl: '${baseUrl}',
+  anonKey: '${anonKey}'
 });
 \`\`\`
 
@@ -73,7 +70,9 @@ for await (const chunk of stream) {
 
   // Image modality - Image generation endpoint only
   if (config.modality === 'image') {
-    return `# InsForge AI SDK - Image Generation
+    return `# InsForge AI SDK - Image + Text Generation
+    
+This model can generate images AND provide text responses 
 
 ## Setup
 
@@ -85,68 +84,26 @@ npm install @insforge/sdk
 import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
-  baseUrl: '${baseUrl}'
-});
-
-// Ensure user is authenticated first
-await client.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password123'
+  baseUrl: '${baseUrl}',
+  anonKey: '${anonKey}'
 });
 \`\`\`
 
-## Image Generation
+## Image + Text Generation
 
 \`\`\`javascript
-// Generate images
+// Generate images and text
 const response = await client.ai.images.generate({
   model: "${config.modelId}",
   prompt: "A serene mountain landscape at sunset, oil painting style",
-  size: "1024x1024",  // Optional
   images: [           // Optional: input images for image-to-image models
     { url: 'https://example.com/reference.jpg' }
   ]
 });
 
-// Access response
-console.log(response.images[0].imageUrl);   // Generated image URL
-console.log(response.text);                 // Optional description from model
-\`\`\`
-
-## Working with Generated Images
-
-\`\`\`javascript
-// 1. Generate image
-const response = await client.ai.images.generate({
-  model: "${config.modelId}",
-  prompt: "A futuristic city skyline"
-});
-
-// 2. Get the image URL and description
-const imageUrl = response.images[0].imageUrl;   // Generated image URL
-const description = response.text;               // Optional model description
-
-// 3. Save to storage (if base64)
-if (imageUrl.startsWith('data:image')) {
-  // Convert base64 to blob
-  const response = await fetch(imageUrl);
-  const blob = await response.blob();
-  
-  // Upload to InsForge storage using the correct SDK method
-  // Use uploadAuto() for auto-generated filename or upload('path', blob) for specific path
-  const uploadResult = await client.storage.from('images').uploadAuto(blob);
-  
-  if (uploadResult.data) {
-    console.log('Stored at:', uploadResult.data.url);
-  } else {
-    console.error('Upload failed:', uploadResult.error);
-  }
-}
-
-// 4. Display in UI
-const img = document.createElement('img');
-img.src = imageUrl;
-document.body.appendChild(img);
+// Access response - OpenAI format
+console.log(response.data[0].b64_json);  // Base64 encoded image string (OpenAI format)
+console.log(response.data[0].content);   // AI's text response about the image or prompt
 \`\`\`
 `;
   }
