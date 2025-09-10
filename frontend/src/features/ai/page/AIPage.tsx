@@ -61,19 +61,13 @@ export default function AIPage() {
   const [editingConfig, setEditingConfig] = useState<AIConfigurationWithUsageSchema | undefined>();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const [integrationPrompt, setIntegrationPrompt] = useState<string>('');
-  const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
 
   const handleConnect = async (id: string) => {
     const config = configurations.find((c) => c.id === id);
     if (config) {
-      setIsLoadingPrompt(true);
-      try {
-        const prompt = await generateAIIntegrationPrompt(config);
-        setIntegrationPrompt(prompt);
-        setPromptDialogOpen(true);
-      } finally {
-        setIsLoadingPrompt(false);
-      }
+      const prompt = await generateAIIntegrationPrompt(config);
+      setIntegrationPrompt(prompt);
+      setPromptDialogOpen(true);
     }
   };
 
