@@ -236,6 +236,21 @@ export class AuthService {
   }
 
   /**
+   * Generate anonymous JWT token (never expires)
+   */
+  generateAnonToken(): string {
+    const payload = {
+      sub: 'anonymous',
+      email: 'anon@insforge.com',
+      role: 'anon',
+    };
+    return jwt.sign(payload, JWT_SECRET()!, {
+      algorithm: 'HS256',
+      // No expiresIn means token never expires
+    });
+  }
+
+  /**
    * Verify JWT token
    */
   verifyToken(token: string): TokenPayloadSchema {
