@@ -98,7 +98,7 @@ export class DatabaseService {
 
     const response: {
       data: { [key: string]: string | boolean | number | JSON | null }[];
-      pagination: { start: number; end: number; total: number };
+      pagination: { offset: number; limit: number; total: number };
     } = await apiClient.request(`/database/records/${tableName}?${params.toString()}`, {
       headers: {
         Prefer: 'count=exact',

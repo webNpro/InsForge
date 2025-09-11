@@ -226,8 +226,8 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     const response: ListUsersResponse = {
       data: users,
       pagination: {
-        start: parseInt(offset as string),
-        end: Math.min(parseInt(offset as string) + parseInt(limit as string) - 1, count - 1),
+        offset: parseInt(offset as string),
+        limit: parseInt(limit as string),
         total: count,
       },
     };

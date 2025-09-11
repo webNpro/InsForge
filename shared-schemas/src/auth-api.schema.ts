@@ -101,8 +101,8 @@ export const getCurrentSessionResponseSchema = z.object({
 export const listUsersResponseSchema = z.object({
   data: z.array(userSchema),
   pagination: z.object({
-    start: z.number(),
-    end: z.number(),
+    offset: z.number(),
+    limit: z.number(),
     total: z.number(),
   }),
 });

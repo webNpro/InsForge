@@ -56,7 +56,7 @@ export class AuthService {
   async getUsers(
     queryParams: string = '',
     searchQuery?: string
-  ): Promise<{ users: User[]; pagination: { start: number; end: number; total: number } }> {
+  ): Promise<{ users: User[]; pagination: { offset: number; limit: number; total: number } }> {
     let url = '/auth/users';
     const params = new URLSearchParams(queryParams);
 
@@ -70,7 +70,7 @@ export class AuthService {
 
     const response: {
       data: User[];
-      pagination: { start: number; end: number; total: number };
+      pagination: { offset: number; limit: number; total: number };
     } = await apiClient.request(url);
 
     return {

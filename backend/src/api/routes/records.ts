@@ -206,28 +206,28 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
     if (req.method === 'GET' && Array.isArray(responseData)) {
       // Extract pagination info from Content-Range header
       const contentRange = response.headers['content-range'];
-      let start = 0,
-        end = 0,
+      let offset = 0,
+        limit = 0,
         total = 0;
 
       if (contentRange) {
         const match = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
         if (match) {
-          start = parseInt(match[1]);
-          end = parseInt(match[2]);
+          offset = parseInt(match[1]);
+          limit = parseInt(match[2]);
           total = match[3] === '*' ? responseData.length : parseInt(match[3]);
         }
       } else {
         // Fallback if no Content-Range header
         total = responseData.length;
-        end = Math.max(0, total - 1);
+        limit = Math.max(0, total - 1);
       }
 
       const unifiedResponse = {
         data: responseData,
         pagination: {
-          start,
-          end,
+          offset: offset,
+          limit: limit - offset + 1,
           total,
         },
       };

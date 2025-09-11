@@ -13,8 +13,8 @@ export const updateBucketRequestSchema = z.object({
 export const listObjectsResponseSchema = z.object({
   objects: z.array(storageFileSchema),
   pagination: z.object({
-    start: z.number(),
-    end: z.number(),
+    offset: z.number(),
+    limit: z.number(),
     total: z.number(),
   }),
 });

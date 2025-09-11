@@ -192,8 +192,8 @@ router.get(
         {
           data: result.objects,
           pagination: {
-            start: offset,
-            end: Math.min(offset + limit - 1, result.total - 1),
+            offset: offset,
+            limit: limit,
             total: result.total,
           },
         },

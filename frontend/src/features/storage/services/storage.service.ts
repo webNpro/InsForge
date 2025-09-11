@@ -44,7 +44,7 @@ export const storageService = {
     const url = `/storage/buckets/${encodeURIComponent(bucketName)}/objects${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response: {
       data: StorageFileSchema[];
-      pagination: { start: number; end: number; total: number };
+      pagination: { offset: number; limit: number; total: number };
     } = await apiClient.request(url, {
       headers: apiClient.withAccessToken(),
     });
