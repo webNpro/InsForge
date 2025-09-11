@@ -75,7 +75,7 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
 
 interface FormDateEditorProps {
   value: string | null;
-  type?: 'date' | 'datetime';
+  type: 'date' | 'datetime';
   onChange: (value: string | null) => void;
   field: ColumnSchema;
 }
@@ -450,7 +450,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   render={({ field: formField }) => (
                     <FormDateEditor
                       value={formField.value}
-                      type={field.type === ColumnType.DATE ? 'date' : 'datetime'}
+                      type={field.type as ColumnType.DATE | ColumnType.DATETIME}
                       onChange={formField.onChange}
                       field={field}
                     />
