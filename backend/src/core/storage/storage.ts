@@ -322,29 +322,27 @@ class S3StorageBackend implements StorageBackend {
     const s3Key = this.getS3Key(bucket, key);
 
     try {
-      if (isPublic) {
-        // For public buckets, return direct S3 URL (no presigning needed)
-        const directUrl = `https://${this.s3Bucket}.s3.${this.region}.amazonaws.com/${s3Key}`;
+      // Note: isPublic here refers to the application-level setting,
+      // not the actual S3 bucket policy. In a multi-tenant setup,
+      // we're using a single S3 bucket with folder-based isolation,
+      // so we always use presigned URLs for security.
+      // The "public" setting only affects the URL expiration time.
 
-        return {
-          method: 'direct',
-          url: directUrl,
-        };
-      } else {
-        // For private buckets, generate presigned URL
-        const command = new GetObjectCommand({
-          Bucket: this.s3Bucket,
-          Key: s3Key,
-        });
+      // Always generate presigned URL for security in multi-tenant environment
+      const command = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: s3Key,
+      });
 
-        const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      // Public files get longer expiration (7 days), private files get shorter (1 hour default)
+      const actualExpiresIn = isPublic ? 604800 : expiresIn; // 604800 = 7 days
+      const url = await getSignedUrl(this.s3Client, command, { expiresIn: actualExpiresIn });
 
-        return {
-          method: 'presigned',
-          url,
-          expiresAt: new Date(Date.now() + expiresIn * 1000),
-        };
-      }
+      return {
+        method: 'presigned',
+        url,
+        expiresAt: new Date(Date.now() + actualExpiresIn * 1000),
+      };
     } catch (error) {
       logger.error('Failed to generate download URL', {
         error: error instanceof Error ? error.message : String(error),

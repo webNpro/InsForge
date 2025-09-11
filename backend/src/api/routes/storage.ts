@@ -301,8 +301,17 @@ router.get(
       }
 
       const storageService = StorageService.getInstance();
-      const result = await storageService.getObject(bucketName, objectKey);
+      const expiresIn = await storageService.isBucketPublic(bucketName) ? 0 : 3600;
+      const strategy = await storageService.getDownloadStrategy(
+        bucketName,
+        objectKey,
+        Number(expiresIn)
+      );
+      if (strategy.method === 'presigned') {
+        return res.redirect(strategy.url);
+      }
 
+      const result = await storageService.getObject(bucketName, objectKey);
       if (!result) {
         throw new AppError('Object not found', 404, ERROR_CODES.NOT_FOUND);
       }
