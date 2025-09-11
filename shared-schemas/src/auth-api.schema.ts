@@ -99,8 +99,12 @@ export const getCurrentSessionResponseSchema = z.object({
  * Response for GET /api/auth/users
  */
 export const listUsersResponseSchema = z.object({
-  users: z.array(userSchema),
-  total: z.number().int().nonnegative(),
+  data: z.array(userSchema),
+  pagination: z.object({
+    offset: z.number(),
+    limit: z.number(),
+    total: z.number(),
+  }),
 });
 
 /**

@@ -190,16 +190,12 @@ router.get(
       successResponse(
         res,
         {
-          bucketName: bucketName,
-          prefix,
-          objects: result.objects,
+          data: result.objects,
           pagination: {
-            limit,
-            offset,
+            offset: offset,
+            limit: limit,
             total: result.total,
           },
-          nextActions:
-            'You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object.',
         },
         200
       );

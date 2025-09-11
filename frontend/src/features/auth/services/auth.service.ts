@@ -1,13 +1,5 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  createdAt: string;
-  updatedAt: string;
-  role?: string;
-}
+import type { User } from '@/features/auth/types';
 
 export class AuthService {
   async loginWithPassword(email: string, password: string) {
@@ -61,7 +53,10 @@ export class AuthService {
    * @param searchQuery - Optional search query
    * @returns Users list with total count
    */
-  async getUsers(queryParams: string = '', searchQuery?: string) {
+  async getUsers(
+    queryParams: string = '',
+    searchQuery?: string
+  ): Promise<{ users: User[]; pagination: { offset: number; limit: number; total: number } }> {
     let url = '/auth/users';
     const params = new URLSearchParams(queryParams);
 
@@ -73,11 +68,14 @@ export class AuthService {
       url += `?${params.toString()}`;
     }
 
-    const data = await apiClient.request(url);
+    const response: {
+      data: User[];
+      pagination: { offset: number; limit: number; total: number };
+    } = await apiClient.request(url);
 
     return {
-      records: data?.users || [],
-      total: data?.total || 0,
+      users: response.data,
+      pagination: response.pagination,
     };
   }
 

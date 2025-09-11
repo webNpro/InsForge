@@ -42,22 +42,16 @@ export const storageService = {
     }
 
     const url = `/storage/buckets/${encodeURIComponent(bucketName)}/objects${searchParams.toString() ? `?${searchParams}` : ''}`;
-    const response = await apiClient.request(url, {
+    const response: {
+      data: StorageFileSchema[];
+      pagination: { offset: number; limit: number; total: number };
+    } = await apiClient.request(url, {
       headers: apiClient.withAccessToken(),
-      returnFullResponse: true,
     });
 
-    // Transform the response to match expected format
-    // Backend returns: { bucket, objects, pagination, ... }
-    // Frontend expects: { data: { objects }, meta: { pagination } }
     return {
-      bucketName: response.bucketName,
-      objects: response.objects || [],
-      pagination: {
-        total: parseInt(response.pagination?.total) || 0,
-        limit: response.pagination?.limit || 100,
-        offset: response.pagination?.offset || 0,
-      },
+      objects: response.data,
+      pagination: response.pagination,
     };
   },
 

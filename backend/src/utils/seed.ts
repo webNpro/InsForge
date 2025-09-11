@@ -24,16 +24,16 @@ async function seedDefaultAIConfigs(): Promise<void> {
   if (!isCloudEnvironment()) {
     return;
   }
-  
+
   const aiConfigService = new AIConfigService();
-  
+
   // Check if AI configs already exist
   const existingConfigs = await aiConfigService.findAll();
-  
+
   if (existingConfigs.length > 0) {
     return;
   }
-  
+
   // TODO: change the default text model once confirmed, also need to change the corresponding ai docs
   // best if we can add the current active models in metadata
   await aiConfigService.create(
@@ -42,17 +42,11 @@ async function seedDefaultAIConfigs(): Promise<void> {
     'anthropic/claude-3.5-haiku',
     'You are a helpful assistant.'
   );
-  
-  await aiConfigService.create(
-    'image',
-    'openrouter',
-    'google/gemini-2.5-flash-image-preview'
-  );
-  
+
+  await aiConfigService.create('image', 'openrouter', 'google/gemini-2.5-flash-image-preview');
+
   logger.info('✅ Default AI models configured (cloud environment)');
 }
-
-
 
 // Create api key, admin user, and default AI configs
 export async function seedBackend(): Promise<void> {
@@ -84,10 +78,10 @@ export async function seedBackend(): Promise<void> {
     if (tableCount > 0) {
       logger.info(`✅ Found ${tableCount} user tables`);
     }
-    
+
     // seed AI configs for cloud environment
     await seedDefaultAIConfigs();
-    
+
     logger.info(`API key generated: ${apiKey}`);
     logger.info(`Setup complete:
       - Save this API key for your apps!

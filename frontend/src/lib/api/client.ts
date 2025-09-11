@@ -43,7 +43,7 @@ export class ApiClient {
     } = {}
   ) {
     const url = `${API_BASE}${endpoint}`;
-    const { returnFullResponse, skipAuth, includeHeaders, ...fetchOptions } = options;
+    const { returnFullResponse, skipAuth, ...fetchOptions } = options;
 
     // Initial request attempt
     const makeRequest = async () => {
@@ -111,38 +111,6 @@ export class ApiClient {
       } catch {
         responseData = text;
       }
-
-      // If headers are requested, return response with headers
-      if (includeHeaders) {
-        const paginationHeaders: any = {};
-        const totalCount = response.headers.get('X-Total-Count');
-        const page = response.headers.get('X-Page');
-        const totalPages = response.headers.get('X-Total-Pages');
-        const limit = response.headers.get('X-Limit');
-        const offset = response.headers.get('X-Offset');
-
-        if (totalCount) {
-          paginationHeaders.totalCount = parseInt(totalCount);
-        }
-        if (page) {
-          paginationHeaders.page = parseInt(page);
-        }
-        if (totalPages) {
-          paginationHeaders.totalPages = parseInt(totalPages);
-        }
-        if (limit) {
-          paginationHeaders.limit = parseInt(limit);
-        }
-        if (offset) {
-          paginationHeaders.offset = parseInt(offset);
-        }
-
-        return {
-          data: responseData,
-          pagination: Object.keys(paginationHeaders).length > 0 ? paginationHeaders : undefined,
-        };
-      }
-
       // If full response is requested, return it as-is
       if (returnFullResponse) {
         return responseData;
