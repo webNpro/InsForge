@@ -46,35 +46,30 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
   useEffect(() => {
     // Only send messages if we're in an iframe (not the main window)
     if (window.parent !== window) {
-      const targetOrigin = window.location.origin.includes('localhost')
-        ? '*'
-        : 'https://insforge.dev';
       // Send the current route to the parent cloud application
       window.parent.postMessage(
         {
           type: 'APP_ROUTE_CHANGE',
           path: location.pathname,
         },
-        targetOrigin
+        '*'
       );
     }
   }, [location.pathname]);
 
   // Listen for MCP connection events and forward to parent
   useEffect(() => {
-    if (!socket || window.parent === window) return;
+    if (!socket || window.parent === window) {
+      return;
+    }
 
     const handleMcpConnected = () => {
-      const targetOrigin = window.location.origin.includes('localhost')
-        ? '*'
-        : 'https://insforge.dev';
-
       window.parent.postMessage(
         {
           type: 'MCP_CONNECTION_STATUS',
           connected: true,
         },
-        targetOrigin
+        '*'
       );
     };
 

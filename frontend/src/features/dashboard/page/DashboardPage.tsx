@@ -57,14 +57,11 @@ export default function DashboardPage() {
   const handleConnectInsForge = () => {
     if (window.parent !== window) {
       // Send message to parent window to open onboarding overlay
-      const targetOrigin = window.location.origin.includes('localhost')
-        ? '*'
-        : 'https://insforge.dev';
       window.parent.postMessage(
         {
-          type: 'OPEN_CONNECT_OVERLAY',
+          type: 'SHOW_CONNECT_OVERLAY',
         },
-        targetOrigin
+        '*'
       );
     } else {
       void handleNavigateTo('onboard');
