@@ -43,7 +43,7 @@ const navigation: NavigationProps[] = [
   { name: 'Database', href: '/dashboard/database', icon: Database },
   { name: 'Storage', href: '/dashboard/storage', icon: HardDrive },
   //{ name: 'Audit', href: '/dashboard/logs', icon: Logs },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
+  // { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
   { name: 'AI', href: '/dashboard/ai', icon: Sparkles },
 ];
 
