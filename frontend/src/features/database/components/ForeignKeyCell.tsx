@@ -59,10 +59,15 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
 
       try {
         const searchValue = renderValue(value);
-        const queryParams = `${foreignKey.column}=eq.${encodeURIComponent(searchValue)}&limit=1`;
-        const response = await databaseService.getRecords(foreignKey.table, queryParams);
+        const response = await databaseService.getTableRecords(
+          foreignKey.table,
+          1,
+          0,
+          undefined,
+          undefined,
+          { [foreignKey.column]: searchValue }
+        );
 
-        // Return the first record if found, or null if not found
         if (
           response &&
           response.records &&

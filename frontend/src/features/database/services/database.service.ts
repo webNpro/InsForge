@@ -55,16 +55,35 @@ export class DatabaseService {
   }
 
   // Record operations
+  /**
+   * Unified data fetching method with built-in search, sorting, filtering, and pagination.
+   *
+   * @param tableName - Name of the table
+   * @param limit - Number of records to fetch
+   * @param offset - Number of records to skip
+   * @param searchQuery - Search term to filter text columns
+   * @param sortColumns - Sorting configuration
+   * @param specificFilters - Exact column filters (e.g., {id: "123"})
+   * @returns Structured response with records and pagination info
+   */
   async getTableRecords(
     tableName: string,
     limit = 10,
     offset = 0,
     searchQuery?: string,
-    sortColumns?: any[]
+    sortColumns?: any[],
+    specificFilters?: { [column: string]: string }
   ) {
     const params = new URLSearchParams();
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
+
+    // Add specific column filters (for exact matches like foreign keys)
+    if (specificFilters) {
+      for (const [column, value] of Object.entries(specificFilters)) {
+        params.set(column, `eq.${value}`);
+      }
+    }
 
     // Construct PostgREST filter directly in frontend if search query is provided
     if (searchQuery && searchQuery.trim()) {
