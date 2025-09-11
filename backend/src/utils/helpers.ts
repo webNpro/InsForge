@@ -5,7 +5,6 @@ export const convertSqlTypeToColumnType = (sqlType: string) => {
     case 'uuid':
       return ColumnType.UUID;
     case 'timestamp with time zone':
-    case 'date':
       return ColumnType.DATETIME;
     case 'integer':
       return ColumnType.INTEGER;
