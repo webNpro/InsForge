@@ -8,6 +8,7 @@ import { SortableHeaderRenderer } from '@/components/DataGrid';
 import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { ColumnType } from '@insforge/shared-schemas';
+import { format, parse } from 'date-fns';
 
 const PAGE_SIZE = 50;
 
@@ -144,19 +145,25 @@ export function LinkRecordModal({
           return value === null ? 'null' : value ? 'true' : 'false';
         }
 
+        if (type === ColumnType.DATE) {
+          if (!value) {
+            return 'null';
+          }
+          try {
+            const date = parse(value, 'yyyy-MM-dd', new Date());
+            return format(date, 'MMM dd, yyyy');
+          } catch {
+            return 'Invalid date';
+          }
+        }
+
         if (type === ColumnType.DATETIME) {
           if (!value) {
             return 'null';
           }
           try {
             const date = new Date(value);
-            return date.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+            return format(date, 'MMM dd, yyyy, hh:mm a');
           } catch {
             return 'Invalid date';
           }

@@ -41,6 +41,12 @@ export function buildDynamicSchema(columns: ColumnSchema[]) {
           fieldSchema = fieldSchema.nullable().optional();
         }
         break;
+      case ColumnType.DATE:
+        fieldSchema = z.string();
+        if (column.isNullable) {
+          fieldSchema = fieldSchema.nullable().optional();
+        }
+        break;
       case ColumnType.DATETIME:
         fieldSchema = z.string(); // ISO date string
         if (column.isNullable) {
@@ -104,6 +110,15 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
           values[column.columnName] = column.defaultValue;
         } else {
           // For gen_random_uuid() or no default, leave empty - will be generated on submit
+          values[column.columnName] = '';
+        }
+        break;
+      case ColumnType.DATE:
+        if (column.defaultValue && !column.defaultValue.endsWith('()')) {
+          // Static default value - convert to YYYY-MM-DD format
+          const date = new Date(column.defaultValue);
+          values[column.columnName] = date.toISOString().split('T')[0];
+        } else {
           values[column.columnName] = '';
         }
         break;

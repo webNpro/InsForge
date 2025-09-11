@@ -7,6 +7,7 @@ import {
   integerSchema,
   floatSchema,
   booleanSchema,
+  dateSchema,
   dateTimeSchema,
   jsonSchema,
   stringSchema,
@@ -44,6 +45,9 @@ export function convertValueForColumn(
         break;
       case ColumnType.BOOLEAN:
         convertedValue = booleanSchema.parse(value);
+        break;
+      case ColumnType.DATE:
+        convertedValue = dateSchema.parse(value);
         break;
       case ColumnType.DATETIME:
         convertedValue = dateTimeSchema.parse(value);

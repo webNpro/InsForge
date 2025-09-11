@@ -110,24 +110,25 @@ function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
         new Date(row[column.key]).getTime() !== new Date(newValue ?? '').getTime()
       ) {
         try {
-          await onCellEdit(row.id, column.key, newValue);
+          await onCellEdit(row.id, column.columnName, newValue);
         } catch (error) {
           // Edit failed silently
         }
       }
 
-      const updatedRow = { ...row, [column.key]: newValue };
+      const updatedRow = { ...row, [column.columnName]: newValue };
       onRowChange(updatedRow);
       onClose();
     },
-    [row, column.key, onRowChange, onClose, onCellEdit]
+    [row, column.columnName, onRowChange, onClose, onCellEdit]
   );
 
   return (
     <div className="w-full h-full">
       <DateCellEditor
-        value={row[column.key]}
+        value={row[column.columnName]}
         nullable={column.isNullable}
+        type={column.type}
         onValueChange={handleValueChange}
         onCancel={onClose}
       />
@@ -138,19 +139,19 @@ function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
 function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) {
   const handleValueChange = React.useCallback(
     async (newValue: string) => {
-      if (onCellEdit && row[column.key] !== newValue) {
+      if (onCellEdit && row[column.columnName] !== newValue) {
         try {
-          await onCellEdit(row.id, column.key, newValue);
+          await onCellEdit(row.id, column.columnName, newValue);
         } catch (error) {
           // Edit failed silently
         }
       }
 
-      const updatedRow = { ...row, [column.key]: newValue };
+      const updatedRow = { ...row, [column.columnName]: newValue };
       onRowChange(updatedRow);
       onClose();
     },
-    [column.key, onCellEdit, row, onRowChange, onClose]
+    [column.columnName, onCellEdit, row, onRowChange, onClose]
   );
 
   return (
@@ -184,6 +185,7 @@ export function convertSchemaToColumns(
         ColumnType.INTEGER,
         ColumnType.FLOAT,
         ColumnType.BOOLEAN,
+        ColumnType.DATE,
         ColumnType.DATETIME,
         ColumnType.JSON,
       ].includes(col.type);
@@ -223,8 +225,13 @@ export function convertSchemaToColumns(
       column.renderEditCell = (props: any) => (
         <CustomBooleanCellEditor {...props} onCellEdit={onCellEdit} />
       );
-    } else if (col.type === ColumnType.DATETIME) {
+    } else if (col.type === ColumnType.DATE) {
       column.renderCell = DefaultCellRenderers.date;
+      column.renderEditCell = (props: any) => (
+        <CustomDateCellEditor {...props} column={col} onCellEdit={onCellEdit} />
+      );
+    } else if (col.type === ColumnType.DATETIME) {
+      column.renderCell = DefaultCellRenderers.datetime;
       column.renderEditCell = (props: any) => (
         <CustomDateCellEditor {...props} column={col} onCellEdit={onCellEdit} />
       );

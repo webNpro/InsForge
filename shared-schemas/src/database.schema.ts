@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export enum ColumnType {
   STRING = 'string',
+  DATE = 'date',
   DATETIME = 'datetime',
   INTEGER = 'integer',
   FLOAT = 'float',
@@ -21,6 +22,7 @@ export const onDeleteActionSchema = z.enum([
 
 export const columnTypeSchema = z.enum([
   ColumnType.STRING,
+  ColumnType.DATE,
   ColumnType.DATETIME,
   ColumnType.INTEGER,
   ColumnType.FLOAT,

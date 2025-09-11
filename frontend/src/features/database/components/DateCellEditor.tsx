@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { cn } from '@/lib/utils/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/radix/Popover';
 
 interface DateCellEditorProps {
@@ -64,6 +64,9 @@ export function DateCellEditor({
   const [pickerMode, setPickerMode] = useState<PickerMode>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (value && value !== 'null') {
+      if (type === 'date' && typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return parse(value, 'yyyy-MM-dd', new Date());
+      }
       return new Date(value);
     }
     return new Date();
@@ -137,7 +140,8 @@ export function DateCellEditor({
     setSelectedDate(newDate);
 
     if (type === 'date') {
-      onValueChange(format(newDate, 'yyyy-MM-dd'));
+      const dateString = format(newDate, 'yyyy-MM-dd');
+      onValueChange(dateString);
       setOpen(false);
     }
   };
@@ -208,7 +212,8 @@ export function DateCellEditor({
       const localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00${timezoneOffset}`;
       onValueChange(localISOString);
     } else {
-      onValueChange(format(selectedDate, 'yyyy-MM-dd'));
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      onValueChange(dateString);
     }
     setOpen(false);
   };
@@ -225,11 +230,19 @@ export function DateCellEditor({
       return 'Select date...';
     }
 
-    const d = new Date(value);
     if (type === 'datetime') {
+      const d = new Date(value);
       return format(d, 'MMM dd, yyyy HH:mm');
+    } else {
+      // For date type (YYYY-MM-DD), use date-fns to parse and format safely
+      if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const date = parse(value, 'yyyy-MM-dd', new Date());
+        return format(date, 'MMM dd, yyyy');
+      }
+      // Fallback for unexpected formats
+      const d = new Date(value);
+      return format(d, 'MMM dd, yyyy');
     }
-    return format(d, 'MMM dd, yyyy');
   };
 
   const renderDayPicker = () => {

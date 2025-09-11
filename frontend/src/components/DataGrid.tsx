@@ -10,6 +10,7 @@ import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
 import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
+import { format, parse } from 'date-fns';
 import { PaginationControls } from './PaginationControls';
 import { Checkbox } from './Checkbox';
 import { useTheme } from '@/lib/contexts/ThemeContext';
@@ -102,17 +103,33 @@ export const DefaultCellRenderers = {
     }
 
     try {
-      const date = new Date(value);
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      const displayValue = format(date, 'MMM dd, yyyy');
       return (
         <div className="w-full h-full flex items-center">
-          <span className="truncate" title={date.toLocaleString()}>
-            {date.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+          <span className="truncate" title={displayValue}>
+            {displayValue}
+          </span>
+        </div>
+      );
+    } catch {
+      return <span className="text-red-500">Invalid date</span>;
+    }
+  },
+
+  datetime: ({ row, column }: any) => {
+    const value = row[column.key];
+    if (!value) {
+      return <span className="text-black dark:text-zinc-300">null</span>;
+    }
+
+    try {
+      const date = new Date(value);
+      const displayValue = format(date, 'MMM dd, yyyy, hh:mm a');
+      return (
+        <div className="w-full h-full flex items-center">
+          <span className="truncate" title={displayValue}>
+            {displayValue}
           </span>
         </div>
       );

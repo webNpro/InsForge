@@ -11,6 +11,7 @@ import { LinkRecordModal } from './LinkRecordModal';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { convertValueForColumn, cn } from '@/lib/utils/utils';
 import { TypeBadge } from '@/components/TypeBadge';
+import { format, parse } from 'date-fns';
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -112,11 +113,14 @@ function FormDateEditor({ value, type = 'datetime', onChange, field }: FormDateE
       return getPlaceholderText(field);
     }
 
-    const d = new Date(value);
     if (type === 'datetime') {
-      return d.toLocaleString();
+      // For datetime, parse ISO string and format consistently
+      const d = new Date(value);
+      return format(d, 'MMM dd, yyyy, hh:mm a');
+    } else {
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      return format(date, 'MMM dd, yyyy');
     }
-    return d.toLocaleDateString();
   };
 
   return (
@@ -427,6 +431,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </div>
         );
 
+      case ColumnType.DATE:
       case ColumnType.DATETIME:
         return (
           <div className="grid grid-cols-6 gap-x-10">
@@ -441,7 +446,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   render={({ field: formField }) => (
                     <FormDateEditor
                       value={formField.value}
-                      type="datetime"
+                      type={field.type === ColumnType.DATE ? 'date' : 'datetime'}
                       onChange={formField.onChange}
                       field={field}
                     />

@@ -76,6 +76,12 @@ export const booleanSchema = z
     throw new Error('Please enter a valid boolean value');
   });
 
+export const dateSchema = z
+  .union([z.string().date(), z.literal('').transform(() => null), z.null()])
+  .catch(() => {
+    throw new Error('Please enter a valid date');
+  });
+
 export const dateTimeSchema = z
   .union([
     // ISO 8601 datetime with timezone (Z or ±HH:MM)
