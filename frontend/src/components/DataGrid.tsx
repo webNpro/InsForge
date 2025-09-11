@@ -87,9 +87,9 @@ export const DefaultCellRenderers = {
       <div className="w-full h-full flex items-center justify-start">
         <Badge
           variant={value ? 'default' : 'secondary'}
-          className="border border-transparent dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
+          className="py-0.5 px-1.5 border border-transparent"
         >
-          {value === null ? 'null' : value ? 'true' : 'false'}
+          {value === null ? 'null' : value ? 'True' : 'False'}
         </Badge>
       </div>
     );
@@ -448,7 +448,7 @@ export function DataGrid({
         className
       )}
     >
-      <div className="flex-1 overflow-hidden relative mx-3 rounded-lg border border-border-gray dark:border-0">
+      <div className="flex-1 overflow-hidden relative mx-3 border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
           rows={data || []}
