@@ -59,24 +59,12 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
 
       try {
         const searchValue = renderValue(value);
-        const response = await databaseService.getTableRecords(
+        const record = await databaseService.getRecordByForeignKeyValue(
           foreignKey.table,
-          1,
-          0,
-          undefined,
-          undefined,
-          { [foreignKey.column]: searchValue }
+          foreignKey.column,
+          searchValue
         );
-
-        if (
-          response &&
-          response.records &&
-          Array.isArray(response.records) &&
-          response.records.length > 0
-        ) {
-          return response.records[0];
-        }
-        return null;
+        return record;
       } catch (error) {
         console.error('Failed to fetch foreign key record:', error);
         throw error;

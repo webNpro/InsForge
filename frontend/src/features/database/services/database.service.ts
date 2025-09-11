@@ -56,14 +56,13 @@ export class DatabaseService {
 
   // Record operations
   /**
-   * Unified data fetching method with built-in search, sorting, filtering, and pagination.
+   * Data fetching method with built-in search, sorting, and pagination for UI components.
    *
    * @param tableName - Name of the table
    * @param limit - Number of records to fetch
    * @param offset - Number of records to skip
    * @param searchQuery - Search term to filter text columns
    * @param sortColumns - Sorting configuration
-   * @param specificFilters - Exact column filters (e.g., {id: "123"})
    * @returns Structured response with records and pagination info
    */
   async getTableRecords(
@@ -71,19 +70,11 @@ export class DatabaseService {
     limit = 10,
     offset = 0,
     searchQuery?: string,
-    sortColumns?: any[],
-    specificFilters?: { [column: string]: string }
+    sortColumns?: any[]
   ) {
     const params = new URLSearchParams();
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
-
-    // Add specific column filters (for exact matches like foreign keys)
-    if (specificFilters) {
-      for (const [column, value] of Object.entries(specificFilters)) {
-        params.set(column, `eq.${value}`);
-      }
-    }
 
     // Construct PostgREST filter directly in frontend if search query is provided
     if (searchQuery && searchQuery.trim()) {
@@ -130,6 +121,26 @@ export class DatabaseService {
     };
   }
 
+  /**
+   * Get a single record by foreign key value.
+   * Specifically designed for foreign key lookups.
+   *
+   * @param tableName - Name of the table to search in
+   * @param columnName - Name of the column to filter by
+   * @param value - Value to match
+   * @returns Single record or null if not found
+   */
+  async getRecordByForeignKeyValue(tableName: string, columnName: string, value: string) {
+    const queryParams = `${columnName}=eq.${encodeURIComponent(value)}&limit=1`;
+    const response = await this.getRecords(tableName, queryParams);
+
+    // Return the first record if found, or null if not found
+    if (response.records && response.records.length > 0) {
+      return response.records[0];
+    }
+    return null;
+  }
+
   async getRecords(tableName: string, queryParams: string = '') {
     const url = `/database/records/${tableName}${queryParams ? `?${queryParams}` : ''}`;
     const response = await apiClient.request(url, {
@@ -145,8 +156,11 @@ export class DatabaseService {
     }
 
     // If backend returns wrapped format for this endpoint
-    if (response.records && Array.isArray(response.records)) {
-      return response;
+    if (response.data && Array.isArray(response.data)) {
+      return {
+        records: response.data,
+        total: response.data.length,
+      };
     }
 
     return {
