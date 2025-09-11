@@ -3,7 +3,7 @@ import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
 import { Button } from '@/components/radix/Button';
-import { Calendar, Link2, X } from 'lucide-react';
+import { Calendar, Clock, Link2, X } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
@@ -134,7 +134,11 @@ function FormDateEditor({ value, type = 'datetime', onChange, field }: FormDateE
         !!field.foreignKey && 'pr-20'
       )}
     >
-      <Calendar className="mr-2 h-4 w-4" />
+      {type === 'datetime' ? (
+        <Clock className="mr-2 h-4 w-4" />
+      ) : (
+        <Calendar className="mr-2 h-4 w-4" />
+      )}
       {formatDisplayValue()}
     </Button>
   );

@@ -232,16 +232,10 @@ export function DateCellEditor({
 
     if (type === 'datetime') {
       const d = new Date(value);
-      return format(d, 'MMM dd, yyyy HH:mm');
+      return format(d, 'MMM dd, yyyy hh:mm a');
     } else {
-      // For date type (YYYY-MM-DD), use date-fns to parse and format safely
-      if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const date = parse(value, 'yyyy-MM-dd', new Date());
-        return format(date, 'MMM dd, yyyy');
-      }
-      // Fallback for unexpected formats
-      const d = new Date(value);
-      return format(d, 'MMM dd, yyyy');
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      return format(date, 'MMM dd, yyyy');
     }
   };
 
@@ -336,7 +330,11 @@ export function DateCellEditor({
             (!value || value === 'null') && 'text-muted-foreground'
           )}
         >
-          <Calendar className="mr-2 h-4 w-4" />
+          {type === 'datetime' ? (
+            <Clock className="mr-2 h-4 w-4" />
+          ) : (
+            <Calendar className="mr-2 h-4 w-4" />
+          )}
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>

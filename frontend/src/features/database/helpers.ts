@@ -115,16 +115,14 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
         break;
       case ColumnType.DATE:
         if (column.defaultValue && !column.defaultValue.endsWith('()')) {
-          // Static default value - convert to YYYY-MM-DD format
-          const date = new Date(column.defaultValue);
-          values[column.columnName] = date.toISOString().split('T')[0];
+          values[column.columnName] = column.defaultValue;
         } else {
           values[column.columnName] = '';
         }
         break;
       case ColumnType.DATETIME:
         if (column.defaultValue && !column.defaultValue.endsWith('()')) {
-          values[column.columnName] = new Date(column.defaultValue).toISOString();
+          values[column.columnName] = column.defaultValue;
         } else {
           values[column.columnName] = '';
         }
