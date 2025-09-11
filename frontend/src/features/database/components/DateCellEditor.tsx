@@ -64,10 +64,11 @@ export function DateCellEditor({
   const [pickerMode, setPickerMode] = useState<PickerMode>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (value && value !== 'null') {
-      if (type === 'date' && typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      if (type === 'date') {
         return parse(value, 'yyyy-MM-dd', new Date());
+      } else {
+        return new Date(value);
       }
-      return new Date(value);
     }
     return new Date();
   });
