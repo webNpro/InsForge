@@ -104,10 +104,11 @@ class LocalStorageBackend implements StorageBackend {
     key: string,
     _metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategyResponse> {
-    // For local storage, return direct upload strategy
+    // For local storage, return direct upload strategy with absolute URL
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
     return Promise.resolve({
       method: 'direct',
-      uploadUrl: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      uploadUrl: `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       key,
       confirmRequired: false,
     });
@@ -119,10 +120,11 @@ class LocalStorageBackend implements StorageBackend {
     _expiresIn?: number,
     _isPublic?: boolean
   ): Promise<DownloadStrategyResponse> {
-    // For local storage, return direct download URL
+    // For local storage, return direct download URL with absolute URL
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
     return Promise.resolve({
       method: 'direct',
-      url: `/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      url: `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     });
   }
 
