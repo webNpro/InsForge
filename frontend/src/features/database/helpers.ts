@@ -41,6 +41,12 @@ export function buildDynamicSchema(columns: ColumnSchema[]) {
           fieldSchema = fieldSchema.nullable().optional();
         }
         break;
+      case ColumnType.DATE:
+        fieldSchema = z.string();
+        if (column.isNullable) {
+          fieldSchema = fieldSchema.nullable().optional();
+        }
+        break;
       case ColumnType.DATETIME:
         fieldSchema = z.string(); // ISO date string
         if (column.isNullable) {
@@ -107,9 +113,16 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
           values[column.columnName] = '';
         }
         break;
+      case ColumnType.DATE:
+        if (column.defaultValue && !column.defaultValue.endsWith('()')) {
+          values[column.columnName] = column.defaultValue;
+        } else {
+          values[column.columnName] = '';
+        }
+        break;
       case ColumnType.DATETIME:
         if (column.defaultValue && !column.defaultValue.endsWith('()')) {
-          values[column.columnName] = new Date(column.defaultValue).toISOString();
+          values[column.columnName] = column.defaultValue;
         } else {
           values[column.columnName] = '';
         }

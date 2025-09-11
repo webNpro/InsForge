@@ -45,6 +45,9 @@ export class OpenAPIService {
       case ColumnType.BOOLEAN:
         baseType = z.boolean();
         break;
+      case ColumnType.DATE:
+        baseType = z.string().date();
+        break;
       case ColumnType.DATETIME:
         baseType = z.string().datetime();
         break;

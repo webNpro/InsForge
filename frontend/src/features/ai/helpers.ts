@@ -1,7 +1,9 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 
-export const generateAIIntegrationPrompt = async (config: AIConfigurationSchema): Promise<string> => {
+export const generateAIIntegrationPrompt = async (
+  config: AIConfigurationSchema
+): Promise<string> => {
   const baseUrl = window.location.origin;
   const anonKey = await metadataService.fetchApiKey();
 

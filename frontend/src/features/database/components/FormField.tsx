@@ -3,7 +3,7 @@ import { Control, Controller, UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
 import { Button } from '@/components/radix/Button';
-import { Calendar, Link2, X } from 'lucide-react';
+import { Calendar, Clock, Link2, X } from 'lucide-react';
 import { BooleanCellEditor } from './BooleanCellEditor';
 import { DateCellEditor } from './DateCellEditor';
 import { JsonCellEditor } from './JsonCellEditor';
@@ -11,6 +11,7 @@ import { LinkRecordModal } from './LinkRecordModal';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { convertValueForColumn, cn } from '@/lib/utils/utils';
 import { TypeBadge } from '@/components/TypeBadge';
+import { format, parse } from 'date-fns';
 
 // Type for database records
 type DatabaseRecord = Record<string, any>;
@@ -74,7 +75,7 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
 
 interface FormDateEditorProps {
   value: string | null;
-  type?: 'date' | 'datetime';
+  type: 'date' | 'datetime';
   onChange: (value: string | null) => void;
   field: ColumnSchema;
 }
@@ -112,11 +113,14 @@ function FormDateEditor({ value, type = 'datetime', onChange, field }: FormDateE
       return getPlaceholderText(field);
     }
 
-    const d = new Date(value);
     if (type === 'datetime') {
-      return d.toLocaleString();
+      // For datetime, parse ISO string and format consistently
+      const d = new Date(value);
+      return format(d, 'MMM dd, yyyy, hh:mm a');
+    } else {
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      return format(date, 'MMM dd, yyyy');
     }
-    return d.toLocaleDateString();
   };
 
   return (
@@ -130,7 +134,11 @@ function FormDateEditor({ value, type = 'datetime', onChange, field }: FormDateE
         !!field.foreignKey && 'pr-20'
       )}
     >
-      <Calendar className="mr-2 h-4 w-4" />
+      {type === 'datetime' ? (
+        <Clock className="mr-2 h-4 w-4" />
+      ) : (
+        <Calendar className="mr-2 h-4 w-4" />
+      )}
       {formatDisplayValue()}
     </Button>
   );
@@ -427,6 +435,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
           </div>
         );
 
+      case ColumnType.DATE:
       case ColumnType.DATETIME:
         return (
           <div className="grid grid-cols-6 gap-x-10">
@@ -441,7 +450,7 @@ export function FormField({ field, form, tableName }: FormFieldProps) {
                   render={({ field: formField }) => (
                     <FormDateEditor
                       value={formField.value}
-                      type="datetime"
+                      type={field.type as ColumnType.DATE | ColumnType.DATETIME}
                       onChange={formField.onChange}
                       field={field}
                     />

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { cn } from '@/lib/utils/utils';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/radix/Popover';
 
 interface DateCellEditorProps {
@@ -64,7 +64,11 @@ export function DateCellEditor({
   const [pickerMode, setPickerMode] = useState<PickerMode>('day');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (value && value !== 'null') {
-      return new Date(value);
+      if (type === 'date') {
+        return parse(value, 'yyyy-MM-dd', new Date());
+      } else {
+        return new Date(value);
+      }
     }
     return new Date();
   });
@@ -137,7 +141,8 @@ export function DateCellEditor({
     setSelectedDate(newDate);
 
     if (type === 'date') {
-      onValueChange(format(newDate, 'yyyy-MM-dd'));
+      const dateString = format(newDate, 'yyyy-MM-dd');
+      onValueChange(dateString);
       setOpen(false);
     }
   };
@@ -208,7 +213,8 @@ export function DateCellEditor({
       const localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00${timezoneOffset}`;
       onValueChange(localISOString);
     } else {
-      onValueChange(format(selectedDate, 'yyyy-MM-dd'));
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      onValueChange(dateString);
     }
     setOpen(false);
   };
@@ -225,11 +231,13 @@ export function DateCellEditor({
       return 'Select date...';
     }
 
-    const d = new Date(value);
     if (type === 'datetime') {
-      return format(d, 'MMM dd, yyyy HH:mm');
+      const d = new Date(value);
+      return format(d, 'MMM dd, yyyy hh:mm a');
+    } else {
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      return format(date, 'MMM dd, yyyy');
     }
-    return format(d, 'MMM dd, yyyy');
   };
 
   const renderDayPicker = () => {
@@ -323,7 +331,11 @@ export function DateCellEditor({
             (!value || value === 'null') && 'text-muted-foreground'
           )}
         >
-          <Calendar className="mr-2 h-4 w-4" />
+          {type === 'datetime' ? (
+            <Clock className="mr-2 h-4 w-4" />
+          ) : (
+            <Calendar className="mr-2 h-4 w-4" />
+          )}
           {formatDisplayValue()}
         </Button>
       </PopoverTrigger>
