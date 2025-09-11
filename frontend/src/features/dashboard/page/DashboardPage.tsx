@@ -97,13 +97,14 @@ export default function DashboardPage() {
                     With InsForge connected, your agent takes care of the backend for you
                   </p>
                 </div>
-                <div
+                <button
+                  type="button"
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-300 hover:bg-emerald-400 text-black rounded font-medium text-sm transition-colors cursor-pointer"
                   onClick={handleConnectInsForge}
                 >
                   <ArrowLeftRight className="w-5 h-5" />
                   Connect
-                </div>
+                </button>
               </div>
             </CardContent>
           </Card>
