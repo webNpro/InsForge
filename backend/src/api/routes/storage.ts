@@ -196,6 +196,8 @@ router.get(
             limit: limit,
             total: result.total,
           },
+          nextActions:
+            'You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object.',
         },
         200
       );
