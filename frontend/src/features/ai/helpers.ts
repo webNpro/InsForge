@@ -1,11 +1,11 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { authService } from '@/features/auth/services/auth.service';
 
 export const generateAIIntegrationPrompt = async (
   config: AIConfigurationSchema
 ): Promise<string> => {
   const baseUrl = window.location.origin;
-  const anonKey = await metadataService.fetchApiKey();
+  const { accessToken: anonKey } = await authService.generateAnonToken();
 
   // Text modality - Chat endpoint only
   if (config.modality === 'text') {
@@ -50,22 +50,6 @@ const completion = await client.ai.chat.completions.create({
     { role: "user", content: "Can you give me an example?" }
   ],
 });
-
-// Streaming response
-const stream = await client.ai.chat.completions.create({
-  model: "${config.modelId}",
-  messages: [
-    { role: "user", content: "Write a story" }
-  ],
-  stream: true
-});
-
-// Process stream chunks - OpenAI format
-for await (const chunk of stream) {
-  if (chunk.choices[0]?.delta?.content) {
-    process.stdout.write(chunk.choices[0].delta.content);
-  }
-}
 \`\`\`
 `;
   }
