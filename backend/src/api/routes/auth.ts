@@ -596,17 +596,21 @@ router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: N
 });
 
 // POST /api/auth/tokens/anon - Generate anonymous JWT token (never expires)
-router.post('/tokens/anon', verifyAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const token = authService.generateAnonToken();
-    
-    successResponse(res, {
-      accessToken: token,
-      message: 'Anonymous token generated successfully (never expires)',
-    });
-  } catch (error) {
-    next(error);
+router.post(
+  '/tokens/anon',
+  verifyAdmin,
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token = authService.generateAnonToken();
+
+      successResponse(res, {
+        accessToken: token,
+        message: 'Anonymous token generated successfully (never expires)',
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 export default router;

@@ -39,7 +39,6 @@ export class ApiClient {
     options: RequestInit & {
       returnFullResponse?: boolean;
       skipAuth?: boolean;
-      includeHeaders?: boolean;
     } = {}
   ) {
     const url = `${API_BASE}${endpoint}`;
@@ -111,6 +110,38 @@ export class ApiClient {
       } catch {
         responseData = text;
       }
+
+      // Check for Content-Range header and extract pagination if present
+      const contentRange = response.headers.get('content-range');
+      if (contentRange && Array.isArray(responseData)) {
+        const match = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
+        if (match) {
+          const start = parseInt(match[1]);
+          const end = parseInt(match[2]);
+          const total = match[3] === '*' ? responseData.length : parseInt(match[3]);
+
+          const pagination = {
+            offset: start,
+            limit: end - start + 1,
+            total,
+          };
+
+          return {
+            data: responseData,
+            pagination,
+          };
+        } else {
+          return {
+            data: responseData,
+            pagination: {
+              offset: 0,
+              limit: 0,
+              total: 0,
+            },
+          };
+        }
+      }
+
       // If full response is requested, return it as-is
       if (returnFullResponse) {
         return responseData;

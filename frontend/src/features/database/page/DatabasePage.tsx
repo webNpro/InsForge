@@ -143,7 +143,7 @@ export default function DatabasePage() {
           name: selectedTable,
           schema,
           records: records.records,
-          totalRecords: records.pagination.total || schema.recordCount,
+          totalRecords: records.pagination.total ?? schema.recordCount,
         };
       } catch (error) {
         // If sorting caused the error, retry without sorting
