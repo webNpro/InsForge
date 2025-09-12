@@ -99,7 +99,7 @@ export class AuthService {
     });
   }
 
-  async generateAnonToken(): Promise<{ token: string }> {
+  async generateAnonToken(): Promise<{ accessToken: string; message: string }> {
     return apiClient.request('/auth/tokens/anon', {
       method: 'POST',
     });

@@ -5,7 +5,7 @@ export const generateAIIntegrationPrompt = async (
   config: AIConfigurationSchema
 ): Promise<string> => {
   const baseUrl = window.location.origin;
-  const { token: anonKey } = await authService.generateAnonToken();
+  const { accessToken: anonKey } = await authService.generateAnonToken();
 
   // Text modality - Chat endpoint only
   if (config.modality === 'text') {
