@@ -98,6 +98,12 @@ export class AuthService {
       body: JSON.stringify({ userIds }),
     });
   }
+
+  async generateAnonToken(): Promise<{ token: string }> {
+    return apiClient.request('/auth/tokens/anon', {
+      method: 'POST',
+    });
+  }
 }
 
 export const authService = new AuthService();

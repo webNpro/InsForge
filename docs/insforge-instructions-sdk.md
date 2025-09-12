@@ -182,22 +182,6 @@ const completion = await client.ai.chat.completions.create({
 // Access response - OpenAI format
 console.log(completion.choices[0].message.content);  // "The capital of France is Paris"
 console.log(completion.usage.total_tokens);          // Token usage
-
-// Streaming chat completion
-const stream = await client.ai.chat.completions.create({
-  model: 'anthropic/claude-3.5-haiku',
-  messages: [
-    { role: 'user', content: 'Tell me a story' }
-  ],
-  stream: true
-});
-
-// Process stream chunks - OpenAI format
-for await (const chunk of stream) {
-  if (chunk.choices[0]?.delta?.content) {
-    process.stdout.write(chunk.choices[0].delta.content);
-  }
-}
 ```
 
 ### Image + Chat Completions Generation
