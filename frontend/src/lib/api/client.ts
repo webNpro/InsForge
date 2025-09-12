@@ -130,6 +130,15 @@ export class ApiClient {
             data: responseData,
             pagination,
           };
+        } else {
+          return {
+            data: responseData,
+            pagination: {
+              offset: 0,
+              limit: 0,
+              total: 0,
+            },
+          };
         }
       }
 
