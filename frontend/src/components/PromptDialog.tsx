@@ -29,19 +29,16 @@ export function PromptDialog({
             </DialogTitle>
           </DialogHeader>
           {/* Content */}
-          <div className="flex flex-col h-full max-h-[80vh]">
-            <div className="px-6 pt-6 pb-4">
-              <p className="text-sm text-zinc-500 font-normal leading-5 dark:text-neutral-400">
-                {subtitle}
-              </p>
-            </div>
-            
-            {/* Prompt display - scrollable area */}
-            <div className="flex-1 overflow-hidden px-6 min-h-0">
+          <div className="p-6 flex flex-col gap-4">
+            <p className="text-sm text-zinc-500 font-normal leading-5 dark:text-neutral-400">
+              {subtitle}
+            </p>
+            {/* Prompt display */}
+            <div className="relative">
               <pre
                 className={cn(
                   'px-6 py-4 font-mono text-sm leading-5 overflow-auto whitespace-pre-wrap break-all rounded',
-                  'h-full max-h-[400px]',
+                  'max-h-96',
                   'bg-zinc-50 text-zinc-900 dark:bg-neutral-700 dark:text-white',
                   'border border-zinc-200 dark:border-neutral-700'
                 )}
@@ -50,8 +47,8 @@ export function PromptDialog({
               </pre>
             </div>
 
-            {/* Action buttons - always visible at bottom */}
-            <div className="px-6 py-4 flex items-center justify-end gap-2.5 border-t border-zinc-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2.5">
               {additionalAction}
               <CopyButton
                 text={prompt}
