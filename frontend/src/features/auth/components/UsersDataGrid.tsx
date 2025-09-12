@@ -155,7 +155,7 @@ export function createUsersColumns(): DataGridColumn[] {
       width: '1fr',
       resizable: true,
       sortable: true,
-      renderCell: DefaultCellRenderers.date,
+      renderCell: DefaultCellRenderers.datetime,
     },
     {
       key: 'updated_at',
@@ -163,7 +163,7 @@ export function createUsersColumns(): DataGridColumn[] {
       width: '1fr',
       resizable: true,
       sortable: true,
-      renderCell: DefaultCellRenderers.date,
+      renderCell: DefaultCellRenderers.datetime,
     },
   ];
 }
