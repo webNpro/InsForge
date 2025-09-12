@@ -303,7 +303,7 @@ router.get(
       }
 
       const storageService = StorageService.getInstance();
-      const expiresIn = await storageService.isBucketPublic(bucketName) ? 0 : 3600;
+      const expiresIn = (await storageService.isBucketPublic(bucketName)) ? 0 : 3600;
       const strategy = await storageService.getDownloadStrategy(
         bucketName,
         objectKey,
