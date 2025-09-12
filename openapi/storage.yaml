@@ -186,38 +186,32 @@ paths:
       responses:
         '200':
           description: List of objects in bucket
-          headers:
-            X-Total-Count:
-              schema:
-                type: integer
-              description: Total number of objects in the bucket
-            X-Page:
-              schema:
-                type: integer
-              description: Current page number
-            X-Page-Size:
-              schema:
-                type: integer
-              description: Number of items per page
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  bucket:
-                    type: string
-                    example: avatars
-                  prefix:
-                    type: string
-                    example: users/
-                  objects:
+                  data:
                     type: array
                     items:
                       $ref: '#/components/schemas/StoredFile'
+                  pagination:
+                    type: object
+                    properties:
+                      offset:
+                        type: integer
+                        example: 0
+                      limit:
+                        type: integer
+                        example: 100
+                      total:
+                        type: integer
+                        example: 2
+                  nextActions:
+                    type: string
+                    example: "You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object."
               example:
-                bucket: "avatars"
-                prefix: "users/"
-                objects:
+                data:
                   - bucket: "avatars"
                     key: "users/user123.jpg"
                     size: 102400
@@ -230,6 +224,11 @@ paths:
                     mimeType: "image/png"
                     uploadedAt: "2024-01-16T11:00:00Z"
                     url: "/api/storage/buckets/avatars/objects/users/user456.png"
+                pagination:
+                  offset: 0
+                  limit: 100
+                  total: 2
+                nextActions: "You can use PUT /api/storage/buckets/:bucketName/objects/:objectKey to upload with a specific key, or POST /api/storage/buckets/:bucketName/objects to upload with auto-generated key, and GET /api/storage/buckets/:bucketName/objects/:objectKey to download an object."
 
     delete:
       summary: Delete Bucket
