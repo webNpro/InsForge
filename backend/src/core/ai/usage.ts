@@ -63,7 +63,7 @@ export class AIUsageService {
     try {
       const usageResult = await client.query(
         `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, model_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
         [configId, inputTokens || null, outputTokens || null, modelId || null]
       );
