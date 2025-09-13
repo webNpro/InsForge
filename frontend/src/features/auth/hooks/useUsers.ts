@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { authService } from '@/features/auth/services/auth.service';
-import { metadataService } from '@/features/metadata/services/metadata.service';
 
 interface UseUsersOptions {
   pageSize?: number;
@@ -12,13 +11,6 @@ interface UseUsersOptions {
 export function useUsers(options: UseUsersOptions = {}) {
   const { pageSize = 20, enabled = true, searchQuery = '' } = options;
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
 
   // Fetch users data
   const {
@@ -36,22 +28,17 @@ export function useUsers(options: UseUsersOptions = {}) {
       // Use the auth service to get users with search, backend handles filtering
       return authService.getUsers(params.toString(), searchQuery);
     },
-    enabled: enabled && !!apiKey,
+    enabled: enabled,
     placeholderData: (previousData) => previousData, // Keep previous data while loading
   });
 
-  // No need for client-side filtering - backend handles search
-  const filteredUsers = usersData?.records || [];
-
   // Pagination calculations
-  const totalPages = Math.ceil((usersData?.total || 0) / pageSize);
-  const startRecord = (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, usersData?.total || 0);
+  const totalPages = Math.ceil((usersData?.pagination.total || 0) / pageSize);
 
   return {
     // Data
-    users: filteredUsers,
-    totalUsers: usersData?.total || 0,
+    users: usersData?.users || [],
+    totalUsers: usersData?.pagination.total || 0,
     isLoading,
     error,
 
@@ -59,8 +46,6 @@ export function useUsers(options: UseUsersOptions = {}) {
     currentPage,
     setCurrentPage,
     totalPages,
-    startRecord,
-    endRecord,
     pageSize,
 
     // Search

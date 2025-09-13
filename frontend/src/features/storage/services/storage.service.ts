@@ -15,7 +15,7 @@ export const storageService = {
   // List all buckets
   async listBuckets(): Promise<StorageBucketSchema[]> {
     const response = await apiClient.request('/storage/buckets', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
     // Traditional REST: API returns array directly
     return response;
@@ -42,22 +42,16 @@ export const storageService = {
     }
 
     const url = `/storage/buckets/${encodeURIComponent(bucketName)}/objects${searchParams.toString() ? `?${searchParams}` : ''}`;
-    const response = await apiClient.request(url, {
-      headers: apiClient.withApiKey(),
-      returnFullResponse: true,
+    const response: {
+      data: StorageFileSchema[];
+      pagination: { offset: number; limit: number; total: number };
+    } = await apiClient.request(url, {
+      headers: apiClient.withAccessToken(),
     });
 
-    // Transform the response to match expected format
-    // Backend returns: { bucket, objects, pagination, ... }
-    // Frontend expects: { data: { objects }, meta: { pagination } }
     return {
-      bucketName: response.bucketName,
-      objects: response.objects || [],
-      pagination: {
-        total: parseInt(response.pagination?.total) || 0,
-        limit: response.pagination?.limit || 100,
-        offset: response.pagination?.offset || 0,
-      },
+      objects: response.data,
+      pagination: response.pagination,
     };
   },
 
@@ -76,7 +70,7 @@ export const storageService = {
       {
         method: 'PUT',
         headers: {
-          'x-api-key': apiClient.getApiKey() || '',
+          Authorization: `Bearer ${apiClient.getToken()}`,
         },
         body: formData,
       }
@@ -102,7 +96,7 @@ export const storageService = {
   async downloadObject(bucketName: string, objectKey: string): Promise<Blob> {
     const response = await fetch(this.getDownloadUrl(bucketName, objectKey), {
       headers: {
-        'x-api-key': apiClient.getApiKey() || '',
+        Authorization: `Bearer ${apiClient.getToken()}`,
       },
     });
     if (!response.ok) {
@@ -117,7 +111,7 @@ export const storageService = {
       `/storage/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(objectKey)}`,
       {
         method: 'DELETE',
-        headers: apiClient.withApiKey(),
+        headers: apiClient.withAccessToken(),
       }
     );
   },
@@ -126,7 +120,7 @@ export const storageService = {
   async createBucket(bucketName: string, isPublic: boolean = true): Promise<void> {
     await apiClient.request('/storage/buckets', {
       method: 'POST',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
       body: JSON.stringify({ bucketName: bucketName, isPublic: isPublic }),
     });
   },
@@ -135,7 +129,7 @@ export const storageService = {
   async deleteBucket(bucketName: string): Promise<void> {
     await apiClient.request(`/storage/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   },
 
@@ -143,7 +137,7 @@ export const storageService = {
   async editBucket(bucketName: string, config: { isPublic: boolean }): Promise<void> {
     await apiClient.request(`/storage/buckets/${encodeURIComponent(bucketName)}`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
       body: JSON.stringify(config),
     });
   },

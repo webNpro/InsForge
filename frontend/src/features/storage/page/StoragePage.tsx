@@ -373,18 +373,18 @@ export default function StoragePage() {
           <>
             {/* Sticky Header Section */}
             <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
-              <div className="px-6 py-3 border-b border-border-gray dark:border-neutral-600 h-12">
+              <div className="pl-4 pr-1.5 py-1.5 h-12">
                 {/* Page Header with Breadcrumb */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {selectedBucket && (
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black dark:text-zinc-300">{selectedBucket}</span>
+                        <span className="text-black dark:text-white">{selectedBucket}</span>
                       </nav>
                     )}
 
                     {/* Separator */}
-                    <div className="h-6 w-px bg-gray-200" />
+                    <div className="h-6 w-px bg-gray-200 dark:bg-neutral-700" />
 
                     {/* Action buttons group */}
                     <div className="flex items-center gap-1">
@@ -395,7 +395,7 @@ export default function StoragePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6"
+                                className="p-1 h-9 w-9"
                                 onClick={() => handleEditBucket(selectedBucket)}
                               >
                                 <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
@@ -411,7 +411,7 @@ export default function StoragePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="p-1 h-6 w-6"
+                              className="p-1 h-9 w-9"
                               onClick={() => void handleRefresh()}
                               disabled={isRefreshing}
                             >
@@ -427,7 +427,7 @@ export default function StoragePage() {
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-3 border-b border-border-gray dark:border-neutral-600">
+              <div className="pt-2 px-3 pb-4">
                 {/* Search Bar and Actions - only show when bucket is selected */}
                 {selectedBucket && (
                   <div className="flex items-center justify-between">

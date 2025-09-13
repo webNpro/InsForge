@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
@@ -34,8 +34,6 @@ interface OAuthDialogProps {
 export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [reloading, setReloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const form = useForm<OAuthConfigSchema>({
@@ -63,15 +61,18 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   const clientId = form.watch(`${currentProviderKey}.clientId`);
   const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
 
+  // Use useFormState hook for better reactivity
+  const { isDirty } = useFormState({
+    control: form.control,
+  });
+
   const loadOAuthConfig = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const config = await configService.getOAuthConfig();
       form.reset(config);
     } catch (error) {
       const errorMessage = 'Failed to load OAuth configuration';
-      setError(errorMessage);
       showToast(errorMessage, 'error');
       console.error('Error loading OAuth config:', error);
     } finally {
@@ -86,55 +87,40 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     }
   }, [isOpen, provider, loadOAuthConfig]);
 
-  const onSubmit = async (data: OAuthConfigSchema) => {
+  const handleSubmitData = async (data: OAuthConfigSchema) => {
     if (!provider) {
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
 
-      // Transform data to ensure required fields are present
-      const transformedData = {
+      // Create updated config without enabling the OAuth method
+      const updatedConfig = {
         ...data,
         [currentProviderKey]: {
           ...data[currentProviderKey],
-          clientId: data[currentProviderKey].clientId || '',
-          clientSecret: data[currentProviderKey].clientSecret || '',
-          redirectUri: data[currentProviderKey].redirectUri || getCallbackUrl(currentProviderKey),
-          enabled: !!data[currentProviderKey].clientId,
-          useSharedKeys: data[currentProviderKey].useSharedKeys,
+          useSharedKeys: useSharedKeys ?? true,
         },
       };
 
-      await configService.updateOAuthConfig(transformedData);
+      // Update OAuth configuration (only config data, not enable status)
+      await configService.updateOAuthConfig(updatedConfig);
+      await configService.reloadOAuthConfig();
 
-      // Reload OAuth configuration to apply changes
-      setReloading(true);
-      try {
-        await configService.reloadOAuthConfig();
-        // Show success message only after both save and reload succeed
-        const configType = useSharedKeys ? 'shared keys' : 'custom OAuth credentials';
-        showToast(`${provider.name} ${configType} updated and applied successfully!`, 'success');
-      } catch (reloadError) {
-        // Config was saved but reload failed
-        showToast('Configuration saved but failed to apply. Please try again.', 'warn');
-        console.error('Failed to reload OAuth:', reloadError);
-      } finally {
-        setReloading(false);
-      }
+      showToast(`${provider.name} configuration updated successfully!`, 'success');
+
+      // Reset form state to mark as clean (not dirty)
+      form.reset(updatedConfig);
 
       // Call success callback if provided
       if (onSuccess) {
         onSuccess();
       }
-
       // Close dialog
       onClose();
     } catch (error) {
-      const errorMessage = `Failed to update ${provider.name} configuration`;
-      setError(errorMessage);
+      const errorMessage = `Failed to update ${provider.name} configuration. Please check running environment and try again.`;
       showToast(errorMessage, 'error');
       console.error('Error saving OAuth config:', error);
     } finally {
@@ -143,28 +129,32 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
   };
 
   const handleSubmit = () => {
-    void onSubmit(form.getValues() as OAuthConfigSchema);
+    void handleSubmitData(form.getValues() as OAuthConfigSchema);
   };
 
-  // Determine if the update button should be disabled
+  // Use RHF's built-in validation and dirty state
   const isUpdateDisabled = () => {
-    if (saving || reloading) {
+    if (saving || !isDirty) {
       return true;
     }
+
+    // If using shared keys, always allow (no credential validation needed)
     if (useSharedKeys) {
       return false;
     }
+
+    // If NOT using shared keys, require both clientId and clientSecret
     return !clientId || !clientSecret;
   };
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl dark:bg-neutral-800 dark:text-white">
-        <DialogHeader>
+      <DialogContent className="max-w-[700px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
+        <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="p-6 flex items-center justify-center">
             <div className="text-center">
               <div className="text-sm text-gray-500 dark:text-zinc-400">
                 Loading OAuth configuration...
@@ -173,100 +163,103 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
           </div>
         ) : (
           <>
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
-                <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-              {/* Shared Keys Toggle */}
-              <div className="flex items-center justify-start gap-2">
-                <Switch
-                  checked={useSharedKeys}
-                  onCheckedChange={(checked) =>
-                    form.setValue(`${currentProviderKey}.useSharedKeys`, checked)
-                  }
-                />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  Shared Keys
-                </span>
-              </div>
-
-              {useSharedKeys ? (
-                /* Shared Keys Enabled */
-                <div className="space-y-6">
-                  <p className="text-sm text-zinc-500 dark:text-neutral-400">
-                    Shared keys are created by the InsForge team for development. It helps you get
-                    started, but will show a InsForge logo and name on the OAuth screen.
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
-                    <span className="text-sm font-medium text-zinc-950 dark:text-white">
-                      Shared keys should never be used in production
-                    </span>
-                  </div>
+            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
+              <div className="space-y-6 p-6">
+                {/* Shared Keys Toggle */}
+                <div className="flex items-center justify-start gap-2">
+                  <Controller
+                    name={`${currentProviderKey}.useSharedKeys`}
+                    control={form.control}
+                    render={({ field }) => {
+                      return (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        />
+                      );
+                    }}
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Shared Keys
+                  </span>
                 </div>
-              ) : (
-                /* Shared Keys Disabled */
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <a
-                      href={provider?.setupUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
-                    >
-                      Create a {provider?.name.split(' ')[0]} OAuth App
-                    </a>
-                    <span className="text-sm font-normal text-zinc-950 dark:text-zinc-400">
-                      {' '}
-                      and set the callback url to:
-                    </span>
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <code className="py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
-                        {getCallbackUrl(provider?.id)}
-                      </code>
-                      <CopyButton text={getCallbackUrl(provider?.id)} />
-                    </div>
-                  </div>
-
+                {useSharedKeys ? (
+                  /* Shared Keys Enabled */
                   <div className="space-y-6">
-                    <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
-                        Client ID
-                      </label>
-                      <Input
-                        type="text"
-                        {...form.register(`${currentProviderKey}.clientId`)}
-                        placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
-                      />
+                    <p className="text-sm text-zinc-500 dark:text-neutral-400">
+                      Shared keys are created by the InsForge team for development. It helps you get
+                      started, but will show a InsForge logo and name on the OAuth screen.
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
+                      <span className="text-sm font-medium text-zinc-950 dark:text-white">
+                        Shared keys should never be used in production
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Shared Keys Disabled */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <a
+                        href={provider?.setupUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
+                      >
+                        Create a {provider?.name.split(' ')[0]} OAuth App
+                      </a>
+                      <span className="text-sm font-normal text-zinc-950 dark:text-white">
+                        {' '}
+                        and set the callback url to:
+                      </span>
                     </div>
 
-                    <div className="flex flex-col items-start gap-3">
-                      <label className="text-sm font-medium text-zinc-950 dark:text-zinc-400">
-                        Client Secret
-                      </label>
-                      <Input
-                        type="password"
-                        {...form.register(`${currentProviderKey}.clientSecret`)}
-                        placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
-                      />
+                    <div className="space-x-3">
+                      <div className="flex items-center gap-2">
+                        <code className="flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                          {getCallbackUrl(provider?.id)}
+                        </code>
+                        <CopyButton className="h-9" text={getCallbackUrl(provider?.id)} />
+                      </div>
                     </div>
+                  </div>
+                )}
+              </div>
+              {!useSharedKeys && (
+                <div className="space-y-6 p-6 border-t border-zinc-200 dark:border-neutral-700">
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client ID</label>
+                    <Input
+                      type="text"
+                      {...form.register(`${currentProviderKey}.clientId`)}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client Secret</label>
+                    <Input
+                      type="password"
+                      {...form.register(`${currentProviderKey}.clientSecret`)}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
                   </div>
                 </div>
               )}
             </form>
 
-            <DialogFooter>
+            <DialogFooter className="p-6 border-t border-zinc-200 dark:border-neutral-700">
               <Button
                 type="button"
-                className="py-2 px-4 text-sm font-medium dark:bg-neutral-800 dark:text-white dark:border-neutral-700 dark:hover:bg-neutral-700"
+                className="h-9 w-30 px-3 py-2 dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
@@ -277,9 +270,9 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 type="button"
                 onClick={handleSubmit}
                 disabled={isUpdateDisabled()}
-                className="py-2 px-4 text-sm font-medium dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
+                className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Saving...' : reloading ? 'Reloading...' : 'Update'}
+                {saving ? 'Saving...' : 'Update'}
               </Button>
             </DialogFooter>
           </>

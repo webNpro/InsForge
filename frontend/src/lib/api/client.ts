@@ -9,13 +9,11 @@ interface ApiError extends Error {
 
 export class ApiClient {
   private token: string | null = null;
-  private apiKey: string | null = null;
   private tokenRefreshPromise: Promise<void> | null = null;
   private onAuthError?: () => void;
 
   constructor() {
     this.token = localStorage.getItem('insforge_token');
-    this.apiKey = localStorage.getItem('insforge_api_key');
   }
 
   setToken(token: string) {
@@ -32,15 +30,6 @@ export class ApiClient {
     return this.token;
   }
 
-  setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-    localStorage.setItem('insforge_api_key', apiKey);
-  }
-
-  getApiKey(): string | null {
-    return this.apiKey;
-  }
-
   setAuthErrorHandler(handler?: () => void) {
     this.onAuthError = handler;
   }
@@ -50,11 +39,10 @@ export class ApiClient {
     options: RequestInit & {
       returnFullResponse?: boolean;
       skipAuth?: boolean;
-      includeHeaders?: boolean;
     } = {}
   ) {
     const url = `${API_BASE}${endpoint}`;
-    const { returnFullResponse, skipAuth, includeHeaders, ...fetchOptions } = options;
+    const { returnFullResponse, skipAuth, ...fetchOptions } = options;
 
     // Initial request attempt
     const makeRequest = async () => {
@@ -80,7 +68,7 @@ export class ApiClient {
         let errorData;
         try {
           errorData = await response.json();
-        } catch (e) {
+        } catch {
           // If parsing JSON fails, throw a generic error
           const error: ApiError = new Error(`HTTP ${response.status}: ${response.statusText}`);
           error.response = { data: null, status: response.status };
@@ -119,39 +107,39 @@ export class ApiClient {
       let responseData = null;
       try {
         responseData = text ? JSON.parse(text) : null;
-      } catch (e) {
+      } catch {
         responseData = text;
       }
 
-      // If headers are requested, return response with headers
-      if (includeHeaders) {
-        const paginationHeaders: any = {};
-        const totalCount = response.headers.get('X-Total-Count');
-        const page = response.headers.get('X-Page');
-        const totalPages = response.headers.get('X-Total-Pages');
-        const limit = response.headers.get('X-Limit');
-        const offset = response.headers.get('X-Offset');
+      // Check for Content-Range header and extract pagination if present
+      const contentRange = response.headers.get('content-range');
+      if (contentRange && Array.isArray(responseData)) {
+        const match = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
+        if (match) {
+          const start = parseInt(match[1]);
+          const end = parseInt(match[2]);
+          const total = match[3] === '*' ? responseData.length : parseInt(match[3]);
 
-        if (totalCount) {
-          paginationHeaders.totalCount = parseInt(totalCount);
-        }
-        if (page) {
-          paginationHeaders.page = parseInt(page);
-        }
-        if (totalPages) {
-          paginationHeaders.totalPages = parseInt(totalPages);
-        }
-        if (limit) {
-          paginationHeaders.limit = parseInt(limit);
-        }
-        if (offset) {
-          paginationHeaders.offset = parseInt(offset);
-        }
+          const pagination = {
+            offset: start,
+            limit: end - start + 1,
+            total,
+          };
 
-        return {
-          data: responseData,
-          pagination: Object.keys(paginationHeaders).length > 0 ? paginationHeaders : undefined,
-        };
+          return {
+            data: responseData,
+            pagination,
+          };
+        } else {
+          return {
+            data: responseData,
+            pagination: {
+              offset: 0,
+              limit: 0,
+              total: 0,
+            },
+          };
+        }
       }
 
       // If full response is requested, return it as-is
@@ -166,9 +154,9 @@ export class ApiClient {
     return makeRequest();
   }
 
-  // Helper method to add API key header
-  withApiKey(headers: Record<string, string> = {}) {
-    return this.apiKey ? { ...headers, 'x-api-key': this.apiKey } : headers;
+  // Helper method to add authorization header with token
+  withAccessToken(headers: Record<string, string> = {}) {
+    return this.token ? { ...headers, Authorization: `Bearer ${this.token}` } : headers;
   }
 }
 

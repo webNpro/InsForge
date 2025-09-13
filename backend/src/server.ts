@@ -6,8 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import authRouter from '@/api/routes/auth.js';
-import { tablesRouter } from '@/api/routes/tables.js';
-import { databaseRouter } from '@/api/routes/records.js';
+import { tableRouter } from '@/api/routes/tables.js';
+import { recordRouter } from '@/api/routes/records.js';
+import databaseRouter from '@/api/routes/database.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
@@ -17,6 +18,7 @@ import functionsRouter from '@/api/routes/functions.js';
 import { usageRouter } from '@/api/routes/usage.js';
 import { openAPIRouter } from '@/api/routes/openapi.js';
 import { agentDocsRouter } from '@/api/routes/agent.js';
+import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
 import { DatabaseManager } from '@/core/database/database.js';
@@ -24,8 +26,9 @@ import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { MetadataService } from '@/core/metadata/metadata.js';
 import { SocketService } from '@/core/socket/socket.js';
-import { seedAdmin } from '@/utils/seed.js';
+import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
+import { isProduction } from './utils/environment';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +77,9 @@ export async function createApp() {
       credentials: true, // Allow cookies/credentials
     })
   );
-  app.use(limiter);
+  if (isProduction()) {
+    app.use(limiter);
+  }
   app.use((req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     const originalSend = res.send;
@@ -139,8 +144,9 @@ export async function createApp() {
 
   // Mount auth routes
   apiRouter.use('/auth', authRouter);
-  apiRouter.use('/database/tables', tablesRouter);
-  apiRouter.use('/database/records', databaseRouter);
+  apiRouter.use('/database/tables', tableRouter);
+  apiRouter.use('/database/records', recordRouter);
+  apiRouter.use('/database/advance', databaseRouter);
   apiRouter.use('/storage', storageRouter);
   apiRouter.use('/metadata', metadataRouter);
   apiRouter.use('/logs', logsRouter);
@@ -150,6 +156,7 @@ export async function createApp() {
   apiRouter.use('/usage', usageRouter);
   apiRouter.use('/openapi', openAPIRouter);
   apiRouter.use('/agent-docs', agentDocsRouter);
+  apiRouter.use('/ai', aiRouter);
 
   // Mount all API routes under /api prefix
   app.use('/api', apiRouter);
@@ -242,7 +249,7 @@ export async function createApp() {
   }
 
   app.use(errorMiddleware);
-  await seedAdmin();
+  await seedBackend();
 
   return app;
 }

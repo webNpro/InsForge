@@ -34,10 +34,17 @@ export const COLUMN_TYPES: Record<ColumnType, ColumnTypeInfo> = {
     description: 'Text up to 255 characters',
     icon: 'text',
   },
+  [ColumnType.DATE]: {
+    type: ColumnType.DATE,
+    sqlType: 'DATE',
+    defaultValue: 'now()',
+    description: 'Date',
+    icon: 'calendar',
+  },
   [ColumnType.DATETIME]: {
     type: ColumnType.DATETIME,
     sqlType: 'TIMESTAMPTZ',
-    defaultValue: 'CURRENT_TIMESTAMP',
+    defaultValue: 'now()',
     description: 'Date and time with timezone',
     icon: 'calendar',
   },

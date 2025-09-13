@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Download, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
-import { Badge } from '@/components/radix/Badge';
 import { LoadingState } from '@/components';
 import { storageService } from '@/features/storage/services/storage.service';
 import { StorageFileSchema } from '@insforge/shared-schemas';
+import { TypeBadge } from '@/components/TypeBadge';
 
 interface FilePreviewDialogProps {
   open: boolean;
@@ -202,28 +202,19 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[800px] max-w-[800px] p-0 overflow-hidden flex">
-        <div className="w-[800px] min-h-[500px] max-h-[820px] bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-zinc-200 dark:border-neutral-700 flex flex-col">
+      <DialogContent className="w-[800px] max-w-[800px] p-0 flex">
+        <div className="w-[800px] min-h-[500px] max-h-[820px] bg-white dark:bg-neutral-800 border border-zinc-200 dark:border-neutral-700 flex flex-col">
           {/* Header */}
-          <div className="px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-300 leading-6">
-                  {fileName}
-                </h2>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-sm text-zinc-500 dark:text-zinc-300">
-                    {formatFileSize(file.size)}
-                  </span>
-                  {file.mimeType && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-normal px-2.5 py-0.5 dark:border-neutral-600 dark:bg-neutral-600 dark:text-neutral-400"
-                    >
-                      {file.mimeType}
-                    </Badge>
-                  )}
-                </div>
+          <div className="px-6 py-3">
+            <div className="flex flex-col items-start gap-1">
+              <h2 className="text-lg font-semibold text-zinc-950 dark:text-white">{fileName}</h2>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-zinc-500 dark:text-neutral-400">
+                  {formatFileSize(file.size)}
+                </span>
+                {file.mimeType && (
+                  <TypeBadge type={file.mimeType} className="dark:bg-neutral-700" />
+                )}
               </div>
             </div>
           </div>

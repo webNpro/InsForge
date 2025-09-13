@@ -24,7 +24,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
-import { convertValueForColumn } from '@/lib/utils/database-utils';
+import { convertValueForColumn } from '@/lib/utils/utils';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -32,6 +32,8 @@ import {
   SocketMessage,
   useSocket,
 } from '@/lib/contexts/SocketContext';
+
+const PAGE_SIZE = 50;
 
 export default function DatabasePage() {
   // Load selected table from localStorage on mount
@@ -47,7 +49,6 @@ export default function DatabasePage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
   const [isSorting, setIsSorting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -93,13 +94,6 @@ export default function DatabasePage() {
     [showToast]
   );
 
-  // Ensure API key is fetched
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
-
   // Fetch metadata
   const {
     data: metadata,
@@ -109,7 +103,6 @@ export default function DatabasePage() {
   } = useQuery({
     queryKey: ['database-metadata'],
     queryFn: () => metadataService.getDatabaseMetadata(),
-    enabled: !!apiKey,
   });
 
   // Fetch table data when selected
@@ -123,7 +116,7 @@ export default function DatabasePage() {
       'table',
       selectedTable,
       currentPage,
-      pageSize,
+      PAGE_SIZE,
       searchQuery,
       JSON.stringify(sortColumns),
     ],
@@ -132,14 +125,14 @@ export default function DatabasePage() {
         return null;
       }
 
-      const offset = (currentPage - 1) * pageSize;
+      const offset = (currentPage - 1) * PAGE_SIZE;
 
       try {
         const [schema, records] = await Promise.all([
           databaseService.getTableSchema(selectedTable),
           databaseService.getTableRecords(
             selectedTable,
-            pageSize,
+            PAGE_SIZE,
             offset,
             searchQuery,
             sortColumns
@@ -150,7 +143,7 @@ export default function DatabasePage() {
           name: selectedTable,
           schema,
           records: records.records,
-          totalRecords: schema.recordCount,
+          totalRecords: records.pagination.total ?? schema.recordCount,
         };
       } catch (error) {
         // If sorting caused the error, retry without sorting
@@ -159,7 +152,7 @@ export default function DatabasePage() {
 
           const [schema, records] = await Promise.all([
             databaseService.getTableSchema(selectedTable),
-            databaseService.getTableRecords(selectedTable, pageSize, offset, searchQuery, []),
+            databaseService.getTableRecords(selectedTable, PAGE_SIZE, offset, searchQuery, []),
           ]);
 
           showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
@@ -168,13 +161,13 @@ export default function DatabasePage() {
             name: selectedTable,
             schema,
             records: records.records,
-            totalRecords: schema.recordCount,
+            totalRecords: records.pagination.total || schema.recordCount,
           };
         }
         throw error;
       }
     },
-    enabled: !!selectedTable && !!apiKey,
+    enabled: !!selectedTable,
     placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
   });
 
@@ -338,7 +331,7 @@ export default function DatabasePage() {
   };
 
   // Handle record update
-  const handleRecordUpdate = async (rowId: string, columnKey: string, newValue: any) => {
+  const handleRecordUpdate = async (rowId: string, columnKey: string, newValue: string) => {
     if (!selectedTable) {
       return;
     }
@@ -347,21 +340,19 @@ export default function DatabasePage() {
       // Find column schema to determine the correct type conversion
       const columnSchema = tableData?.schema?.columns?.find((col) => col.columnName === columnKey);
 
-      // Convert value based on column type using utility function
-      let convertedValue: any = newValue;
       if (columnSchema) {
-        const conversionResult = convertValueForColumn(columnSchema, newValue);
+        // Convert value based on column type using utility function
+        const conversionResult = convertValueForColumn(columnSchema.type, newValue);
+
         if (!conversionResult.success) {
           showToast(conversionResult.error || 'Invalid value', 'error');
           return;
         }
-        convertedValue = conversionResult.value;
+        const updates = { [columnKey]: conversionResult.value };
+        await databaseService.updateRecord(selectedTable, rowId, updates);
+        await refetchTableData();
+        showToast('Record updated successfully', 'success');
       }
-
-      const updates = { [columnKey]: convertedValue };
-      await databaseService.updateRecord(selectedTable, rowId, updates);
-      await refetchTableData();
-      showToast('Record updated successfully', 'success');
     } catch (error) {
       showToast('Failed to update record', 'error');
       throw error;
@@ -438,7 +429,7 @@ export default function DatabasePage() {
       }
       return await databaseService.getTableSchema(selectedTable);
     },
-    enabled: !!selectedTable && !!apiKey,
+    enabled: !!selectedTable,
     staleTime: 30 * 1000, // 30 seconds
   });
 
@@ -452,11 +443,11 @@ export default function DatabasePage() {
       const editingTableSchema = await databaseService.getTableSchema(editingTable);
       return editingTableSchema;
     },
-    enabled: !!editingTable && !!apiKey,
+    enabled: !!editingTable,
   });
 
   // Calculate pagination
-  const totalPages = Math.ceil((tableData?.totalRecords || 0) / pageSize);
+  const totalPages = Math.ceil((tableData?.totalRecords || 0) / PAGE_SIZE);
 
   return (
     <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
@@ -498,16 +489,16 @@ export default function DatabasePage() {
             {/* Sticky Header Section */}
             {selectedTable && (
               <div className="sticky top-0 z-30 bg-bg-gray dark:bg-neutral-800">
-                <div className="px-6 py-3 border-b border-border-gray h-12 dark:border-neutral-700">
+                <div className="pl-4 pr-1.5 py-1.5 h-12">
                   {/* Page Header with Breadcrumb */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <nav className="flex items-center text-base font-semibold">
-                        <span className="text-black dark:text-zinc-300">{selectedTable}</span>
+                        <span className="text-black dark:text-white">{selectedTable}</span>
                       </nav>
 
                       {/* Separator */}
-                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-500" />
+                      <div className="h-6 w-px bg-gray-200 dark:bg-neutral-700" />
 
                       {/* Action buttons group */}
                       <div className="flex items-center gap-1">
@@ -517,7 +508,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6"
+                                className="p-1 h-9 w-9"
                                 onClick={() => handleEditTable(selectedTable)}
                               >
                                 <PencilIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
@@ -533,7 +524,7 @@ export default function DatabasePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="p-1 h-6 w-6"
+                                className="p-1 h-9 w-9"
                                 onClick={() => void handleRefresh()}
                                 disabled={isRefreshing}
                               >
@@ -550,7 +541,7 @@ export default function DatabasePage() {
                   </div>
                 </div>
 
-                <div className="px-6 py-3">
+                <div className="pt-2 pb-4 px-3">
                   {/* Search Bar and Actions - only show when table is selected */}
                   {selectedTable && (
                     <div className="flex items-center justify-between">
@@ -571,7 +562,7 @@ export default function DatabasePage() {
                         <SearchInput
                           value={searchQuery}
                           onChange={setSearchQuery}
-                          placeholder="Search Records by any Text Field"
+                          placeholder="Search Records by any String Field"
                           className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
                           debounceTime={300}
                         />
@@ -613,28 +604,27 @@ export default function DatabasePage() {
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col overflow-hidden bg-white border border-gray-200 dark:bg-neutral-800 dark:border-neutral-700">
-                  <DatabaseDataGrid
-                    data={tableData?.records || []}
-                    schema={tableData?.schema}
-                    loading={isLoadingTable && !tableData}
-                    isSorting={isSorting}
-                    isRefreshing={isRefreshing}
-                    selectedRows={selectedRows}
-                    onSelectedRowsChange={setSelectedRows}
-                    sortColumns={sortColumns}
-                    onSortColumnsChange={handleSortColumnsChange}
-                    onCellEdit={handleRecordUpdate}
-                    searchQuery={searchQuery}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalRecords={tableData?.totalRecords || 0}
-                    onPageChange={setCurrentPage}
-                    onDeleteRecord={(id) => void handleRecordDelete(id)}
-                    onNewRecord={() => setShowRecordForm(true)}
-                  />
-                </div>
+                <DatabaseDataGrid
+                  data={tableData?.records || []}
+                  schema={tableData?.schema}
+                  loading={isLoadingTable && !tableData}
+                  isSorting={isSorting}
+                  isRefreshing={isRefreshing}
+                  selectedRows={selectedRows}
+                  onSelectedRowsChange={setSelectedRows}
+                  sortColumns={sortColumns}
+                  onSortColumnsChange={handleSortColumnsChange}
+                  onCellEdit={handleRecordUpdate}
+                  onJumpToTable={setSelectedTable}
+                  searchQuery={searchQuery}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={PAGE_SIZE}
+                  totalRecords={tableData?.totalRecords || 0}
+                  onPageChange={setCurrentPage}
+                  onDeleteRecord={(id) => void handleRecordDelete(id)}
+                  onNewRecord={() => setShowRecordForm(true)}
+                />
               )}
             </div>
           </>

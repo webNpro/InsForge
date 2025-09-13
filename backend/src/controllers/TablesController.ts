@@ -32,6 +32,49 @@ const reservedColumns = {
 
 const userTableFrozenColumns = ['nickname', 'avatar_url'];
 
+const SAFE_FUNCS = new Set(['now()', 'gen_random_uuid()']);
+
+function getSafeDollarQuotedLiteral(s: string) {
+  let tag = 'val';
+  while (s.includes(`$${tag}$`)) {
+    tag += '_';
+  }
+  return `$${tag}$${s}$${tag}$`;
+}
+
+function getSystemDefault(columnType?: ColumnType, isNullable?: boolean): string | null {
+  if (!columnType || isNullable) {
+    return null;
+  }
+  const fieldType = COLUMN_TYPES[columnType];
+  if (!fieldType?.defaultValue) {
+    return null;
+  }
+
+  const def = fieldType.defaultValue.trim().toLowerCase();
+  if (SAFE_FUNCS.has(def)) {
+    return `DEFAULT ${def}`;
+  }
+  return `DEFAULT ${getSafeDollarQuotedLiteral(def)}`;
+}
+
+export function formatDefaultValue(
+  input: string | null | undefined,
+  columnType?: ColumnType,
+  isNullable?: boolean
+): string {
+  if (!input) {
+    return getSystemDefault(columnType, isNullable) ?? '';
+  }
+  const value = input.trim();
+  const lowered = value.toLowerCase();
+
+  if (SAFE_FUNCS.has(lowered)) {
+    return `DEFAULT ${lowered}`;
+  }
+  return `DEFAULT ${getSafeDollarQuotedLiteral(value)}`;
+}
+
 export class TablesController {
   private dbManager: DatabaseManager;
   private metadataService: MetadataService;
@@ -134,21 +177,7 @@ export class TablesController {
         const sqlType = fieldType.sqlType;
 
         // Handle default values
-        let defaultClause = '';
-        if (col.defaultValue) {
-          // User-specified default
-          defaultClause = `DEFAULT '${col.defaultValue}'`;
-        } else if (fieldType.defaultValue && !col.isNullable) {
-          // Type-specific default for non-nullable fields
-          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
-            // PostgreSQL UUID generation
-            defaultClause = `DEFAULT gen_random_uuid()`;
-          } else if (fieldType.defaultValue === 'CURRENT_TIMESTAMP') {
-            defaultClause = `DEFAULT CURRENT_TIMESTAMP`;
-          } else {
-            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
-          }
-        }
+        const defaultClause = formatDefaultValue(col.defaultValue, col.type, col.isNullable);
 
         const nullable = col.isNullable ? '' : 'NOT NULL';
         const unique = col.isUnique ? 'UNIQUE' : '';
@@ -167,8 +196,8 @@ export class TablesController {
     const tableDefinition = [
       'id UUID PRIMARY KEY DEFAULT gen_random_uuid()',
       columnDefs,
-      'created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
-      'updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP',
+      'created_at TIMESTAMPTZ DEFAULT now()',
+      'updated_at TIMESTAMPTZ DEFAULT now()',
       foreignKeyConstraints,
     ]
       .filter(Boolean)
@@ -485,7 +514,7 @@ export class TablesController {
               .prepare(
                 `
                 ALTER TABLE ${safeTableName} 
-                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET DEFAULT '${column.defaultValue}'
+                ALTER COLUMN ${this.quoteIdentifier(column.columnName)} SET ${formatDefaultValue(column.defaultValue)}
               `
               )
               .exec();
@@ -520,23 +549,18 @@ export class TablesController {
         }
 
         const nullable = col.isNullable !== false ? '' : 'NOT NULL';
-        let defaultClause = '';
-
-        if (col.defaultValue !== undefined) {
-          defaultClause = `DEFAULT '${col.defaultValue}'`;
-        } else if (col.isNullable === false && fieldType.defaultValue) {
-          if (fieldType.defaultValue === 'gen_random_uuid()' && ColumnType.UUID) {
-            defaultClause = 'DEFAULT gen_random_uuid()';
-          } else {
-            defaultClause = `DEFAULT ${fieldType.defaultValue}`;
-          }
-        }
+        const unique = col.isUnique ? 'UNIQUE' : '';
+        const defaultClause = formatDefaultValue(
+          col.defaultValue,
+          col.type as ColumnType,
+          col.isNullable
+        );
 
         await db
           .prepare(
             `
               ALTER TABLE ${safeTableName} 
-              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${defaultClause}
+              ADD COLUMN ${this.quoteIdentifier(col.columnName)} ${sqlType} ${nullable} ${unique} ${defaultClause}
             `
           )
           .exec();
@@ -735,6 +759,10 @@ export class TablesController {
     // Create a map of column names to their foreign key info
     const foreignKeyMap = new Map<string, ForeignKeyInfo>();
     foreignKeys.forEach((fk: ForeignKeyRow) => {
+      if (fk.foreign_table.startsWith('_')) {
+        // hiden internal table.
+        return;
+      }
       foreignKeyMap.set(fk.from_column, {
         constraint_name: fk.constraint_name,
         referenceTable: fk.foreign_table,

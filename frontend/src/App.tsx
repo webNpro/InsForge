@@ -19,6 +19,7 @@ import Layout from './components/layout/Layout';
 import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
 import CloudLayout from './components/layout/CloudLayout';
 import CloudLoginPage from './features/login/page/CloudLoginPage';
+import AiPage from './features/ai/page/AIPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function AppRoutes() {
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/storage" element={<StoragePage />} />
                 <Route path="/analytics" element={<AnalyticsLogsPage />} />
+                <Route path="/ai" element={<AiPage />} />
                 <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
               </Routes>
             </CloudLayout>
@@ -87,6 +89,7 @@ function AppRoutes() {
                 <Route path="/dashboard/analytics" element={<AnalyticsLogsPage />} />
                 <Route path="/dashboard/metadata" element={<MetadataPage />} />
                 <Route path="/dashboard/onboard" element={<OnBoardPage />} />
+                <Route path="/dashboard/ai" element={<AiPage />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Layout>

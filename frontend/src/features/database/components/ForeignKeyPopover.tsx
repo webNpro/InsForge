@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
@@ -90,6 +90,15 @@ export function ForeignKeyPopover({
     enabled: !!newForeignKey.referenceTable && open,
   });
 
+  // Get the type of the selected source column
+  const getSourceFieldType = useMemo(() => {
+    if (!newForeignKey.columnName) {
+      return null;
+    }
+    const sourceColumn = columns.find((col) => col.columnName === newForeignKey.columnName);
+    return sourceColumn?.type || null;
+  }, [newForeignKey.columnName, columns]);
+
   // Calculate if the button should be enabled
   const isAddButtonEnabled = Boolean(
     newForeignKey.columnName && newForeignKey.referenceTable && newForeignKey.referenceColumn
@@ -122,14 +131,14 @@ export function ForeignKeyPopover({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[640px] p-0 gap-0">
+      <DialogContent className="max-w-[520px] p-0 gap-0">
         <div className="flex flex-col">
           {/* Header */}
-          <div className="flex flex-col gap-1.5 px-6 pt-6 pb-0">
-            <DialogTitle className="text-base font-semibold dark:text-zinc-300">
+          <div className="flex flex-col gap-1 px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
+            <DialogTitle className="text-lg font-semibold dark:text-white">
               {initialValue ? 'Edit Foreign Key' : 'Add Foreign Key'}
             </DialogTitle>
-            <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-300">
+            <DialogDescription className="text-sm text-zinc-500 dark:text-neutral-400">
               {initialValue
                 ? 'Modify the relationship between tables'
                 : 'Create a relationship between this table and another table'}
@@ -137,21 +146,18 @@ export function ForeignKeyPopover({
           </div>
 
           {/* Form Content */}
-          <div className="flex flex-col gap-6 px-6 py-6">
+          <div className="flex flex-col gap-6 p-6">
             {/* Column selector */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium text-black dark:text-zinc-300">Column</Label>
+            <div className="flex flex-row gap-10 items-center">
+              <Label className="text-sm text-black dark:text-white flex-1">Column</Label>
               <Select
                 value={newForeignKey.columnName}
                 onValueChange={(value) =>
                   setNewForeignKey((prev) => ({ ...prev, columnName: value }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-zinc-300">
-                  <SelectValue
-                    placeholder="Select column"
-                    className="text-zinc-500 dark:text-zinc-300"
-                  />
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                  <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
                   {columns
@@ -162,7 +168,12 @@ export function ForeignKeyPopover({
                         value={col.columnName}
                         disabled={col.isSystemColumn}
                       >
-                        {col.columnName} ({col.type})
+                        <div className="flex flex-row items-center justify-between gap-2">
+                          <span className="truncate max-w-[160px] block">{col.columnName}</span>
+                          <span className="text-xs text-muted-foreground dark:text-neutral-400 flex-shrink-0">
+                            ({col.type})
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -170,10 +181,8 @@ export function ForeignKeyPopover({
             </div>
 
             {/* Reference Table selector */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium text-black dark:text-zinc-300">
-                Reference Table
-              </Label>
+            <div className="flex flex-row gap-10 items-center">
+              <Label className="text-sm text-black dark:text-white flex-1">Reference Table</Label>
               <Select
                 value={newForeignKey.referenceTable}
                 onValueChange={(value) => {
@@ -184,11 +193,8 @@ export function ForeignKeyPopover({
                   }));
                 }}
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-zinc-300">
-                  <SelectValue
-                    placeholder="Select table"
-                    className="text-zinc-500 dark:text-zinc-300"
-                  />
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                  <SelectValue placeholder="Select table" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTables.map((table) => (
@@ -200,10 +206,10 @@ export function ForeignKeyPopover({
               </Select>
             </div>
 
-            {/* Reference Column selector - only shown after table is selected */}
-            {newForeignKey.referenceTable && (
-              <div className="flex flex-col gap-3">
-                <Label className="text-sm font-medium text-black dark:text-zinc-300">
+            {/* Reference Column selector - only shown after table and source column are selected */}
+            {newForeignKey.referenceTable && newForeignKey.columnName && (
+              <div className="flex flex-row gap-10 items-center">
+                <Label className="text-sm text-black dark:text-white flex-1">
                   Reference Column
                 </Label>
                 <Select
@@ -213,34 +219,54 @@ export function ForeignKeyPopover({
                     setNewForeignKey((prev) => ({ ...prev, referenceColumn: value }))
                   }
                 >
-                  <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-zinc-300">
-                    <SelectValue
-                      placeholder="Select column"
-                      className="text-zinc-500 dark:text-zinc-300"
-                    />
+                  <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+                    <SelectValue placeholder="Select column" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[360px]">
                     {(() => {
                       const allColumns = referenceTableSchema?.columns || [];
-
                       if (allColumns.length > 0) {
-                        // const sourceType = getSourceFieldType();
+                        const sourceType = getSourceFieldType;
 
                         return allColumns.map((col: ColumnSchema) => {
-                          // Check if types match exactly
-                          // const typesMatch =
-                          //   !sourceType || col.type.toLowerCase() === sourceType.toLowerCase();
+                          // Check if types match exactly (sourceType should always exist at this point since we require columnName)
+                          const typesMatch =
+                            sourceType && col.type.toLowerCase() === sourceType.toLowerCase();
 
-                          //Disable if not a valid reference or types don't match
-                          const isDisabled = !col.isUnique; //|| !typesMatch; This is not working because FieldType and Schema Column Type are incompatible
+                          // Disable if not a valid reference or types don't match
+                          const isDisabled = !col.isUnique || !typesMatch;
+
+                          // Determine what to show on the right side
+                          let rightText = '';
+                          if (!col.isUnique) {
+                            rightText = 'Not unique';
+                          } else if (!typesMatch) {
+                            rightText = 'Columntype not match';
+                          }
 
                           return (
                             <SelectItem
                               key={col.columnName}
                               value={col.columnName}
                               disabled={isDisabled}
+                              className="relative flex items-center justify-between pr-16"
                             >
-                              {col.columnName} ({col.type}) {col.isUnique && ' (unique)'}
+                              <div className="flex flex-row items-center justify-between gap-2">
+                                <span
+                                  className="flex-1 truncate max-w-[180px] block"
+                                  title={col.columnName}
+                                >
+                                  {col.columnName}
+                                </span>
+                                <span className="text-xs text-muted-foreground dark:text-neutral-400">
+                                  ({col.type})
+                                </span>
+                                {rightText && (
+                                  <span className="text-right text-xs text-muted-foreground dark:text-neutral-400">
+                                    {rightText}
+                                  </span>
+                                )}
+                              </div>
                             </SelectItem>
                           );
                         });
@@ -258,8 +284,8 @@ export function ForeignKeyPopover({
             )}
 
             {/* On Update action */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium text-black dark:text-zinc-300">On Update</Label>
+            <div className="flex flex-row gap-10 items-center">
+              <Label className="text-sm text-black dark:text-white flex-1">On Update</Label>
               <Select
                 value={newForeignKey.onUpdate}
                 onValueChange={(value) =>
@@ -269,7 +295,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-zinc-300">
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -281,8 +307,8 @@ export function ForeignKeyPopover({
             </div>
 
             {/* On Delete action */}
-            <div className="flex flex-col gap-3">
-              <Label className="text-sm font-medium text-black dark:text-zinc-300">On Delete</Label>
+            <div className="flex flex-row gap-10 items-center">
+              <Label className="text-sm text-black dark:text-white flex-1">On Delete</Label>
               <Select
                 value={newForeignKey.onDelete}
                 onValueChange={(value) =>
@@ -292,7 +318,7 @@ export function ForeignKeyPopover({
                   }))
                 }
               >
-                <SelectTrigger className="h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-zinc-300">
+                <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,12 +333,12 @@ export function ForeignKeyPopover({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 px-6 pb-6">
+          <div className="flex justify-end gap-3 p-6 border-t border-zinc-200 dark:border-neutral-700">
             <Button
               type="button"
               variant="outline"
               onClick={handleCancelAddForeignKey}
-              className="h-10 px-4 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700 dark:hover:bg-neutral-700"
+              className="h-10 px-4 dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
             >
               Cancel
             </Button>

@@ -17,9 +17,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
 import { ColumnType, TableSchema, UpdateTableSchemaRequest } from '@insforge/shared-schemas';
-
-// System fields that cannot be modified
-const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
+import { SYSTEM_FIELDS } from '../helpers';
 
 const newColumn: TableFormColumnSchema = {
   columnName: '',
@@ -316,7 +314,6 @@ export function TableForm({
         const existingFK = existingForeignKeys.find((efk) => efk.columnName === fk.columnName);
 
         if (!existingFK) {
-          // This is a new foreign key
           addForeignKeys.push({
             columnName: fk.columnName,
             foreignKey: {
@@ -424,17 +421,17 @@ export function TableForm({
   return (
     <div className="flex flex-col h-full">
       {/* Content area with slate background */}
-      <div className="flex-1 bg-slate-100 dark:bg-neutral-800 flex flex-col items-center overflow-auto">
+      <div className="flex-1 bg-slate-100 dark:bg-neutral-900 flex flex-col items-center overflow-auto">
         <div className="flex flex-col gap-6 w-full max-w-[1080px] px-6 py-6">
           {/* Title Bar */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-black dark:text-zinc-300">
+            <h1 className="text-xl font-semibold text-black dark:text-neutral-50">
               {mode === 'edit' ? 'Edit Table' : 'Create New Table'}
             </h1>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="flex items-center justify-center w-12 h-12 bg-white rounded-full border border-zinc-200 shadow-sm hover:bg-gray-50 transition-colors dark:bg-neutral-800 dark:border-neutral-700 dark:hover:bg-neutral-700"
+              className="flex items-center justify-center w-12 h-12 bg-white dark:bg-neutral-600 rounded-full border border-zinc-200 shadow-sm hover:bg-gray-50 transition-colors dark:border-transparent dark:hover:bg-neutral-700"
             >
               <X className="w-5 h-5 text-zinc-500 dark:text-zinc-300" />
             </button>
@@ -442,15 +439,15 @@ export function TableForm({
 
           <form onSubmit={() => void handleSubmit()} className="flex flex-col gap-6">
             {/* Table Name */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-6 dark:bg-neutral-800 dark:border-neutral-700">
-              <div className="flex flex-col gap-3">
-                <label className="text-sm font-medium text-zinc-950 dark:text-zinc-300">
+            <div className="bg-white rounded-xl border border-zinc-200 p-6 dark:bg-neutral-800 dark:border-transparent">
+              <div className="flex flex-row gap-10 items-center">
+                <label className="whitespace-nowrap text-sm font-normal text-zinc-950 dark:text-neutral-50">
                   Table Name
                 </label>
                 <Input
                   {...form.register('tableName')}
                   placeholder="e.g., products, orders, customers"
-                  className="h-10 rounded-md border-zinc-200 shadow-sm placeholder:text-zinc-500 dark:text-white dark:bg-neutral-800 dark:border-neutral-700 dark:placeholder:text-neutral-400"
+                  className="h-10 rounded-md border-zinc-200 shadow-sm placeholder:text-zinc-500 dark:text-white dark:bg-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-400"
                 />
                 {form.formState.errors.tableName && (
                   <p className="text-sm text-destructive dark:text-red-400">
@@ -461,18 +458,16 @@ export function TableForm({
             </div>
 
             {/* Columns Section */}
-            <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden dark:bg-neutral-800 dark:border-neutral-700">
+            <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden dark:bg-neutral-800 dark:border-transparent pb-3">
               {/* Columns Header */}
-              <div className="px-6 py-3 bg-white dark:bg-neutral-800">
-                <h2 className="text-base font-semibold text-black mb-3 dark:text-zinc-300">
-                  Columns
-                </h2>
+              <div className="p-6 bg-white dark:bg-neutral-800">
+                <h2 className="text-base font-medium text-black dark:text-neutral-50">Columns</h2>
               </div>
 
               {/* Columns Table */}
-              <div className="pb-6 overflow-x-auto">
+              <div className="px-3 overflow-x-auto">
                 {/* Table Headers */}
-                <div className="flex items-center gap-6 px-7 py-2 bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-800 dark:text-zinc-300">
+                <div className="flex items-center gap-6 px-4 py-2 bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-700 dark:text-white">
                   <div className="flex-1 min-w-[175px]">Name</div>
                   <div className="flex-1 min-w-[175px]">Type</div>
                   <div className="flex-1 min-w-[175px]">Default Value</div>
@@ -482,45 +477,41 @@ export function TableForm({
                 </div>
 
                 {/* Columns */}
-                <div className="px-3 border-b border-zinc-200 dark:border-neutral-700">
-                  {sortedFields.map((field) => {
-                    const originalIndex = fields.findIndex((f) => f.id === field.id);
-                    return (
-                      <TableFormColumn
-                        key={field.id}
-                        column={field}
-                        index={originalIndex}
-                        control={form.control}
-                        onRemove={() => remove(originalIndex)}
-                        isSystemColumn={field.isSystemColumn}
-                        isNewColumn={field.isNewColumn}
-                      />
-                    );
-                  })}
-                </div>
+                {sortedFields.map((field) => {
+                  const originalIndex = fields.findIndex((f) => f.id === field.id);
+                  return (
+                    <TableFormColumn
+                      key={field.id}
+                      column={field}
+                      index={originalIndex}
+                      control={form.control}
+                      onRemove={() => remove(originalIndex)}
+                      isSystemColumn={field.isSystemColumn}
+                      isNewColumn={field.isNewColumn}
+                    />
+                  );
+                })}
+              </div>
 
-                {/* Add Column Button */}
-                <div className="flex justify-center mt-3">
-                  <Button
-                    type="button"
-                    onClick={addField}
-                    variant="outline"
-                    className="w-50 h-10 px-3 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-zinc-300 dark:hover:text-zinc-300 dark:border-neutral-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Column
-                  </Button>
-                </div>
+              {/* Add Column Button */}
+              <div className="border-t border-zinc-200 dark:border-neutral-700 flex justify-center py-3">
+                <Button
+                  type="button"
+                  onClick={addField}
+                  variant="outline"
+                  className="w-50 h-9 px-2 gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:text-white dark:hover:text-white dark:border-transparent"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Column
+                </Button>
               </div>
             </div>
 
             {/* Foreign Keys Section */}
-            <div className="bg-white rounded-xl border border-zinc-200 dark:bg-neutral-800 dark:border-neutral-700">
+            <div className="bg-white pb-3 rounded-xl border border-zinc-200 dark:bg-neutral-800 dark:border-transparent">
               <div className="p-6">
-                <h2 className="text-base font-semibold text-black dark:text-zinc-300">
-                  Foreign Keys
-                </h2>
-                <p className="text-sm text-zinc-500 dark:text-zinc-300">
+                <h2 className="text-base font-semibold text-black dark:text-white">Foreign Keys</h2>
+                <p className="text-sm text-zinc-500 dark:text-neutral-400">
                   Create a relationship between this table and another table
                 </p>
               </div>
@@ -531,31 +522,31 @@ export function TableForm({
                   {foreignKeys.map((fk) => (
                     <div
                       key={fk.columnName}
-                      className="group flex items-center gap-6 2xl:gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150 dark:bg-neutral-800 dark:border-neutral-700 dark:hover:bg-neutral-700"
+                      className="group flex items-center gap-6 2xl:gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150 dark:bg-neutral-700 dark:border-transparent dark:hover:bg-neutral-600"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-[188px] overflow-hidden">
-                        <Link className="flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-zinc-300" />
-                        <span className="font-medium text-sm text-zinc-950 dark:text-zinc-300 truncate">
+                        <Link className="flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-neutral-400" />
+                        <span className="font-medium text-sm text-zinc-950 dark:text-white truncate">
                           {fk.columnName}
                         </span>
-                        <MoveRight className="flex-shrink-0 w-5 h-5 text-zinc-950 dark:text-zinc-300" />
-                        <span className="font-medium text-sm text-zinc-950 dark:text-zinc-300 flex-1 truncate">
+                        <MoveRight className="flex-shrink-0 w-5 h-5 text-zinc-950 dark:text-neutral-400" />
+                        <span className="font-medium text-sm text-zinc-950 dark:text-white flex-1 truncate">
                           {fk.referenceTable}.{fk.referenceColumn}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 w-45">
-                        <span className="font-medium text-sm text-zinc-950 dark:text-zinc-300 whitespace-nowrap">
+                        <span className="font-medium text-sm text-zinc-950 dark:text-white whitespace-nowrap">
                           On Update:
                         </span>
-                        <span className="text-sm text-zinc-500 dark:text-zinc-300">
+                        <span className="text-sm font-medium text-zinc-500 dark:text-neutral-400">
                           {fk.onUpdate}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 w-45">
-                        <span className="font-medium text-sm text-zinc-950 dark:text-zinc-300 whitespace-nowrap">
+                        <span className="font-medium text-sm text-zinc-950 dark:text-white whitespace-nowrap">
                           On Delete:
                         </span>
-                        <span className="text-sm text-zinc-500 dark:text-zinc-300">
+                        <span className="text-sm font-medium text-zinc-500 dark:text-neutral-400">
                           {fk.onDelete}
                         </span>
                       </div>
@@ -578,7 +569,7 @@ export function TableForm({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveForeignKey(fk.columnName)}
-                          className="h-10 px-3 gap-1.5 text-zinc-950 hover:bg-zinc-200 transition-colors rounded-md dark:bg-neutral-800 dark:text-zinc-300 dark:hover:bg-neutral-700"
+                          className="h-10 px-3 gap-1.5 text-zinc-950 hover:bg-zinc-200 transition-colors rounded-md dark:bg-neutral-700 dark:text-white dark:group-hover:bg-neutral-600 dark:hover:bg-neutral-500"
                         >
                           <X className="w-4 h-4" />
                           <span className="font-medium text-sm">Remove</span>
@@ -590,14 +581,14 @@ export function TableForm({
               )}
 
               {/* Add Foreign Key Button */}
-              <div className="flex justify-center py-3 border-t border-zinc-200 dark:border-neutral-600">
+              <div className="flex justify-center py-3 border-t border-zinc-200 dark:border-neutral-700">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-[200px] h-10 px-3 gap-1.5 text-sm font-medium text-zinc-950 bg-white border-zinc-200 shadow-sm hover:bg-zinc-50 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700 dark:hover:bg-neutral-700"
+                  className="w-50 h-9 p-2 gap-2 text-sm font-medium text-zinc-950 bg-white border-zinc-200 shadow-sm hover:bg-zinc-50 dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
                   onClick={() => setShowForeignKeyDialog(true)}
                 >
-                  <Link className="w-4 h-4 mr-1" />
+                  <Link className="w-5 h-5" />
                   Add Foreign Keys
                 </Button>
               </div>

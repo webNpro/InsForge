@@ -1,10 +1,11 @@
-import { Type, Calendar, Hash, Percent, ToggleLeft, Fingerprint, Code } from 'lucide-react';
+import { Type, Clock, Calendar, Hash, Percent, ToggleLeft, Fingerprint, Code } from 'lucide-react';
 import { ColumnType } from '@insforge/shared-schemas';
 
 // Icon mapping for field types
 export const columnTypeIcons: Record<ColumnType, React.ComponentType<{ className?: string }>> = {
   [ColumnType.STRING]: Type,
-  [ColumnType.DATETIME]: Calendar,
+  [ColumnType.DATE]: Calendar,
+  [ColumnType.DATETIME]: Clock,
   [ColumnType.INTEGER]: Hash,
   [ColumnType.FLOAT]: Percent,
   [ColumnType.BOOLEAN]: ToggleLeft,
@@ -19,6 +20,7 @@ export const columnTypeDescriptions: Record<ColumnType, string> = {
   [ColumnType.FLOAT]: 'Numbers with decimal places',
   [ColumnType.BOOLEAN]: 'True or false values',
   [ColumnType.DATETIME]: 'Date and time values',
+  [ColumnType.DATE]: 'Date values',
   [ColumnType.UUID]: 'Unique identifiers (auto-generated)',
   [ColumnType.JSON]: 'Complex structured data',
 };

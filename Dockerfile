@@ -11,7 +11,7 @@ COPY frontend/package*.json ./frontend/
 COPY shared-schemas/package*.json ./shared-schemas/
 
 # Install all dependencies (workspaces will handle both backend and frontend)
-RUN npm ci --production=false
+RUN npm ci --production=false && npm cache clean --force && rm -rf /tmp/*
 
 # Copy source code
 COPY . .
@@ -25,5 +25,5 @@ RUN npm run build
 # Expose ports
 EXPOSE 7130 7131
 
-# Start the backend application
-CMD ["npm", "start"]
+# Run migrations and start the backend application
+CMD sh -c "cd backend && npm run migrate:up && cd .. && npm start"

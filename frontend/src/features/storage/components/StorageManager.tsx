@@ -67,9 +67,9 @@ export function StorageManager({
 
   // Calculate pagination from backend response
   const totalPages = useMemo(() => {
-    const total = objectsData?.pagination?.total || fileCount;
+    const total = objectsData?.pagination.total || fileCount;
     return Math.ceil(total / pageSize);
-  }, [objectsData?.pagination?.total, fileCount, pageSize]);
+  }, [objectsData?.pagination.total, fileCount, pageSize]);
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -206,7 +206,7 @@ export function StorageManager({
           loading={objectsLoading}
           isRefreshing={isRefreshing}
           searchQuery={searchQuery}
-          totalRecords={objectsData?.pagination?.total || fileCount}
+          totalRecords={objectsData?.pagination.total || fileCount}
           selectedRows={selectedFiles}
           onSelectedRowsChange={onSelectedFilesChange}
           sortColumns={sortColumns}

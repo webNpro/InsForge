@@ -1,36 +1,126 @@
 import { z } from 'zod';
 
-// Common field schemas
-export const emailSchema = z.string().min(1, 'Email is required').email('Invalid email address');
+export const uuidSchema = z
+  .string()
+  .uuid({ message: 'Please enter a valid UUID' })
+  .or(z.literal('').transform(() => null))
+  .or(z.null());
 
-export const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+export const integerSchema = z
+  .union([
+    z
+      .string()
+      .regex(/^-?\d+$/, { message: 'Please enter a valid integer' })
+      .transform((val) => {
+        const num = parseInt(val, 10);
+        if (num < -2147483648 || num > 2147483647) {
+          throw new Error(
+            'Integer value out of range. Please enter a value between -2,147,483,648 and 2,147,483,647'
+          );
+        }
+        return num;
+      }),
+    z.number().int().min(-2147483648).max(2147483647),
+    z.literal('').transform(() => null),
+    z.null(),
+  ])
+  .catch(() => {
+    throw new Error('Please enter a valid integer');
+  });
 
-export const requiredStringSchema = z.string().min(1, 'This field is required');
+export const floatSchema = z
+  .union([
+    z
+      .string()
+      .regex(/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/, {
+        message: 'Please enter a valid number',
+      })
+      .transform((val) => {
+        const num = parseFloat(val);
+        if (!isFinite(num)) {
+          throw new Error('Number value out of range');
+        }
+        if (Math.abs(num) > 1.7976931348623157e308) {
+          throw new Error('Number value exceeds double precision range');
+        }
+        return num;
+      }),
+    z.number().finite(),
+    z.literal('').transform(() => null),
+    z.null(),
+  ])
+  .catch(() => {
+    throw new Error('Please enter a valid number');
+  });
 
-export const optionalStringSchema = z.string().optional().nullable();
-
-export const numberSchema = z.number().or(z.string().regex(/^\d+$/).transform(Number));
-
-export const booleanSchema = z.boolean().or(z.string().transform((val) => val === 'true'));
+export const booleanSchema = z
+  .union([
+    z.boolean(),
+    z.string().transform((val) => {
+      const lower = val.toLowerCase();
+      if (lower === 'true') {
+        return true;
+      }
+      if (lower === 'false') {
+        return false;
+      }
+      if (lower === 'null' || lower === '') {
+        return null;
+      }
+      throw new Error('Please enter a valid boolean value: true, false, or leave empty');
+    }),
+    z.literal('').transform(() => null),
+    z.null(),
+  ])
+  .catch(() => {
+    throw new Error('Please enter a valid boolean value');
+  });
 
 export const dateSchema = z
-  .string()
-  .or(z.date())
-  .transform((val) => new Date(val));
+  .union([z.string().date(), z.literal('').transform(() => null), z.null()])
+  .catch(() => {
+    throw new Error('Please enter a valid date');
+  });
 
-// Common form schemas
+export const dateTimeSchema = z
+  .union([
+    // ISO 8601 datetime with timezone (Z or ±HH:MM)
+    z.string().datetime({ offset: true }),
+    z.literal('').transform(() => null),
+    z.null(),
+  ])
+  .catch(() => {
+    throw new Error('Please enter a valid datetime');
+  });
+
+export const jsonSchema = z
+  .union([
+    z.string().transform((val) => {
+      if (val === '' || val === 'null') {
+        return null;
+      }
+      try {
+        return JSON.parse(val);
+      } catch {
+        throw new Error('Please enter valid JSON');
+      }
+    }),
+    z.object({}).passthrough(),
+    z.array(z.any()),
+    z.null(),
+  ])
+  .catch(() => {
+    throw new Error('Please enter valid JSON');
+  });
+
+export const stringSchema = z.union([z.string(), z.null()]);
+
+export const emailSchema = z.string().email('Invalid email address');
+export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
+
 export const loginFormSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
 });
 
-export const userFormSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  name: requiredStringSchema,
-  role: z.enum(['admin', 'user']).default('user'),
-});
-
-// Type exports
 export type LoginFormData = z.infer<typeof loginFormSchema>;
-export type UserFormData = z.infer<typeof userFormSchema>;

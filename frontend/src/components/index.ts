@@ -32,6 +32,7 @@ export { PaginationControls } from './PaginationControls';
 export { SelectionClearButton } from './SelectionClearButton';
 export { DeleteActionButton } from './DeleteActionButton';
 export { Checkbox } from './Checkbox';
+export { TypeBadge } from './TypeBadge';
 
 // Data Grid Components
 export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGrid';

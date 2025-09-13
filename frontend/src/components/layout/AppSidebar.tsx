@@ -5,12 +5,12 @@ import {
   UserRoundCog,
   Activity,
   HardDrive,
-  Info,
   PanelLeftOpen,
   PanelRightOpen,
   BookOpen,
   ExternalLink,
   RotateCw,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { Button } from '@/components/radix/Button';
@@ -43,8 +43,8 @@ const navigation: NavigationProps[] = [
   { name: 'Database', href: '/dashboard/database', icon: Database },
   { name: 'Storage', href: '/dashboard/storage', icon: HardDrive },
   //{ name: 'Audit', href: '/dashboard/logs', icon: Logs },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
-  { name: 'Metadata', href: '/dashboard/metadata', icon: Info },
+  // { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
+  { name: 'AI', href: '/dashboard/ai', icon: Sparkles },
 ];
 
 const bottomNavigation = [

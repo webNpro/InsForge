@@ -11,6 +11,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/database.js';
 import logger from '@/utils/logger.js';
+import type { ConfigRecord, OAuthConfig } from '@/types/auth.js';
 import type {
   UserSchema,
   CreateUserResponse,
@@ -79,28 +80,17 @@ export class AuthService {
   /**
    * Load OAuth configuration from database - NO CACHING, always fresh
    */
-  private async loadOAuthConfig(): Promise<{
-    google: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-    github: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      enabled: boolean;
-      useSharedKeys: boolean;
-    };
-  }> {
-    let configRows: any[];
+  private async loadOAuthConfig(): Promise<OAuthConfig> {
+    let configRows: ConfigRecord[];
     try {
       const rows = await this.db
         .prepare(`SELECT key, value FROM _config WHERE key LIKE 'auth.oauth.provider.%'`)
         .all();
-      configRows = rows || [];
+      if (!Array.isArray(rows)) {
+        throw new Error('Expected array from database query');
+      }
+
+      configRows = rows;
     } catch (error) {
       logger.error('Failed to load OAuth config from database:', error);
       configRows = [];
@@ -114,7 +104,7 @@ export class AuthService {
         clientSecret: '',
         redirectUri:
           process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
-        enabled: false,
+        enabled: enableSharedKeys,
         useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
       github: {
@@ -122,7 +112,7 @@ export class AuthService {
         clientSecret: '',
         redirectUri:
           process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
-        enabled: false,
+        enabled: enableSharedKeys,
         useSharedKeys: enableSharedKeys, // can be overridden by DB
       },
     };
@@ -142,8 +132,8 @@ export class AuthService {
           config[provider].clientId = value.clientId || '';
           config[provider].clientSecret = value.clientSecret || '';
           config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
-          config[provider].enabled = value.enabled || false;
-          config[provider].useSharedKeys = value.useSharedKeys || enableSharedKeys;
+          config[provider].enabled = value.enabled;
+          config[provider].useSharedKeys = value.useSharedKeys;
         }
       } catch (e) {
         logger.error('Failed to parse OAuth config', { key: row.key, error: e });
@@ -164,6 +154,45 @@ export class AuthService {
     });
 
     return config;
+  }
+
+  /**
+   * Get OAuth configuration for API responses (with optional secret masking)
+   * Public method that can be used by config routes
+   */
+  async getOAuthConfigForAPI(maskSecrets: boolean = true): Promise<OAuthConfig> {
+    const config = await this.loadOAuthConfig();
+
+    // Optionally mask client secrets for security
+    if (maskSecrets) {
+      if (config.google.clientSecret) {
+        config.google.clientSecret = config.google.clientSecret.substring(0, 4) + '****';
+      }
+      if (config.github.clientSecret) {
+        config.github.clientSecret = config.github.clientSecret.substring(0, 4) + '****';
+      }
+    }
+
+    return config;
+  }
+
+  /**
+   * Get OAuth status for public API (only enabled status)
+   */
+  async getOAuthStatus(): Promise<{
+    google: { enabled: boolean };
+    github: { enabled: boolean };
+  }> {
+    const config = await this.loadOAuthConfig();
+
+    return {
+      google: {
+        enabled: !!(config.google.enabled && config.google.clientId && config.google.clientSecret),
+      },
+      github: {
+        enabled: !!(config.github.enabled && config.github.clientId && config.github.clientSecret),
+      },
+    };
   }
 
   /**
@@ -203,6 +232,21 @@ export class AuthService {
     return jwt.sign(payload, JWT_SECRET()!, {
       algorithm: 'HS256',
       expiresIn: JWT_EXPIRES_IN,
+    });
+  }
+
+  /**
+   * Generate anonymous JWT token (never expires)
+   */
+  generateAnonToken(): string {
+    const payload = {
+      sub: 'anonymous',
+      email: 'anon@insforge.com',
+      role: 'anon',
+    };
+    return jwt.sign(payload, JWT_SECRET()!, {
+      algorithm: 'HS256',
+      // No expiresIn means token never expires
     });
   }
 
@@ -559,7 +603,7 @@ export class AuthService {
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.set('client_id', config.google.clientId);
-    authUrl.searchParams.set('redirect_uri', config.google.redirectUri);
+    authUrl.searchParams.set('redirect_uri', config.google.redirectUri || '');
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'openid email profile');
     authUrl.searchParams.set('access_type', 'offline');
@@ -616,7 +660,7 @@ export class AuthService {
 
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.set('client_id', config.github.clientId);
-    authUrl.searchParams.set('redirect_uri', config.github.redirectUri);
+    authUrl.searchParams.set('redirect_uri', config.github.redirectUri || '');
     authUrl.searchParams.set('scope', 'user:email');
     if (state) {
       authUrl.searchParams.set('state', state);

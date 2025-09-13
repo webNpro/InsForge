@@ -11,7 +11,7 @@ export class DatabaseService {
   // Table operations
   async listTables(): Promise<string[]> {
     const data = await apiClient.request('/database/tables', {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
     // data is already unwrapped by request method and should be an array
     return Array.isArray(data) ? data : [];
@@ -19,7 +19,7 @@ export class DatabaseService {
 
   getTableSchema(tableName: string): Promise<GetTableSchemaResponse> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -27,7 +27,7 @@ export class DatabaseService {
     const body: CreateTableRequest = { tableName: tableName, columns, rlsEnabled: true };
     return apiClient.request('/database/tables', {
       method: 'POST',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(body),
@@ -37,7 +37,7 @@ export class DatabaseService {
   deleteTable(tableName: string) {
     return apiClient.request(`/database/tables/${tableName}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -47,7 +47,7 @@ export class DatabaseService {
   ): Promise<UpdateTableSchemaResponse | void> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(operations),
@@ -55,6 +55,16 @@ export class DatabaseService {
   }
 
   // Record operations
+  /**
+   * Data fetching method with built-in search, sorting, and pagination for UI components.
+   *
+   * @param tableName - Name of the table
+   * @param limit - Number of records to fetch
+   * @param offset - Number of records to skip
+   * @param searchQuery - Search term to filter text columns
+   * @param sortColumns - Sorting configuration
+   * @returns Structured response with records and pagination info
+   */
   async getTableRecords(
     tableName: string,
     limit = 10,
@@ -96,36 +106,45 @@ export class DatabaseService {
       params.set('order', orderParam);
     }
 
-    const response = await apiClient.request(
-      `/database/records/${tableName}?${params.toString()}`,
-      {
-        headers: apiClient.withApiKey(),
-      }
-    );
+    const response: {
+      data: { [key: string]: string | boolean | number | JSON | null }[];
+      pagination: { offset: number; limit: number; total: number };
+    } = await apiClient.request(`/database/records/${tableName}?${params.toString()}`, {
+      headers: {
+        Prefer: 'count=exact',
+      },
+    });
 
-    // Traditional REST: check if response is array (direct data) or wrapped
-    if (Array.isArray(response)) {
-      return {
-        records: response,
-        total: response.length,
-      };
-    }
-
-    if (response.records && Array.isArray(response.records)) {
-      return response;
-    }
-
-    // Fallback
     return {
-      records: [],
-      total: 0,
+      records: response.data,
+      pagination: response.pagination,
     };
+  }
+
+  /**
+   * Get a single record by foreign key value.
+   * Specifically designed for foreign key lookups.
+   *
+   * @param tableName - Name of the table to search in
+   * @param columnName - Name of the column to filter by
+   * @param value - Value to match
+   * @returns Single record or null if not found
+   */
+  async getRecordByForeignKeyValue(tableName: string, columnName: string, value: string) {
+    const queryParams = `${columnName}=eq.${encodeURIComponent(value)}&limit=1`;
+    const response = await this.getRecords(tableName, queryParams);
+
+    // Return the first record if found, or null if not found
+    if (response.records && response.records.length > 0) {
+      return response.records[0];
+    }
+    return null;
   }
 
   async getRecords(tableName: string, queryParams: string = '') {
     const url = `/database/records/${tableName}${queryParams ? `?${queryParams}` : ''}`;
     const response = await apiClient.request(url, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
 
     // Traditional REST: check if response is array (direct data) or wrapped
@@ -137,8 +156,11 @@ export class DatabaseService {
     }
 
     // If backend returns wrapped format for this endpoint
-    if (response.records && Array.isArray(response.records)) {
-      return response;
+    if (response.data && Array.isArray(response.data)) {
+      return {
+        records: response.data,
+        total: response.data.length,
+      };
     }
 
     return {
@@ -149,7 +171,7 @@ export class DatabaseService {
 
   getRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 
@@ -163,7 +185,7 @@ export class DatabaseService {
     });
     return apiClient.request(`/database/records/${table}`, {
       method: 'POST',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(records),
@@ -181,7 +203,7 @@ export class DatabaseService {
   updateRecord(table: string, id: string, data: any) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'PATCH',
-      headers: apiClient.withApiKey({
+      headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
       }),
       body: JSON.stringify(data),
@@ -191,7 +213,7 @@ export class DatabaseService {
   deleteRecord(table: string, id: string) {
     return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
       method: 'DELETE',
-      headers: apiClient.withApiKey(),
+      headers: apiClient.withAccessToken(),
     });
   }
 }

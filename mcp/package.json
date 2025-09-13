@@ -1,6 +1,6 @@
 {
   "name": "@insforge/insforge-mcp",
-  "version": "1.0.45",
+  "version": "1.0.47",
   "description": "MCP (Model Context Protocol) server for Insforge backend-as-a-service",
   "type": "module",
   "main": "dist/index.js",
@@ -30,7 +30,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@insforge/shared-schemas": "1.0.0",
     "@types/node": "^20.10.5",
     "rimraf": "^5.0.5",
     "tsup": "^8.5.0",

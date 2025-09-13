@@ -8,14 +8,13 @@ import ReactDataGrid, {
 } from 'react-data-grid';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
+import { format, parse } from 'date-fns';
 import { PaginationControls } from './PaginationControls';
-import ArrowUpIcon from '@/assets/icons/arrow_up.svg?react';
-import ArrowDownIcon from '@/assets/icons/arrow_down.svg?react';
 import { Checkbox } from './Checkbox';
-import { TypeBadge } from '@/features/database/components/TypeBadge';
 import { useTheme } from '@/lib/contexts/ThemeContext';
+import { TypeBadge } from './TypeBadge';
 
 // Types
 export interface DataGridColumn {
@@ -47,6 +46,7 @@ export interface DataGridProps {
   sortColumns?: SortColumn[];
   onSortColumnsChange?: (sortColumns: SortColumn[]) => void;
   onCellEdit?: (rowId: string, columnKey: string, newValue: any) => Promise<void>;
+  onCellClick?: (args: any, event: any) => void;
   searchQuery?: string;
   currentPage?: number;
   totalPages?: number;
@@ -88,9 +88,9 @@ export const DefaultCellRenderers = {
       <div className="w-full h-full flex items-center justify-start">
         <Badge
           variant={value ? 'default' : 'secondary'}
-          className="border border-transparent dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
+          className="py-0.5 px-1.5 border border-transparent"
         >
-          {value === null ? 'null' : value ? 'true' : 'false'}
+          {value === null ? 'null' : value ? 'True' : 'False'}
         </Badge>
       </div>
     );
@@ -103,17 +103,33 @@ export const DefaultCellRenderers = {
     }
 
     try {
-      const date = new Date(value);
+      const date = parse(value, 'yyyy-MM-dd', new Date());
+      const displayValue = format(date, 'MMM dd, yyyy');
       return (
         <div className="w-full h-full flex items-center">
-          <span className="truncate" title={date.toLocaleString()}>
-            {date.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+          <span className="truncate" title={displayValue}>
+            {displayValue}
+          </span>
+        </div>
+      );
+    } catch {
+      return <span className="text-red-500">Invalid date</span>;
+    }
+  },
+
+  datetime: ({ row, column }: any) => {
+    const value = row[column.key];
+    if (!value) {
+      return <span className="text-black dark:text-zinc-300">null</span>;
+    }
+
+    try {
+      const date = new Date(value);
+      const displayValue = format(date, 'MMM dd, yyyy, hh:mm a');
+      return (
+        <div className="w-full h-full flex items-center">
+          <span className="truncate" title={displayValue}>
+            {displayValue}
           </span>
         </div>
       );
@@ -171,7 +187,7 @@ export const DefaultCellRenderers = {
   badge: ({ row, column, options }: any) => {
     const value = row[column.key];
     const variant = options?.getVariant ? options.getVariant(value) : 'secondary';
-    const label = options?.getLabel ? options.getLabel(value) : value;
+    const label = options?.getLabel ? options.getLabel(value) : String(value || '');
 
     return (
       <div className="w-full h-full flex items-center">
@@ -199,13 +215,13 @@ function IdCell({ value }: { value: any }) {
 
   return (
     <div className="w-full h-full flex items-center justify-between group">
-      <span className="font-mono text-sm truncate dark:text-zinc-300" title={String(value)}>
+      <span className="text-sm truncate" title={String(value)}>
         {value}
       </span>
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 dark:bg-neutral-800 dark:text-zinc-300"
+        className="h-7 w-7 p-1 bg-white dark:bg-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => {
           handleCopy(e).catch(() => {
             // Handle copy error silently
@@ -213,9 +229,9 @@ function IdCell({ value }: { value: any }) {
         }}
       >
         {copied ? (
-          <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+          <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
         ) : (
-          <Copy className="h-3 w-3 text-gray-400 dark:text-zinc-300" />
+          <Copy className="h-5 w-5 text-black dark:text-white" />
         )}
       </Button>
     </div>
@@ -228,18 +244,23 @@ export function SortableHeaderRenderer({
   sortDirection,
   columnType,
   showTypeBadge,
+  mutedHeader,
 }: {
   column: any;
   sortDirection?: 'ASC' | 'DESC';
   columnType?: string;
   showTypeBadge?: boolean;
+  mutedHeader?: boolean;
 }) {
   // Determine which arrow to show on hover based on current sort state
   const getNextSortDirection = () => {
     if (!sortDirection) {
       return 'DESC'; // Default to DESC for first sort
+    } else if (sortDirection === 'ASC') {
+      return null;
+    } else {
+      return 'ASC';
     }
-    return sortDirection === 'DESC' ? 'ASC' : 'DESC'; // Toggle direction
   };
 
   const nextDirection = getNextSortDirection();
@@ -247,11 +268,16 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
-        <span className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-300">
+        <span
+          className={`truncate text-sm font-medium ${mutedHeader ? 'text-zinc-500 dark:text-neutral-400' : 'text-zinc-950 dark:text-zinc-300'} max-w-[120px]`}
+          title={column.name}
+        >
           {column.name}
         </span>
 
-        {columnType && showTypeBadge && <TypeBadge type={columnType} />}
+        {columnType && showTypeBadge && (
+          <TypeBadge type={columnType} className="dark:bg-neutral-800" />
+        )}
 
         {/* Show sort arrow with hover effect */}
         {column.sortable && (
@@ -259,20 +285,22 @@ export function SortableHeaderRenderer({
             {sortDirection && (
               <div className="bg-transparent p-0.5 rounded">
                 {sortDirection === 'DESC' ? (
-                  <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                  <ArrowDownWideNarrow className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
                 ) : (
-                  <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
+                  <ArrowUpNarrowWide className="h-4 w-4 text-zinc-500 dark:text-neutral-400 transition-opacity group-hover:opacity-0" />
                 )}
               </div>
             )}
 
-            <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 dark:bg-neutral-800 p-0.5 rounded w-5 h-5">
-              {nextDirection === 'DESC' ? (
-                <ArrowDownIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
-              ) : (
-                <ArrowUpIcon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
-              )}
-            </div>
+            {nextDirection && (
+              <div className="absolute inset-0 invisible group-hover:visible transition-opacity bg-slate-200 border border-slate-200 dark:bg-neutral-800 dark:border-neutral-800 p-0.5 rounded w-5 h-5">
+                {nextDirection === 'DESC' ? (
+                  <ArrowDownWideNarrow className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+                ) : (
+                  <ArrowUpNarrowWide className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -292,6 +320,7 @@ export function DataGrid({
   sortColumns,
   onSortColumnsChange,
   // onCellEdit,
+  onCellClick,
   searchQuery: _searchQuery,
   currentPage,
   totalPages,
@@ -317,7 +346,7 @@ export function DataGrid({
   const gridColumns = useMemo(() => {
     const cols: Column<any>[] = [];
 
-    // Add selection column if enabled (not fixed anymore)
+    // Add selection column if enabled and not hidden
     if (showSelection && selectedRows !== undefined && onSelectedRowsChange) {
       cols.push({
         ...SelectColumn,
@@ -329,13 +358,13 @@ export function DataGrid({
         resizable: false,
         renderCell: ({ row, tabIndex }) => (
           <Checkbox
-            checked={selectedRows.has(row.id)}
+            checked={selectedRows.has(String(row.id))}
             onChange={(checked) => {
               const newSelectedRows = new Set(selectedRows);
               if (checked) {
-                newSelectedRows.add(row.id);
+                newSelectedRows.add(String(row.id));
               } else {
-                newSelectedRows.delete(row.id);
+                newSelectedRows.delete(String(row.id));
               }
               onSelectedRowsChange(newSelectedRows);
             }}
@@ -343,7 +372,7 @@ export function DataGrid({
           />
         ),
         renderHeaderCell: () => {
-          const selectedCount = data.filter((row) => selectedRows.has(row.id)).length;
+          const selectedCount = data.filter((row) => selectedRows.has(String(row.id))).length;
           const totalCount = data.length;
           const isAllSelected = totalCount > 0 && selectedCount === totalCount;
           const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
@@ -356,10 +385,10 @@ export function DataGrid({
                 const newSelectedRows = new Set(selectedRows);
                 if (checked) {
                   // Select all
-                  data.forEach((row) => newSelectedRows.add(row.id));
+                  data.forEach((row) => newSelectedRows.add(String(row.id)));
                 } else {
                   // Unselect all
-                  data.forEach((row) => newSelectedRows.delete(row.id));
+                  data.forEach((row) => newSelectedRows.delete(String(row.id)));
                 }
                 onSelectedRowsChange(newSelectedRows);
               }}
@@ -375,6 +404,7 @@ export function DataGrid({
       const sortDirection = currentSort?.direction;
 
       const gridColumn: Column<any> = {
+        ...col,
         key: col.key,
         name: col.name,
         width: col.width,
@@ -429,8 +459,13 @@ export function DataGrid({
   }
 
   return (
-    <div className={cn('h-full flex flex-col bg-white dark:bg-neutral-800', className)}>
-      <div className="flex-1 overflow-hidden relative">
+    <div
+      className={cn(
+        'h-full flex flex-col bg-bg-gray dark:bg-neutral-800 overflow-hidden',
+        className
+      )}
+    >
+      <div className="flex-1 overflow-hidden relative mx-3 border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
           rows={data || []}
@@ -440,9 +475,10 @@ export function DataGrid({
           onSelectedRowsChange={onSelectedRowsChange}
           sortColumns={sortColumns || []}
           onSortColumnsChange={onSortColumnsChange}
+          onCellClick={onCellClick}
           className={`h-full fill-grid ${resolvedTheme === 'dark' ? 'rdg-dark' : 'rdg-light'}`}
-          headerRowHeight={52}
-          rowHeight={52}
+          headerRowHeight={36}
+          rowHeight={36}
           enableVirtualization={true}
           renderers={{
             noRowsFallback: (
