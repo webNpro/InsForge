@@ -44,16 +44,23 @@ export class ImageService {
     const model = options.model;
 
     try {
+      // Concatenate system prompt with user prompt if it exists
+      // This is because OpenRouter image models don't properly handle system messages
+      let finalPrompt = options.prompt;
+      if (aiConfig?.systemPrompt) {
+        finalPrompt = `${aiConfig.systemPrompt}\n\n${options.prompt}`;
+      }
+      
       // Build content for the message
       const userContent = options.images?.length
         ? [
-            { type: 'text', text: options.prompt },
+            { type: 'text', text: finalPrompt },
             ...options.images.map((image) => ({
               type: 'image_url',
               image_url: { url: image.url },
             })),
           ]
-        : options.prompt;
+        : finalPrompt;
 
       // Build the request - OpenRouter extends OpenAI's API with additional fields
       const request = {
@@ -127,7 +134,7 @@ export class ImageService {
         const inputTokens = result.metadata?.usage?.promptTokens;
         const outputTokens = result.metadata?.usage?.completionTokens;
 
-        await ImageService.aiUsageService.trackImageGeneartionUsage(
+        await ImageService.aiUsageService.trackImageGenerationUsage(
           aiConfig.id,
           result.images.length,
           undefined, // image resolution not available from OpenRouter
