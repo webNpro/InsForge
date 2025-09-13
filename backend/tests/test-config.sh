@@ -194,11 +194,11 @@ cleanup_test_data() {
             -H "Authorization: Bearer $admin_token" \
             -H "Content-Type: application/json" 2>/dev/null || echo "")
         
-        if [ -n "$users_response" ] && echo "$users_response" | grep -q '"users"'; then
+        if [ -n "$users_response" ] && echo "$users_response" | grep -q '"data"'; then
             local user_ids=()
             
-            # Extract users array from response
-            local users_json=$(echo "$users_response" | grep -o '"users":\[[^]]*\]' | sed 's/"users"://')
+            # Extract data array from response (new format uses "data" instead of "users")
+            local users_json=$(echo "$users_response" | grep -o '"data":\[[^]]*\]' | sed 's/"data"://')
             
             # Find IDs of test users by email
             for test_email in "${TEST_USERS_CREATED[@]}"; do
