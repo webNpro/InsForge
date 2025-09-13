@@ -54,17 +54,18 @@ export class AIUsageService {
   async trackChatUsage(
     configId: string,
     inputTokens?: number,
-    outputTokens?: number
+    outputTokens?: number,
+    modelId?: string
   ): Promise<{ id: string }> {
     const totalTokens = (inputTokens || 0) + (outputTokens || 0);
 
     const client = await this.getPool().connect();
     try {
       const usageResult = await client.query(
-        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens)
-         VALUES ($1, $2, $3)
+        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, model_id)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [configId, inputTokens || null, outputTokens || null]
+        [configId, inputTokens || null, outputTokens || null, modelId || null]
       );
 
       logger.info('Chat usage tracked', {
@@ -73,6 +74,7 @@ export class AIUsageService {
         inputTokens,
         outputTokens,
         totalTokens,
+        modelId,
       });
 
       return { id: usageResult.rows[0].id };
@@ -89,15 +91,23 @@ export class AIUsageService {
     imageCount: number,
     imageResolution?: string,
     inputTokens?: number,
-    outputTokens?: number
+    outputTokens?: number,
+    modelId?: string
   ): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const usageResult = await client.query(
-        `INSERT INTO _ai_usage (config_id, image_count, image_resolution, input_tokens, output_tokens)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO _ai_usage (config_id, image_count, image_resolution, input_tokens, output_tokens, model_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        [configId, imageCount, imageResolution || null, inputTokens || null, outputTokens || null]
+        [
+          configId,
+          imageCount,
+          imageResolution || null,
+          inputTokens || null,
+          outputTokens || null,
+          modelId || null,
+        ]
       );
 
       logger.info('Image usage tracked', {
@@ -107,6 +117,7 @@ export class AIUsageService {
         imageResolution,
         inputTokens,
         outputTokens,
+        modelId,
       });
 
       return { id: usageResult.rows[0].id };
@@ -227,7 +238,8 @@ export class AIUsageService {
           u.image_count as "imageCount",
           u.image_resolution as "imageResolution", 
           u.created_at as "createdAt",
-          c.model,
+          u.model_id as "modelId",
+          COALESCE(u.model_id, c.model_id) as "model",
           c.provider,
           c.modality
         FROM _ai_usage u

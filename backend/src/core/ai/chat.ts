@@ -113,7 +113,8 @@ export class ChatService {
         await this.aiUsageService.trackChatUsage(
           aiConfig.id,
           tokenUsage.promptTokens,
-          tokenUsage.completionTokens
+          tokenUsage.completionTokens,
+          options.model
         );
       }
 
@@ -192,7 +193,8 @@ export class ChatService {
         await this.aiUsageService.trackChatUsage(
           aiConfig.id,
           tokenUsage.promptTokens,
-          tokenUsage.completionTokens
+          tokenUsage.completionTokens,
+          options.model
         );
       }
     } catch (error) {

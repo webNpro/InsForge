@@ -33,6 +33,7 @@ export class ImageService {
 
   /**
    * Generate images using the specified model
+   * @param options - Image generation options
    */
   static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
     // Get the client (handles validation and initialization automatically)
@@ -139,7 +140,8 @@ export class ImageService {
           result.images.length,
           undefined, // image resolution not available from OpenRouter
           inputTokens,
-          outputTokens
+          outputTokens,
+          options.model
         );
       }
 

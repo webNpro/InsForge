@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, MoreVertical, FileText, Image, Mic, Video, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, MoreVertical, Loader2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { EmptyState } from '@/components/EmptyState';
 import {
@@ -19,31 +19,12 @@ import {
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
-import { generateAIIntegrationPrompt } from '@/features/ai/helpers';
-
-const getModalityIcon = (modality: string) => {
-  switch (modality) {
-    case 'text':
-      return FileText;
-    case 'image':
-      return Image;
-    case 'audio':
-      return Mic;
-    case 'video':
-      return Video;
-    default:
-      return FileText; // Default fallback icon
-  }
-};
-
-const formatTokenCount = (count: number): string => {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
-  return count.toString();
-};
+import {
+  generateAIIntegrationPrompt,
+  getModalityIcon,
+  formatTokenCount,
+  getProviderDisplayName,
+} from '@/features/ai/helpers';
 
 export default function AIPage() {
   const {
@@ -156,6 +137,15 @@ export default function AIPage() {
                 {configurations.map((config) => {
                   const Icon = getModalityIcon(config.modality);
 
+                  // Format provider and model display
+                  let configTitle: string;
+                  if (config.provider === 'openrouter') {
+                    const parts = config.modelId.split('/');
+                    configTitle = `${getProviderDisplayName(parts[0])} - ${parts[1]}`;
+                  } else {
+                    configTitle = `${getProviderDisplayName(config.provider)} - ${config.modelId}`;
+                  }
+
                   return (
                     <div
                       key={config.id}
@@ -169,7 +159,7 @@ export default function AIPage() {
 
                         {/* Provider and Model */}
                         <div className="w-80 font-medium text-black dark:text-white">
-                          {config.provider} - {config.modelId}
+                          {configTitle}
                         </div>
                       </div>
 
@@ -235,7 +225,7 @@ export default function AIPage() {
                             'h-9 px-4',
                             'dark:bg-emerald-300 dark:hover:bg-emerald-400'
                           )}
-                          onClick={() => handleConnect(config.id)}
+                          onClick={() => void handleConnect(config.id)}
                         >
                           Connect
                         </Button>
