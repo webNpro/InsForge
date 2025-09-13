@@ -75,10 +75,14 @@ export class ChatService {
    * Send a chat message to the specified model
    * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
+   * @param userId - Optional user ID for tracking
+   * @param userEmail - Optional user email for tracking
    */
   async chat(
     messages: ChatMessageSchema[],
-    options: ChatCompletionOptions
+    options: ChatCompletionOptions,
+    userId?: string,
+    userEmail?: string
   ): Promise<ChatCompletionResponse> {
     try {
       // Get the client (handles validation and initialization automatically)
@@ -113,7 +117,10 @@ export class ChatService {
         await this.aiUsageService.trackChatUsage(
           aiConfig.id,
           tokenUsage.promptTokens,
-          tokenUsage.completionTokens
+          tokenUsage.completionTokens,
+          options.model,
+          userId,
+          userEmail
         );
       }
 
@@ -136,10 +143,14 @@ export class ChatService {
    * Stream a chat response
    * @param messages - Array of messages for conversation
    * @param options - Chat options including model, temperature, etc.
+   * @param userId - Optional user ID for tracking
+   * @param userEmail - Optional user email for tracking
    */
   async *streamChat(
     messages: ChatMessageSchema[],
-    options: ChatCompletionOptions
+    options: ChatCompletionOptions,
+    userId?: string,
+    userEmail?: string
   ): AsyncGenerator<{
     chunk?: string;
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
@@ -192,7 +203,10 @@ export class ChatService {
         await this.aiUsageService.trackChatUsage(
           aiConfig.id,
           tokenUsage.promptTokens,
-          tokenUsage.completionTokens
+          tokenUsage.completionTokens,
+          options.model,
+          userId,
+          userEmail
         );
       }
     } catch (error) {

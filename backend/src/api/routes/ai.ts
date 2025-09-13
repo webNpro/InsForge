@@ -68,7 +68,12 @@ router.post(
 
         // Create and process the stream
         try {
-          const streamGenerator = chatService.streamChat(messages, options);
+          const streamGenerator = chatService.streamChat(
+            messages,
+            options,
+            req.user?.id,
+            req.user?.email
+          );
 
           for await (const data of streamGenerator) {
             if (data.chunk) {
@@ -94,7 +99,7 @@ router.post(
       }
 
       // Non-streaming requests
-      const result = await chatService.chat(messages, options);
+      const result = await chatService.chat(messages, options, req.user?.id, req.user?.email);
       res.json(result);
     } catch (error) {
       if (error instanceof AppError) {
@@ -130,7 +135,11 @@ router.post(
         );
       }
 
-      const result = await ImageService.generate(validationResult.data);
+      const result = await ImageService.generate(
+        validationResult.data,
+        req.user?.id,
+        req.user?.email
+      );
 
       res.json(result);
     } catch (error) {

@@ -1,5 +1,48 @@
 import { AIConfigurationSchema } from '@insforge/shared-schemas';
 import { authService } from '@/features/auth/services/auth.service';
+import { FileText, Image, Mic, Video } from 'lucide-react';
+
+export const getModalityIcon = (modality: string) => {
+  switch (modality) {
+    case 'text':
+      return FileText;
+    case 'image':
+      return Image;
+    case 'audio':
+      return Mic;
+    case 'video':
+      return Video;
+    default:
+      return FileText; // Default fallback icon
+  }
+};
+
+export const formatTokenCount = (count: number): string => {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  } else if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+};
+
+export const getProviderDisplayName = (providerId: string): string => {
+  const providerMap: Record<string, string> = {
+    openai: 'OpenAI',
+    anthropic: 'Anthropic',
+    google: 'Google',
+    openrouter: 'OpenRouter',
+    azure: 'Azure',
+    amazon: 'Amazon',
+    xai: 'xAI',
+    huggingface: 'HuggingFace',
+  };
+
+  return (
+    providerMap[providerId.toLowerCase()] ||
+    providerId.charAt(0).toUpperCase() + providerId.slice(1)
+  );
+};
 
 export const generateAIIntegrationPrompt = async (
   config: AIConfigurationSchema
