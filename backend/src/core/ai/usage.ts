@@ -84,7 +84,7 @@ export class AIUsageService {
     }
   }
 
-  async trackImageGeneartionUsage(
+  async trackImageGenerationUsage(
     configId: string,
     imageCount: number,
     imageResolution?: string,
