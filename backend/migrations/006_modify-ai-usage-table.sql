@@ -2,6 +2,7 @@
 -- This migration modifies the _ai_usage table to:
 -- 1. Change foreign key constraint on config_id to SET NULL
 -- 2. Make config_id nullable
+-- 3. Add model_id column
 
 -- Drop existing foreign key constraint
 ALTER TABLE _ai_usage 
