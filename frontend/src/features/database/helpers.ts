@@ -121,6 +121,7 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
         }
         break;
       case ColumnType.DATETIME:
+        // Added CURRENT_TIMESTAMP for backward compatibility with existing projects 09/12/2025
         if (
           column.defaultValue &&
           column.defaultValue !== 'CURRENT_TIMESTAMP' &&
