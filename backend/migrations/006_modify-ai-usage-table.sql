@@ -17,12 +17,9 @@ ALTER TABLE _ai_usage
 ADD CONSTRAINT _ai_usage_config_id_fkey 
 FOREIGN KEY (config_id) REFERENCES _ai_configs(id) ON DELETE SET NULL;
 
--- Add new columns for user tracking and model identification
+-- Add new columns for model identification
 ALTER TABLE _ai_usage 
-ADD COLUMN IF NOT EXISTS user_id UUID,
-ADD COLUMN IF NOT EXISTS user_email TEXT,
 ADD COLUMN IF NOT EXISTS model_id VARCHAR(255);
 
 -- Create indexes for the new columns
-CREATE INDEX IF NOT EXISTS idx_ai_usage_user_id ON _ai_usage(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_usage_model_id ON _ai_usage(model_id);

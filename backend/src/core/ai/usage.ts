@@ -18,16 +18,12 @@ export class AIUsageService {
     return this.pool;
   }
 
-  async trackUsage(
-    data: AIUsageDataSchema,
-    userId?: string,
-    userEmail?: string
-  ): Promise<{ id: string }> {
+  async trackUsage(data: AIUsageDataSchema): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
-        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, image_count, image_resolution, user_id, user_email)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, image_count, image_resolution)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
         [
           data.configId,
@@ -35,8 +31,6 @@ export class AIUsageService {
           data.outputTokens || null,
           data.imageCount || null,
           data.imageResolution || null,
-          userId || null,
-          userEmail || null,
         ]
       );
 
@@ -61,26 +55,17 @@ export class AIUsageService {
     configId: string,
     inputTokens?: number,
     outputTokens?: number,
-    modelId?: string,
-    userId?: string,
-    userEmail?: string
+    modelId?: string
   ): Promise<{ id: string }> {
     const totalTokens = (inputTokens || 0) + (outputTokens || 0);
 
     const client = await this.getPool().connect();
     try {
       const usageResult = await client.query(
-        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, model_id, user_id, user_email)
+        `INSERT INTO _ai_usage (config_id, input_tokens, output_tokens, model_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        [
-          configId,
-          inputTokens || null,
-          outputTokens || null,
-          modelId || null,
-          userId || null,
-          userEmail || null,
-        ]
+        [configId, inputTokens || null, outputTokens || null, modelId || null]
       );
 
       logger.info('Chat usage tracked', {
@@ -90,8 +75,6 @@ export class AIUsageService {
         outputTokens,
         totalTokens,
         modelId,
-        userId,
-        userEmail,
       });
 
       return { id: usageResult.rows[0].id };
@@ -109,15 +92,13 @@ export class AIUsageService {
     imageResolution?: string,
     inputTokens?: number,
     outputTokens?: number,
-    modelId?: string,
-    userId?: string,
-    userEmail?: string
+    modelId?: string
   ): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const usageResult = await client.query(
-        `INSERT INTO _ai_usage (config_id, image_count, image_resolution, input_tokens, output_tokens, model_id, user_id, user_email)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO _ai_usage (config_id, image_count, image_resolution, input_tokens, output_tokens, model_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
         [
           configId,
@@ -126,8 +107,6 @@ export class AIUsageService {
           inputTokens || null,
           outputTokens || null,
           modelId || null,
-          userId || null,
-          userEmail || null,
         ]
       );
 
@@ -139,8 +118,6 @@ export class AIUsageService {
         inputTokens,
         outputTokens,
         modelId,
-        userId,
-        userEmail,
       });
 
       return { id: usageResult.rows[0].id };
@@ -261,8 +238,6 @@ export class AIUsageService {
           u.image_count as "imageCount",
           u.image_resolution as "imageResolution", 
           u.created_at as "createdAt",
-          u.user_id as "userId",
-          u.user_email as "userEmail",
           u.model_id as "modelId",
           COALESCE(u.model_id, c.model_id) as "model",
           c.provider,

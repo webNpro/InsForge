@@ -34,14 +34,8 @@ export class ImageService {
   /**
    * Generate images using the specified model
    * @param options - Image generation options
-   * @param userId - Optional user ID for tracking
-   * @param userEmail - Optional user email for tracking
    */
-  static async generate(
-    options: ImageGenerationRequest,
-    userId?: string,
-    userEmail?: string
-  ): Promise<ImageGenerationResponse> {
+  static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
     // Get the client (handles validation and initialization automatically)
     const client = await this.aiCredentialsService.getClient();
 
@@ -140,9 +134,7 @@ export class ImageService {
           undefined, // image resolution not available from OpenRouter
           inputTokens,
           outputTokens,
-          options.model,
-          userId,
-          userEmail
+          options.model
         );
       }
 
