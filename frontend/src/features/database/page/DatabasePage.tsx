@@ -568,7 +568,7 @@ export default function DatabasePage() {
                         />
                       )}
                       <div className="flex items-center gap-2 ml-4">
-                        {selectedRows.size === 0 && (
+                        {selectedRows.size === 0 && selectedTable !== 'users' && (
                           <>
                             {/* Add Record Button */}
                             <Button
