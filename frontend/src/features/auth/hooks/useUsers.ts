@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { authService } from '@/features/auth/services/auth.service';
 
@@ -33,20 +33,17 @@ export function useUsers(options: UseUsersOptions = {}) {
   });
 
   // Pagination calculations
-  const totalUsers = Number(usersData?.pagination?.total || 0);
-  const totalPages = useMemo(() => Math.ceil(totalUsers / pageSize), [totalUsers, pageSize]);
-
-  const adjustedCurrentPage = totalUsers === 0 ? 0 : currentPage;
+  const totalPages = Math.ceil((usersData?.pagination.total || 0) / pageSize);
 
   return {
     // Data
     users: usersData?.users || [],
-    totalUsers,
+    totalUsers: usersData?.pagination.total || 0,
     isLoading,
     error,
 
     // Pagination
-    currentPage: adjustedCurrentPage,
+    currentPage,
     setCurrentPage,
     totalPages,
     pageSize,

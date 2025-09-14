@@ -82,9 +82,7 @@ export function LinkRecordModal({
 
   const records = useMemo(() => recordsData?.records || [], [recordsData?.records]);
   const totalRecords = recordsData?.totalRecords || 0;
-  const totalPages = useMemo(() => Math.ceil(totalRecords / PAGE_SIZE), [totalRecords]);
-
-  const adjustedCurrentPage = totalRecords === 0 ? 0 : currentPage;
+  const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
   // Create selected rows set for highlighting
   const selectedRows = useMemo(() => {
@@ -287,7 +285,7 @@ export function LinkRecordModal({
             onSortColumnsChange={setSortColumns}
             onCellClick={handleCellClick}
             searchQuery={searchQuery}
-            currentPage={adjustedCurrentPage}
+            currentPage={currentPage}
             totalPages={totalPages}
             pageSize={PAGE_SIZE}
             totalRecords={totalRecords}

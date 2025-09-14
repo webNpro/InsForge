@@ -447,10 +447,7 @@ export default function DatabasePage() {
   });
 
   // Calculate pagination
-  const totalRecords = tableData?.totalRecords || 0;
-  const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
-
-  const adjustedCurrentPage = totalRecords === 0 ? 0 : currentPage;
+  const totalPages = Math.ceil((tableData?.totalRecords || 0) / PAGE_SIZE);
 
   return (
     <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
@@ -620,10 +617,10 @@ export default function DatabasePage() {
                   onCellEdit={handleRecordUpdate}
                   onJumpToTable={setSelectedTable}
                   searchQuery={searchQuery}
-                  currentPage={adjustedCurrentPage}
+                  currentPage={currentPage}
                   totalPages={totalPages}
                   pageSize={PAGE_SIZE}
-                  totalRecords={totalRecords}
+                  totalRecords={tableData?.totalRecords || 0}
                   onPageChange={setCurrentPage}
                   onDeleteRecord={(id) => void handleRecordDelete(id)}
                   onNewRecord={() => setShowRecordForm(true)}
