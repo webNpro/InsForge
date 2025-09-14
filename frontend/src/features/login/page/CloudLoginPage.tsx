@@ -11,7 +11,7 @@ export default function CloudLoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      void navigate('/cloud/visualizer', { replace: true });
+      void navigate('/cloud/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
