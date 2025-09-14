@@ -27,7 +27,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
       return;
     }
 
-    const loadPreview = async () => {
+    const loadPreview = () => {
       if (!file) {
         return;
       }
@@ -37,14 +37,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
       try {
         const fileBucket = file.bucket || bucket;
-        const blob = await storageService.downloadObject(fileBucket, file.key);
-
-        // Validate blob
-        if (!blob || blob.size === 0) {
-          throw new Error('Empty or corrupted file');
-        }
-
-        const url = URL.createObjectURL(blob);
+        const url = storageService.getDownloadUrl(fileBucket, file.key);
         setPreviewUrl(url);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load preview';
@@ -56,15 +49,6 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     void loadPreview();
   }, [file, open, bucket]);
-
-  // Cleanup URL when component unmounts or file changes
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
 
   const handleDownload = () => {
     if (!file || !previewUrl) {
@@ -124,9 +108,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     // Show empty preview template for non-previewable files or errors
     if (!isPreviewable(file.mimeType) || error || !previewUrl) {
-      return (
-        <div className="bg-neutral-200 dark:bg-neutral-700 w-full h-full min-h-[400px] rounded" />
-      );
+      return <div className="bg-neutral-200 dark:bg-neutral-700 w-full h-full rounded" />;
     }
 
     const mimeType = file.mimeType || '';
@@ -160,7 +142,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     if (mimeType.startsWith('audio/')) {
       return (
-        <div className="flex items-center justify-center h-full bg-gray-200">
+        <div className="flex items-center justify-center w-full h-full bg-gray-200 dark:bg-transparent">
           <audio
             src={previewUrl}
             controls
@@ -179,12 +161,14 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     if (mimeType === 'application/pdf') {
       return (
-        <iframe
-          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-          className="w-full h-[630px]"
-          title={fileName}
-          onError={() => setError('Failed to load PDF')}
-        />
+        <div className="w-full h-[602px] overflow-hidden">
+          <iframe
+            src={`${previewUrl}#toolbar=0&navpanes=0`}
+            className="w-full h-full"
+            title={fileName}
+            onError={() => setError('Failed to load PDF')}
+          />
+        </div>
       );
     }
 
@@ -226,7 +210,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
                 <LoadingState />
               </div>
             ) : (
-              <div className="w-full h-full overflow-auto">{renderPreview()}</div>
+              renderPreview()
             )}
           </div>
 
@@ -289,14 +273,14 @@ function TextPreview({ url }: { url: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="flex items-center justify-center h-full w-full min-h-[400px]">
         <LoadingState />
       </div>
     );
   }
 
   return (
-    <div className="bg-neutral-50 dark:bg-neutral-800 rounded p-4 w-full h-full">
+    <div className="bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-300 rounded p-4 w-full h-full overflow-auto">
       <pre className="text-sm whitespace-pre-wrap break-words">{content}</pre>
     </div>
   );
