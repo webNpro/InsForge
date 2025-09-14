@@ -66,10 +66,12 @@ export function StorageManager({
   });
 
   // Calculate pagination from backend response
+  const totalRecords = Number(objectsData?.pagination.total || fileCount);
   const totalPages = useMemo(() => {
-    const total = objectsData?.pagination.total || fileCount;
-    return Math.ceil(total / pageSize);
-  }, [objectsData?.pagination.total, fileCount, pageSize]);
+    return Math.ceil(totalRecords / pageSize);
+  }, [totalRecords, pageSize]);
+
+  const adjustedCurrentPage = totalRecords === 0 ? 0 : currentPage;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -206,11 +208,11 @@ export function StorageManager({
           loading={objectsLoading}
           isRefreshing={isRefreshing}
           searchQuery={searchQuery}
-          totalRecords={objectsData?.pagination.total || fileCount}
+          totalRecords={totalRecords}
           selectedRows={selectedFiles}
           onSelectedRowsChange={onSelectedFilesChange}
           sortColumns={sortColumns}
-          currentPage={currentPage}
+          currentPage={adjustedCurrentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
           onSortColumnsChange={setSortColumns}
