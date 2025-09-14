@@ -50,15 +50,6 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
     void loadPreview();
   }, [file, open, bucket]);
 
-  // Cleanup URL when component unmounts or file changes
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   const handleDownload = () => {
     if (!file || !previewUrl) {
       return;
