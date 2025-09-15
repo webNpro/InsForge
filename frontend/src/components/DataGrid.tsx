@@ -468,7 +468,7 @@ export function DataGrid({
       <div className="flex-1 overflow-hidden relative mx-3 border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
-          rows={data || []}
+          rows={isRefreshing ? [] : data}
           rowKeyGetter={keyGetter}
           onRowsChange={() => {}}
           selectedRows={selectedRows}
