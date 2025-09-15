@@ -468,7 +468,7 @@ export function DataGrid({
       <div className="flex-1 overflow-hidden relative mx-3 border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
-          rows={data || []}
+          rows={isRefreshing ? [] : data}
           rowKeyGetter={keyGetter}
           onRowsChange={() => {}}
           selectedRows={selectedRows}
@@ -501,7 +501,7 @@ export function DataGrid({
 
         {/* Loading mask overlay */}
         {isRefreshing && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-neutral-800/60 flex items-center justify-center z-50 mt-13">
+          <div className="absolute inset-0 bg-white dark:bg-neutral-800 flex items-center justify-center z-50 mt-9">
             <div className="flex items-center gap-1">
               <div className="w-5 h-5 border-2 border-zinc-500 dark:border-neutral-700 border-t-transparent rounded-full animate-spin" />
               <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading</span>
