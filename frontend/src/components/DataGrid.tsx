@@ -8,7 +8,7 @@ import ReactDataGrid, {
 } from 'react-data-grid';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
-import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide, Key } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { format, parse } from 'date-fns';
 import { PaginationControls } from './PaginationControls';
@@ -268,6 +268,7 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
+        {column.isPrimaryKey && <Key className="w-4 h-4 text-zinc-500 pointer-events-none mr-1" />}
         <span
           className={`truncate text-sm font-medium ${mutedHeader ? 'text-zinc-500 dark:text-neutral-400' : 'text-zinc-950 dark:text-zinc-300'} max-w-[120px]`}
           title={column.name}

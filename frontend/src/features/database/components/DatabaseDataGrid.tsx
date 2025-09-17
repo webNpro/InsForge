@@ -22,7 +22,7 @@ function TextCellEditor({ row, column, onRowChange, onClose, onCellEdit }: any) 
     if (onCellEdit && String(oldValue) !== String(newValue)) {
       try {
         await onCellEdit(row.id, column.key, newValue);
-      } catch (error) {
+      } catch {
         // Edit failed silently
       }
     }
@@ -78,7 +78,7 @@ function CustomBooleanCellEditor({ row, column, onRowChange, onClose, onCellEdit
       if (onCellEdit && row[column.key] !== value) {
         try {
           await onCellEdit(row.id, column.key, value);
-        } catch (error) {
+        } catch {
           // Edit failed silently
         }
       }
@@ -111,7 +111,7 @@ function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
       ) {
         try {
           await onCellEdit(row.id, column.columnName, newValue);
-        } catch (error) {
+        } catch {
           // Edit failed silently
         }
       }
@@ -120,7 +120,7 @@ function CustomDateCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
       onRowChange(updatedRow);
       onClose();
     },
-    [row, column.columnName, onRowChange, onClose, onCellEdit]
+    [onCellEdit, row, column.key, column.columnName, onRowChange, onClose]
   );
 
   return (
@@ -142,7 +142,7 @@ function CustomJsonCellEditor({ row, column, onRowChange, onClose, onCellEdit }:
       if (onCellEdit && row[column.columnName] !== newValue) {
         try {
           await onCellEdit(row.id, column.columnName, newValue);
-        } catch (error) {
+        } catch {
           // Edit failed silently
         }
       }
