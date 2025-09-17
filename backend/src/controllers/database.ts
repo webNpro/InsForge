@@ -65,6 +65,28 @@ export class DatabaseController {
       }
     }
 
+    // Check for system table operations (tables starting with underscore)
+    // This pattern checks each statement in multi-statement queries, including schema-qualified names
+    const systemTablePattern =
+      /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
+    if (systemTablePattern.test(query)) {
+      throw new AppError(
+        'Cannot modify or create system tables (tables starting with underscore)',
+        403,
+        ERROR_CODES.FORBIDDEN
+      );
+    }
+
+    // Check for RENAME TO system table
+    const renameToSystemTablePattern = /RENAME\s+TO\s+(?:\w+\.)?["']?_\w+/im;
+    if (renameToSystemTablePattern.test(query)) {
+      throw new AppError(
+        'Cannot rename tables to system table names (tables starting with underscore)',
+        403,
+        ERROR_CODES.FORBIDDEN
+      );
+    }
+
     return query;
   }
 
