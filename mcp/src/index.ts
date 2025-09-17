@@ -587,7 +587,7 @@ server.tool(
   withUsageTracking('get-table-schema', async ({ apiKey, tableName }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
-      const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {
+      const response = await fetch(`${API_BASE_URL}/api/metadata/${tableName}`, {
         method: 'GET',
         headers: {
           'x-api-key': actualApiKey,
