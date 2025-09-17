@@ -188,7 +188,7 @@ export function convertSchemaToColumns(
         ColumnType.DATE,
         ColumnType.DATETIME,
         ColumnType.JSON,
-      ].includes(col.type);
+      ].includes(col.type as ColumnType);
     const isSortable = col.type?.toLowerCase() !== ColumnType.JSON;
 
     const column: DataGridColumn = {

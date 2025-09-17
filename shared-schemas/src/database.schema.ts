@@ -43,7 +43,7 @@ export const columnSchema = z.object({
     .string()
     .min(1, 'Column name cannot be empty')
     .max(64, 'Column name must be less than 64 characters'),
-  type: columnTypeSchema,
+  type: z.union([columnTypeSchema, z.string()]),
   defaultValue: z.string().optional(),
   isPrimaryKey: z.boolean().optional(),
   isNullable: z.boolean(),
