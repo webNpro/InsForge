@@ -10,6 +10,7 @@ import {
   OAuthMetadataSchema,
   OAuthConfigSchema,
   StorageMetadataSchema,
+  EdgeFunctionMetadataSchema,
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
@@ -328,6 +329,8 @@ export class MetadataService {
       });
       aiConfig = { models: [] };
     }
+    // Get edge functions
+    const functions = await this.getEdgeFunctions();
 
     // Get version from package.json or default
     const version = process.env.npm_package_version || '1.0.0';
@@ -342,8 +345,28 @@ export class MetadataService {
         })),
       },
       aiIntegration: aiConfig,
+      functions,
       version,
     };
+  }
+
+  async getEdgeFunctions(): Promise<Array<EdgeFunctionMetadataSchema>> {
+    try {
+      const functions = await this.db
+        .prepare(
+          `SELECT slug, name, description, status
+          FROM _edge_functions
+          ORDER BY created_at DESC`
+        )
+        .all();
+      
+      return functions as Array<EdgeFunctionMetadataSchema>;
+    } catch (error) {
+      logger.error('Failed to get edge functions metadata', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
+    }
   }
 
   async getDashboardMetadata(): Promise<DashboardMetadataSchema> {

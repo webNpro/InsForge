@@ -10,14 +10,14 @@ const db = DatabaseManager.getInstance();
 
 // Schema for function upload
 const functionUploadSchema = z.object({
-  name: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Invalid name format'),
+  name: z.string().min(1, 'Name is required'),
   slug: z
     .string()
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid slug format')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid slug format - must be alphanumeric with hyphens or underscores only')
     .optional(),
   code: z.string().min(1),
   description: z.string().optional(),
-  status: z.enum(['draft', 'active']).optional().default('draft'),
+  status: z.enum(['draft', 'active']).optional().default('active'),
 });
 
 // Schema for function update

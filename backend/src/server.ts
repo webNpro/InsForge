@@ -190,30 +190,21 @@ export async function createApp() {
     try {
       const { slug } = req.params;
       const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
-      const queryString = new URL(req.url, `http://localhost`).search;
-
-      // Convert headers to fetch-compatible format
-      const headers: Record<string, string> = {};
-      Object.entries(req.headers).forEach(([key, value]) => {
-        if (value) {
-          headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
-        }
-      });
-      headers['X-Forwarded-For'] = req.ip || req.socket.remoteAddress || '';
-      headers['X-Original-Host'] = req.hostname;
-
-      const response = await fetch(`${denoUrl}/${slug}${queryString}`, {
+      
+      // Simple direct proxy - just pass everything through
+      const response = await fetch(`${denoUrl}/${slug}${req.url.split(req.path)[1] || ''}`, {
         method: req.method,
-        headers,
+        headers: req.headers as any,
         body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
       });
 
-      // Copy response headers
-      for (const [key, value] of response.headers.entries()) {
-        res.setHeader(key, value);
-      }
-
-      res.status(response.status).send(await response.text());
+      // Get response text
+      const responseText = await response.text();
+      
+      res.status(response.status)
+        .set('Content-Type', response.headers.get('content-type') || 'application/json')
+        .set('Access-Control-Allow-Origin', '*')
+        .send(responseText);
     } catch (error) {
       logger.error('Failed to execute function', {
         error: error instanceof Error ? error.message : String(error),
