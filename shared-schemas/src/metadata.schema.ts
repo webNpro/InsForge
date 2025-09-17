@@ -30,10 +30,18 @@ export const dashboardMetadataSchema = z.object({
   storageSizeGb: z.number().optional(),
 });
 
+export const aiMetadataSchema = z.object({
+  models: z.array(z.object({
+    modality: z.string(),
+    modelId: z.string(),
+  })),
+});
+
 export const appMetaDataSchema = z.object({
   database: databaseMetadataSchema,
   auth: oAuthMetadataSchema,
   storage: storageMetadataSchema,
+  ai: aiMetadataSchema.optional(),
   version: z.string().optional(),
 });
 
@@ -42,4 +50,5 @@ export type DatabaseMetadataSchema = z.infer<typeof databaseMetadataSchema>;
 export type BucketMetadataSchema = z.infer<typeof bucketMetadataSchema>;
 export type StorageMetadataSchema = z.infer<typeof storageMetadataSchema>;
 export type DashboardMetadataSchema = z.infer<typeof dashboardMetadataSchema>;
+export type AIMetadataSchema = z.infer<typeof aiMetadataSchema>;
 export type AppMetadataSchema = z.infer<typeof appMetaDataSchema>;

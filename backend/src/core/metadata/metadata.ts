@@ -14,6 +14,7 @@ import {
 import logger from '@/utils/logger.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers';
 import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
+import { AIConfigService } from '@/core/ai/config.js';
 
 export class MetadataService {
   private static instance: MetadataService;
@@ -309,6 +310,26 @@ export class MetadataService {
     };
     const bucketsObjectCountMap = await this.getBucketsObjectCount();
 
+    // Get AI configurations
+    let ai;
+    try {
+      const aiConfigService = new AIConfigService();
+      const configs = await aiConfigService.findAll();
+      
+      // Map configs to simplified model metadata
+      const models = configs.map(config => ({
+        modality: config.modality,
+        modelId: config.modelId,
+      }));
+
+      ai = { models };
+    } catch (error) {
+      logger.error('Failed to get AI metadata', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      ai = undefined;
+    }
+
     // Get version from package.json or default
     const version = process.env.npm_package_version || '1.0.0';
 
@@ -321,6 +342,7 @@ export class MetadataService {
           objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
         })),
       },
+      ai,
       version,
     };
   }
