@@ -27,7 +27,7 @@ export type ValueConversionResult =
  * Convert and validate a string value based on the specified ColumnType
  */
 export function convertValueForColumn(
-  type: ColumnType,
+  type: ColumnType | string,
   value: string | null | undefined
 ): ValueConversionResult {
   try {

@@ -248,7 +248,7 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
   );
 }
 
-interface FormFieldProps {
+interface RecordFormFieldProps {
   field: ColumnSchema;
   form: UseFormReturn<any>;
   tableName: string;
@@ -371,7 +371,7 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
   );
 }
 
-export function FormField({ field, form, tableName }: FormFieldProps) {
+export function RecordFormField({ field, form, tableName }: RecordFormFieldProps) {
   const {
     control,
     register,

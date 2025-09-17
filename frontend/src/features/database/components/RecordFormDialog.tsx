@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { ScrollArea } from '@/components/radix/ScrollArea';
 import { databaseService } from '@/features/database/services/database.service';
 import { buildDynamicSchema, getInitialValues } from '@/features/database';
-import { FormField } from '@/features/database/components/FormField';
+import { RecordFormField } from '@/features/database/components/RecordFormField';
 import { cn } from '@/lib/utils/utils';
 import { useToast } from '@/lib/hooks/useToast';
 import { ColumnSchema } from '@insforge/shared-schemas';
@@ -146,7 +146,12 @@ export function RecordFormDialog({
           <ScrollArea className="h-full max-h-[540px] overflow-auto">
             <div className="p-6 space-y-6">
               {displayFields.map((field) => (
-                <FormField key={field.columnName} field={field} form={form} tableName={tableName} />
+                <RecordFormField
+                  key={field.columnName}
+                  field={field}
+                  form={form}
+                  tableName={tableName}
+                />
               ))}
             </div>
           </ScrollArea>

@@ -64,6 +64,7 @@ export function TableForm({
                 columnName: 'id',
                 type: ColumnType.UUID,
                 defaultValue: 'gen_random_uuid()',
+                isPrimaryKey: true,
                 isNullable: false,
                 isUnique: true,
                 isSystemColumn: true,
@@ -106,6 +107,7 @@ export function TableForm({
         columns: editTable.columns.map((col) => ({
           columnName: col.columnName,
           type: col.type,
+          isPrimaryKey: col.isPrimaryKey,
           isNullable: col.isNullable,
           isUnique: col.isUnique || false,
           defaultValue: col.defaultValue || '',
@@ -134,6 +136,7 @@ export function TableForm({
             columnName: 'id',
             type: ColumnType.UUID,
             defaultValue: 'gen_random_uuid()',
+            isPrimaryKey: true,
             isNullable: false,
             isUnique: true,
             isSystemColumn: true,
