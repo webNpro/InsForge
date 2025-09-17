@@ -310,8 +310,7 @@ export class MetadataService {
     };
     const bucketsObjectCountMap = await this.getBucketsObjectCount();
 
-    // Get AI configurations
-    let ai;
+    let aiConfig;
     try {
       const aiConfigService = new AIConfigService();
       const configs = await aiConfigService.findAll();
@@ -322,12 +321,12 @@ export class MetadataService {
         modelId: config.modelId,
       }));
 
-      ai = { models };
+      aiConfig = { models };
     } catch (error) {
       logger.error('Failed to get AI metadata', {
         error: error instanceof Error ? error.message : String(error),
       });
-      ai = undefined;
+      aiConfig = { models: [] };
     }
 
     // Get version from package.json or default
@@ -342,7 +341,7 @@ export class MetadataService {
           objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
         })),
       },
-      ai,
+      aiIntegration: aiConfig,
       version,
     };
   }

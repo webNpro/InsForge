@@ -41,7 +41,7 @@ export const appMetaDataSchema = z.object({
   database: databaseMetadataSchema,
   auth: oAuthMetadataSchema,
   storage: storageMetadataSchema,
-  ai: aiMetadataSchema.optional(),
+  aiIntegration: aiMetadataSchema.optional(),
   version: z.string().optional(),
 });
 
