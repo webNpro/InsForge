@@ -34,12 +34,10 @@ async function seedDefaultAIConfigs(): Promise<void> {
     return;
   }
 
-  // TODO: change the default text model once confirmed, also need to change the corresponding ai docs
-  // best if we can add the current active models in metadata
   await aiConfigService.create(
     'text',
     'openrouter',
-    'anthropic/claude-3.5-haiku',
+    'openai/gpt-4o',
     'You are a helpful assistant.'
   );
 

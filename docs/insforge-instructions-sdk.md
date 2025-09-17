@@ -158,7 +158,7 @@ Before ANY operation, call `get-backend-metadata` to get the current backend sta
 ```javascript
 // Non-streaming chat completion (OpenAI-compatible response)
 const completion = await client.ai.chat.completions.create({
-  model: 'anthropic/claude-3.5-haiku',
+  model: 'openai/gpt-4o',
   messages: [
     { 
       role: 'system', 
