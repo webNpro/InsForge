@@ -18,6 +18,7 @@ import type {
   CreateSessionResponse,
   CreateAdminSessionResponse,
   TokenPayloadSchema,
+  OAuthMetadataSchema,
 } from '@insforge/shared-schemas';
 
 const JWT_SECRET = () => process.env.JWT_SECRET;
@@ -939,5 +940,47 @@ export class AuthService {
    */
   getDb() {
     return this.db;
+  }
+
+  /**
+   * Get auth metadata
+   */
+  async getMetadata(): Promise<OAuthMetadataSchema> {
+    const useSharedKeys = shouldUseSharedOAuthKeys();
+
+    // Check OAuth configuration from database config table
+    try {
+      const googleConfig = (await this.db
+        .prepare(`SELECT value FROM _config WHERE key = 'auth.oauth.provider.google.enabled'`)
+        .get()) as { value: string } | null;
+      const githubConfig = (await this.db
+        .prepare(`SELECT value FROM _config WHERE key = 'auth.oauth.provider.github.enabled'`)
+        .get()) as { value: string } | null;
+
+      return {
+        google: {
+          enabled: googleConfig?.value === 'true',
+          useSharedKeys: useSharedKeys,
+        },
+        github: {
+          enabled: githubConfig?.value === 'true',
+          useSharedKeys: useSharedKeys,
+        },
+      };
+    } catch (error) {
+      logger.error('Failed to get auth metadata', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {
+        google: {
+          enabled: false,
+          useSharedKeys: useSharedKeys,
+        },
+        github: {
+          enabled: false,
+          useSharedKeys: useSharedKeys,
+        },
+      };
+    }
   }
 }

@@ -7,8 +7,8 @@ import {
   StorageFileSchema,
   UploadStrategyResponse,
   DownloadStrategyResponse,
+  StorageMetadataSchema,
 } from '@insforge/shared-schemas';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import {
   S3Client,
   PutObjectCommand,
@@ -626,7 +626,7 @@ export class StorageService {
     });
 
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
   }
 
   async listBuckets(): Promise<string[]> {
@@ -667,7 +667,7 @@ export class StorageService {
     await dbManager.logActivity('CREATE', 'storage', bucket, { type: 'bucket', public: isPublic });
 
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
   }
 
   async deleteBucket(bucket: string): Promise<boolean> {
@@ -703,7 +703,7 @@ export class StorageService {
     });
 
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
 
     return true;
   }
@@ -820,5 +820,54 @@ export class StorageService {
       uploadedAt: result.uploadedAt,
       url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
+  }
+
+  /**
+   * Get storage metadata
+   */
+  async getMetadata(): Promise<StorageMetadataSchema> {
+    // Get storage buckets from _storage_buckets table
+    const storageBuckets = (await this.db
+      .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
+      .all()) as { name: string; public: boolean; created_at: string }[];
+
+    const bucketsMetadata = storageBuckets.map((b) => ({
+      name: b.name,
+      public: b.public,
+      createdAt: b.created_at,
+    }));
+
+    // Get object counts for each bucket
+    const bucketsObjectCountMap = await this.getBucketsObjectCount();
+
+    return {
+      buckets: bucketsMetadata.map((bucket) => ({
+        ...bucket,
+        objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
+      })),
+    };
+  }
+
+  private async getBucketsObjectCount(): Promise<Map<string, number>> {
+    try {
+      // Query to get object count for each bucket
+      const bucketCounts = (await this.db
+        .prepare('SELECT bucket, COUNT(*) as count FROM _storage GROUP BY bucket')
+        .all()) as { bucket: string; count: number }[];
+
+      // Convert to Map for easy lookup
+      const countMap = new Map<string, number>();
+      bucketCounts.forEach((row) => {
+        countMap.set(row.bucket, row.count);
+      });
+
+      return countMap;
+    } catch (error) {
+      logger.error('Error getting bucket object counts', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Return empty map on error
+      return new Map<string, number>();
+    }
   }
 }
