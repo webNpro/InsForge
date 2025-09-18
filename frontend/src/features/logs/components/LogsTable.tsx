@@ -7,7 +7,7 @@ import { LogEntry } from '../services/logs.service';
 
 interface LogsTableProps {
   logs: LogEntry[];
-  schema?: any;
+  schema?: Record<string, unknown>;
   loading?: boolean;
   searchQuery?: string;
   onRefresh?: () => void;
@@ -67,7 +67,7 @@ export function LogsTable({
   // They can only be cleared in bulk by admins if needed
 
   const getActionBadge = (action: string) => {
-    const actionMap: Record<string, { variant: any; label: string }> = {
+    const actionMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
       INSERT: { variant: 'default', label: 'Create' },
       UPDATE: { variant: 'secondary', label: 'Update' },
       DELETE: { variant: 'destructive', label: 'Delete' },
@@ -138,7 +138,7 @@ export function LogsTable({
 
                 try {
                   details = log.details ? JSON.parse(log.details) : null;
-                } catch (e) {
+                } catch {
                   details = log.details;
                 }
 

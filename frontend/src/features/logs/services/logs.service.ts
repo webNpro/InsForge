@@ -40,7 +40,7 @@ export class LogsService {
     }
 
     const response = await apiClient.request(`/logs?${params.toString()}`, {
-      includeHeaders: true,
+      returnFullResponse: true,
     });
 
     // Traditional REST with pagination headers
@@ -86,11 +86,9 @@ export interface AnalyticsLogRecord {
 }
 
 export interface AnalyticsLogResponse {
-  source: string;
   logs: AnalyticsLogRecord[];
   total: number;
-  page: number;
-  pageSize: number;
+  tableName: string;
 }
 
 export interface LogSourceStats {
@@ -114,9 +112,7 @@ class AnalyticsService {
   async getLogsBySource(
     sourceName: string,
     limit = 100,
-    beforeTimestamp?: string,
-    startTime?: string,
-    endTime?: string
+    beforeTimestamp?: string
   ): Promise<AnalyticsLogResponse> {
     const params = new URLSearchParams({
       limit: limit.toString(),
@@ -124,12 +120,6 @@ class AnalyticsService {
 
     if (beforeTimestamp) {
       params.append('before_timestamp', beforeTimestamp);
-    }
-    if (startTime) {
-      params.append('start_time', startTime);
-    }
-    if (endTime) {
-      params.append('end_time', endTime);
     }
 
     return apiClient.request(`/logs/analytics/${sourceName}?${params.toString()}`);
@@ -156,14 +146,14 @@ class AnalyticsService {
     }
 
     const response = await apiClient.request(`/logs/analytics/search?${params.toString()}`, {
-      includeHeaders: true,
+      returnFullResponse: true,
     });
 
-    // Handle paginated response
-    if (response.data && Array.isArray(response.data)) {
+    // Handle response - search returns {logs: [], total: number}
+    if (response.logs && Array.isArray(response.logs)) {
       return {
-        records: response.data,
-        total: response.pagination?.totalCount || response.data.length,
+        records: response.logs,
+        total: response.total || response.logs.length,
       };
     }
 

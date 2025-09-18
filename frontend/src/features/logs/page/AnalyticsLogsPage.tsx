@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, Search, FileText, BarChart3, Play, Pause, ChevronUp } from 'lucide-react';
+import { RefreshCw, Search, FileText, Play, Pause, ChevronUp } from 'lucide-react';
 import { analyticsService } from '@/features/logs/services/logs.service';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/radix/Card';
-import { Badge } from '@/components/radix/Badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/radix/Tabs';
 import {
   Select,
@@ -79,13 +78,11 @@ export default function AnalyticsLogsPage() {
       // Get initial logs without beforeTimestamp (gets newest logs)
       const data = await analyticsService.getLogsBySource(selectedSource, pageSize);
 
-      // Backend returns logs in DESC order, reverse them for chronological display
-      const reversedLogs = data.logs ? [...data.logs].reverse() : [];
-
+      // Backend now returns logs in correct chronological order (oldest first, newest last)
       return {
-        logs: reversedLogs,
+        logs: data.logs || [],
         total: data.total || 0,
-        source: data.source,
+        tableName: data.tableName,
       };
     },
     enabled: !!selectedSource,
@@ -119,7 +116,7 @@ export default function AnalyticsLogsPage() {
   // Combined effect to handle source changes and data updates
   useEffect(() => {
     // If we have data for the current selected source, update the logs
-    if (initialLogsData?.logs !== undefined && initialLogsData.source === selectedSource) {
+    if (initialLogsData?.logs !== undefined) {
       setLoadedLogs(initialLogsData.logs);
       setHasMore(initialLogsData.logs.length === pageSize);
       setIsLoadingMore(false);
@@ -147,8 +144,8 @@ export default function AnalyticsLogsPage() {
       } else {
         setIsAutoScrolling(false);
       }
-    } else if (selectedSource && (!initialLogsData || initialLogsData.source !== selectedSource)) {
-      // If we have a selected source but no matching data (or data for a different source), reset state
+    } else if (selectedSource && !initialLogsData) {
+      // If we have a selected source but no data yet, reset state
       setLoadedLogs([]);
       setHasMore(true);
       setIsLoadingMore(false);
@@ -177,7 +174,7 @@ export default function AnalyticsLogsPage() {
     setIsLoadingMore(true);
     try {
       // Get the timestamp of the oldest log currently loaded
-      // Since frontend logs are in chronological order (oldest first), loadedLogs[0] is the oldest
+      // Since logs are in chronological order (oldest first), loadedLogs[0] is the oldest
       const oldestTimestamp = loadedLogs.length > 0 ? loadedLogs[0]?.timestamp : undefined;
 
       const data = await analyticsService.getLogsBySource(
@@ -187,11 +184,9 @@ export default function AnalyticsLogsPage() {
       );
 
       if (data.logs && data.logs.length > 0) {
-        // Backend returns logs in DESC order, so reverse them to get chronological order
-        const reversedLogs = [...data.logs].reverse();
-
+        // Backend returns logs in chronological order (oldest first, newest last)
         // Prepend older logs to the beginning of the list
-        setLoadedLogs((prev) => [...reversedLogs, ...prev]);
+        setLoadedLogs((prev) => [...data.logs, ...prev]);
         setHasMore(data.logs.length === pageSize);
       } else {
         setHasMore(false);
@@ -352,10 +347,10 @@ export default function AnalyticsLogsPage() {
             {/* Tabs */}
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px] dark:bg-neutral-700 dark:text-white">
+                <TabsList className="grid w-full grid-cols-2 lg:w-[400px] dark:bg-neutral-700 dark:text-white">
                   <TabsTrigger value="overview" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Overview</TabsTrigger>
                   <TabsTrigger value="logs" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Logs</TabsTrigger>
-                  <TabsTrigger value="search" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Search</TabsTrigger>
+                  {/* <TabsTrigger value="search" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Search</TabsTrigger> */}
                 </TabsList>
               </Tabs>
             </div>
@@ -390,20 +385,20 @@ export default function AnalyticsLogsPage() {
                       <CardHeader className="pb-3 pt-4">
                         <CardTitle className="text-sm font-medium flex items-center justify-between">
                           <span className="truncate">{stat.source}</span>
-                          <Badge
+                          {/* <Badge
                             variant={stat.count > 0 ? 'default' : 'secondary'}
                             className="ml-2"
                           >
                             {stat.count.toLocaleString()}
-                          </Badge>
+                          </Badge> */}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-2">
-                          <div className="flex items-center text-xs text-gray-600 dark:text-zinc-400">
+                          {/* <div className="flex items-center text-xs text-gray-600 dark:text-zinc-400">
                             <BarChart3 className="h-3 w-3 text-blue-600 dark:text-blue-400 mr-1.5" />
                             <span>{stat.count > 0 ? 'Active' : 'No data'}</span>
-                          </div>
+                          </div> */}
                           <div className="text-xs text-gray-500 dark:text-zinc-400">
                             Last: {formatLastActivity(stat.lastActivity)}
                           </div>
