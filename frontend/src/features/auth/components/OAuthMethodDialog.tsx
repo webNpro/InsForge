@@ -24,14 +24,14 @@ const getCallbackUrl = (provider?: string) => {
   return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
 };
 
-interface OAuthDialogProps {
+interface OAuthMethodDialogProps {
   provider?: OAuthProviderInfo;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
+export function OAuthMethodDialog({ provider, isOpen, onClose, onSuccess }: OAuthMethodDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
