@@ -227,7 +227,7 @@ export function OAuthConfiguration() {
       <div className="flex flex-col gap-6 h-full overflow-hidden p-6 w-full max-w-[1080px] mx-auto">
         {/* Copy Prompt Banner */}
         {hasAuthMethods && (
-          <div className="bg-zinc-50 dark:bg-emerald-300/5 border border-zinc-200 dark:border-green-300 rounded-sm py-3 px-6">
+          <div className="bg-white dark:bg-emerald-300/5 border border-zinc-200 dark:border-green-300 rounded-sm py-3 px-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-white">
@@ -242,7 +242,7 @@ export function OAuthConfiguration() {
                 text={generateCombinedPrompt()}
                 variant="default"
                 size="sm"
-                className="h-8 px-3 py-1 text-xs font-medium dark:bg-emerald-300 dark:hover:bg-emerald-400 text-white dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
+                className="h-8 px-3 py-1 text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
                 copyText="Copy Prompt"
                 copiedText="Copied - Paste to agent"
               />
@@ -271,7 +271,7 @@ export function OAuthConfiguration() {
                 return (
                   <div
                     key={provider.id}
-                    className="flex items-center justify-between h-10 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
+                    className="flex items-center justify-between h-15 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
                   >
                     <div className="flex-1 flex items-center gap-3">
                       <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
@@ -284,7 +284,7 @@ export function OAuthConfiguration() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
-                          className="p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                          className="h-7 w-7 p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                           variant="ghost"
                           size="sm"
                         >
