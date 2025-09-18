@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/radix/Button';
-import { PromptDialog } from '@/components/PromptDialog';
 import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { MoreHorizontal, Plus, Trash2, Settings } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import GithubDark from '@/assets/icons/github_dark.svg';
 import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
@@ -29,14 +28,9 @@ export interface OAuthProviderInfo {
   setupUrl: string;
 }
 
-interface OAuthConfigurationProps {
-  onNavigateToUsers?: () => void;
-}
-
-export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProps) {
+export function OAuthConfiguration() {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfigSchema>();
   const [loading, setLoading] = useState(true);
   const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
@@ -205,11 +199,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     void loadOAuthConfig();
   }, [loadOAuthConfig]);
 
-  const handleViewUsers = () => {
-    setIsPromptDialogOpen(false);
-    onNavigateToUsers?.();
-  };
-
   // Generate combined prompt for all enabled providers
   const generateCombinedPrompt = () => {
     if (!oauthConfig) return '';
@@ -218,7 +207,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
 
     if (enabledProviders.length === 0) return '';
 
-    return enabledProviders.map((provider) => generateAIAuthPrompt(provider)).join('\n\n');
+    return generateAIAuthPrompt(enabledProviders);
   };
 
   if (loading) {
@@ -255,7 +244,7 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
                 size="sm"
                 className="h-8 px-3 py-1 text-xs font-medium dark:bg-emerald-300 dark:hover:bg-emerald-400 text-white dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
                 copyText="Copy Prompt"
-                copiedText="Copied!"
+                copiedText="Copied - Paste to agent"
               />
             </div>
           </div>
@@ -274,12 +263,15 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
 
         <div className="flex-1">
           {hasAuthMethods ? (
-            <div className="grid grid-cols-4 space-x-3 space-y-6">
+            <div className="grid grid-cols-4 gap-x-3 gap-y-6">
               {providers.map((provider) => {
+                const isEnabled = oauthConfig?.[provider.id]?.enabled;
+                if (!isEnabled) return null;
+
                 return (
                   <div
                     key={provider.id}
-                    className="flex items-center justify-between p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
+                    className="flex items-center justify-between h-10 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
                   >
                     <div className="flex-1 flex items-center gap-3">
                       <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
@@ -292,26 +284,26 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
-                          className="p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-500"
+                          className="p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                           variant="ghost"
                           size="sm"
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          <MoreHorizontal className="w-5 h-5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-40 py-1 px-2">
                         <DropdownMenuItem
                           onClick={() => handleConfigureProvider(provider)}
                           className="flex items-center gap-2 cursor-pointer"
                         >
-                          <Settings className="w-4 h-4" />
+                          <Pencil className="w-5 h-5" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => disableOAuthProvider(provider.id, provider.name)}
                           className="flex items-center gap-2 cursor-pointer text-red-600 dark:text-red-400"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -331,24 +323,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleSuccess}
-      />
-
-      <PromptDialog
-        open={isPromptDialogOpen}
-        onOpenChange={setIsPromptDialogOpen}
-        title={selectedProvider ? `Add ${selectedProvider.name}` : 'OAuth Integration'}
-        subtitle="Copy this prompt to your agent"
-        prompt={selectedProvider ? generateAIAuthPrompt(selectedProvider) : ''}
-        additionalAction={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 px-3 py-2 text-sm font-medium bg-zinc-50 dark:bg-neutral-700 dark:text-white border-border-gray dark:border-neutral-700 border shadow"
-            onClick={handleViewUsers}
-          >
-            View Users
-          </Button>
-        }
       />
 
       <OAuthConfigDialog
