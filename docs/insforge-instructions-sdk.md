@@ -27,6 +27,42 @@ Before ANY operation, call `get-backend-metadata` to get the current backend sta
 - Storage bucket creation (`create-bucket`, `list-buckets`, `delete-bucket`)
 - Edge Functions Creation and Upload (`create-function`, `get-function`, `update-function`, `delete-function`)
   - **Important**: Edge functions should only be used for backend API services
+  - **CRITICAL**: Edge functions do NOT support subpaths - single endpoint only per function
+  - ❌ **Will NOT work**: `/functions/my-api/users`, `/functions/my-api/posts/123`, `/functions/my-api/admin/stats`
+  - ✅ **Will work**: `/functions/my-api` with `{ "action": "getUsers" }`, `/functions/my-api` with `{ "action": "getPost", "id": 123 }`
+  - Use request method + body to route: `GET /functions/task-api?action=list`, `POST /functions/task-api {"action": "create", "title": "New"}`
+
+### Edge Functions Pattern
+
+**Create secure edge functions using Insforge SDK:**
+
+```javascript
+// No import needed - createClient is injected by the worker template
+module.exports = async function(request) {
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  };
+
+  // Handle OPTIONS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // Extract token from request headers
+  const authHeader = request.headers.get('Authorization');
+  const userToken = authHeader ? authHeader.replace('Bearer ', '') : null;
+  
+  // Create client with the edge function token
+  const client = createClient({ 
+    baseUrl: 'http://insforge:7130',
+    edgeFunctionToken: userToken
+  });
+  
+}
+```
 
 ## Setup
 
@@ -207,9 +243,9 @@ console.log(response.data[0].content);   // AI's text response about the image o
 ## Complete Example
 
 ```javascript
-import { createClient } from '@insforge/sdk';
+import { InsForgeClient } from '@insforge/sdk';
 
-const client = createClient({ baseUrl: 'http://localhost:7130' });
+const client = new InsForgeClient({ baseUrl: 'http://localhost:7130' });
 
 // 1. Sign up new user
 const { data: auth, error } = await client.auth.signUp({
@@ -246,6 +282,13 @@ console.log(otherUser.nickname); // Direct access to properties
 ```
 
 ## Key Points
+
+### Edge Functions
+- **SDK Availability**: `createClient` is globally available - no import needed
+- **Token Handling**: Extract from `Authorization` header, use as `anonKey` parameter
+- **Flexible Auth**: Can use user token or anon token (from `ACCESS_API_KEY` env var)
+- **Backend Validation**: Tokens are validated by backend on each SDK request
+- **Internal Networking**: Use `http://insforge:7130` for Docker container communication
 
 ### AI Operations - OpenAI Compatibility
 - **Request Format**: Consistent structure across chat and image generation

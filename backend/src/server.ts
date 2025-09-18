@@ -192,7 +192,7 @@ export async function createApp() {
       const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
       
       // Simple direct proxy - just pass everything through
-      const response = await fetch(`${denoUrl}/${slug}${req.url.split(req.path)[1] || ''}`, {
+      const response = await fetch(`${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`, {
         method: req.method,
         headers: req.headers as any,
         body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),

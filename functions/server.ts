@@ -86,6 +86,7 @@ async function executeInWorker(code: string, request: Request): Promise<Response
 
       if (e.data.success) {
         const { response } = e.data;
+        // The worker now properly sends null for bodyless responses
         resolve(
           new Response(response.body, {
             status: response.status,
@@ -151,8 +152,8 @@ Deno.serve({ port }, async (req: Request) => {
     );
   }
 
-  // Function execution - match any slug pattern
-  const slugMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)\/?$/);
+  // Function execution - match ONLY exact slug, no subpaths
+  const slugMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)$/);
   if (slugMatch) {
     const slug = slugMatch[1];
 
@@ -166,7 +167,7 @@ Deno.serve({ port }, async (req: Request) => {
       });
     }
 
-    // Execute in worker
+    // Execute in worker with original request
     try {
       return await executeInWorker(code, req);
     } catch (error) {
