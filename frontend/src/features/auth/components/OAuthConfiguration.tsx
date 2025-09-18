@@ -107,45 +107,6 @@ export function OAuthConfiguration() {
     }
   };
 
-  // Enable OAuth provider with shared keys by default
-  const enableOAuthProvider = async (
-    providerId: 'google' | 'github',
-    providerName: string,
-    actionText: string = 'enabled'
-  ) => {
-    if (!oauthConfig) {
-      return false;
-    }
-
-    try {
-      const updatedConfig = {
-        ...oauthConfig,
-        [providerId]: {
-          ...oauthConfig[providerId],
-          enabled: true,
-          useSharedKeys: true,
-        },
-      };
-
-      await configService.updateOAuthConfig(updatedConfig);
-      await configService.reloadOAuthConfig();
-      setOauthConfig(updatedConfig);
-
-      // Only show individual success toast if not called from dialog
-      if (actionText !== 'added') {
-        showToast(`${providerName} ${actionText} successfully!`, 'success');
-      }
-
-      return true;
-    } catch (error) {
-      console.error(`Failed to ${actionText} ${providerName}:`, error);
-      showToast(
-        `Failed to ${actionText} ${providerName}. Please check running environment and try again.`,
-        'error'
-      );
-      return false;
-    }
-  };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -174,20 +135,28 @@ export function OAuthConfiguration() {
   }, [oauthConfig]);
 
   const handleConfirmSelected = async (selectedIds: ('google' | 'github')[]) => {
-    if (selectedIds.length === 0) {
-      setIsSelectDialogOpen(false);
+
+    if (!oauthConfig) {
       return;
     }
 
     try {
-      // Enable selected providers with shared keys by default
-      await Promise.all(
-        selectedIds.map(async (providerId) => {
-          const providerInfo = providers.find((p) => p.id === providerId)!;
-          await enableOAuthProvider(providerId, providerInfo.name, 'added');
-        })
-      );
-      await loadOAuthConfig();
+      // Enable all selected providers at once
+      const updatedConfig = {
+        ...oauthConfig,
+        ...selectedIds.reduce((acc, providerId) => {
+          acc[providerId] = {
+            ...oauthConfig[providerId],
+            enabled: true,
+            useSharedKeys: true,
+          };
+          return acc;
+        }, {} as Record<string, any>),
+      };
+
+      await configService.updateOAuthConfig(updatedConfig);
+      await configService.reloadOAuthConfig();
+      setOauthConfig(updatedConfig);
       setIsSelectDialogOpen(false);
     } catch (err) {
       console.error('Failed to add selected auth providers', err);
