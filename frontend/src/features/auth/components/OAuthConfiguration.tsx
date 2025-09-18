@@ -144,14 +144,12 @@ export function OAuthConfiguration() {
       // Enable all selected providers at once
       const updatedConfig = {
         ...oauthConfig,
-        ...selectedIds.reduce((acc, providerId) => {
-          acc[providerId] = {
-            ...oauthConfig[providerId],
-            enabled: true,
-            useSharedKeys: true,
-          };
-          return acc;
-        }, {} as Record<string, any>),
+        ...Object.fromEntries(
+          selectedIds.map((providerId) => [
+            providerId,
+            { ...oauthConfig[providerId], enabled: true },
+          ])
+        ),
       };
 
       await configService.updateOAuthConfig(updatedConfig);
