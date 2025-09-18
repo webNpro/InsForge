@@ -38,9 +38,9 @@ export function OAuthConfigDialog({
   }, [open]);
 
   const hasSelection = Object.values(selectedMap).some(Boolean);
-  
+
   // Filter out already enabled providers
-  const availableProviders = providers.filter(provider => !enabledProviders[provider.id]);
+  const availableProviders = providers.filter((provider) => !enabledProviders[provider.id]);
 
   const toggleSelected = (id: 'google' | 'github') => {
     setSelectedMap((prev) => ({ ...prev, [id]: !prev[id] }));

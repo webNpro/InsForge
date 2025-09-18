@@ -145,9 +145,7 @@ export default function AuthenticationPage() {
           />
         )}
 
-        {selectedSection === 'auth-methods' && (
-          <OAuthConfiguration onNavigateToUsers={() => setSelectedSection('users')} />
-        )}
+        {selectedSection === 'auth-methods' && <OAuthConfiguration />}
       </div>
 
       <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />

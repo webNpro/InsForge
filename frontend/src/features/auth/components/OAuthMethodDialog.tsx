@@ -31,7 +31,12 @@ interface OAuthMethodDialogProps {
   onSuccess?: () => void;
 }
 
-export function OAuthMethodDialog({ provider, isOpen, onClose, onSuccess }: OAuthMethodDialogProps) {
+export function OAuthMethodDialog({
+  provider,
+  isOpen,
+  onClose,
+  onSuccess,
+}: OAuthMethodDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();

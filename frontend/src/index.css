@@ -63,7 +63,8 @@
   }
 
   /* Prevent document-level scrolling */
-  html, body {
+  html,
+  body {
     overflow: hidden;
     height: 100%;
   }
