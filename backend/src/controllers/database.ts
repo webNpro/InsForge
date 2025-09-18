@@ -10,7 +10,6 @@ import {
   type ColumnSchema,
   type OnDeleteActionSchema,
   type OnUpdateActionSchema,
-  type DashboardMetadataSchema,
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
@@ -998,25 +997,17 @@ export class DatabaseController {
       });
     }
 
+    const databaseSize = await this.getDatabaseSizeInGB();
+
     return {
       tables: tableMetadata,
+      totalSize: databaseSize,
     };
   }
 
-  /**
-   * Get dashboard metadata (database size)
-   */
-  async getDashboardMetadata(): Promise<DashboardMetadataSchema> {
-    // Get database size
-    const database_size_gb = await this.getDatabaseSizeInGB();
-    const storage_size_gb = await this.getStorageSizeInGB();
-
-    return { databaseSizeGb: database_size_gb, storageSizeGb: storage_size_gb };
-  }
-
-  private async getDatabaseSizeInGB(): Promise<number> {
-    const db = this.dbManager.getDb();
+  async getDatabaseSizeInGB(): Promise<number> {
     try {
+      const db = this.dbManager.getDb();
       // Query PostgreSQL for database size
       const result = (await db
         .prepare(
@@ -1030,29 +1021,6 @@ export class DatabaseController {
       return (result?.size || 0) / (1024 * 1024 * 1024);
     } catch (error) {
       logger.error('Error getting database size', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return 0;
-    }
-  }
-
-  private async getStorageSizeInGB(): Promise<number> {
-    const db = this.dbManager.getDb();
-    try {
-      // Query the _storage table to sum all file sizes
-      const result = (await db
-        .prepare(
-          `
-        SELECT COALESCE(SUM(size), 0) as total_size
-        FROM _storage
-      `
-        )
-        .get()) as { total_size: number } | null;
-
-      // Convert bytes to GB
-      return (result?.total_size || 0) / (1024 * 1024 * 1024);
-    } catch (error) {
-      logger.error('Error getting storage size', {
         error: error instanceof Error ? error.message : String(error),
       });
       return 0;

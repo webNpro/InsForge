@@ -826,8 +826,9 @@ export class StorageService {
    * Get storage metadata
    */
   async getMetadata(): Promise<StorageMetadataSchema> {
+    const db = DatabaseManager.getInstance().getDb();
     // Get storage buckets from _storage_buckets table
-    const storageBuckets = (await this.db
+    const storageBuckets = (await db
       .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
       .all()) as { name: string; public: boolean; created_at: string }[];
 
@@ -839,19 +840,22 @@ export class StorageService {
 
     // Get object counts for each bucket
     const bucketsObjectCountMap = await this.getBucketsObjectCount();
+    const storageSize = await this.getStorageSizeInGB();
 
     return {
       buckets: bucketsMetadata.map((bucket) => ({
         ...bucket,
         objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
       })),
+      totalSize: storageSize,
     };
   }
 
   private async getBucketsObjectCount(): Promise<Map<string, number>> {
+    const db = DatabaseManager.getInstance().getDb();
     try {
       // Query to get object count for each bucket
-      const bucketCounts = (await this.db
+      const bucketCounts = (await db
         .prepare('SELECT bucket, COUNT(*) as count FROM _storage GROUP BY bucket')
         .all()) as { bucket: string; count: number }[];
 
@@ -868,6 +872,29 @@ export class StorageService {
       });
       // Return empty map on error
       return new Map<string, number>();
+    }
+  }
+
+  private async getStorageSizeInGB(): Promise<number> {
+    const db = DatabaseManager.getInstance().getDb();
+    try {
+      // Query the _storage table to sum all file sizes
+      const result = (await db
+        .prepare(
+          `
+        SELECT COALESCE(SUM(size), 0) as total_size
+        FROM _storage
+      `
+        )
+        .get()) as { total_size: number } | null;
+
+      // Convert bytes to GB
+      return (result?.total_size || 0) / (1024 * 1024 * 1024);
+    } catch (error) {
+      logger.error('Error getting storage size', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return 0;
     }
   }
 }

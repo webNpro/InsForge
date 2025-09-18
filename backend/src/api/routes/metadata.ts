@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     // Fetch all metadata in parallel for better performance
     const [database, auth, storage, aiConfig] = await Promise.all([
       databaseController.getMetadata(),
-      authService.getMetadata(),
+      authService.getOAuthStatus(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
     ]);
@@ -37,8 +37,8 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const version = process.env.npm_package_version || '1.0.0';
 
     const metadata: AppMetadataSchema = {
-      database,
       auth,
+      database,
       storage,
       aiIntegration: aiConfig,
       version,
@@ -61,7 +61,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authService = AuthService.getInstance();
-    const authMetadata = await authService.getMetadata();
+    const authMetadata = await authService.getOAuthStatus();
     successResponse(res, authMetadata);
   } catch (error) {
     next(error);
@@ -96,18 +96,6 @@ router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) =
     const aiConfigService = new AIConfigService();
     const aiMetadata = await aiConfigService.getMetadata();
     successResponse(res, aiMetadata);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get metadata for frontend dashboard
-router.get('/dashboard', async (_req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const databaseController = new DatabaseController();
-    const dashboardMetadata = await databaseController.getDashboardMetadata();
-
-    successResponse(res, dashboardMetadata);
   } catch (error) {
     next(error);
   }
