@@ -158,8 +158,10 @@ export function OAuthConfiguration() {
       await configService.reloadOAuthConfig();
       setOauthConfig(updatedConfig);
       setIsSelectDialogOpen(false);
+      showToast(`${selectedIds.length} authentication method(s) added successfully!`, 'success');
     } catch (err) {
       console.error('Failed to add selected auth providers', err);
+      showToast('Failed to add authentication methods', 'error');
     }
   };
 
