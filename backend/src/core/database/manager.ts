@@ -232,15 +232,6 @@ export class DatabaseManager {
     };
   }
 
-  // For backward compatibility with existing code
-  getSystemDb() {
-    return this.getDb();
-  }
-
-  getAppDb() {
-    return this.getDb();
-  }
-
   static async getColumnTypeMap(tableName: string): Promise<Record<string, string>> {
     const instance = DatabaseManager.getInstance();
     const client = await instance.pool.connect();

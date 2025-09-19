@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
@@ -16,7 +16,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const { limit = 100, offset = 0, action, table } = req.query;
 
     const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getAppDb();
+    const db = dbManager.getDb();
 
     // Build query with optional filters
     let query = 'SELECT * FROM logs WHERE 1=1';
@@ -64,7 +64,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get('/stats', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getAppDb();
+    const db = dbManager.getDb();
 
     // Get action counts
     const actionStats = (await db
@@ -122,7 +122,7 @@ router.delete('/', async (req: AuthRequest, res: Response, next: NextFunction) =
     const { before } = req.query;
 
     const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getAppDb();
+    const db = dbManager.getDb();
 
     let result;
     if (before && typeof before === 'string') {

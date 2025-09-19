@@ -3,6 +3,7 @@ import { DatabaseController } from '@/controllers/database.js';
 import { AuthService } from '@/core/auth/auth.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { AIConfigService } from '@/core/ai/config.js';
+import { FunctionsService } from '@/core/functions/functions.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
@@ -24,13 +25,15 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const authService = AuthService.getInstance();
     const storageService = StorageService.getInstance();
     const aiConfigService = new AIConfigService();
+    const functionsService = FunctionsService.getInstance();
 
     // Fetch all metadata in parallel for better performance
-    const [database, auth, storage, aiConfig] = await Promise.all([
+    const [database, auth, storage, aiConfig, functions] = await Promise.all([
       databaseController.getMetadata(),
       authService.getOAuthStatus(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
+      functionsService.getMetadata(),
     ]);
 
     // Get version from package.json or default
@@ -40,6 +43,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
       auth,
       database,
       storage,
+      functions,
       aiIntegration: aiConfig,
       version,
     };
@@ -96,6 +100,17 @@ router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) =
     const aiConfigService = new AIConfigService();
     const aiMetadata = await aiConfigService.getMetadata();
     successResponse(res, aiMetadata);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get functions metadata
+router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const functionsService = FunctionsService.getInstance();
+    const functionsMetadata = await functionsService.getMetadata();
+    successResponse(res, functionsMetadata);
   } catch (error) {
     next(error);
   }

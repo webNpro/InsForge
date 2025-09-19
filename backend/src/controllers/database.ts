@@ -1,4 +1,4 @@
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import {
   type RawSQLResponse,

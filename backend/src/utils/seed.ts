@@ -1,5 +1,5 @@
 import { AuthService } from '@/core/auth/auth.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AIConfigService } from '@/core/ai/config.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import logger from '@/utils/logger.js';
@@ -8,7 +8,7 @@ import logger from '@/utils/logger.js';
  * Validates admin credentials are configured
  * Admin is authenticated via environment variables, not stored in DB
  */
-async function ensureFirstAdmin(adminEmail: string, adminPassword: string): Promise<void> {
+function ensureFirstAdmin(adminEmail: string, adminPassword: string): void {
   if (adminEmail && adminPassword) {
     logger.info(`✅ Admin configured: ${adminEmail}`);
   } else {
@@ -58,7 +58,7 @@ export async function seedBackend(): Promise<void> {
     logger.info(`\n🚀 Insforge Backend Starting...`);
 
     // Validate admin credentials are configured
-    await ensureFirstAdmin(adminEmail, adminPassword);
+    ensureFirstAdmin(adminEmail, adminPassword);
 
     // Initialize API key (from env or generate)
     const apiKey = await authService.initializeApiKey();

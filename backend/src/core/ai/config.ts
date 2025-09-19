@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import { AIConfigurationSchema, AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 

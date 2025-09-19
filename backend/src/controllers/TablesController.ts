@@ -1,4 +1,4 @@
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import {
@@ -85,7 +85,7 @@ export class TablesController {
    * List all tables
    */
   async listTables(): Promise<string[]> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     const tables = await db
       .prepare(
         `
@@ -143,7 +143,7 @@ export class TablesController {
       }
     });
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Check if table exists
     const tableExists = await db
@@ -281,7 +281,7 @@ export class TablesController {
   }
 
   async getTableSchema(table: string): Promise<GetTableSchemaResponse> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Get column information from information_schema
     const columns = await db
@@ -392,7 +392,7 @@ export class TablesController {
       );
     }
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Check if table exists
     const tableExists = await db
@@ -655,7 +655,7 @@ export class TablesController {
       throw new AppError('Cannot delete users table', 403, ERROR_CODES.DATABASE_FORBIDDEN);
     }
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     await db.prepare(`DROP TABLE IF EXISTS ${this.quoteIdentifier(table)} CASCADE`).run();
 
     // Update metadata
@@ -726,7 +726,7 @@ export class TablesController {
   }
 
   private async getFkeyConstraints(table: string): Promise<Map<string, ForeignKeyInfo>> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     const foreignKeys = await db
       .prepare(
         `
