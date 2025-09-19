@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import fetch from 'node-fetch';
 import { program } from 'commander';
+import { promises as fs } from 'fs';
 import { handleApiResponse, formatSuccessMessage } from './response-handler.js';
 import { UsageTracker } from './usage-tracker.js';
 import {
@@ -892,14 +893,11 @@ server.tool(
 
       const result = await handleApiResponse(response);
       
-      // Include execution URL in success message
-      const executionUrl = args.active ? `\nExecution URL: http://localhost:7133/${args.slug}` : '';
-      
       return await addBackgroundContext({
         content: [
           {
             type: 'text',
-            text: formatSuccessMessage(`Edge function '${args.slug}' created successfully from ${args.codeFile}${executionUrl}`, result),
+            text: formatSuccessMessage(`Edge function '${args.slug}' created successfully from ${args.codeFile}`, result),
           },
         ],
       });
