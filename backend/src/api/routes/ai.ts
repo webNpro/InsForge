@@ -2,7 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
 import { ImageService } from '@/core/ai/image';
-import { ModelService } from '@/core/ai/model';
+import { AIModelService } from '@/core/ai/model';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
@@ -28,7 +28,7 @@ const aiUsageService = new AIUsageService();
  */
 router.get('/models', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const models = await ModelService.getModels();
+    const models = await AIModelService.getModels();
     res.json(models);
   } catch (error) {
     console.error('Error getting models:', error);
