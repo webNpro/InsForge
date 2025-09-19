@@ -155,4 +155,26 @@ export class AIConfigService {
       client.release();
     }
   }
+
+  /**
+   * Get AI metadata
+   */
+  async getMetadata(): Promise<{ models: Array<{ modality: string; modelId: string }> }> {
+    try {
+      const configs = await this.findAll();
+
+      // Map configs to simplified model metadata
+      const models = configs.map((config) => ({
+        modality: config.modality,
+        modelId: config.modelId,
+      }));
+
+      return { models };
+    } catch (error) {
+      logger.error('Failed to get AI metadata', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { models: [] };
+    }
+  }
 }

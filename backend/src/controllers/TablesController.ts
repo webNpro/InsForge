@@ -1,5 +1,4 @@
 import { DatabaseManager } from '@/core/database/database.js';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import {
@@ -77,11 +76,9 @@ export function formatDefaultValue(
 
 export class TablesController {
   private dbManager: DatabaseManager;
-  private metadataService: MetadataService;
 
   constructor() {
     this.dbManager = DatabaseManager.getInstance();
-    this.metadataService = MetadataService.getInstance();
   }
 
   /**
@@ -242,7 +239,7 @@ export class TablesController {
     });
 
     // Update metadata
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     return {
       message: 'table created successfully',
@@ -623,7 +620,7 @@ export class TablesController {
     }
 
     // Update metadata after schema changes
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     // enable postgrest to query this table
     await db
@@ -662,7 +659,7 @@ export class TablesController {
     await db.prepare(`DROP TABLE IF EXISTS ${this.quoteIdentifier(table)} CASCADE`).run();
 
     // Update metadata
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     // enable postgrest to query this table
     await db

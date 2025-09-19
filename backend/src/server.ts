@@ -24,7 +24,6 @@ import fetch from 'node-fetch';
 import { DatabaseManager } from '@/core/database/database.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
@@ -51,9 +50,7 @@ export async function createApp() {
   const storageService = StorageService.getInstance();
   await storageService.initialize(); // create data/storage
 
-  // Initialize metadata service
-  const metadataService = MetadataService.getInstance();
-  await metadataService.initialize(); // populate _metadata table
+  // Metadata is now handled by individual modules on-demand
 
   // Initialize analytics service
   const analyticsManager = AnalyticsManager.getInstance();

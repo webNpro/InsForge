@@ -8,7 +8,6 @@ import { successResponse } from '@/utils/response.js';
 import logger from '@/utils/logger.js';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
-import { MetadataService } from '@/core/metadata/metadata';
 import { oAuthConfigSchema } from '@insforge/shared-schemas';
 import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 import { AuthService } from '@/core/auth/auth.js';
@@ -90,17 +89,7 @@ router.post('/oauth', verifyAdmin, async (req: Request, res: Response, next: Nex
 
       await db.getDb().exec('COMMIT');
 
-      const metadataService = MetadataService.getInstance();
-      await metadataService.updateAuthMetadata({
-        google: {
-          enabled: validatedData.google.enabled,
-          useSharedKeys: validatedData.google.useSharedKeys,
-        },
-        github: {
-          enabled: validatedData.github.enabled,
-          useSharedKeys: validatedData.github.useSharedKeys,
-        },
-      });
+      // Metadata is now updated on-demand when requested
 
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {

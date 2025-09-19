@@ -1,13 +1,15 @@
 import { Router, Response, NextFunction } from 'express';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import { DatabaseController } from '@/controllers/database.js';
 import { AuthService } from '@/core/auth/auth.js';
+import { StorageService } from '@/core/storage/storage.js';
+import { AIConfigService } from '@/core/ai/config.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
 import { ServerEvents } from '@/core/socket/types';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
+import type { AppMetadataSchema } from '@insforge/shared-schemas';
 
 const router = Router();
 const databaseController = new DatabaseController();
@@ -17,8 +19,30 @@ router.use(verifyAdmin);
 // Get full metadata (default endpoint)
 router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const metadataService = MetadataService.getInstance();
-    const metadata = await metadataService.getFullMetadata();
+    // Gather metadata from all modules
+    const databaseController = new DatabaseController();
+    const authService = AuthService.getInstance();
+    const storageService = StorageService.getInstance();
+    const aiConfigService = new AIConfigService();
+
+    // Fetch all metadata in parallel for better performance
+    const [database, auth, storage, aiConfig] = await Promise.all([
+      databaseController.getMetadata(),
+      authService.getOAuthStatus(),
+      storageService.getMetadata(),
+      aiConfigService.getMetadata(),
+    ]);
+
+    // Get version from package.json or default
+    const version = process.env.npm_package_version || '1.0.0';
+
+    const metadata: AppMetadataSchema = {
+      auth,
+      database,
+      storage,
+      aiIntegration: aiConfig,
+      version,
+    };
 
     // Trigger Socket.IO event to notify frontend that MCP is connected
     if (req.query.mcp === 'true') {
@@ -33,14 +57,45 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 });
 
-// Get metadata for frontend dashboard
-router.get('/dashboard', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Get auth metadata
+router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const metadataService = MetadataService.getInstance();
-    await metadataService.updateDatabaseMetadata();
-    const databaseMetadata = await metadataService.getDashboardMetadata();
+    const authService = AuthService.getInstance();
+    const authMetadata = await authService.getOAuthStatus();
+    successResponse(res, authMetadata);
+  } catch (error) {
+    next(error);
+  }
+});
 
+// Get database metadata
+router.get('/database', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const databaseController = new DatabaseController();
+    const databaseMetadata = await databaseController.getMetadata();
     successResponse(res, databaseMetadata);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get storage metadata
+router.get('/storage', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const storageService = StorageService.getInstance();
+    const storageMetadata = await storageService.getMetadata();
+    successResponse(res, storageMetadata);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get AI metadata
+router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const aiConfigService = new AIConfigService();
+    const aiMetadata = await aiConfigService.getMetadata();
+    successResponse(res, aiMetadata);
   } catch (error) {
     next(error);
   }
