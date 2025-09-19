@@ -315,9 +315,9 @@ export class MetadataService {
     try {
       const aiConfigService = new AIConfigService();
       const configs = await aiConfigService.findAll();
-      
+
       // Map configs to simplified model metadata
-      const models = configs.map(config => ({
+      const models = configs.map((config) => ({
         modality: config.modality,
         modelId: config.modelId,
       }));
