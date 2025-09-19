@@ -159,6 +159,41 @@ const { data, error } = await client.database
   .eq('id', postId);
 ```
 
+## Edge Functions Invocation
+
+Invoke deployed edge functions from the SDK (similar to Supabase):
+
+```javascript
+// Basic invocation with JSON body (POST by default)
+const { data, error } = await client.functions.invoke('hello-world', {
+  body: { name: 'World' }
+});
+
+// GET request (no body)
+const { data, error } = await client.functions.invoke('my-function', {
+  method: 'GET'
+});
+
+// With custom headers
+const { data, error } = await client.functions.invoke('my-function', {
+  body: { action: 'create', item: 'task' },
+  headers: { 'x-custom-header': 'value' }
+});
+
+// Different HTTP methods
+const { data, error } = await client.functions.invoke('api-endpoint', {
+  method: 'PUT',
+  body: { id: '123', status: 'active' }
+});
+
+// Error handling
+if (error) {
+  console.error('Function error:', error.message);
+} else {
+  console.log('Success:', data);
+}
+```
+
 ## Storage Operations
 
 Before ANY operation, call `get-backend-metadata` to get the current backend state. 
@@ -290,6 +325,13 @@ console.log(otherUser.nickname); // Direct access to properties
 - **Backend Validation**: Tokens are validated by backend on each SDK request
 - **Internal Networking**: Use `http://insforge:7130` for Docker container communication
 
+### Edge Functions Invocation (SDK)
+- **Simple API**: `client.functions.invoke(slug, options)
+- **Auto-authentication**: SDK automatically includes auth token from logged-in user
+- **Flexible body**: Accepts any JSON-serializable data
+- **HTTP methods**: Supports GET, POST, PUT, PATCH, DELETE (default: POST)
+- **Returns**: `{ data, error }` structure consistent with other SDK methods
+
 ### AI Operations - OpenAI Compatibility
 - **Request Format**: Consistent structure across chat and image generation
   - `model`: Model identifier (provider/model-name format)
@@ -311,6 +353,7 @@ console.log(otherUser.nickname); // Direct access to properties
 - All operations return `{data, error}` structure
 - Database insert requires array format: `[{...}]` even for single records
 - Use `.single()` to get object instead of array from queries
+- Raw SQL is NOT available in SDK 
 
 ### When to Use What
 - **SDK**: Authentication, database CRUD, profile management, AI operations, storage
