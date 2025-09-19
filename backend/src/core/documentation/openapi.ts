@@ -4,7 +4,7 @@ import {
   extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
-import { DatabaseController } from '@/controllers/database.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { TableSchema, ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 
@@ -793,8 +793,8 @@ export class OpenAPIService {
   async generateOpenAPIDocument(): Promise<any> {
     try {
       // Get fresh metadata from database controller
-      const databaseController = new DatabaseController();
-      const databaseMetadata = await databaseController.getMetadata();
+      const dbAdvanceService = new DatabaseAdvanceService();
+      const databaseMetadata = await dbAdvanceService.getMetadata();
       const metadata = { database: databaseMetadata };
 
       // Create new registry

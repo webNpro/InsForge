@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { DatabaseController } from '@/controllers/database.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { AuthService } from '@/core/auth/auth.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { AIConfigService } from '@/core/ai/config.js';
@@ -13,7 +13,8 @@ import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
 
 const router = Router();
-const databaseController = new DatabaseController();
+const dbAdvanceService = new DatabaseAdvanceService();
+const aiConfigService = new AIConfigService();
 
 router.use(verifyAdmin);
 
@@ -21,15 +22,13 @@ router.use(verifyAdmin);
 router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Gather metadata from all modules
-    const databaseController = new DatabaseController();
     const authService = AuthService.getInstance();
     const storageService = StorageService.getInstance();
-    const aiConfigService = new AIConfigService();
     const functionsService = FunctionsService.getInstance();
 
     // Fetch all metadata in parallel for better performance
     const [database, auth, storage, aiConfig, functions] = await Promise.all([
-      databaseController.getMetadata(),
+      dbAdvanceService.getMetadata(),
       authService.getOAuthStatus(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
@@ -75,8 +74,7 @@ router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction)
 // Get database metadata
 router.get('/database', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const databaseController = new DatabaseController();
-    const databaseMetadata = await databaseController.getMetadata();
+    const databaseMetadata = await dbAdvanceService.getMetadata();
     successResponse(res, databaseMetadata);
   } catch (error) {
     next(error);
@@ -97,7 +95,6 @@ router.get('/storage', async (_req: AuthRequest, res: Response, next: NextFuncti
 // Get AI metadata
 router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const aiConfigService = new AIConfigService();
     const aiMetadata = await aiConfigService.getMetadata();
     successResponse(res, aiMetadata);
   } catch (error) {
@@ -136,11 +133,12 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
     if (!tableName) {
       throw new AppError('Table name is required', 400, ERROR_CODES.INVALID_INPUT);
     }
+
     const includeData = false;
     const includeFunctions = false;
     const includeSequences = false;
     const includeViews = false;
-    const schemaResponse = await databaseController.exportDatabase(
+    const schemaResponse = await dbAdvanceService.exportDatabase(
       [tableName],
       'json',
       includeData,

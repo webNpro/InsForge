@@ -1,4 +1,4 @@
-import { DatabaseController } from '@/controllers/database.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { TableSchema } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 
@@ -62,8 +62,8 @@ export class AgentAPIDocService {
   async generateAgentDocumentation(): Promise<any> {
     try {
       // Get fresh metadata from database controller
-      const databaseController = new DatabaseController();
-      const databaseMetadata = await databaseController.getMetadata();
+      const dbAdvanceService = new DatabaseAdvanceService();
+      const databaseMetadata = await dbAdvanceService.getMetadata();
       const metadata = { database: databaseMetadata };
 
       // Filter out system tables

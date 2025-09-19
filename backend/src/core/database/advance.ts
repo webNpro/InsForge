@@ -16,7 +16,7 @@ import { ERROR_CODES } from '@/types/error-constants';
 import { parseSQLStatements } from '@/utils/sql-parser.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers.js';
 
-export class DatabaseController {
+export class DatabaseAdvanceService {
   private dbManager = DatabaseManager.getInstance();
 
   /**

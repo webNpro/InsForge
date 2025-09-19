@@ -74,7 +74,7 @@ export function formatDefaultValue(
   return `DEFAULT ${getSafeDollarQuotedLiteral(value)}`;
 }
 
-export class TablesController {
+export class DatabaseTableService {
   private dbManager: DatabaseManager;
 
   constructor() {
@@ -170,11 +170,15 @@ export class TablesController {
     // Map columns to SQL with proper type conversion
     const columnDefs = validatedColumns
       .map((col: ColumnSchema) => {
-        const fieldType = COLUMN_TYPES[col.type];
+        const fieldType = COLUMN_TYPES[col.type as ColumnType];
         const sqlType = fieldType.sqlType;
 
         // Handle default values
-        const defaultClause = formatDefaultValue(col.defaultValue, col.type, col.isNullable);
+        const defaultClause = formatDefaultValue(
+          col.defaultValue,
+          col.type as ColumnType,
+          col.isNullable
+        );
 
         const nullable = col.isNullable ? '' : 'NOT NULL';
         const unique = col.isUnique ? 'UNIQUE' : '';
@@ -246,7 +250,7 @@ export class TablesController {
       tableName: table_name,
       columns: validatedColumns.map((col) => ({
         ...col,
-        sqlType: COLUMN_TYPES[col.type].sqlType,
+        sqlType: COLUMN_TYPES[col.type as ColumnType].sqlType,
       })),
       autoFields: ['id', 'created_at', 'updated_at'],
       nextActions: 'you can now use the table with the POST /api/database/tables/{table} endpoint',

@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { DatabaseController } from '@/controllers/database.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -12,7 +12,7 @@ import {
 import logger from '@/utils/logger';
 
 const router = Router();
-const databaseController = new DatabaseController();
+const dbAdvanceService = new DatabaseAdvanceService();
 
 /**
  * Execute raw SQL query
@@ -31,7 +31,7 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     const { query, params = [] } = validation.data;
-    const response = await databaseController.executeRawSQL(query, params);
+    const response = await dbAdvanceService.executeRawSQL(query, params);
     res.json(response);
   } catch (error: unknown) {
     logger.warn('Raw SQL execution error:', error);
@@ -77,7 +77,7 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
       includeViews,
       rowLimit,
     } = validation.data;
-    const response = await databaseController.exportDatabase(
+    const response = await dbAdvanceService.exportDatabase(
       tables,
       format,
       includeData,
@@ -125,7 +125,7 @@ router.post(
         throw new AppError('SQL file is required', 400, ERROR_CODES.INVALID_INPUT);
       }
 
-      const response = await databaseController.importDatabase(
+      const response = await dbAdvanceService.importDatabase(
         req.file.buffer,
         req.file.originalname,
         req.file.size,
