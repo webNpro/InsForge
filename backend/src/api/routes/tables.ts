@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { verifyAdmin, verifyUser, AuthRequest } from '@/api/middleware/auth.js';
-import { DatabaseTableService } from '@/core/database/tables.js';
+import { DatabaseTableService } from '@/core/database/table.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
