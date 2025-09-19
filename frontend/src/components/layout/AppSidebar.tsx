@@ -11,6 +11,7 @@ import {
   ExternalLink,
   RotateCw,
   Sparkles,
+  Code2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { Button } from '@/components/radix/Button';
@@ -42,6 +43,7 @@ const navigation: NavigationProps[] = [
   { name: 'Authentications', href: '/dashboard/authentication', icon: UserRoundCog },
   { name: 'Database', href: '/dashboard/database', icon: Database },
   { name: 'Storage', href: '/dashboard/storage', icon: HardDrive },
+  { name: 'Functions', href: '/dashboard/functions', icon: Code2 },
   //{ name: 'Audit', href: '/dashboard/logs', icon: Logs },
   // { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
   { name: 'AI', href: '/dashboard/ai', icon: Sparkles },
