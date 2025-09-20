@@ -7,7 +7,7 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { createTableRequestSchema, updateTableSchemaRequestSchema } from '@insforge/shared-schemas';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
-import { AuditService } from '@/core/audit/audit';
+import { AuditService } from '@/core/logs/audit';
 
 const router = Router();
 const tableService = new DatabaseTableService();

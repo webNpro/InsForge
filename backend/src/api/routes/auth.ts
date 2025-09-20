@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AuthService } from '@/core/auth/auth.js';
-import { AuditService } from '@/core/audit/audit.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';

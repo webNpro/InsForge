@@ -237,11 +237,6 @@ export class DatabaseTableService {
       )
       .exec();
 
-    // Log the table creation activity
-    await this.dbManager.logActivity('CREATE_TABLE', table_name, undefined, {
-      columns: validatedColumns,
-    });
-
     // Update metadata
     // Metadata is now updated on-demand
 

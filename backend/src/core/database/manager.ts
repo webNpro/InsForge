@@ -250,40 +250,6 @@ export class DatabaseManager {
     }
   }
 
-  // Log database operations
-  async logActivity(
-    action: string,
-    tableName: string,
-    recordId?: string | number,
-    details?: unknown
-  ): Promise<void> {
-    try {
-      // Don't log operations for the logs table itself to prevent recursion
-      if (tableName === 'logs') {
-        return;
-      }
-
-      await this.prepare(
-        `
-        INSERT INTO logs (action, table_name, record_id, details)
-        VALUES (?, ?, ?, ?)
-      `
-      ).run(
-        action,
-        tableName,
-        recordId?.toString() || null,
-        details ? JSON.stringify(details) : null
-      );
-    } catch (error) {
-      logger.error('Failed to log activity', {
-        error: error instanceof Error ? error.message : String(error),
-        action,
-        tableName,
-        recordId,
-      });
-    }
-  }
-
   // Store the API key in the config table
   async setApiKey(apiKey: string): Promise<void> {
     await this.prepare(

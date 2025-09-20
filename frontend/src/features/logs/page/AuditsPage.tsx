@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
 
-export default function LogsPage() {
+export default function AuditsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;

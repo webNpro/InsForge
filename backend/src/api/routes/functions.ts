@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { AuditService } from '@/core/audit/audit.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { DatabaseError } from 'pg';
 import logger from '@/utils/logger.js';
 

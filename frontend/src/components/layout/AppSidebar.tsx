@@ -3,7 +3,6 @@ import {
   Home,
   Database,
   UserRoundCog,
-  Activity,
   HardDrive,
   PanelLeftOpen,
   PanelRightOpen,

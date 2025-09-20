@@ -198,15 +198,13 @@ router.get('/analytics/search', async (req: AuthRequest, res: Response, next: Ne
 router.get('/analytics/:source', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { source } = req.params;
-    const { limit = 100, before_timestamp, start_time, end_time } = req.query;
+    const { limit = 100, before_timestamp } = req.query;
 
     const analyticsManager = AnalyticsManager.getInstance();
     const result = await analyticsManager.getLogsBySource(
       source,
       Number(limit),
-      before_timestamp as string | undefined,
-      start_time as string | undefined,
-      end_time as string | undefined
+      before_timestamp as string | undefined
     );
 
     const response: AnalyticsLogResponse = {
