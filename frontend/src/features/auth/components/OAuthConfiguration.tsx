@@ -93,7 +93,6 @@ export function OAuthConfiguration() {
           clientId: '',
           clientSecret: '',
           enabled: false,
-          useSharedKeys: false,
         },
       };
 

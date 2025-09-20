@@ -105,8 +105,8 @@ export function OAuthMethodDialog({
         ...data,
         [currentProviderKey]: {
           ...data[currentProviderKey],
-          useSharedKeys: useSharedKeys ?? true,
-          enabled: true, // Enable the provider when configuration is saved
+          useSharedKeys: useSharedKeys,
+          enabled: true,
         },
       };
 
