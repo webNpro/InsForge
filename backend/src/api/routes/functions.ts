@@ -2,11 +2,13 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/manager.js';
+import { AuditService } from '@/core/audit/audit.js';
 import { DatabaseError } from 'pg';
 import logger from '@/utils/logger.js';
 
 const router = Router();
 const db = DatabaseManager.getInstance();
+const auditService = AuditService.getInstance();
 
 // Schema for function upload
 const functionUploadSchema = z.object({
@@ -165,6 +167,20 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
     // Log function creation for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${name} (${slug}) created by ${req.user?.email}`);
 
+    // Log audit for function creation
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'CREATE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        functionId: id,
+        slug,
+        name,
+        status,
+      },
+      ip_address: req.ip,
+    });
+
     res.status(201).json({
       success: true,
       function: created,
@@ -264,6 +280,18 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
     // Log function update for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${slug} updated by ${req.user?.email}`);
 
+    // Log audit for function update
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'UPDATE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        slug,
+        changes: updates,
+      },
+      ip_address: req.ip,
+    });
+
     res.json({
       success: true,
       function: updated,
@@ -294,6 +322,17 @@ router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => 
 
     // Log function deletion for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${slug} deleted by ${req.user?.email}`);
+
+    // Log audit for function deletion
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'DELETE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        slug,
+      },
+      ip_address: req.ip,
+    });
 
     res.json({
       success: true,

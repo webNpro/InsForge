@@ -1,9 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AuthService } from '@/core/auth/auth.js';
+import { AuditService } from '@/core/audit/audit.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
-import { verifyAdmin } from '@/api/middleware/auth.js';
+import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import logger from '@/utils/logger.js';
 import jwt from 'jsonwebtoken';
 import {
@@ -24,6 +25,7 @@ import {
 
 const router = Router();
 const authService = AuthService.getInstance();
+const auditService = AuditService.getInstance();
 
 // POST /api/auth/users - Create a new user (registration)
 router.post('/users', async (req: Request, res: Response, next: NextFunction) => {
@@ -319,34 +321,50 @@ router.get(
 );
 
 // DELETE /api/auth/users - Delete users (batch operation, admin only)
-router.delete('/users', verifyAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const validationResult = deleteUsersRequestSchema.safeParse(req.body);
-    if (!validationResult.success) {
-      throw new AppError(
-        validationResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
-        400,
-        ERROR_CODES.INVALID_INPUT
-      );
+router.delete(
+  '/users',
+  verifyAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const validationResult = deleteUsersRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new AppError(
+          validationResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+          400,
+          ERROR_CODES.INVALID_INPUT
+        );
+      }
+
+      const { userIds } = validationResult.data;
+
+      const db = authService.getDb();
+      const placeholders = userIds.map(() => '?').join(',');
+
+      await db.prepare(`DELETE FROM _accounts WHERE id IN (${placeholders})`).run(...userIds);
+
+      // Log audit for user deletion
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'DELETE_USERS',
+        module: 'AUTH',
+        details: {
+          userIds,
+          deletedCount: userIds.length,
+        },
+        ip_address: req.ip,
+      });
+
+      const response: DeleteUsersResponse = {
+        message: 'Users deleted successfully',
+        deletedCount: userIds.length,
+      };
+
+      res.json(response);
+    } catch (error) {
+      next(error);
     }
-
-    const { userIds } = validationResult.data;
-
-    const db = authService.getDb();
-    const placeholders = userIds.map(() => '?').join(',');
-
-    await db.prepare(`DELETE FROM _accounts WHERE id IN (${placeholders})`).run(...userIds);
-
-    const response: DeleteUsersResponse = {
-      message: 'Users deleted successfully',
-      deletedCount: userIds.length,
-    };
-
-    res.json(response);
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 // OAuth endpoints following naming convention: /oauth/:provider and /oauth/:provider/callback
 router.get('/oauth/google', async (req: Request, res: Response, next: NextFunction) => {
