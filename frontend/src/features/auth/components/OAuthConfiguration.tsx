@@ -90,23 +90,24 @@ export function OAuthConfiguration() {
       const updatedConfig = {
         ...oauthConfig,
         [providerId]: {
-          ...oauthConfig[providerId],
+          clientId: '',
+          clientSecret: '',
           enabled: false,
+          useSharedKeys: false,
         },
       };
 
       await configService.updateOAuthConfig(updatedConfig);
       await configService.reloadOAuthConfig();
-      showToast(`${providerName} disabled`, 'success');
+      showToast(`${providerName} deleted`, 'success');
       setOauthConfig(updatedConfig);
       return true;
     } catch (error) {
-      console.error(`Failed to disable ${providerId} OAuth:`, error);
-      showToast(`Failed to disable ${providerName}`, 'error');
+      console.error(`Failed to delete ${providerId} OAuth:`, error);
+      showToast(`Failed to delete ${providerName}`, 'error');
       return false;
     }
   };
-
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -134,33 +135,26 @@ export function OAuthConfiguration() {
     };
   }, [oauthConfig]);
 
-  const handleConfirmSelected = async (selectedIds: ('google' | 'github')[]) => {
+  // Check if all providers are enabled
+  const allProvidersEnabled = useMemo(() => {
+    return providers.every((provider) => enabledProviders[provider.id]);
+  }, [providers, enabledProviders]);
 
+  const handleConfirmSelected = async (selectedId: 'google' | 'github') => {
     if (!oauthConfig) {
       return;
     }
 
-    try {
-      // Enable all selected providers at once
-      const updatedConfig = {
-        ...oauthConfig,
-        ...Object.fromEntries(
-          selectedIds.map((providerId) => [
-            providerId,
-            { ...oauthConfig[providerId], enabled: true },
-          ])
-        ),
-      };
-
-      await configService.updateOAuthConfig(updatedConfig);
-      await configService.reloadOAuthConfig();
-      setOauthConfig(updatedConfig);
-      setIsSelectDialogOpen(false);
-      showToast(`${selectedIds.length} authentication method(s) added successfully!`, 'success');
-    } catch (err) {
-      console.error('Failed to add selected auth providers', err);
-      showToast('Failed to add authentication methods', 'error');
+    // Find the selected provider
+    const selectedProvider = providers.find((p) => p.id === selectedId);
+    if (!selectedProvider) {
+      return;
     }
+
+    // Close the select dialog and open the method dialog
+    setIsSelectDialogOpen(false);
+    setSelectedProvider(selectedProvider);
+    setIsDialogOpen(true);
   };
 
   const handleSuccess = useCallback(() => {
@@ -211,7 +205,7 @@ export function OAuthConfiguration() {
                 text={generateCombinedPrompt()}
                 variant="default"
                 size="sm"
-                className="h-8 px-3 py-1 text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
+                className="w-52.5 h-8 px-3 py-1 rounded text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
                 copyText="Copy Prompt"
                 copiedText="Copied - Paste to agent"
               />
@@ -221,18 +215,20 @@ export function OAuthConfiguration() {
 
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Auth Method</h2>
-          <Button
-            className="h-9 pr-3 pl-2 py-2 gap-2 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600 text-sm font-medium rounded-sm"
-            onClick={openSelectDialog}
-          >
-            <Plus className="w-5 h-5" />
-            Add Auth
-          </Button>
+          {!allProvidersEnabled && (
+            <Button
+              className="h-9 pr-3 pl-2 py-2 gap-2 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600 text-sm font-medium rounded-sm"
+              onClick={openSelectDialog}
+            >
+              <Plus className="w-5 h-5" />
+              Add Auth
+            </Button>
+          )}
         </div>
 
         <div className="flex-1">
           {hasAuthMethods ? (
-            <div className="grid grid-cols-4 gap-x-3 gap-y-6">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
               {providers.map((provider) => {
                 const isEnabled = oauthConfig?.[provider.id]?.enabled;
                 if (!isEnabled) return null;
@@ -250,33 +246,41 @@ export function OAuthConfiguration() {
                       </div>
                     </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          className="h-7 w-7 p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                          variant="ghost"
-                          size="sm"
-                        >
-                          <MoreHorizontal className="w-5 h-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 py-1 px-2">
-                        <DropdownMenuItem
-                          onClick={() => handleConfigureProvider(provider)}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <Pencil className="w-5 h-5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => disableOAuthProvider(provider.id, provider.name)}
-                          className="flex items-center gap-2 cursor-pointer text-red-600 dark:text-red-400"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-3">
+                      {oauthConfig?.[provider.id]?.useSharedKeys && (
+                        <span className="px-2 py-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 border border-neutral-500 dark:border-neutral-400 rounded">
+                          Shared Keys
+                        </span>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-7 w-7 p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 py-1 px-2">
+                          <DropdownMenuItem
+                            onClick={() => handleConfigureProvider(provider)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer"
+                          >
+                            <Pencil className="w-5 h-5" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => disableOAuthProvider(provider.id, provider.name)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 );
               })}
