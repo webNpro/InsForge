@@ -61,6 +61,12 @@ module.exports = async function(request) {
     edgeFunctionToken: userToken
   });
   
+  // Example: Get authenticated user for database operations
+  const { data: userData } = await client.auth.getCurrentUser();
+  if (userData?.user?.id) {
+    // Use userData.user.id for foreign key constraints
+    await client.database.from('table').insert([{ user_id: userData.user.id }]);
+  }
 }
 ```
 
