@@ -14,7 +14,7 @@ interface OAuthConfigDialogProps {
   providers: OAuthProviderInfo[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (selectedIds: ('google' | 'github')[]) => void;
+  onConfirm: (selectedId: 'google' | 'github') => void;
   enabledProviders: Record<'google' | 'github', boolean>;
 }
 
@@ -25,32 +25,28 @@ export function OAuthConfigDialog({
   onConfirm,
   enabledProviders,
 }: OAuthConfigDialogProps) {
-  const [selectedMap, setSelectedMap] = useState<Record<'google' | 'github', boolean>>({
-    google: false,
-    github: false,
-  });
+  const [selectedId, setSelectedId] = useState<'google' | 'github' | null>(null);
 
   // Reset selection when dialog opens
   useEffect(() => {
     if (open) {
-      setSelectedMap({ google: false, github: false });
+      setSelectedId(null);
     }
   }, [open]);
 
-  const hasSelection = Object.values(selectedMap).some(Boolean);
+  const hasSelection = selectedId !== null;
 
   // Filter out already enabled providers
   const availableProviders = providers.filter((provider) => !enabledProviders[provider.id]);
 
-  const toggleSelected = (id: 'google' | 'github') => {
-    setSelectedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  const selectProvider = (id: 'google' | 'github') => {
+    setSelectedId(id);
   };
 
   const handleConfirm = () => {
-    const selectedIds = Object.entries(selectedMap)
-      .filter(([, selected]) => selected)
-      .map(([id]) => id as 'google' | 'github');
-    onConfirm(selectedIds);
+    if (selectedId) {
+      onConfirm(selectedId);
+    }
   };
 
   return (
@@ -67,11 +63,11 @@ export function OAuthConfigDialog({
               {availableProviders.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => toggleSelected(p.id)}
+                  onClick={() => selectProvider(p.id)}
                   className="flex items-center justify-start gap-6 rounded-[8px] p-3 bg-white hover:bg-zinc-100 dark:bg-[#333333] dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-colors"
                 >
                   <div className="w-4 h-4" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={!!selectedMap[p.id]} onChange={() => toggleSelected(p.id)} />
+                    <Checkbox checked={selectedId === p.id} onChange={() => selectProvider(p.id)} />
                   </div>
                   <div className="flex items-center gap-3">
                     <img src={p.icon} alt={p.name} className="w-6 h-6" />
