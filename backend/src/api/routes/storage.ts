@@ -14,8 +14,10 @@ import {
 } from '@insforge/shared-schemas';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
+import { AuditService } from '@/core/audit/audit';
 
 const router = Router();
+const auditService = AuditService.getInstance();
 
 // Middleware to conditionally apply authentication based on bucket visibility
 const conditionalAuth = async (req: Request, res: Response, next: NextFunction) => {
@@ -75,6 +77,18 @@ router.post(
       const storageService = StorageService.getInstance();
       await storageService.createBucket(bucketName, isPublic);
 
+      // Log audit for bucket creation
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'CREATE_BUCKET',
+        module: 'STORAGE',
+        details: {
+          bucketName,
+          isPublic,
+        },
+        ip_address: req.ip,
+      });
+
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
         resource: DataUpdateResourceType.STORAGE_SCHEMA,
@@ -133,6 +147,18 @@ router.patch(
 
       const storageService = StorageService.getInstance();
       await storageService.updateBucketVisibility(bucketName, isPublic);
+
+      // Log audit for bucket update
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'UPDATE_BUCKET',
+        module: 'STORAGE',
+        details: {
+          bucketName,
+          isPublic,
+        },
+        ip_address: req.ip,
+      });
 
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
@@ -349,6 +375,17 @@ router.delete(
       if (!deleted) {
         throw new AppError('Bucket not found or already empty', 404, ERROR_CODES.NOT_FOUND);
       }
+
+      // Log audit for bucket deletion
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'DELETE_BUCKET',
+        module: 'STORAGE',
+        details: {
+          bucketName,
+        },
+        ip_address: req.ip,
+      });
 
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
