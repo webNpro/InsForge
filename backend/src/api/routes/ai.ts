@@ -8,7 +8,7 @@ import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
 import { AIConfigService } from '@/core/ai/config';
 import { AIUsageService } from '@/core/ai/usage';
-import { AuditService } from '@/core/audit/audit';
+import { AuditService } from '@/core/logs/audit';
 import {
   createAIConfigurationRequestSchema,
   updateAIConfigurationRequestSchema,

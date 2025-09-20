@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { DatabaseAdvanceService } from '@/core/database/advance.js';
-import { AuditService } from '@/core/audit/audit.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
