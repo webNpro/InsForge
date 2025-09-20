@@ -87,7 +87,7 @@ export function OAuthConfigDialog({
         <DialogFooter className="px-6 py-4 border-t border-zinc-200 dark:border-neutral-700">
           <Button
             variant="outline"
-            className="h-9 px-3 py-2 rounded-sm dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
+            className="w-fit h-9 px-3 py-2 rounded-sm dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
             onClick={() => onOpenChange(false)}
           >
             Cancel
