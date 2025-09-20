@@ -829,7 +829,7 @@ export class DatabaseAdvanceService {
   async getMetadata(): Promise<DatabaseMetadataSchema> {
     const db = this.dbManager.getDb();
 
-    // Get all tables excluding system tables (those starting with _) and logs
+    // Get all tables excluding system tables (those starting with _)
     // Also exclude Better Auth system tables, except for user table
     const allTables = (await db
       .prepare(
@@ -839,7 +839,6 @@ export class DatabaseAdvanceService {
       WHERE table_schema = 'public'
       AND table_type = 'BASE TABLE'
       AND (table_name NOT LIKE '\\_%')
-      AND table_name NOT IN ('logs', 'jwks')
       ORDER BY table_name
     `
       )

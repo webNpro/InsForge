@@ -187,18 +187,22 @@ export async function createApp() {
     try {
       const { slug } = req.params;
       const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
-      
+
       // Simple direct proxy - just pass everything through
-      const response = await fetch(`${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`, {
-        method: req.method,
-        headers: req.headers as any,
-        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-      });
+      const response = await fetch(
+        `${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`,
+        {
+          method: req.method,
+          headers: req.headers as any,
+          body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+        }
+      );
 
       // Get response text
       const responseText = await response.text();
-      
-      res.status(response.status)
+
+      res
+        .status(response.status)
         .set('Content-Type', response.headers.get('content-type') || 'application/json')
         .set('Access-Control-Allow-Origin', '*')
         .send(responseText);

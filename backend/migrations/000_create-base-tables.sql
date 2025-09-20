@@ -17,16 +17,6 @@ CREATE TABLE IF NOT EXISTS _metadata (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Logs table for activity tracking
-CREATE TABLE IF NOT EXISTS logs (
-  id SERIAL PRIMARY KEY,
-  action TEXT NOT NULL,
-  table_name TEXT NOT NULL,
-  record_id TEXT,
-  details TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Storage buckets table to track bucket-level settings
 CREATE TABLE IF NOT EXISTS _storage_buckets (
   name TEXT PRIMARY KEY,
