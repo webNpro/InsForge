@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { verifyApiKey, verifyCloudBackend } from '@/api/middleware/auth.js';
 
 export const usageRouter = Router();

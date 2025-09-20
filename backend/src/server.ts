@@ -21,7 +21,7 @@ import { agentDocsRouter } from '@/api/routes/agent.js';
 import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { SocketService } from '@/core/socket/socket.js';

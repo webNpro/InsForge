@@ -9,7 +9,7 @@ import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import type { ConfigRecord, OAuthConfig } from '@/types/auth.js';
 import type {

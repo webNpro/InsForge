@@ -3,7 +3,7 @@ import axios from 'axios';
 import http from 'http';
 import https from 'https';
 import { AuthRequest, extractApiKey } from '@/api/middleware/auth.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { validateTableName } from '@/utils/validations.js';

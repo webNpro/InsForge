@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { DatabaseError } from 'pg';
 import logger from '@/utils/logger.js';
 
@@ -13,7 +13,10 @@ const functionUploadSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z
     .string()
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid slug format - must be alphanumeric with hyphens or underscores only')
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Invalid slug format - must be alphanumeric with hyphens or underscores only'
+    )
     .optional(),
   code: z.string().min(1),
   description: z.string().optional(),

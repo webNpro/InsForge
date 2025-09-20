@@ -1,4 +1,4 @@
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import {
   type RawSQLResponse,
@@ -16,7 +16,7 @@ import { ERROR_CODES } from '@/types/error-constants';
 import { parseSQLStatements } from '@/utils/sql-parser.js';
 import { convertSqlTypeToColumnType } from '@/utils/helpers.js';
 
-export class DatabaseController {
+export class DatabaseAdvanceService {
   private dbManager = DatabaseManager.getInstance();
 
   /**

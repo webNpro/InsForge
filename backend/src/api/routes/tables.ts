@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { verifyAdmin, verifyUser, AuthRequest } from '@/api/middleware/auth.js';
-import { TablesController } from '@/controllers/TablesController.js';
+import { DatabaseTableService } from '@/core/database/table.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -9,7 +9,7 @@ import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
 
 const router = Router();
-const tablesController = new TablesController();
+const tableService = new DatabaseTableService();
 
 // All table routes accept either JWT token or API key authentication
 // router.use(verifyAdmin);
@@ -17,7 +17,7 @@ const tablesController = new TablesController();
 // List all tables
 router.get('/', verifyUser, async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const tables = await tablesController.listTables();
+    const tables = await tableService.listTables();
     successResponse(res, tables);
   } catch (error) {
     next(error);
@@ -38,7 +38,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response, next: Next
     }
 
     const { tableName, columns, rlsEnabled } = validation.data;
-    const result = await tablesController.createTable(tableName, columns, rlsEnabled);
+    const result = await tableService.createTable(tableName, columns, rlsEnabled);
     const socket = SocketService.getInstance();
     socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
       resource: DataUpdateResourceType.DATABASE_SCHEMA,
@@ -56,7 +56,7 @@ router.get(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { tableName } = req.params;
-      const schema = await tablesController.getTableSchema(tableName);
+      const schema = await tableService.getTableSchema(tableName);
       successResponse(res, schema);
     } catch (error) {
       next(error);
@@ -83,7 +83,7 @@ router.patch(
       }
 
       const operations = validation.data;
-      const result = await tablesController.updateTableSchema(tableName, operations);
+      const result = await tableService.updateTableSchema(tableName, operations);
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
         resource: DataUpdateResourceType.TABLE_SCHEMA,
@@ -105,7 +105,7 @@ router.delete(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { tableName } = req.params;
-      const result = await tablesController.deleteTable(tableName);
+      const result = await tableService.deleteTable(tableName);
       const socket = SocketService.getInstance();
       socket.broadcastToRoom('role:project_admin', ServerEvents.DATA_UPDATE, {
         resource: DataUpdateResourceType.DATABASE_SCHEMA,

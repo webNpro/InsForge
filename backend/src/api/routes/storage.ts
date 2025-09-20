@@ -3,7 +3,7 @@ import path from 'path';
 import { verifyAdmin, AuthRequest, verifyUser } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { StorageService } from '@/core/storage/storage.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { successResponse } from '@/utils/response.js';
 import { upload, handleUploadError } from '@/api/middleware/upload.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
