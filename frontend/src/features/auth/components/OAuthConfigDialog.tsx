@@ -41,6 +41,7 @@ export function OAuthConfigDialog({
   onSuccess,
 }: OAuthConfigDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
   const { getProviderConfig, createConfig, updateConfig, isCreating, isUpdating } =
     useOAuthConfig();
 
@@ -69,6 +70,7 @@ export function OAuthConfigDialog({
       setLoading(true);
       const existingConfig = getProviderConfig(provider.id);
       if (existingConfig) {
+        setIsUpdateMode(true);
         form.reset({
           provider: provider.id,
           clientId: existingConfig.clientId || '',
@@ -76,6 +78,7 @@ export function OAuthConfigDialog({
           useSharedKey: existingConfig.useSharedKey || false,
         });
       } else {
+        setIsUpdateMode(false);
         form.reset({
           provider: provider.id,
           clientId: '',
@@ -274,7 +277,10 @@ export function OAuthConfigDialog({
                 disabled={isUpdateDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Adding...' : 'Add Integration'}
+                {saving 
+                  ? (isUpdateMode ? 'Updating...' : 'Adding...') 
+                  : (isUpdateMode ? 'Update' : 'Add Integration')
+                }
               </Button>
             </DialogFooter>
           </>
