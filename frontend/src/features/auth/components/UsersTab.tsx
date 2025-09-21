@@ -5,19 +5,19 @@ import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
 import type { User } from '../types';
 
-interface UserManagementProps {
+interface UsersTabProps {
   searchQuery?: string;
   selectedRows?: Set<string>;
   onSelectedRowsChange?: (selectedRows: Set<string>) => void;
   onAddUser?: () => void;
 }
 
-export function UsersManagement({
+export function UsersTab({
   searchQuery: externalSearchQuery = '',
   selectedRows: externalSelectedRows,
   onSelectedRowsChange: externalOnSelectedRowsChange,
   onAddUser,
-}: UserManagementProps) {
+}: UsersTabProps) {
   // Default page size of 20 records per page
   const pageSize = 20;
   const { users, totalUsers, isLoading, currentPage, setCurrentPage, totalPages, refetch } =

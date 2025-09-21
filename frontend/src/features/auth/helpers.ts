@@ -1,4 +1,4 @@
-import { OAuthProviderInfo } from './components/OAuthConfiguration';
+import { OAuthProviderInfo } from './components/AuthMethodTab';
 
 export const generateAIAuthPrompt = (providers: OAuthProviderInfo[]) => {
   const baseUrl = window.location.origin;
