@@ -138,8 +138,13 @@ export function OAuthConfigDialog({
   const saving = isCreating || isUpdating;
 
   // Use RHF's built-in validation and dirty state
-  const isUpdateDisabled = () => {
-    if (saving || !isDirty) {
+  const isDisabled = () => {
+    if (saving) {
+      return true;
+    }
+
+    // In update mode, require dirty state
+    if (isUpdateMode && !isDirty) {
       return true;
     }
 
@@ -274,13 +279,16 @@ export function OAuthConfigDialog({
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isUpdateDisabled()}
+                disabled={isDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving 
-                  ? (isUpdateMode ? 'Updating...' : 'Adding...') 
-                  : (isUpdateMode ? 'Update' : 'Add Integration')
-                }
+                {saving
+                  ? isUpdateMode
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : isUpdateMode
+                    ? 'Update'
+                    : 'Add Integration'}
               </Button>
             </DialogFooter>
           </>
