@@ -71,7 +71,7 @@ async function seedDefaultOAuthConfigs(): Promise<void> {
     if (!existingProviders.includes('github')) {
       await oauthService.createConfig({
         provider: 'github',
-        useSharedKey: false,
+        useSharedKey: true,
       });
       logger.info('✅ Default GitHub OAuth config created');
     }
