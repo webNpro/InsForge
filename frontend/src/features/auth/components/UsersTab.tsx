@@ -80,13 +80,13 @@ export function UsersTab({
         let bVal = b[columnKey as keyof User];
 
         // Handle null/undefined values
-        if (aVal === null && bVal === null) {
+        if ((aVal === null || aVal === undefined) && (bVal === null || bVal === undefined)) {
           continue;
         }
-        if (aVal === null) {
+        if (aVal === null || aVal === undefined) {
           return direction === 'ASC' ? -1 : 1;
         }
-        if (bVal === null) {
+        if (bVal === null || bVal === undefined) {
           return direction === 'ASC' ? 1 : -1;
         }
 
