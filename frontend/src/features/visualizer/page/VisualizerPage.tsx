@@ -38,7 +38,7 @@ const VisualizerPage = () => {
     queryKey: ['user-stats-visualizer'],
     queryFn: async () => {
       const response = await authService.getUsers();
-      return { userCount: response.total };
+      return { userCount: response.pagination.total };
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
