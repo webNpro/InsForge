@@ -20,6 +20,10 @@ export default defineConfig({
         target: 'http://localhost:7130',
         changeOrigin: true,
       },
+      '/functions': {
+        target: 'http://localhost:7130',
+        changeOrigin: true,
+      },
       '/socket.io': {
         target: 'http://localhost:7130',
         ws: true,

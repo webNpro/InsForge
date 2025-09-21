@@ -284,9 +284,9 @@ console.log(response.data[0].content);   // AI's text response about the image o
 ## Complete Example
 
 ```javascript
-import { InsForgeClient } from '@insforge/sdk';
+import { createClient } from '@insforge/sdk';
 
-const client = new InsForgeClient({ baseUrl: 'http://localhost:7130' });
+const client = new createClient({ baseUrl: 'http://localhost:7130' });
 
 // 1. Sign up new user
 const { data: auth, error } = await client.auth.signUp({

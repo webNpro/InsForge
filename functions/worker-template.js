@@ -8,7 +8,7 @@
 /* global self, Request, Deno */
 
 // Import SDK at worker level - this will be available to all functions
-import { createClient } from 'npm:@insforge/sdk@0.0.46';
+import { createClient } from 'npm:@insforge/sdk';
 
 // Handle the single message with both code and request data
 self.onmessage = async (e) => {
