@@ -46,7 +46,7 @@ router.get('/google', async (req: Request, res: Response, next: NextFunction) =>
     logger.error('Google OAuth error', { error });
     next(
       new AppError(
-        'Google OAuth is not properly configured. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI',
+        'Google OAuth is not properly configured. Please check your oauth configurations.',
         500,
         ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
       )

@@ -52,7 +52,6 @@ async function seedDefaultAIConfigs(): Promise<void> {
  */
 async function seedDefaultOAuthConfigs(): Promise<void> {
   const oauthService = OAuthConfigService.getInstance();
-  const baseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
 
   try {
     // Check if OAuth configs already exist
@@ -63,8 +62,6 @@ async function seedDefaultOAuthConfigs(): Promise<void> {
     if (!existingProviders.includes('google')) {
       await oauthService.createConfig({
         provider: 'google',
-        redirectUri: `${baseUrl}/api/auth/oauth/google/callback`,
-        scopes: ['openid', 'email', 'profile'],
         useSharedKey: true,
       });
       logger.info('✅ Default Google OAuth config created');
@@ -74,8 +71,6 @@ async function seedDefaultOAuthConfigs(): Promise<void> {
     if (!existingProviders.includes('github')) {
       await oauthService.createConfig({
         provider: 'github',
-        redirectUri: `${baseUrl}/api/auth/oauth/github/callback`,
-        scopes: ['user:email'],
         useSharedKey: false,
       });
       logger.info('✅ Default GitHub OAuth config created');

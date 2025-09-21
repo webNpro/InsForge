@@ -174,6 +174,24 @@ export class OAuthConfigService {
         secretId = secret.id;
       }
 
+      // Set default scopes if not provided
+      let scopes = input.scopes;
+      if (!scopes) {
+        const provider = input.provider.toLowerCase();
+        if (provider === 'google') {
+          scopes = ['openid', 'email', 'profile'];
+        } else if (provider === 'github') {
+          scopes = ['user:email'];
+        }
+      }
+
+      // Set default redirect_uri if not provided
+      let redirectUri = input.redirectUri;
+      if (!redirectUri) {
+        const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+        redirectUri = `${apiBaseUrl}/api/auth/oauth/${input.provider.toLowerCase()}/callback`;
+      }
+
       // Create new OAuth config
       const result = await client.query(
         `INSERT INTO _oauth_configs (provider, client_id, secret_id, redirect_uri, scopes, use_shared_key)
@@ -188,8 +206,8 @@ export class OAuthConfigService {
           input.provider.toLowerCase(),
           input.clientId || null,
           secretId,
-          input.redirectUri || null,
-          input.scopes || null,
+          redirectUri,
+          scopes,
           input.useSharedKey || false,
         ]
       );
