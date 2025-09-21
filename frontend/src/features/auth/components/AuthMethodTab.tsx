@@ -7,8 +7,8 @@ import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
 import { generateAIAuthPrompt } from '@/features/auth/helpers';
 import { OAuthEmptyState } from './OAuthEmptyState';
-import { OAuthMethodDialog } from './OAuthMethodDialog';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
+import { AddOAuthDialog } from './AddOAuthDialog';
 import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -28,7 +28,7 @@ export interface OAuthProviderInfo {
   setupUrl: string;
 }
 
-export function OAuthConfiguration() {
+export function AuthMethodTab() {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
@@ -262,14 +262,14 @@ export function OAuthConfiguration() {
         </div>
       </div>
 
-      <OAuthMethodDialog
+      <OAuthConfigDialog
         provider={selectedProvider}
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleSuccess}
       />
 
-      <OAuthConfigDialog
+      <AddOAuthDialog
         providers={providers}
         open={isSelectDialogOpen}
         onOpenChange={setIsSelectDialogOpen}

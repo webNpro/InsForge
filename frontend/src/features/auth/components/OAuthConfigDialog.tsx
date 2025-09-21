@@ -1,105 +1,281 @@
 import { useState, useEffect } from 'react';
+import { useForm, Controller, useFormState } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
-import { Checkbox } from '@/components/Checkbox';
+import { Input } from '@/components/radix/Input';
+import { Switch } from '@/components/radix/Switch';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/radix/Dialog';
-import { OAuthProviderInfo } from './OAuthConfiguration';
+import WarningIcon from '@/assets/icons/warning.svg';
+import { CopyButton } from '@/components/CopyButton';
+import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
+import { OAuthProviderInfo } from './AuthMethodTab';
+import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
+
+const getCallbackUrl = (provider?: string) => {
+  // Use backend API URL for OAuth callback
+  return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
+};
 
 interface OAuthConfigDialogProps {
-  providers: OAuthProviderInfo[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: (selectedId: 'google' | 'github') => void;
-  enabledProviders: Record<'google' | 'github', boolean>;
+  provider?: OAuthProviderInfo;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export function OAuthConfigDialog({
-  providers,
-  open,
-  onOpenChange,
-  onConfirm,
-  enabledProviders,
+  provider,
+  isOpen,
+  onClose,
+  onSuccess,
 }: OAuthConfigDialogProps) {
-  const [selectedId, setSelectedId] = useState<'google' | 'github' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { getProviderConfig, createConfig, updateConfig, isCreating, isUpdating } =
+    useOAuthConfig();
 
-  // Reset selection when dialog opens
+  const form = useForm<OAuthConfigSchema & { clientSecret?: string }>({
+    resolver: zodResolver(oAuthConfigSchema.extend({ clientSecret: z.string().optional() })),
+    defaultValues: {
+      provider: provider?.id || 'google',
+      clientId: '',
+      clientSecret: '',
+      useSharedKey: false,
+    },
+  });
+
+  const useSharedKey = form.watch('useSharedKey');
+  const clientId = form.watch('clientId');
+  const clientSecret = form.watch('clientSecret');
+
+  // Use useFormState hook for better reactivity
+  const { isDirty } = useFormState({
+    control: form.control,
+  });
+
+  // Load OAuth configuration when dialog opens
   useEffect(() => {
-    if (open) {
-      setSelectedId(null);
+    if (isOpen && provider) {
+      setLoading(true);
+      const existingConfig = getProviderConfig(provider.id);
+      if (existingConfig) {
+        form.reset({
+          provider: provider.id,
+          clientId: existingConfig.clientId || '',
+          clientSecret: '',
+          useSharedKey: existingConfig.useSharedKey || false,
+        });
+      } else {
+        form.reset({
+          provider: provider.id,
+          clientId: '',
+          clientSecret: '',
+          useSharedKey: false,
+        });
+      }
+      setLoading(false);
     }
-  }, [open]);
+  }, [isOpen, provider, getProviderConfig, form]);
 
-  const hasSelection = selectedId !== null;
+  const handleSubmitData = (data: OAuthConfigSchema & { clientSecret?: string }) => {
+    if (!provider) {
+      return;
+    }
 
-  // Filter out already enabled providers
-  const availableProviders = providers.filter((provider) => !enabledProviders[provider.id]);
+    try {
+      const existingConfig = getProviderConfig(provider.id);
 
-  const selectProvider = (id: 'google' | 'github') => {
-    setSelectedId(id);
+      if (existingConfig) {
+        // Update existing config
+        updateConfig({
+          provider: provider.id,
+          config: data.useSharedKey
+            ? { useSharedKey: true }
+            : {
+                clientId: data.clientId,
+                clientSecret: data.clientSecret,
+                useSharedKey: false,
+              },
+        });
+      } else {
+        // Create new config
+        createConfig({
+          provider: provider.id,
+          clientId: data.useSharedKey ? undefined : data.clientId,
+          clientSecret: data.useSharedKey ? undefined : clientSecret,
+          useSharedKey: data.useSharedKey,
+        });
+      }
+
+      // Call success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+      // Close dialog
+      onClose();
+    } catch (error) {
+      console.error('Error saving OAuth config:', error);
+    }
   };
 
-  const handleConfirm = () => {
-    if (selectedId) {
-      onConfirm(selectedId);
+  const handleSubmit = () => {
+    void handleSubmitData(form.getValues());
+  };
+
+  const saving = isCreating || isUpdating;
+
+  // Use RHF's built-in validation and dirty state
+  const isUpdateDisabled = () => {
+    if (saving || !isDirty) {
+      return true;
     }
+
+    // If using shared keys, always allow (no credential validation needed)
+    if (useSharedKey) {
+      return false;
+    }
+
+    // If NOT using shared keys, require both clientId and clientSecret
+    return !clientId || !clientSecret;
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[600px] p-0 gap-0 dark:bg-neutral-800">
-        <DialogHeader className="pl-6 pr-4 py-3 border-b border-zinc-200 dark:border-neutral-700">
-          <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
-            Add Authentication
-          </DialogTitle>
+    <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[700px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
+        <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
+          <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
-        <div className="p-6">
-          {availableProviders.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {availableProviders.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => selectProvider(p.id)}
-                  className="flex items-center justify-start gap-6 rounded-[8px] p-3 bg-white hover:bg-zinc-100 dark:bg-[#333333] dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-colors"
-                >
-                  <div className="w-4 h-4" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={selectedId === p.id} onChange={() => selectProvider(p.id)} />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <img src={p.icon} alt={p.name} className="w-6 h-6" />
-                    <p className="text-sm font-medium text-zinc-950 dark:text-white">{p.name}</p>
-                  </div>
-                </button>
-              ))}
+        {loading ? (
+          <div className="p-6 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-sm text-gray-500 dark:text-zinc-400">
+                Loading OAuth configuration...
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-zinc-500 dark:text-neutral-400">
-                All authentication methods have been added.
-              </p>
-            </div>
-          )}
-        </div>
-        <DialogFooter className="px-6 py-4 border-t border-zinc-200 dark:border-neutral-700">
-          <Button
-            variant="outline"
-            className="w-fit h-9 px-3 py-2 rounded-sm dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="h-9 px-3 py-2 rounded-sm dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
-            onClick={handleConfirm}
-            disabled={!hasSelection}
-          >
-            Add Integration
-          </Button>
-        </DialogFooter>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
+              <div className="space-y-6 p-6">
+                {/* Shared Keys Toggle */}
+                <div className="flex items-center justify-start gap-2">
+                  <Controller
+                    name="useSharedKey"
+                    control={form.control}
+                    render={({ field }) => {
+                      return (
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(value) => {
+                            field.onChange(value);
+                          }}
+                        />
+                      );
+                    }}
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    Shared Keys
+                  </span>
+                </div>
+
+                {useSharedKey ? (
+                  /* Shared Keys Enabled */
+                  <div className="space-y-6">
+                    <p className="text-sm text-zinc-500 dark:text-neutral-400">
+                      Shared keys are created by the InsForge team for development. It helps you get
+                      started, but will show a InsForge logo and name on the OAuth screen.
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <img src={WarningIcon} alt="Warning" className="h-6 w-6" />
+                      <span className="text-sm font-medium text-zinc-950 dark:text-white">
+                        Shared keys should never be used in production
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Shared Keys Disabled */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <a
+                        href={provider?.setupUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium underline"
+                      >
+                        Create a {provider?.name.split(' ')[0]} OAuth App
+                      </a>
+                      <span className="text-sm font-normal text-zinc-950 dark:text-white">
+                        {' '}
+                        and set the callback url to:
+                      </span>
+                    </div>
+
+                    <div className="space-x-3">
+                      <div className="flex items-center gap-2">
+                        <code className="flex items-center py-1 px-3 bg-blue-100 dark:bg-neutral-700 text-blue-800 dark:text-blue-300 font-mono break-all rounded-md text-sm">
+                          {getCallbackUrl(provider?.id)}
+                        </code>
+                        <CopyButton className="h-9" text={getCallbackUrl(provider?.id)} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {!useSharedKey && (
+                <div className="space-y-6 p-6 border-t border-zinc-200 dark:border-neutral-700">
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client ID</label>
+                    <Input
+                      type="text"
+                      {...form.register('clientId')}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-row items-center justify-between gap-10">
+                    <label className="text-sm text-zinc-950 dark:text-white">Client Secret</label>
+                    <Input
+                      type="password"
+                      {...form.register('clientSecret')}
+                      placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
+                      className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </form>
+
+            <DialogFooter className="p-6 border-t border-zinc-200 dark:border-neutral-700">
+              <Button
+                type="button"
+                className="h-9 w-30 px-3 py-2 dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isUpdateDisabled()}
+                className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
+              >
+                {saving ? 'Adding...' : 'Add Integration'}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
