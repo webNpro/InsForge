@@ -1,17 +1,24 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/radix/Button';
-import { Switch } from '@/components/radix/Switch';
-import { PromptDialog } from '@/components/PromptDialog';
-import { OAuthDialog } from './OAuthDialog';
 import { configService } from '@/features/auth/services/config.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { useTheme } from '@/lib/contexts/ThemeContext';
-import { MoreVertical } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import GithubDark from '@/assets/icons/github_dark.svg';
 import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
 import { OAuthConfigSchema } from '@insforge/shared-schemas';
 import { generateAIAuthPrompt } from '@/features/auth/helpers';
+import { OAuthEmptyState } from './OAuthEmptyState';
+import { OAuthMethodDialog } from './OAuthMethodDialog';
+import { OAuthConfigDialog } from './OAuthConfigDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/radix/DropdownMenu';
+import { CopyButton } from '@/components/CopyButton';
 
 export interface OAuthProviderInfo {
   id: 'google' | 'github';
@@ -21,16 +28,12 @@ export interface OAuthProviderInfo {
   setupUrl: string;
 }
 
-interface OAuthConfigurationProps {
-  onNavigateToUsers?: () => void;
-}
-
-export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProps) {
+export function OAuthConfiguration() {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [oauthConfig, setOauthConfig] = useState<OAuthConfigSchema>();
   const [loading, setLoading] = useState(true);
+  const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
   const { showToast } = useToast();
   const { resolvedTheme } = useTheme();
 
@@ -77,49 +80,6 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     setIsDialogOpen(true);
   };
 
-  // Enable OAuth provider with shared keys by default
-  const enableOAuthProvider = async (
-    providerId: 'google' | 'github',
-    providerName: string,
-    actionText: string = 'enabled'
-  ) => {
-    if (!oauthConfig) {
-      return false;
-    }
-    if (
-      oauthConfig[providerId]?.useSharedKeys ||
-      (oauthConfig[providerId]?.clientId && oauthConfig[providerId]?.clientSecret)
-    ) {
-      try {
-        const updatedConfig = {
-          ...oauthConfig,
-          [providerId]: {
-            ...oauthConfig[providerId],
-            enabled: true,
-          },
-        };
-
-        await configService.updateOAuthConfig(updatedConfig);
-        await configService.reloadOAuthConfig();
-        setOauthConfig(updatedConfig);
-
-        showToast(`${providerName} ${actionText} successfully!`, 'success');
-
-        return true;
-      } catch (error) {
-        console.error(`Failed to ${actionText} ${providerName} :`, error);
-        showToast(
-          `Failed to ${actionText} ${providerName}. Please check running environment and try again.`,
-          'error'
-        );
-        return false;
-      }
-    } else {
-      showToast(`Please configure ${providerName} first`, 'error');
-      return false;
-    }
-  };
-
   // Disable OAuth provider
   const disableOAuthProvider = async (providerId: 'google' | 'github', providerName: string) => {
     if (!oauthConfig) {
@@ -130,37 +90,22 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
       const updatedConfig = {
         ...oauthConfig,
         [providerId]: {
-          ...oauthConfig[providerId],
+          clientId: '',
+          clientSecret: '',
           enabled: false,
         },
       };
 
       await configService.updateOAuthConfig(updatedConfig);
       await configService.reloadOAuthConfig();
+      showToast(`${providerName} deleted`, 'success');
       setOauthConfig(updatedConfig);
-      showToast(`${providerName} disabled`, 'success');
       return true;
     } catch (error) {
-      console.error(`Failed to disable ${providerId} OAuth:`, error);
-      showToast(`Failed to disable ${providerName}`, 'error');
+      console.error(`Failed to delete ${providerId} OAuth:`, error);
+      showToast(`Failed to delete ${providerName}`, 'error');
       return false;
     }
-  };
-
-  const handleConnect = async (provider: OAuthProviderInfo) => {
-    const enabled = isProviderEnabled(provider.id);
-
-    if (!enabled) {
-      // If not enabled, enable it first with shared keys
-      const success = await enableOAuthProvider(provider.id, provider.name, 'connected');
-      if (!success) {
-        return;
-      }
-    }
-
-    // Show prompt dialog
-    setSelectedProvider(provider);
-    setIsPromptDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
@@ -168,18 +113,47 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     setSelectedProvider(undefined);
   };
 
-  const handleToggleProvider = async (
-    providerId: 'google' | 'github',
-    providerName: string,
-    enabled: boolean
-  ) => {
-    if (enabled) {
-      // If turning on, enable OAuth with shared keys by default
-      await enableOAuthProvider(providerId, providerName);
-    } else {
-      // If turning off, disable it
-      await disableOAuthProvider(providerId, providerName);
+  const hasAuthMethods = useMemo(() => {
+    if (!oauthConfig) {
+      return false;
     }
+    return Boolean(oauthConfig.google?.enabled || oauthConfig.github?.enabled);
+  }, [oauthConfig]);
+
+  const openSelectDialog = () => {
+    setIsSelectDialogOpen(true);
+  };
+
+  const enabledProviders = useMemo(() => {
+    if (!oauthConfig) {
+      return { google: false, github: false };
+    }
+    return {
+      google: Boolean(oauthConfig.google?.enabled),
+      github: Boolean(oauthConfig.github?.enabled),
+    };
+  }, [oauthConfig]);
+
+  // Check if all providers are enabled
+  const allProvidersEnabled = useMemo(() => {
+    return providers.every((provider) => enabledProviders[provider.id]);
+  }, [providers, enabledProviders]);
+
+  const handleConfirmSelected = async (selectedId: 'google' | 'github') => {
+    if (!oauthConfig) {
+      return;
+    }
+
+    // Find the selected provider
+    const selectedProvider = providers.find((p) => p.id === selectedId);
+    if (!selectedProvider) {
+      return;
+    }
+
+    // Close the select dialog and open the method dialog
+    setIsSelectDialogOpen(false);
+    setSelectedProvider(selectedProvider);
+    setIsDialogOpen(true);
   };
 
   const handleSuccess = useCallback(() => {
@@ -187,16 +161,15 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
     void loadOAuthConfig();
   }, [loadOAuthConfig]);
 
-  const handleViewUsers = () => {
-    setIsPromptDialogOpen(false);
-    onNavigateToUsers?.();
-  };
+  // Generate combined prompt for all enabled providers
+  const generateCombinedPrompt = () => {
+    if (!oauthConfig) return '';
 
-  const isProviderEnabled = (providerId: 'google' | 'github') => {
-    if (!oauthConfig) {
-      return false;
-    }
-    return oauthConfig[providerId]?.enabled;
+    const enabledProviders = providers.filter((provider) => oauthConfig[provider.id]?.enabled);
+
+    if (enabledProviders.length === 0) return '';
+
+    return generateAIAuthPrompt(enabledProviders);
   };
 
   if (loading) {
@@ -214,96 +187,122 @@ export function OAuthConfiguration({ onNavigateToUsers }: OAuthConfigurationProp
   return (
     <>
       <div className="flex flex-col gap-6 h-full overflow-hidden p-6 w-full max-w-[1080px] mx-auto">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">OAuth Providers</h2>
-          <p className="text-gray-600 dark:text-zinc-300">
-            Configure OAuth providers to enable social authentication for your users.
-          </p>
+        {/* Copy Prompt Banner */}
+        {hasAuthMethods && (
+          <div className="bg-white dark:bg-emerald-300/5 border border-zinc-200 dark:border-green-300 rounded-sm py-3 px-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                  Integrate Authentication
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-neutral-400">
+                  Copy prompt to your agent and the authentication method below will be integrated
+                  automatically.
+                </p>
+              </div>
+              <CopyButton
+                text={generateCombinedPrompt()}
+                variant="default"
+                size="sm"
+                className="w-52.5 h-8 px-3 py-1 rounded text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
+                copyText="Copy Prompt"
+                copiedText="Copied - Paste to agent"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Auth Method</h2>
+          {!allProvidersEnabled && (
+            <Button
+              className="h-9 pr-3 pl-2 py-2 gap-2 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600 text-sm font-medium rounded-sm"
+              onClick={openSelectDialog}
+            >
+              <Plus className="w-5 h-5" />
+              Add Auth
+            </Button>
+          )}
         </div>
 
         <div className="flex-1">
-          <div className="space-y-3">
-            {providers.map((provider) => {
-              const enabled = isProviderEnabled(provider.id);
+          {hasAuthMethods ? (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+              {providers.map((provider) => {
+                const isEnabled = oauthConfig?.[provider.id]?.enabled;
+                if (!isEnabled) return null;
 
-              return (
-                <div
-                  key={provider.id}
-                  className="flex items-center justify-between px-6 py-3 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333] dark:hover:bg-neutral-600 hover:shadow-sm transition-shadow cursor-pointer"
-                  onClick={() => handleConfigureProvider(provider)}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Toggle Switch */}
-                    <Switch
-                      checked={enabled}
-                      onCheckedChange={(checked) =>
-                        handleToggleProvider(provider.id, provider.name, checked)
-                      }
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                return (
+                  <div
+                    key={provider.id}
+                    className="flex items-center justify-between h-15 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
+                  >
+                    <div className="flex-1 flex items-center gap-3">
+                      <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
 
-                    <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
+                      <div className="text-sm font-medium text-black dark:text-white">
+                        {provider.name}
+                      </div>
+                    </div>
 
-                    {/* Provider Name */}
-                    <div className="h-6 w-80 text-sm font-medium text-black dark:text-white">
-                      {provider.name}
+                    <div className="flex items-center gap-3">
+                      {oauthConfig?.[provider.id]?.useSharedKeys && (
+                        <span className="px-2 py-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 border border-neutral-500 dark:border-neutral-400 rounded">
+                          Shared Keys
+                        </span>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-7 w-7 p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 py-1 px-2">
+                          <DropdownMenuItem
+                            onClick={() => handleConfigureProvider(provider)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer"
+                          >
+                            <Pencil className="w-5 h-5" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => disableOAuthProvider(provider.id, provider.name)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-3">
-                    <Button
-                      size="sm"
-                      className="h-9 px-3 py-2 dark:bg-emerald-300 dark:hover:bg-emerald-400"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleConnect(provider);
-                      }}
-                    >
-                      Connect
-                    </Button>
-                    <Button
-                      className="p-2 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-500"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleConfigureProvider(provider);
-                      }}
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <OAuthEmptyState />
+          )}
         </div>
       </div>
 
-      <OAuthDialog
+      <OAuthMethodDialog
         provider={selectedProvider}
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleSuccess}
       />
 
-      <PromptDialog
-        open={isPromptDialogOpen}
-        onOpenChange={setIsPromptDialogOpen}
-        title={selectedProvider ? `Add ${selectedProvider.name}` : 'OAuth Integration'}
-        subtitle="Copy this prompt to your agent"
-        prompt={selectedProvider ? generateAIAuthPrompt(selectedProvider) : ''}
-        additionalAction={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 px-3 py-2 text-sm font-medium bg-zinc-50 dark:bg-neutral-700 dark:text-white border-border-gray dark:border-neutral-700 border shadow"
-            onClick={handleViewUsers}
-          >
-            View Users
-          </Button>
-        }
+      <OAuthConfigDialog
+        providers={providers}
+        open={isSelectDialogOpen}
+        onOpenChange={setIsSelectDialogOpen}
+        onConfirm={handleConfirmSelected}
+        enabledProviders={enabledProviders}
       />
     </>
   );

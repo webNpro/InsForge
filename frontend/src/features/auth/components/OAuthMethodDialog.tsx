@@ -24,14 +24,19 @@ const getCallbackUrl = (provider?: string) => {
   return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
 };
 
-interface OAuthDialogProps {
+interface OAuthMethodDialogProps {
   provider?: OAuthProviderInfo;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
+export function OAuthMethodDialog({
+  provider,
+  isOpen,
+  onClose,
+  onSuccess,
+}: OAuthMethodDialogProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -95,20 +100,21 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
     try {
       setSaving(true);
 
-      // Create updated config without enabling the OAuth method
+      // Create updated config and enable the OAuth method
       const updatedConfig = {
         ...data,
         [currentProviderKey]: {
           ...data[currentProviderKey],
-          useSharedKeys: useSharedKeys ?? true,
+          useSharedKeys: useSharedKeys,
+          enabled: true,
         },
       };
 
-      // Update OAuth configuration (only config data, not enable status)
+      // Update OAuth configuration and enable the provider
       await configService.updateOAuthConfig(updatedConfig);
       await configService.reloadOAuthConfig();
 
-      showToast(`${provider.name} configuration updated successfully!`, 'success');
+      showToast(`${provider.name} added successfully!`, 'success');
 
       // Reset form state to mark as clean (not dirty)
       form.reset(updatedConfig);
@@ -272,7 +278,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 disabled={isUpdateDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Saving...' : 'Update'}
+                {saving ? 'Adding...' : 'Add Integration'}
               </Button>
             </DialogFooter>
           </>
