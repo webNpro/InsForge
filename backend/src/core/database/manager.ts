@@ -2,7 +2,6 @@ import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import logger from '@/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,107 +43,7 @@ export class DatabaseManager {
     // Note: Schema migrations are now handled by node-pg-migrate
     // Run: npm run migrate:up
 
-    // Migrate OAuth configuration from environment variables to database
-    await this.migrateOAuthConfig(client);
-
     await client.query('COMMIT');
-  }
-
-  // Initialize OAuth configuration from environment variables to database
-  private async migrateOAuthConfig(client: import('pg').PoolClient): Promise<void> {
-    // Google OAuth configuration
-    const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const googleRedirectUri =
-      process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback';
-
-    if (googleClientId && googleClientSecret) {
-      const googleConfig = {
-        enabled: true,
-        clientId: googleClientId,
-        clientSecret: googleClientSecret,
-        redirectUri: googleRedirectUri, // THIS WAS MISSING - CRITICAL!
-      };
-
-      // Check if config already exists
-      const existing = await client.query('SELECT value FROM _config WHERE key = $1', [
-        'auth.oauth.provider.google',
-      ]);
-
-      if (existing.rows.length === 0) {
-        // Insert new config if it doesn't exist
-        await client.query(
-          `INSERT INTO _config (key, value, created_at, updated_at)
-           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          ['auth.oauth.provider.google', JSON.stringify(googleConfig)]
-        );
-      } else {
-        // Update if existing config is incomplete
-        try {
-          const existingValue = JSON.parse(existing.rows[0].value);
-          if (
-            !existingValue.clientId ||
-            !existingValue.clientSecret ||
-            !existingValue.redirectUri
-          ) {
-            await client.query(
-              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
-              [JSON.stringify(googleConfig), 'auth.oauth.provider.google']
-            );
-          }
-        } catch (e) {
-          logger.error('Failed to parse existing Google OAuth config:', e);
-        }
-      }
-    }
-
-    // GitHub OAuth configuration
-    const githubClientId = process.env.GITHUB_CLIENT_ID;
-    const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
-    const githubRedirectUri =
-      process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback';
-
-    if (githubClientId && githubClientSecret) {
-      const githubConfig = {
-        enabled: true,
-        clientId: githubClientId,
-        clientSecret: githubClientSecret,
-        redirectUri: githubRedirectUri, // THIS WAS MISSING - CRITICAL!
-      };
-
-      // Check if config already exists
-      const existing = await client.query('SELECT value FROM _config WHERE key = $1', [
-        'auth.oauth.provider.github',
-      ]);
-
-      if (existing.rows.length === 0) {
-        // Insert new config if it doesn't exist
-        await client.query(
-          `INSERT INTO _config (key, value, created_at, updated_at)
-           VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          ['auth.oauth.provider.github', JSON.stringify(githubConfig)]
-        );
-      } else {
-        // Update if existing config is incomplete
-        try {
-          const existingValue = JSON.parse(existing.rows[0].value);
-          if (
-            !existingValue.clientId ||
-            !existingValue.clientSecret ||
-            !existingValue.redirectUri
-          ) {
-            await client.query(
-              `UPDATE _config SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2`,
-              [JSON.stringify(githubConfig), 'auth.oauth.provider.github']
-            );
-          }
-        } catch (e) {
-          logger.error('Failed to parse existing GitHub OAuth config:', e);
-        }
-      }
-    }
-
-    logger.info('OAuth configuration initialized in database');
   }
 
   // PostgreSQL-specific prepare method that returns a query object similar to better-sqlite3

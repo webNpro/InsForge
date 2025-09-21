@@ -6,6 +6,7 @@ import {
   userIdSchema,
   roleSchema,
   userSchema,
+  oAuthConfigSchema,
 } from './auth.schema';
 
 // ============================================================================
@@ -123,6 +124,36 @@ export const getOauthUrlResponseSchema = z.object({
 });
 
 // ============================================================================
+// OAuth Configuration Management schemas
+// ============================================================================
+
+/**
+ * POST /api/auth/oauth/configs - Create OAuth configuration
+ */
+export const createOAuthConfigRequestSchema = oAuthConfigSchema.extend({
+  clientSecret: z.string().optional(),
+});
+
+/**
+ * PUT /api/auth/oauth/configs/:provider - Update OAuth configuration
+ */
+export const updateOAuthConfigRequestSchema = oAuthConfigSchema
+  .extend({
+    clientSecret: z.string().optional(),
+  })
+  .omit({
+    provider: true,
+  });
+
+/**
+ * Response for GET /api/auth/oauth/configs
+ */
+export const listOAuthConfigsResponseSchema = z.object({
+  data: z.array(oAuthConfigSchema),
+  count: z.number(),
+});
+
+// ============================================================================
 // Error response schema
 // ============================================================================
 
@@ -146,6 +177,8 @@ export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>;
 export type CreateAdminSessionRequest = z.infer<typeof createAdminSessionRequestSchema>;
 export type ListUsersRequest = z.infer<typeof listUsersRequestSchema>;
 export type DeleteUsersRequest = z.infer<typeof deleteUsersRequestSchema>;
+export type CreateOAuthConfigRequest = z.infer<typeof createOAuthConfigRequestSchema>;
+export type UpdateOAuthConfigRequest = z.infer<typeof updateOAuthConfigRequestSchema>;
 
 // Response types for type-safe responses
 export type CreateUserResponse = z.infer<typeof createUserResponseSchema>;
@@ -155,5 +188,6 @@ export type GetCurrentSessionResponse = z.infer<typeof getCurrentSessionResponse
 export type ListUsersResponse = z.infer<typeof listUsersResponseSchema>;
 export type DeleteUsersResponse = z.infer<typeof deleteUsersResponseSchema>;
 export type GetOauthUrlResponse = z.infer<typeof getOauthUrlResponseSchema>;
+export type ListOAuthConfigsResponse = z.infer<typeof listOAuthConfigsResponseSchema>;
 
 export type AuthErrorResponse = z.infer<typeof authErrorResponseSchema>;

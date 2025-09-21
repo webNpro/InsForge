@@ -16,9 +16,10 @@ CREATE TABLE IF NOT EXISTS _secrets (
 CREATE TABLE IF NOT EXISTS _oauth_configs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   provider TEXT UNIQUE NOT NULL,
-  client_id TEXT NOT NULL,
-  secret_id UUID NOT NULL REFERENCES _secrets(id) ON DELETE RESTRICT,
+  client_id TEXT,
+  secret_id UUID REFERENCES _secrets(id) ON DELETE RESTRICT,
   scopes TEXT[],
+  redirect_uri TEXT,
   use_shared_key BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

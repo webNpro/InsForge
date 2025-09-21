@@ -5,20 +5,20 @@ import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import { verifyCloudToken } from '@/utils/cloud-token.js';
-import { shouldUseSharedOAuthKeys } from '@/utils/environment.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
-import type { ConfigRecord, OAuthConfig } from '@/types/auth.js';
 import type {
   UserSchema,
   CreateUserResponse,
   CreateSessionResponse,
   CreateAdminSessionResponse,
   TokenPayloadSchema,
+  AuthMetadataSchema,
 } from '@insforge/shared-schemas';
+import { OAuthConfigService } from './oauth';
 
 const JWT_SECRET = () => process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '7d';
@@ -31,7 +31,7 @@ export class AuthService {
   private static instance: AuthService;
   private adminEmail: string;
   private adminPassword: string;
-  private db: any;
+  private db;
   private processedCodes: Set<string>;
   private tokenCache: Map<string, { access_token: string; id_token: string }>;
 
@@ -75,124 +75,6 @@ export class AuthService {
       AuthService.instance = new AuthService();
     }
     return AuthService.instance;
-  }
-
-  /**
-   * Load OAuth configuration from database - NO CACHING, always fresh
-   */
-  private async loadOAuthConfig(): Promise<OAuthConfig> {
-    let configRows: ConfigRecord[];
-    try {
-      const rows = await this.db
-        .prepare(`SELECT key, value FROM _config WHERE key LIKE 'auth.oauth.provider.%'`)
-        .all();
-      if (!Array.isArray(rows)) {
-        throw new Error('Expected array from database query');
-      }
-
-      configRows = rows;
-    } catch (error) {
-      logger.error('Failed to load OAuth config from database:', error);
-      configRows = [];
-    }
-
-    const enableSharedKeys = shouldUseSharedOAuthKeys();
-
-    const config = {
-      google: {
-        clientId: '',
-        clientSecret: '',
-        redirectUri:
-          process.env.GOOGLE_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/google/callback',
-        enabled: enableSharedKeys,
-        useSharedKeys: enableSharedKeys, // can be overridden by DB
-      },
-      github: {
-        clientId: '',
-        clientSecret: '',
-        redirectUri:
-          process.env.GITHUB_REDIRECT_URI || 'http://localhost:7130/api/auth/oauth/github/callback',
-        enabled: enableSharedKeys,
-        useSharedKeys: enableSharedKeys, // can be overridden by DB
-      },
-    };
-
-    // Load from database values
-    for (const row of configRows) {
-      try {
-        const provider =
-          row.key === 'auth.oauth.provider.google'
-            ? 'google'
-            : row.key === 'auth.oauth.provider.github'
-              ? 'github'
-              : null;
-
-        if (provider && config[provider]) {
-          const value = JSON.parse(row.value);
-          config[provider].clientId = value.clientId || '';
-          config[provider].clientSecret = value.clientSecret || '';
-          config[provider].redirectUri = value.redirectUri || config[provider].redirectUri;
-          config[provider].enabled = value.enabled;
-          config[provider].useSharedKeys = value.useSharedKeys;
-        }
-      } catch (e) {
-        logger.error('Failed to parse OAuth config', { key: row.key, error: e });
-      }
-    }
-
-    logger.debug('OAuth config loaded from database', {
-      google: {
-        enabled: config.google.enabled,
-        hasClientId: !!config.google.clientId,
-        useSharedKeys: config.google.useSharedKeys,
-      },
-      github: {
-        enabled: config.github.enabled,
-        hasClientId: !!config.github.clientId,
-        useSharedKeys: config.github.useSharedKeys,
-      },
-    });
-
-    return config;
-  }
-
-  /**
-   * Get OAuth configuration for API responses (with optional secret masking)
-   * Public method that can be used by config routes
-   */
-  async getOAuthConfigForAPI(maskSecrets: boolean = true): Promise<OAuthConfig> {
-    const config = await this.loadOAuthConfig();
-
-    // Optionally mask client secrets for security
-    if (maskSecrets) {
-      if (config.google.clientSecret) {
-        config.google.clientSecret = config.google.clientSecret.substring(0, 4) + '****';
-      }
-      if (config.github.clientSecret) {
-        config.github.clientSecret = config.github.clientSecret.substring(0, 4) + '****';
-      }
-    }
-
-    return config;
-  }
-
-  /**
-   * Get OAuth status for public API (only enabled status)
-   */
-  async getOAuthStatus(): Promise<{
-    google: { enabled: boolean };
-    github: { enabled: boolean };
-  }> {
-    const config = await this.loadOAuthConfig();
-
-    return {
-      google: {
-        enabled: !!(config.google.enabled && config.google.clientId && config.google.clientSecret),
-      },
-      github: {
-        enabled: !!(config.github.enabled && config.github.clientId && config.github.clientSecret),
-      },
-    };
   }
 
   /**
@@ -558,12 +440,17 @@ export class AuthService {
   }
 
   /**
-   * Generate Google OAuth authorization URL - ALWAYS reads fresh from DB
+   * Generate Google OAuth authorization URL
    */
-  async generateGoogleAuthUrl(state?: string): Promise<string> {
-    const config = await this.loadOAuthConfig(); // Always fresh from DB
+  async generateGoogleAuthUrl(state?: string): Promise<string | undefined> {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('google');
 
-    if (config.google.useSharedKeys) {
+    if (!config) {
+      throw new Error('Google OAuth not configured');
+    }
+
+    if (config?.useSharedKey) {
       if (!state) {
         logger.warn('Shared Google OAuth called without state parameter');
         throw new Error('State parameter is required for shared Google OAuth');
@@ -592,20 +479,18 @@ export class AuthService {
       return responseData.auth_url || responseData.url || '';
     }
 
-    if (!config.google.clientId || !config.google.clientSecret) {
-      throw new Error('Google OAuth not configured');
-    }
-
     logger.debug('Google OAuth Config (fresh from DB):', {
-      clientId: config.google.clientId ? 'SET' : 'NOT SET',
-      enabled: config.google.enabled,
+      clientId: config.clientId ? 'SET' : 'NOT SET',
     });
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    authUrl.searchParams.set('client_id', config.google.clientId);
-    authUrl.searchParams.set('redirect_uri', config.google.redirectUri || '');
+    authUrl.searchParams.set('client_id', config.clientId ?? '');
+    authUrl.searchParams.set('redirect_uri', config.redirectUri ?? '');
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', 'openid email profile');
+    authUrl.searchParams.set(
+      'scope',
+      config.scopes ? config.scopes.join(' ') : 'openid email profile'
+    );
     authUrl.searchParams.set('access_type', 'offline');
     if (state) {
       authUrl.searchParams.set('state', state);
@@ -618,14 +503,14 @@ export class AuthService {
    * Generate GitHub OAuth authorization URL - ALWAYS reads fresh from DB
    */
   async generateGitHubAuthUrl(state?: string): Promise<string> {
-    const config = await this.loadOAuthConfig(); // Always fresh from DB
-    logger.debug('GitHub OAuth Config (fresh from DB):', {
-      clientId: config.github.clientId ? 'SET' : 'NOT SET',
-      enabled: config.github.enabled,
-      useSharedKeys: config.github.useSharedKeys,
-    });
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('github');
 
-    if (config.github.useSharedKeys) {
+    if (!config) {
+      throw new Error('GitHub OAuth not configured');
+    }
+
+    if (config?.useSharedKey) {
       if (!state) {
         logger.warn('Shared GitHub OAuth called without state parameter');
         throw new Error('State parameter is required for shared GitHub OAuth');
@@ -654,14 +539,14 @@ export class AuthService {
       return responseData.auth_url || responseData.url || '';
     }
 
-    if (!config.github.clientId || !config.github.clientSecret) {
-      throw new Error('GitHub OAuth not configured');
-    }
+    logger.debug('GitHub OAuth Config (fresh from DB):', {
+      clientId: config.clientId ? 'SET' : 'NOT SET',
+    });
 
     const authUrl = new URL('https://github.com/login/oauth/authorize');
-    authUrl.searchParams.set('client_id', config.github.clientId);
-    authUrl.searchParams.set('redirect_uri', config.github.redirectUri || '');
-    authUrl.searchParams.set('scope', 'user:email');
+    authUrl.searchParams.set('client_id', config.clientId ?? '');
+    authUrl.searchParams.set('redirect_uri', config.redirectUri ?? '');
+    authUrl.searchParams.set('scope', config.scopes ? config.scopes.join(' ') : 'user:email');
     if (state) {
       authUrl.searchParams.set('state', state);
     }
@@ -685,9 +570,10 @@ export class AuthService {
       throw new Error('Authorization code is currently being processed.');
     }
 
-    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('google');
 
-    if (!config.google.clientId || !config.google.clientSecret) {
+    if (!config) {
       throw new Error('Google OAuth not configured');
     }
 
@@ -696,15 +582,16 @@ export class AuthService {
 
       logger.info('Exchanging Google code for tokens', {
         hasCode: !!code,
-        redirectUri: config.google.redirectUri,
-        clientId: config.google.clientId?.substring(0, 10) + '...',
+        clientId: config.clientId?.substring(0, 10) + '...',
       });
+
+      const clientSecret = await oauthConfigService.getClientSecretByProvider('google');
 
       const response = await axios.post('https://oauth2.googleapis.com/token', {
         code,
-        client_id: config.google.clientId,
-        client_secret: config.google.clientSecret,
-        redirect_uri: config.google.redirectUri,
+        client_id: config.clientId,
+        client_secret: clientSecret,
+        redirect_uri: config.redirectUri,
         grant_type: 'authorization_code',
       });
 
@@ -735,7 +622,6 @@ export class AuthService {
         logger.error('Google token exchange failed', {
           status: error.response.status,
           error: error.response.data,
-          redirectUri: config.google.redirectUri,
         });
         throw new Error(`Google OAuth error: ${JSON.stringify(error.response.data)}`);
       }
@@ -747,24 +633,27 @@ export class AuthService {
    * Verify Google ID token and get user info
    */
   async verifyGoogleToken(idToken: string): Promise<any> {
-    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('google');
 
-    if (!config.google.clientId || !config.google.clientSecret) {
+    if (!config) {
       throw new Error('Google OAuth not configured');
     }
 
+    const clientSecret = await oauthConfigService.getClientSecretByProvider('google');
+
+    if (!clientSecret) {
+      throw new Error('Google Client Secret not conifgured.');
+    }
+
     // Create OAuth2Client with fresh config
-    const googleClient = new OAuth2Client(
-      config.google.clientId,
-      config.google.clientSecret,
-      config.google.redirectUri
-    );
+    const googleClient = new OAuth2Client(config.clientId, clientSecret, config.redirectUri);
 
     try {
       // Properly verify the ID token with Google's servers
       const ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: config.google.clientId,
+        audience: config.clientId,
       });
 
       const payload = ticket.getPayload();
@@ -807,19 +696,22 @@ export class AuthService {
    * Exchange GitHub code for access token
    */
   async exchangeGitHubCodeForToken(code: string): Promise<string> {
-    const config = await this.loadOAuthConfig(); // Always fresh from DB
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('github');
 
-    if (!config.github.clientId || !config.github.clientSecret) {
+    if (!config) {
       throw new Error('GitHub OAuth not configured');
     }
+
+    const clientSecret = await oauthConfigService.getClientSecretByProvider('github');
 
     const response = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
-        client_id: config.github.clientId,
-        client_secret: config.github.clientSecret,
+        client_id: config.clientId,
+        client_secret: clientSecret,
         code,
-        redirect_uri: config.github.redirectUri,
+        redirect_uri: config.redirectUri,
       },
       {
         headers: {
@@ -883,6 +775,14 @@ export class AuthService {
       githubUserInfo.avatar_url || '',
       githubUserInfo
     );
+  }
+
+  async getMetadata(): Promise<AuthMetadataSchema> {
+    const oAuthConfigService = OAuthConfigService.getInstance();
+    const oAuthConfigs = await oAuthConfigService.getAllConfigs();
+    return {
+      oauths: oAuthConfigs,
+    };
   }
 
   /**

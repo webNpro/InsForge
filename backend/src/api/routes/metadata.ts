@@ -28,9 +28,9 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const functionsService = FunctionsService.getInstance();
 
     // Fetch all metadata in parallel for better performance
-    const [database, auth, storage, aiConfig, functions] = await Promise.all([
+    const [auth, database, storage, aiConfig, functions] = await Promise.all([
+      authService.getMetadata(),
       dbAdvanceService.getMetadata(),
-      authService.getOAuthStatus(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
       functionsService.getMetadata(),
@@ -65,7 +65,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authService = AuthService.getInstance();
-    const authMetadata = await authService.getOAuthStatus();
+    const authMetadata = await authService.getMetadata();
     successResponse(res, authMetadata);
   } catch (error) {
     next(error);
