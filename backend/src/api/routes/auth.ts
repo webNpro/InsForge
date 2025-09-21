@@ -5,8 +5,7 @@ import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { successResponse } from '@/utils/response.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
-import logger from '@/utils/logger.js';
-import jwt from 'jsonwebtoken';
+import oauthRouter from './auth.oauth.js';
 import {
   userIdSchema,
   createUserRequestSchema,
@@ -26,6 +25,9 @@ import {
 const router = Router();
 const authService = AuthService.getInstance();
 const auditService = AuditService.getInstance();
+
+// Mount OAuth routes
+router.use('/oauth', oauthRouter);
 
 // POST /api/auth/users - Create a new user (registration)
 router.post('/users', async (req: Request, res: Response, next: NextFunction) => {
@@ -209,11 +211,11 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name,
-        email_verified: dbUser.email_verified,
-        created_at: dbUser.created_at,
-        updated_at: dbUser.updated_at,
+        emailVerified: dbUser.email_verified,
+        createdAt: dbUser.created_at,
+        updatedAt: dbUser.updated_at,
         identities: identities,
-        provider_type: provider_type,
+        providerType: provider_type,
       };
     });
 
@@ -365,253 +367,6 @@ router.delete(
     }
   }
 );
-
-// OAuth endpoints following naming convention: /oauth/:provider and /oauth/:provider/callback
-router.get('/oauth/google', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { redirect_uri } = req.query;
-    if (!redirect_uri) {
-      throw new AppError('Redirect URI is required', 400, ERROR_CODES.INVALID_INPUT);
-    }
-
-    const jwtPayload = {
-      provider: 'google',
-      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
-      createdAt: Date.now(),
-    };
-    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
-      algorithm: 'HS256',
-      expiresIn: '1h', // Set expiration time for the state token
-    });
-    const authUrl = await authService.generateGoogleAuthUrl(state);
-
-    res.json({ authUrl });
-  } catch (error) {
-    logger.error('Google OAuth error', { error });
-    next(
-      new AppError(
-        'Google OAuth is not properly configured. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI',
-        500,
-        ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
-      )
-    );
-  }
-});
-
-router.get('/oauth/github', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { redirect_uri } = req.query;
-    if (!redirect_uri) {
-      throw new AppError('Redirect URI is required', 400, ERROR_CODES.INVALID_INPUT);
-    }
-
-    const jwtPayload = {
-      provider: 'github',
-      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
-      createdAt: Date.now(),
-    };
-    const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
-      algorithm: 'HS256',
-      expiresIn: '1h', // Set expiration time for the state token
-    });
-
-    const authUrl = await authService.generateGitHubAuthUrl(state);
-
-    res.json({ authUrl });
-  } catch (error) {
-    logger.error('GitHub OAuth error', { error });
-    next(
-      new AppError(
-        'GitHub OAuth is not properly configured. Please check environment variables: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI',
-        500,
-        ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
-      )
-    );
-  }
-});
-
-router.get(
-  '/oauth/shared/callback/:state',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { state } = req.params;
-      const { success, error, payload } = req.query;
-
-      if (!state) {
-        logger.warn('Shared OAuth callback called without state parameter');
-        throw new AppError('State parameter is required', 400, ERROR_CODES.INVALID_INPUT);
-      }
-
-      let redirectUrl: string;
-      let provider: string;
-      try {
-        const decodedState = jwt.verify(state, process.env.JWT_SECRET || 'default_secret') as {
-          provider: string;
-          redirectUrl: string;
-        };
-        redirectUrl = decodedState.redirectUrl || '/';
-        provider = decodedState.provider || '';
-      } catch {
-        logger.warn('Invalid state parameter', { state });
-        throw new AppError('Invalid state parameter', 400, ERROR_CODES.INVALID_INPUT);
-      }
-
-      if (!['google', 'github'].includes(provider)) {
-        logger.warn('Invalid provider in state', { provider });
-        throw new AppError('Invalid provider in state', 400, ERROR_CODES.INVALID_INPUT);
-      }
-      if (!redirectUrl) {
-        throw new AppError('Redirect URL is required', 400, ERROR_CODES.INVALID_INPUT);
-      }
-
-      if (success !== 'true') {
-        const errorMessage = error || 'OAuth authentication failed';
-        logger.warn('Shared OAuth callback failed', { error: errorMessage, provider });
-        return res.redirect(`${redirectUrl}?error=${encodeURIComponent(String(errorMessage))}`);
-      }
-      if (!payload) {
-        throw new AppError('No payload provided in callback', 400, ERROR_CODES.INVALID_INPUT);
-      }
-
-      const payloadData = JSON.parse(Buffer.from(payload as string, 'base64').toString('utf8'));
-      let result;
-      if (provider === 'google') {
-        // Handle Google OAuth payload
-        const googleUserInfo = {
-          sub: payloadData.providerId,
-          email: payloadData.email,
-          name: payloadData.name || '',
-          userName: payloadData.userName || '',
-          picture: payloadData.avatar || '',
-        };
-        result = await authService.findOrCreateGoogleUser(googleUserInfo);
-      } else if (provider === 'github') {
-        // Handle GitHub OAuth payload
-        const githubUserInfo = {
-          id: payloadData.providerId,
-          email: payloadData.email,
-          name: payloadData.name || '',
-          avatar_url: payloadData.avatar || '',
-        };
-        result = await authService.findOrCreateGitHubUser(githubUserInfo);
-      }
-
-      const finalRedirectUrl = new URL(redirectUrl);
-      finalRedirectUrl.searchParams.set('access_token', result!.accessToken);
-      finalRedirectUrl.searchParams.set('user_id', result!.user.id);
-      finalRedirectUrl.searchParams.set('email', result!.user.email);
-      finalRedirectUrl.searchParams.set('name', result!.user.name || '');
-      res.redirect(finalRedirectUrl.toString());
-    } catch (error) {
-      logger.error('Shared OAuth callback error', { error });
-      next(error);
-    }
-  }
-);
-
-router.get('/oauth/:provider/callback', async (req: Request, res: Response, _: NextFunction) => {
-  try {
-    const { provider } = req.params;
-    const { code, state, token } = req.query;
-
-    let redirectUrl = '/';
-
-    if (state) {
-      try {
-        const stateData = jwt.verify(
-          state as string,
-          process.env.JWT_SECRET || 'default_secret'
-        ) as {
-          provider: string;
-          redirectUrl: string;
-        };
-        redirectUrl = stateData.redirectUrl || '/';
-      } catch {
-        // Invalid state
-      }
-    }
-
-    if (!['google', 'github'].includes(provider)) {
-      throw new AppError('Invalid provider', 400, ERROR_CODES.INVALID_INPUT);
-    }
-
-    let result;
-
-    if (provider === 'google') {
-      let id_token: string;
-
-      if (token) {
-        id_token = token as string;
-      } else if (code) {
-        const tokens = await authService.exchangeCodeToTokenByGoogle(code as string);
-        id_token = tokens.id_token;
-      } else {
-        throw new AppError(
-          'No authorization code or token provided',
-          400,
-          ERROR_CODES.INVALID_INPUT
-        );
-      }
-
-      const googleUserInfo = await authService.verifyGoogleToken(id_token);
-      result = await authService.findOrCreateGoogleUser(googleUserInfo);
-    } else if (provider === 'github') {
-      if (!code) {
-        throw new AppError('No authorization code provided', 400, ERROR_CODES.INVALID_INPUT);
-      }
-
-      const accessToken = await authService.exchangeGitHubCodeForToken(code as string);
-      const githubUserInfo = await authService.getGitHubUserInfo(accessToken);
-      result = await authService.findOrCreateGitHubUser(githubUserInfo);
-    }
-
-    // Create URL with JWT token and user info (like the working example)
-    const finalRedirectUrl = new URL(redirectUrl);
-    finalRedirectUrl.searchParams.set('access_token', result!.accessToken);
-    finalRedirectUrl.searchParams.set('user_id', result!.user.id);
-    finalRedirectUrl.searchParams.set('email', result!.user.email);
-    finalRedirectUrl.searchParams.set('name', result!.user.name || '');
-
-    logger.info('OAuth callback successful, redirecting with token', {
-      redirectUrl: finalRedirectUrl.toString(),
-      hasAccessToken: !!result!.accessToken,
-      userId: result!.user.id,
-    });
-
-    // Redirect directly to the app with token in URL
-    return res.redirect(finalRedirectUrl.toString());
-  } catch (error) {
-    logger.error('OAuth callback error', {
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined,
-      provider: req.params.provider,
-      hasCode: !!req.query.code,
-      hasState: !!req.query.state,
-      hasToken: !!req.query.token,
-    });
-
-    // Redirect to app with error message
-    const { state } = req.query;
-    const redirectUrl = state
-      ? (() => {
-          try {
-            const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-            return stateData.redirectUrl || '/';
-          } catch {
-            return '/';
-          }
-        })()
-      : '/';
-
-    const errorMessage = error instanceof Error ? error.message : 'OAuth authentication failed';
-
-    // Redirect with error in URL parameters
-    const errorRedirectUrl = new URL(redirectUrl);
-    errorRedirectUrl.searchParams.set('error', errorMessage);
-
-    return res.redirect(errorRedirectUrl.toString());
-  }
-});
 
 // POST /api/auth/tokens/anon - Generate anonymous JWT token (never expires)
 router.post('/tokens/anon', verifyAdmin, (_req: Request, res: Response, next: NextFunction) => {

@@ -1,0 +1,372 @@
+import { Pool } from 'pg';
+import { DatabaseManager } from '@/core/database/manager.js';
+import { SecretsService } from '@/core/secrets/secrets.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
+import logger from '@/utils/logger.js';
+import { OAuthConfigSchema } from '@insforge/shared-schemas';
+
+export interface CreateOAuthConfigInput {
+  provider: string;
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
+  scopes?: string[];
+  useSharedKey?: boolean;
+}
+
+export interface UpdateOAuthConfigInput {
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
+  scopes?: string[];
+  useSharedKey?: boolean;
+}
+
+export class OAuthConfigService {
+  private static instance: OAuthConfigService;
+  private pool: Pool | null = null;
+  private secretsService: SecretsService;
+
+  private constructor() {
+    this.secretsService = new SecretsService();
+    logger.info('OAuthService initialized');
+  }
+
+  public static getInstance(): OAuthConfigService {
+    if (!OAuthConfigService.instance) {
+      OAuthConfigService.instance = new OAuthConfigService();
+    }
+    return OAuthConfigService.instance;
+  }
+
+  private getPool(): Pool {
+    if (!this.pool) {
+      this.pool = DatabaseManager.getInstance().getPool();
+    }
+    return this.pool;
+  }
+
+  /**
+   * Get all OAuth configurations
+   */
+  async getAllConfigs(): Promise<OAuthConfigSchema[]> {
+    const client = await this.getPool().connect();
+    try {
+      const result = await client.query(
+        `SELECT
+          provider,
+          client_id as "clientId",
+          redirect_uri as "redirectUri",
+          scopes,
+          use_shared_key as "useSharedKey"
+         FROM _oauth_configs
+         ORDER BY provider ASC`
+      );
+
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to get OAuth configs', { error });
+      throw new AppError('Failed to get OAuth configurations', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get OAuth configuration by provider name
+   */
+  async getConfigByProvider(provider: string): Promise<OAuthConfigSchema | null> {
+    const client = await this.getPool().connect();
+    try {
+      const result = await client.query(
+        `SELECT
+          provider,
+          client_id as "clientId",
+          redirect_uri as "redirectUri",
+          scopes,
+          use_shared_key as "useSharedKey"
+         FROM _oauth_configs
+         WHERE LOWER(provider) = LOWER($1)
+         LIMIT 1`,
+        [provider]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      logger.error('Failed to get OAuth config by provider', { error, provider });
+      throw new AppError('Failed to get OAuth configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get OAuth provider secret
+   */
+  async getClientSecretByProvider(provider: string): Promise<string | null> {
+    const client = await this.getPool().connect();
+    try {
+      const result = await client.query(
+        `SELECT
+          secret_id as "secretId"
+         FROM _oauth_configs
+         WHERE LOWER(provider) = LOWER($1)
+         LIMIT 1`,
+        [provider]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const config = result.rows[0];
+      const clientSecret = await this.secretsService.getSecretById(config.secretId);
+      if (!clientSecret) {
+        logger.warn('OAuth config exists but secret not found', { provider });
+        return null;
+      }
+
+      return clientSecret;
+    } catch (error) {
+      logger.error('Failed to get OAuth config with secret', { error, provider });
+      throw new AppError('Failed to get OAuth configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Create OAuth configuration
+   */
+  async createConfig(input: CreateOAuthConfigInput): Promise<OAuthConfigSchema> {
+    const client = await this.getPool().connect();
+    try {
+      await client.query('BEGIN');
+
+      // Check if config already exists for this provider
+      const existingConfig = await client.query(
+        'SELECT id FROM _oauth_configs WHERE LOWER(provider) = LOWER($1)',
+        [input.provider]
+      );
+
+      if (existingConfig.rows.length > 0) {
+        throw new AppError(
+          `OAuth configuration for ${input.provider} already exists`,
+          409,
+          ERROR_CODES.ALREADY_EXISTS
+        );
+      }
+
+      let secretId: string | null = null;
+
+      // Only create secret if clientSecret is provided and not using shared key
+      if (input.clientSecret && !input.useSharedKey) {
+        // Create new secret
+        const secret = await this.secretsService.createSecret({
+          name: `${input.provider.toUpperCase()}_CLIENT_SECRET`,
+          value: input.clientSecret,
+        });
+        secretId = secret.id;
+      }
+
+      // Create new OAuth config
+      const result = await client.query(
+        `INSERT INTO _oauth_configs (provider, client_id, secret_id, redirect_uri, scopes, use_shared_key)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING
+           provider,
+           client_id as "clientId",
+           redirect_uri as "redirectUri",
+           scopes,
+           use_shared_key as "useSharedKey"`,
+        [
+          input.provider.toLowerCase(),
+          input.clientId || null,
+          secretId,
+          input.redirectUri || null,
+          input.scopes || null,
+          input.useSharedKey || false,
+        ]
+      );
+
+      await client.query('COMMIT');
+      logger.info('OAuth config created', { provider: input.provider });
+
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Failed to create OAuth config', { error, provider: input.provider });
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError('Failed to create OAuth configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update OAuth configuration
+   */
+  async updateConfig(provider: string, input: UpdateOAuthConfigInput): Promise<OAuthConfigSchema> {
+    const client = await this.getPool().connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get existing config with secret_id
+      const existingResult = await client.query(
+        `SELECT id, secret_id as "secretId" FROM _oauth_configs WHERE LOWER(provider) = LOWER($1)`,
+        [provider]
+      );
+
+      if (existingResult.rows.length === 0) {
+        throw new AppError('OAuth configuration not found', 404, ERROR_CODES.NOT_FOUND);
+      }
+
+      const existingConfig = existingResult.rows[0];
+
+      // Update secret if provided
+      if (input.clientSecret !== undefined) {
+        await this.secretsService.updateSecret(existingConfig.secretId, {
+          value: input.clientSecret,
+        });
+      }
+
+      // Build update query
+      const updates: string[] = [];
+      const values: (string | string[] | boolean | null)[] = [];
+      let paramCount = 1;
+
+      if (input.clientId !== undefined) {
+        updates.push(`client_id = $${paramCount++}`);
+        values.push(input.clientId);
+      }
+
+      if (input.redirectUri !== undefined) {
+        updates.push(`redirect_uri = $${paramCount++}`);
+        values.push(input.redirectUri);
+      }
+
+      if (input.scopes !== undefined) {
+        updates.push(`scopes = $${paramCount++}`);
+        values.push(input.scopes);
+      }
+
+      if (input.useSharedKey !== undefined) {
+        updates.push(`use_shared_key = $${paramCount++}`);
+        values.push(input.useSharedKey);
+      }
+
+      if (updates.length === 0 && input.clientSecret === undefined) {
+        await client.query('COMMIT');
+        // Return the config in the correct format
+        const config = await this.getConfigByProvider(provider);
+        if (!config) {
+          throw new AppError('Failed to retrieve configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+        }
+        return config;
+      }
+
+      if (updates.length > 0) {
+        updates.push('updated_at = NOW()');
+        values.push(provider.toLowerCase());
+
+        const result = await client.query(
+          `UPDATE _oauth_configs
+           SET ${updates.join(', ')}
+           WHERE LOWER(provider) = $${paramCount}
+           RETURNING
+             provider,
+             client_id as "clientId",
+             redirect_uri as "redirectUri",
+             scopes,
+             use_shared_key as "useSharedKey"`,
+          values
+        );
+
+        await client.query('COMMIT');
+        logger.info('OAuth config updated', { provider });
+        return result.rows[0];
+      } else {
+        // Only secret was updated
+        await client.query('COMMIT');
+        const updatedConfig = await this.getConfigByProvider(provider);
+        if (!updatedConfig) {
+          throw new AppError(
+            'Failed to retrieve updated configuration',
+            500,
+            ERROR_CODES.INTERNAL_ERROR
+          );
+        }
+        return updatedConfig;
+      }
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Failed to update OAuth config', { error, provider });
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError('Failed to update OAuth configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Delete OAuth configuration
+   */
+  async deleteConfig(provider: string): Promise<boolean> {
+    const client = await this.getPool().connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get existing config with secret_id
+      const existingResult = await client.query(
+        `SELECT id, secret_id as "secretId" FROM _oauth_configs WHERE LOWER(provider) = LOWER($1)`,
+        [provider]
+      );
+
+      if (existingResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      const existingConfig = existingResult.rows[0];
+
+      // Delete OAuth config (secret will be restricted due to foreign key)
+      const result = await client.query(
+        'DELETE FROM _oauth_configs WHERE LOWER(provider) = LOWER($1)',
+        [provider]
+      );
+
+      // Try to delete the associated secret (will fail if still referenced)
+      try {
+        await this.secretsService.deleteSecret(existingConfig.secretId);
+      } catch {
+        logger.warn('Could not delete associated secret, it may be in use elsewhere', {
+          provider,
+          secretId: existingConfig.secretId,
+        });
+      }
+
+      await client.query('COMMIT');
+
+      const success = (result.rowCount ?? 0) > 0;
+      if (success) {
+        logger.info('OAuth config deleted', { provider });
+      }
+      return success;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Failed to delete OAuth config', { error, provider });
+      throw new AppError('Failed to delete OAuth configuration', 500, ERROR_CODES.INTERNAL_ERROR);
+    } finally {
+      client.release();
+    }
+  }
+}

@@ -158,4 +158,4 @@ router.delete(
   }
 );
 
-export { router as tableRouter };
+export { router as databaseTablesRouter };
