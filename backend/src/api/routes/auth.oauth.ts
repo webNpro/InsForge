@@ -79,7 +79,7 @@ router.get('/github', async (req: Request, res: Response, next: NextFunction) =>
     logger.error('GitHub OAuth error', { error });
     next(
       new AppError(
-        'GitHub OAuth is not properly configured. Please check environment variables: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI',
+        'GitHub OAuth is not properly configured. Please check your oauth configurations.',
         500,
         ERROR_CODES.AUTH_OAUTH_CONFIG_ERROR
       )

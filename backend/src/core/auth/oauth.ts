@@ -248,11 +248,25 @@ export class OAuthConfigService {
 
       const existingConfig = existingResult.rows[0];
 
-      // Update secret if provided
+      // Update or create secret if provided
       if (input.clientSecret !== undefined) {
-        await this.secretsService.updateSecret(existingConfig.secretId, {
-          value: input.clientSecret,
-        });
+        if (existingConfig.secretId) {
+          // Update existing secret
+          await this.secretsService.updateSecret(existingConfig.secretId, {
+            value: input.clientSecret,
+          });
+        } else {
+          // Create new secret if it doesn't exist
+          const secret = await this.secretsService.createSecret({
+            name: `${provider.toUpperCase()}_CLIENT_SECRET`,
+            value: input.clientSecret,
+          });
+          // Add secret_id to the update query
+          await client.query(`UPDATE _oauth_configs SET secret_id = $1 WHERE id = $2`, [
+            secret.id,
+            existingConfig.id,
+          ]);
+        }
       }
 
       // Build update query
