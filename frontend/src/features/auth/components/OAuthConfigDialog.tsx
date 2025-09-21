@@ -18,6 +18,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
 import { OAuthProviderInfo } from './AuthMethodTab';
 import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
+import { isCloudEnvironment } from '@/features/auth/helpers';
 
 const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
@@ -79,7 +80,7 @@ export function OAuthConfigDialog({
           provider: provider.id,
           clientId: '',
           clientSecret: '',
-          useSharedKey: false,
+          useSharedKey: isCloudEnvironment() ? true : false,
         });
       }
       setLoading(false);
