@@ -387,7 +387,7 @@ server.tool(
 
 // --------------------------------------------------
 // Core Database Tools
-
+/*
 server.tool(
   'create-table',
   'Create a new table with explicit schema definition',
@@ -573,6 +573,7 @@ server.tool(
     }
   )
 );
+*/
 
 // Get table schema
 server.tool(
