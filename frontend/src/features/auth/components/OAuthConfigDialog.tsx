@@ -21,7 +21,9 @@ import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
 
 const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
-  return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
+  const isHttp = window.location.protocol === 'http:';
+  const baseUrl = isHttp ? 'http://localhost:7130' : window.location.origin;
+  return `${baseUrl}/api/auth/oauth/${provider}/callback`;
 };
 
 interface OAuthConfigDialogProps {
