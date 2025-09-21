@@ -11,6 +11,7 @@ import { ServerEvents } from '@/core/socket/types';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
+import { SecretsService } from '@/core/secrets/secrets';
 
 const router = Router();
 const dbAdvanceService = new DatabaseAdvanceService();
@@ -116,8 +117,8 @@ router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunc
 // Get API key (admin only)
 router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const authService = AuthService.getInstance();
-    const apiKey = await authService.initializeApiKey();
+    const sercretService = new SecretsService();
+    const apiKey = await sercretService.getSecretByName('API_KEY');
 
     successResponse(res, { apiKey: apiKey });
   } catch (error) {

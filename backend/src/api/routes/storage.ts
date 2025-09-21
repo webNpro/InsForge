@@ -14,7 +14,7 @@ import {
 } from '@insforge/shared-schemas';
 import { SocketService } from '@/core/socket/socket';
 import { DataUpdateResourceType, ServerEvents } from '@/core/socket/types';
-import { AuditService } from '@/core/logs/audit';
+import { AuditService } from '@/core/logs/audit.js';
 
 const router = Router();
 const auditService = AuditService.getInstance();

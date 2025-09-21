@@ -167,7 +167,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
         u.password,
         STRING_AGG(a.provider, ',') as providers
       FROM _accounts u
-      LEFT JOIN _oauth_connections a ON u.id = a.user_id
+      LEFT JOIN _account_providers a ON u.id = a.user_id
     `;
     const params: any[] = [];
 
@@ -268,7 +268,7 @@ router.get(
         u.password,
         STRING_AGG(a.provider, ',') as providers
       FROM _accounts u
-      LEFT JOIN _oauth_connections a ON u.id = a.user_id
+      LEFT JOIN _account_providers a ON u.id = a.user_id
       WHERE u.id = ?
       GROUP BY u.id
     `

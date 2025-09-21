@@ -84,7 +84,7 @@ export class SecretsService {
   /**
    * Create a new secret
    */
-  async create(input: CreateSecretInput): Promise<{ id: string }> {
+  async createSecret(input: CreateSecretInput): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
       const encryptedValue = this.encrypt(input.value);
@@ -109,7 +109,7 @@ export class SecretsService {
   /**
    * Get a decrypted secret by ID
    */
-  async getById(id: string): Promise<string | null> {
+  async getSecretById(id: string): Promise<string | null> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
@@ -139,7 +139,7 @@ export class SecretsService {
   /**
    * Get a decrypted secret by name
    */
-  async getByName(name: string): Promise<string | null> {
+  async getSecretByName(name: string): Promise<string | null> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
@@ -169,7 +169,7 @@ export class SecretsService {
   /**
    * List all secrets (without decrypting values)
    */
-  async list(): Promise<SecretSchema[]> {
+  async listSecrets(): Promise<SecretSchema[]> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
@@ -197,7 +197,7 @@ export class SecretsService {
   /**
    * Update a secret
    */
-  async update(id: string, input: UpdateSecretInput): Promise<boolean> {
+  async updateSecret(id: string, input: UpdateSecretInput): Promise<boolean> {
     const client = await this.getPool().connect();
     try {
       const updates: string[] = [];
@@ -243,9 +243,55 @@ export class SecretsService {
   }
 
   /**
+   * Check if a secret value matches the stored value
+   */
+  async checkSecretByName(name: string, value: string): Promise<boolean> {
+    const client = await this.getPool().connect();
+    try {
+      const result = await client.query(
+        `SELECT value_ciphertext FROM _secrets
+         WHERE name = $1
+         AND is_active = true
+         AND (expires_at IS NULL OR expires_at > NOW())
+         LIMIT 1`,
+        [name]
+      );
+
+      if (result.rows.length === 0) {
+        logger.warn('Secret not found for verification', { name });
+        return false;
+      }
+
+      const decryptedValue = this.decrypt(result.rows[0].value_ciphertext);
+      const matches = decryptedValue === value;
+
+      // Update last_used_at if the check was successful
+      if (matches) {
+        await client.query(
+          `UPDATE _secrets
+           SET last_used_at = NOW()
+           WHERE name = $1
+           AND is_active = true`,
+          [name]
+        );
+        logger.info('Secret check successful', { name });
+      } else {
+        logger.warn('Secret check failed - value mismatch', { name });
+      }
+
+      return matches;
+    } catch (error) {
+      logger.error('Failed to check secret', { error, name });
+      return false;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Delete a secret
    */
-  async delete(id: string): Promise<boolean> {
+  async deleteSecret(id: string): Promise<boolean> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query('DELETE FROM _secrets WHERE id = $1', [id]);
@@ -266,7 +312,7 @@ export class SecretsService {
   /**
    * Rotate a secret (create new value, keep old for grace period)
    */
-  async rotate(id: string, newValue: string): Promise<{ newId: string }> {
+  async rotateSecret(id: string, newValue: string): Promise<{ newId: string }> {
     const client = await this.getPool().connect();
     try {
       await client.query('BEGIN');
@@ -316,7 +362,7 @@ export class SecretsService {
   /**
    * Clean up expired secrets
    */
-  async cleanupExpired(): Promise<number> {
+  async cleanupExpiredSecrets(): Promise<number> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
@@ -337,5 +383,51 @@ export class SecretsService {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Generate a new API key with 'ik_' prefix (Insforge Key)
+   */
+  generateApiKey(): string {
+    return 'ik_' + crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Verify API key against database
+   */
+  async verifyApiKey(apiKey: string): Promise<boolean> {
+    if (!apiKey) {
+      return false;
+    }
+    return this.checkSecretByName('API_KEY', apiKey);
+  }
+
+  /**
+   * Initialize API key on startup
+   * Seeds from environment variable if database is empty
+   */
+  async initializeApiKey(): Promise<string> {
+    let apiKey = await this.getSecretByName('API_KEY');
+
+    if (!apiKey) {
+      // Check if ACCESS_API_KEY is provided via environment
+      const envApiKey = process.env.ACCESS_API_KEY;
+
+      if (envApiKey && envApiKey.trim() !== '') {
+        // Use the provided API key from environment, ensure it has 'ik_' prefix
+        apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
+        await this.createSecret({ name: 'API_KEY', value: apiKey });
+        logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
+      } else {
+        // Generate a new API key if none provided
+        apiKey = this.generateApiKey();
+        await this.createSecret({ name: 'API_KEY', value: apiKey });
+        logger.info('✅ API key generated and stored');
+      }
+    } else {
+      logger.info('✅ API key exists in database');
+    }
+
+    return apiKey;
   }
 }
