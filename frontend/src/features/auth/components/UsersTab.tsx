@@ -3,7 +3,7 @@ import { useUsers } from '@/features/auth/hooks/useUsers';
 import { authService } from '@/features/auth/services/auth.service';
 import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
-import type { User } from '../types';
+import { UserSchema } from '@insforge/shared-schemas';
 
 interface UsersTabProps {
   searchQuery?: string;
@@ -76,8 +76,8 @@ export function UsersTab({
     return [...users].sort((a, b) => {
       for (const sort of sortColumns) {
         const { columnKey, direction } = sort;
-        let aVal = a[columnKey as keyof User];
-        let bVal = b[columnKey as keyof User];
+        let aVal = a[columnKey as keyof UserSchema];
+        let bVal = b[columnKey as keyof UserSchema];
 
         // Handle null/undefined values
         if ((aVal === null || aVal === undefined) && (bVal === null || bVal === undefined)) {

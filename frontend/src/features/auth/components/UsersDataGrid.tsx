@@ -142,7 +142,7 @@ export function createUsersColumns(): DataGridColumn[] {
       renderCell: IdentitiesCellRenderer,
     },
     {
-      key: 'provider_type',
+      key: 'providerType',
       name: 'Provider Type',
       width: '1fr',
       resizable: true,
@@ -150,7 +150,7 @@ export function createUsersColumns(): DataGridColumn[] {
       renderCell: ProviderTypeCellRenderer,
     },
     {
-      key: 'created_at',
+      key: 'createdAt',
       name: 'Created',
       width: '1fr',
       resizable: true,
@@ -158,7 +158,7 @@ export function createUsersColumns(): DataGridColumn[] {
       renderCell: DefaultCellRenderers.datetime,
     },
     {
-      key: 'updated_at',
+      key: 'updatedAt',
       name: 'Updated',
       width: '1fr',
       resizable: true,
