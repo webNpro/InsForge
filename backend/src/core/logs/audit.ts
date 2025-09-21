@@ -2,43 +2,8 @@ import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
-
-export interface AuditLogEntry {
-  actor: string;
-  action: string;
-  module: string;
-  details?: Record<string, unknown>;
-  ip_address?: string;
-}
-
-export interface AuditLogRecord {
-  id: string;
-  actor: string;
-  action: string;
-  module: string;
-  details: Record<string, unknown> | null;
-  ip_address: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AuditLogQuery {
-  actor?: string;
-  action?: string;
-  module?: string;
-  start_date?: Date;
-  end_date?: Date;
-  limit?: number;
-  offset?: number;
-}
-
-export interface AuditLogStats {
-  total_logs: number;
-  unique_actors: number;
-  unique_modules: number;
-  actions_by_module: Record<string, number>;
-  recent_activity: AuditLogRecord[];
-}
+import type { AuditLogEntry, AuditLogQuery } from '@/types/logs.js';
+import { AuditLogSchema, GetAuditLogStatsResponse } from '@insforge/shared-schemas';
 
 export class AuditService {
   private static instance: AuditService;
@@ -60,7 +25,7 @@ export class AuditService {
   /**
    * Create a new audit log entry
    */
-  async log(entry: AuditLogEntry): Promise<AuditLogRecord> {
+  async log(entry: AuditLogEntry): Promise<AuditLogSchema> {
     try {
       const result = await this.db
         .prepare(
@@ -82,7 +47,16 @@ export class AuditService {
         module: entry.module,
       });
 
-      return result;
+      return {
+        id: result.id,
+        actor: result.actor,
+        action: result.action,
+        module: result.module,
+        details: result.details,
+        ipAddress: result.ip_address,
+        createdAt: result.created_at,
+        updatedAt: result.updated_at,
+      };
     } catch (error) {
       logger.error('Failed to create audit log', error);
       throw new AppError('Failed to create audit log', 500, ERROR_CODES.INTERNAL_ERROR);
@@ -90,53 +64,74 @@ export class AuditService {
   }
 
   /**
-   * Query audit logs with filters
+   * Query audit logs with filters and return both records and total count
    */
-  async query(query: AuditLogQuery): Promise<AuditLogRecord[]> {
+  async query(query: AuditLogQuery): Promise<{ records: AuditLogSchema[]; total: number }> {
     try {
-      let sql = 'SELECT * FROM _audit_logs WHERE 1=1';
+      // Build base WHERE clause
+      let whereClause = 'WHERE 1=1';
       const params: unknown[] = [];
       let paramIndex = 1;
 
       if (query.actor) {
-        sql += ` AND actor = $${paramIndex++}`;
+        whereClause += ` AND actor = $${paramIndex++}`;
         params.push(query.actor);
       }
 
       if (query.action) {
-        sql += ` AND action = $${paramIndex++}`;
+        whereClause += ` AND action = $${paramIndex++}`;
         params.push(query.action);
       }
 
       if (query.module) {
-        sql += ` AND module = $${paramIndex++}`;
+        whereClause += ` AND module = $${paramIndex++}`;
         params.push(query.module);
       }
 
       if (query.start_date) {
-        sql += ` AND created_at >= $${paramIndex++}`;
+        whereClause += ` AND created_at >= $${paramIndex++}`;
         params.push(query.start_date.toISOString());
       }
 
       if (query.end_date) {
-        sql += ` AND created_at <= $${paramIndex++}`;
+        whereClause += ` AND created_at <= $${paramIndex++}`;
         params.push(query.end_date.toISOString());
       }
 
-      sql += ' ORDER BY created_at DESC';
+      // Get total count first
+      const countSql = `SELECT COUNT(*) as count FROM _audit_logs ${whereClause}`;
+      const countResult = (await this.db.prepare(countSql).get(...params)) as { count: number };
+      const total = countResult.count;
+
+      // Get paginated records
+      let dataSql = `SELECT * FROM _audit_logs ${whereClause} ORDER BY created_at DESC`;
+      const dataParams = [...params];
 
       if (query.limit) {
-        sql += ` LIMIT $${paramIndex++}`;
-        params.push(query.limit);
+        dataSql += ` LIMIT $${paramIndex++}`;
+        dataParams.push(query.limit);
       }
 
       if (query.offset) {
-        sql += ` OFFSET $${paramIndex++}`;
-        params.push(query.offset);
+        dataSql += ` OFFSET $${paramIndex++}`;
+        dataParams.push(query.offset);
       }
 
-      const results = await this.db.prepare(sql).all(...params);
-      return results;
+      const records = await this.db.prepare(dataSql).all(...dataParams);
+
+      return {
+        records: records.map((record) => ({
+          id: record.id,
+          actor: record.actor,
+          action: record.action,
+          module: record.module,
+          details: record.details,
+          ipAddress: record.ip_address,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at,
+        })),
+        total,
+      };
     } catch (error) {
       logger.error('Failed to query audit logs', error);
       throw new AppError('Failed to query audit logs', 500, ERROR_CODES.INTERNAL_ERROR);
@@ -146,11 +141,22 @@ export class AuditService {
   /**
    * Get audit log by ID
    */
-  async getById(id: string): Promise<AuditLogRecord | null> {
+  async getById(id: string): Promise<AuditLogSchema | null> {
     try {
       const result = await this.db.prepare('SELECT * FROM _audit_logs WHERE id = $1').get(id);
 
-      return result || null;
+      return result
+        ? {
+            id: result.id,
+            actor: result.actor,
+            action: result.action,
+            module: result.module,
+            details: result.details,
+            ipAddress: result.ip_address,
+            createdAt: result.created_at,
+            updatedAt: result.updated_at,
+          }
+        : null;
     } catch (error) {
       logger.error('Failed to get audit log by ID', error);
       throw new AppError('Failed to get audit log', 500, ERROR_CODES.INTERNAL_ERROR);
@@ -160,7 +166,7 @@ export class AuditService {
   /**
    * Get audit log statistics
    */
-  async getStats(days: number = 7): Promise<AuditLogStats> {
+  async getStats(days: number = 7): Promise<GetAuditLogStatsResponse> {
     try {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
@@ -201,11 +207,20 @@ export class AuditService {
       });
 
       return {
-        total_logs: parseInt(totalLogs?.count || 0),
-        unique_actors: parseInt(uniqueActors?.count || 0),
-        unique_modules: parseInt(uniqueModules?.count || 0),
-        actions_by_module: moduleStats,
-        recent_activity: recentActivity,
+        totalLogs: parseInt(totalLogs?.count || 0),
+        uniqueActors: parseInt(uniqueActors?.count || 0),
+        uniqueModules: parseInt(uniqueModules?.count || 0),
+        actionsByModule: moduleStats,
+        recentActivity: recentActivity.map((record) => ({
+          id: record.id,
+          actor: record.actor,
+          action: record.action,
+          module: record.module,
+          details: record.details,
+          ipAddress: record.ip_address,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at,
+        })),
       };
     } catch (error) {
       logger.error('Failed to get audit log statistics', error);
@@ -235,48 +250,6 @@ export class AuditService {
     } catch (error) {
       logger.error('Failed to cleanup audit logs', error);
       throw new AppError('Failed to cleanup audit logs', 500, ERROR_CODES.INTERNAL_ERROR);
-    }
-  }
-
-  /**
-   * Get audit logs by actor
-   */
-  async getByActor(actor: string, limit: number = 100): Promise<AuditLogRecord[]> {
-    try {
-      const results = await this.db
-        .prepare(
-          `SELECT * FROM _audit_logs
-           WHERE actor = $1
-           ORDER BY created_at DESC
-           LIMIT $2`
-        )
-        .all(actor, limit);
-
-      return results;
-    } catch (error) {
-      logger.error('Failed to get audit logs by actor', error);
-      throw new AppError('Failed to get audit logs by actor', 500, ERROR_CODES.INTERNAL_ERROR);
-    }
-  }
-
-  /**
-   * Get audit logs by module
-   */
-  async getByModule(module: string, limit: number = 100): Promise<AuditLogRecord[]> {
-    try {
-      const results = await this.db
-        .prepare(
-          `SELECT * FROM _audit_logs
-           WHERE module = $1
-           ORDER BY created_at DESC
-           LIMIT $2`
-        )
-        .all(module, limit);
-
-      return results;
-    } catch (error) {
-      logger.error('Failed to get audit logs by module', error);
-      throw new AppError('Failed to get audit logs by module', 500, ERROR_CODES.INTERNAL_ERROR);
     }
   }
 }

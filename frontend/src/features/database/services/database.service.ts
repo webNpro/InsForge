@@ -169,12 +169,6 @@ export class DatabaseService {
     };
   }
 
-  getRecord(table: string, id: string) {
-    return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
-      headers: apiClient.withAccessToken(),
-    });
-  }
-
   createRecords(table: string, records: any[]) {
     // if data is json and data[id] == "" then remove id from data, because can't assign '' to uuid
     records = records.map((record) => {
