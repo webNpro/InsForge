@@ -41,23 +41,22 @@ export function errorResponse(
   return res.status(statusCode).json(response);
 }
 
-// Pagination response helper - returns data with pagination headers
-export function paginatedResponse<T>(
-  res: Response,
-  data: T[],
-  total: number,
-  limit: number,
-  offset: number
-) {
-  const page = Math.floor(offset / limit) + 1;
-  const totalPages = Math.ceil(total / limit);
+// Pagination response helper - returns data with PostgREST-style pagination headers
+export function paginatedResponse<T>(res: Response, data: T[], total: number, offset: number) {
+  // Calculate the range for Content-Range header
+  const start = offset;
+  const end = Math.min(offset + data.length - 1, total - 1);
 
-  // Set pagination headers
-  res.setHeader('X-Total-Count', total.toString());
-  res.setHeader('X-Page', page.toString());
-  res.setHeader('X-Total-Pages', totalPages.toString());
-  res.setHeader('X-Limit', limit.toString());
-  res.setHeader('X-Offset', offset.toString());
+  // Set PostgREST-style pagination headers
+  // Format: "Content-Range: start-end/total"
+  // Example: "Content-Range: 0-9/200" for first 10 items out of 200
+  res.setHeader('Content-Range', `${start}-${end}/${total}`);
 
-  return res.status(200).json(data);
+  // Also set Prefer header to indicate preference was applied
+  res.setHeader('Preference-Applied', 'count=exact');
+
+  // Use 206 Partial Content when not returning all results, 200 when returning everything
+  const statusCode = data.length < total ? 206 : 200;
+
+  return res.status(statusCode).json(data);
 }

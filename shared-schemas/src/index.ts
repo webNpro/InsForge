@@ -7,3 +7,5 @@ export * from './auth-api.schema';
 export * from './metadata.schema';
 export * from './ai.schema';
 export * from './ai-api.schema';
+export * from './logs.schema';
+export * from './logs-api.schema';

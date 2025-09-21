@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshCw, Search, FileText, Play, Pause, ChevronUp } from 'lucide-react';
-import { analyticsService } from '@/features/logs/services/logs.service';
+import { analyticsService } from '@/features/logs/services/log.service';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -348,8 +348,18 @@ export default function AnalyticsLogsPage() {
             <div className="mt-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-2 lg:w-[400px] dark:bg-neutral-700 dark:text-white">
-                  <TabsTrigger value="overview" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Overview</TabsTrigger>
-                  <TabsTrigger value="logs" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Logs</TabsTrigger>
+                  <TabsTrigger
+                    value="overview"
+                    className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="logs"
+                    className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black"
+                  >
+                    Logs
+                  </TabsTrigger>
                   {/* <TabsTrigger value="search" className="dark:data-[state=active]:bg-emerald-300 dark:data-[state=active]:text-black">Search</TabsTrigger> */}
                 </TabsList>
               </Tabs>
@@ -360,7 +370,10 @@ export default function AnalyticsLogsPage() {
         {/* Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {(sourcesError || statsError || logsError || searchError) && (
-            <Alert variant="destructive" className="mb-4 mx-8 mt-4 dark:bg-neutral-700 dark:text-white">
+            <Alert
+              variant="destructive"
+              className="mb-4 mx-8 mt-4 dark:bg-neutral-700 dark:text-white"
+            >
               <AlertDescription>
                 {String(sourcesError || statsError || logsError || searchError)}
               </AlertDescription>
@@ -412,7 +425,9 @@ export default function AnalyticsLogsPage() {
                 <div className="flex justify-center items-center py-12">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">Loading analytics data...</p>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">
+                      Loading analytics data...
+                    </p>
                   </div>
                 </div>
               )}

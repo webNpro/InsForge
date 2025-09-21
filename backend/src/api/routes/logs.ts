@@ -1,141 +1,67 @@
 import { Router, Response, NextFunction } from 'express';
-import { DatabaseManager } from '@/core/database/manager.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
-import { LogRecord, LogActionStat, LogTableStat, AnalyticsLogResponse } from '@/types/logs.js';
+import { AnalyticsLogResponse } from '@/types/logs.js';
 
 const router = Router();
 
 // All logs routes require admin authentication
 router.use(verifyAdmin);
 
-// GET /logs - List activity logs
-router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /logs/audits - List audit logs
+router.get('/audits', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { limit = 100, offset = 0, action, table } = req.query;
+    const { limit = 100, offset = 0, actor, action, module, start_date, end_date } = req.query;
 
-    const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getDb();
+    const auditService = AuditService.getInstance();
 
-    // Build query with optional filters
-    let query = 'SELECT * FROM logs WHERE 1=1';
-    const params: (string | number)[] = [];
-
-    if (action && typeof action === 'string') {
-      query += ' AND action = ?';
-      params.push(action);
-    }
-
-    if (table && typeof table === 'string') {
-      query += ' AND table_name = ?';
-      params.push(table);
-    }
-
-    // Add ordering and pagination
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(Number(limit), Number(offset));
-
-    const records = (await db.prepare(query).all(...params)) as LogRecord[];
-
-    // Get total count
-    let countQuery = 'SELECT COUNT(*) as count FROM logs WHERE 1=1';
-    const countParams: string[] = [];
-
-    if (action && typeof action === 'string') {
-      countQuery += ' AND action = ?';
-      countParams.push(action);
-    }
-
-    if (table && typeof table === 'string') {
-      countQuery += ' AND table_name = ?';
-      countParams.push(table);
-    }
-
-    const count = (await db.prepare(countQuery).get(...countParams)) as { count: number };
-
-    paginatedResponse(res, records, count.count, Number(limit), Number(offset));
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET /logs/stats - Get logs statistics
-router.get('/stats', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getDb();
-
-    // Get action counts
-    const actionStats = (await db
-      .prepare(
-        `
-      SELECT action, COUNT(*) as count 
-      FROM logs 
-      GROUP BY action
-    `
-      )
-      .all()) as LogActionStat[];
-
-    // Get table activity
-    const tableStats = (await db
-      .prepare(
-        `
-      SELECT table_name, COUNT(*) as count 
-      FROM logs 
-      GROUP BY table_name
-      ORDER BY count DESC
-      LIMIT 10
-    `
-      )
-      .all()) as LogTableStat[];
-
-    // Get recent activity count (last 24 hours)
-    const recentActivity = (await db
-      .prepare(
-        `
-      SELECT COUNT(*) as count 
-      FROM logs 
-      WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '1 day'
-    `
-      )
-      .get()) as { count: number };
-
-    const totalLogs = (await db.prepare('SELECT COUNT(*) as count FROM logs').get()) as {
-      count: number;
+    // Build query parameters for audit service
+    const queryParams = {
+      limit: Number(limit),
+      offset: Number(offset),
+      ...(actor && typeof actor === 'string' && { actor }),
+      ...(action && typeof action === 'string' && { action }),
+      ...(module && typeof module === 'string' && { module }),
+      ...(start_date && typeof start_date === 'string' && { start_date: new Date(start_date) }),
+      ...(end_date && typeof end_date === 'string' && { end_date: new Date(end_date) }),
     };
 
-    successResponse(res, {
-      actionStats,
-      tableStats,
-      recentActivity: recentActivity.count,
-      totalLogs: totalLogs.count,
-    });
+    // Get audit logs with total count
+    const { records, total } = await auditService.query(queryParams);
+
+    paginatedResponse(res, records, total, Number(offset));
   } catch (error) {
     next(error);
   }
 });
 
-// DELETE /logs - Clear logs (admin only)
-router.delete('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /logs/audits/stats - Get audit logs statistics
+router.get('/audits/stats', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { before } = req.query;
+    const { days = 7 } = req.query;
 
-    const dbManager = DatabaseManager.getInstance();
-    const db = dbManager.getDb();
+    const auditService = AuditService.getInstance();
+    const stats = await auditService.getStats(Number(days));
 
-    let result;
-    if (before && typeof before === 'string') {
-      // Delete logs before a specific date
-      result = await db.prepare('DELETE FROM logs WHERE created_at < ?').run(before);
-    } else {
-      // Clear all logs
-      result = await db.prepare('DELETE FROM logs').run();
-    }
+    successResponse(res, stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /logs/audits - Clear audit logs (admin only)
+router.delete('/audits', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { days_to_keep = 90 } = req.query;
+
+    const auditService = AuditService.getInstance();
+    const deletedCount = await auditService.cleanup(Number(days_to_keep));
 
     successResponse(res, {
-      message: 'Logs cleared successfully',
-      deleted: result.changes,
+      message: 'Audit logs cleared successfully',
+      deleted: deletedCount,
     });
   } catch (error) {
     next(error);
@@ -188,7 +114,7 @@ router.get('/analytics/search', async (req: AuthRequest, res: Response, next: Ne
       Number(offset)
     );
 
-    paginatedResponse(res, result.logs, result.total, Number(limit), Number(offset));
+    paginatedResponse(res, result.logs, result.total, Number(offset));
   } catch (error) {
     next(error);
   }

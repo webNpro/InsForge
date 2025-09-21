@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, ChevronRight, ChevronDown, ArrowDown } from 'lucide-react';
-import { AnalyticsLogRecord } from '@/features/logs/services/logs.service';
+import { AnalyticsLogRecord } from '@/features/logs/services/log.service';
 import { Badge } from '@/components/radix/Badge';
 import { JsonHighlight } from '@/components/JsonHighlight';
 import { cn } from '@/lib/utils/utils';
