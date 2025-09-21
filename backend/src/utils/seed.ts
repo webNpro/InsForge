@@ -1,8 +1,8 @@
-import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/manager.js';
 import { AIConfigService } from '@/core/ai/config.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import logger from '@/utils/logger.js';
+import { SecretsService } from '@/core/secrets/secrets';
 
 /**
  * Validates admin credentials are configured
@@ -48,7 +48,7 @@ async function seedDefaultAIConfigs(): Promise<void> {
 
 // Create api key, admin user, and default AI configs
 export async function seedBackend(): Promise<void> {
-  const authService = AuthService.getInstance();
+  const secretService = new SecretsService();
   const dbManager = DatabaseManager.getInstance();
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -61,7 +61,7 @@ export async function seedBackend(): Promise<void> {
     ensureFirstAdmin(adminEmail, adminPassword);
 
     // Initialize API key (from env or generate)
-    const apiKey = await authService.initializeApiKey();
+    const apiKey = await secretService.initializeApiKey();
 
     // Get database stats
     const tableCount = await dbManager.getUserTableCount();

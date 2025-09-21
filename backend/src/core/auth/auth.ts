@@ -411,16 +411,16 @@ export class AuthService {
     avatarUrl: string,
     identityData: any
   ): Promise<CreateSessionResponse> {
-    // First, try to find existing user by provider ID in _oauth_connections table
+    // First, try to find existing user by provider ID in _account_providers table
     const account = await this.db
-      .prepare('SELECT * FROM _oauth_connections WHERE provider = ? AND provider_account_id = ?')
+      .prepare('SELECT * FROM _account_providers WHERE provider = ? AND provider_account_id = ?')
       .get(provider, providerId);
 
     if (account) {
       // Found existing OAuth user, update last login time
       await this.db
         .prepare(
-          'UPDATE _oauth_connections SET updated_at = CURRENT_TIMESTAMP WHERE provider = ? AND provider_account_id = ?'
+          'UPDATE _account_providers SET updated_at = CURRENT_TIMESTAMP WHERE provider = ? AND provider_account_id = ?'
         )
         .run(provider, providerId);
 
@@ -446,11 +446,11 @@ export class AuthService {
       .get(email);
 
     if (existingUser) {
-      // Found existing user by email, create _oauth_connections record to link OAuth
+      // Found existing user by email, create _account_providers record to link OAuth
       await this.db
         .prepare(
           `
-        INSERT INTO _oauth_connections (
+        INSERT INTO _account_providers (
           user_id, provider, provider_account_id, 
           provider_data, created_at, updated_at
         )
@@ -515,11 +515,11 @@ export class AuthService {
         )
         .run(userId, userName, avatarUrl);
 
-      // Create _oauth_connections record
+      // Create _account_providers record
       await this.db
         .prepare(
           `
-        INSERT INTO _oauth_connections (
+        INSERT INTO _account_providers (
           user_id, provider, provider_account_id,
           provider_data, created_at, updated_at
         )
@@ -883,55 +883,6 @@ export class AuthService {
       githubUserInfo.avatar_url || '',
       githubUserInfo
     );
-  }
-
-  /**
-   * Generate a new API key with 'ik_' prefix (Insforge Key)
-   */
-  generateApiKey(): string {
-    return 'ik_' + crypto.randomBytes(32).toString('hex');
-  }
-
-  /**
-   * Verify API key against database
-   */
-  async verifyApiKey(apiKey: string): Promise<boolean> {
-    if (!apiKey) {
-      return false;
-    }
-    const dbManager = DatabaseManager.getInstance();
-    const storedApiKey = await dbManager.getApiKey();
-    return storedApiKey === apiKey;
-  }
-
-  /**
-   * Initialize API key on startup
-   * Seeds from environment variable if database is empty
-   */
-  async initializeApiKey(): Promise<string> {
-    const dbManager = DatabaseManager.getInstance();
-    let apiKey = await dbManager.getApiKey();
-
-    if (!apiKey) {
-      // Check if ACCESS_API_KEY is provided via environment
-      const envApiKey = process.env.ACCESS_API_KEY;
-
-      if (envApiKey && envApiKey.trim() !== '') {
-        // Use the provided API key from environment, ensure it has 'ik_' prefix
-        apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
-        await dbManager.setApiKey(apiKey);
-        logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
-      } else {
-        // Generate a new API key if none provided
-        apiKey = this.generateApiKey();
-        await dbManager.setApiKey(apiKey);
-        logger.info('✅ API key generated and stored');
-      }
-    } else {
-      logger.info('✅ API key exists in database');
-    }
-
-    return apiKey;
   }
 
   /**
