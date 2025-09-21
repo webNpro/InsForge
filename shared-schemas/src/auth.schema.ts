@@ -67,7 +67,7 @@ export const oAuthConfigSchema = z.object({
   clientId: z.string().optional(),
   scopes: z.array(z.string()).optional(),
   redirectUri: z.string().optional(),
-  useSharedKey: z.boolean().default(false),
+  useSharedKey: z.boolean(),
 });
 
 /**

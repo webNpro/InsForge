@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/radix/Button';
-import { configService } from '@/features/auth/services/config.service';
-import { useToast } from '@/lib/hooks/useToast';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import GithubDark from '@/assets/icons/github_dark.svg';
 import GithubLight from '@/assets/icons/github.svg';
 import Google from '@/assets/icons/google.svg';
-import { OAuthConfigSchema } from '@insforge/shared-schemas';
 import { generateAIAuthPrompt } from '@/features/auth/helpers';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthMethodDialog } from './OAuthMethodDialog';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
+import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
+import { useConfirm } from '@/lib/hooks/useConfirm';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,11 +31,17 @@ export interface OAuthProviderInfo {
 export function OAuthConfiguration() {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [oauthConfig, setOauthConfig] = useState<OAuthConfigSchema>();
-  const [loading, setLoading] = useState(true);
   const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
-  const { showToast } = useToast();
   const { resolvedTheme } = useTheme();
+  const { confirm, confirmDialogProps } = useConfirm();
+  const {
+    configs,
+    isLoadingConfigs,
+    deleteConfig,
+    refetchConfigs,
+    getProviderConfig,
+    isProviderConfigured,
+  } = useOAuthConfig();
 
   const providers: OAuthProviderInfo[] = useMemo(
     () => [
@@ -57,54 +63,26 @@ export function OAuthConfiguration() {
     [resolvedTheme]
   );
 
-  const loadOAuthConfig = useCallback(async () => {
-    try {
-      setLoading(true);
-      const config = await configService.getOAuthConfig();
-      setOauthConfig(config);
-    } catch (error) {
-      console.error('Failed to load OAuth configuration:', error);
-      showToast('Failed to load OAuth configuration', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
-
-  // Load OAuth configuration on component mount
-  useEffect(() => {
-    void loadOAuthConfig();
-  }, [loadOAuthConfig]);
-
   const handleConfigureProvider = (provider: OAuthProviderInfo) => {
     setSelectedProvider(provider);
     setIsDialogOpen(true);
   };
 
-  // Disable OAuth provider
-  const disableOAuthProvider = async (providerId: 'google' | 'github', providerName: string) => {
-    if (!oauthConfig) {
-      return false;
-    }
+  const deleteOAuthConfig = async (providerId: 'google' | 'github', providerName: string) => {
+    const shouldDelete = await confirm({
+      title: `Delete ${providerName} OAuth`,
+      description: `Are you sure you want to delete the ${providerName} configuration? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
 
-    try {
-      const updatedConfig = {
-        ...oauthConfig,
-        [providerId]: {
-          clientId: '',
-          clientSecret: '',
-          enabled: false,
-        },
-      };
-
-      await configService.updateOAuthConfig(updatedConfig);
-      await configService.reloadOAuthConfig();
-      showToast(`${providerName} deleted`, 'success');
-      setOauthConfig(updatedConfig);
-      return true;
-    } catch (error) {
-      console.error(`Failed to delete ${providerId} OAuth:`, error);
-      showToast(`Failed to delete ${providerName}`, 'error');
-      return false;
+    if (shouldDelete) {
+      try {
+        deleteConfig(providerId);
+      } catch (error) {
+        console.error(`Failed to delete ${providerId} OAuth:`, error);
+      }
     }
   };
 
@@ -114,36 +92,26 @@ export function OAuthConfiguration() {
   };
 
   const hasAuthMethods = useMemo(() => {
-    if (!oauthConfig) {
-      return false;
-    }
-    return Boolean(oauthConfig.google?.enabled || oauthConfig.github?.enabled);
-  }, [oauthConfig]);
+    return configs.length > 0;
+  }, [configs]);
 
   const openSelectDialog = () => {
     setIsSelectDialogOpen(true);
   };
 
   const enabledProviders = useMemo(() => {
-    if (!oauthConfig) {
-      return { google: false, github: false };
-    }
     return {
-      google: Boolean(oauthConfig.google?.enabled),
-      github: Boolean(oauthConfig.github?.enabled),
+      google: isProviderConfigured('google'),
+      github: isProviderConfigured('github'),
     };
-  }, [oauthConfig]);
+  }, [isProviderConfigured]);
 
   // Check if all providers are enabled
   const allProvidersEnabled = useMemo(() => {
     return providers.every((provider) => enabledProviders[provider.id]);
   }, [providers, enabledProviders]);
 
-  const handleConfirmSelected = async (selectedId: 'google' | 'github') => {
-    if (!oauthConfig) {
-      return;
-    }
-
+  const handleConfirmSelected = (selectedId: 'google' | 'github') => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);
     if (!selectedProvider) {
@@ -158,21 +126,23 @@ export function OAuthConfiguration() {
 
   const handleSuccess = useCallback(() => {
     // Refresh configuration after successful update
-    void loadOAuthConfig();
-  }, [loadOAuthConfig]);
+    void refetchConfigs();
+  }, [refetchConfigs]);
 
   // Generate combined prompt for all enabled providers
   const generateCombinedPrompt = () => {
-    if (!oauthConfig) return '';
+    const enabledProvidersList = providers.filter((provider) =>
+      configs.some((config) => config.provider === provider.id)
+    );
 
-    const enabledProviders = providers.filter((provider) => oauthConfig[provider.id]?.enabled);
+    if (enabledProvidersList.length === 0) {
+      return '';
+    }
 
-    if (enabledProviders.length === 0) return '';
-
-    return generateAIAuthPrompt(enabledProviders);
+    return generateAIAuthPrompt(enabledProvidersList);
   };
 
-  if (loading) {
+  if (isLoadingConfigs) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
@@ -229,8 +199,10 @@ export function OAuthConfiguration() {
           {hasAuthMethods ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-6">
               {providers.map((provider) => {
-                const isEnabled = oauthConfig?.[provider.id]?.enabled;
-                if (!isEnabled) return null;
+                const providerConfig = getProviderConfig(provider.id);
+                if (!providerConfig) {
+                  return null;
+                }
 
                 return (
                   <div
@@ -246,7 +218,7 @@ export function OAuthConfiguration() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {oauthConfig?.[provider.id]?.useSharedKeys && (
+                      {providerConfig.useSharedKey && (
                         <span className="px-2 py-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 border border-neutral-500 dark:border-neutral-400 rounded">
                           Shared Keys
                         </span>
@@ -271,7 +243,7 @@ export function OAuthConfiguration() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => disableOAuthProvider(provider.id, provider.name)}
+                            onClick={() => void deleteOAuthConfig(provider.id, provider.name)}
                             className="py-2 px-3 flex items-center gap-3 cursor-pointer text-red-600 dark:text-red-400"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -304,6 +276,9 @@ export function OAuthConfiguration() {
         onConfirm={handleConfirmSelected}
         enabledProviders={enabledProviders}
       />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog {...confirmDialogProps} />
     </>
   );
 }

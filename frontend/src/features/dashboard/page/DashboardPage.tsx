@@ -139,9 +139,7 @@ export default function DashboardPage() {
                   ) : (
                     <p className="text-base text-gray-500 dark:text-neutral-400">
                       {(() => {
-                        const authCount =
-                          (fullMetadata?.auth?.google?.enabled ? 1 : 0) +
-                          (fullMetadata?.auth?.github?.enabled ? 1 : 0);
+                        const authCount = metadata?.auth.oauths.length;
                         return `${authCount} OAuth ${authCount === 1 ? 'provider' : 'providers'} enabled`;
                       })()}
                     </p>

@@ -346,7 +346,8 @@ export class OAuthConfigService {
 
       // Try to delete the associated secret (will fail if still referenced)
       try {
-        await this.secretsService.deleteSecret(existingConfig.secretId);
+        await client.query('DELETE FROM _secrets WHERE id = $1', [existingConfig.secretId]);
+        logger.info('Associated secret deleted', { secretId: existingConfig.secretId });
       } catch {
         logger.warn('Could not delete associated secret, it may be in use elsewhere', {
           provider,
