@@ -18,5 +18,4 @@ DROP TRIGGER IF EXISTS update__function_secrets_updated_at ON _function_secrets;
 CREATE TRIGGER update__function_secrets_updated_at BEFORE UPDATE ON _function_secrets
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Note: Reserved system secrets (INSFORGE_API_URL, INSFORGE_API_KEY, etc.) 
--- will be initialized by the application on startup
+-- Note: Reserved system secrets will be initialized by the application on startup
