@@ -13,7 +13,9 @@ export class OAuthConfigService {
   }
 
   // Get specific OAuth configuration by provider
-  async getConfigByProvider(provider: string): Promise<OAuthConfigSchema> {
+  async getConfigByProvider(
+    provider: string
+  ): Promise<OAuthConfigSchema & { clientSecret?: string }> {
     return apiClient.request(`/auth/oauth/configs/${provider}`);
   }
 

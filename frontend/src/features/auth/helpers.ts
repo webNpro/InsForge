@@ -92,7 +92,3 @@ await client.auth.signOut()
 \`\`\`
     `;
 };
-
-export const isCloudEnvironment = () => {
-  return window.location.hostname.includes('insforge.app');
-};

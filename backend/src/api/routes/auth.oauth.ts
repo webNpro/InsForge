@@ -298,6 +298,7 @@ router.get(
         throw new AppError('Invalid provider name', 400, ERROR_CODES.INVALID_INPUT);
       }
       const config = await oauthConfigService.getConfigByProvider(provider);
+      const clientSecret = await oauthConfigService.getClientSecretByProvider(provider);
 
       if (!config) {
         throw new AppError(
@@ -307,7 +308,7 @@ router.get(
         );
       }
 
-      successResponse(res, config);
+      successResponse(res, { ...config, clientSecret });
     } catch (error) {
       logger.error('Failed to get OAuth configuration', { error, provider: req.params.provider });
       next(error);

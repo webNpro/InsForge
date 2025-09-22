@@ -97,7 +97,7 @@ export function AddOAuthDialog({
             onClick={handleConfirm}
             disabled={!hasSelection}
           >
-            Add Integration
+            Add OAuth
           </Button>
         </DialogFooter>
       </DialogContent>

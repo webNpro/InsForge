@@ -31,10 +31,10 @@ export function useOAuthConfig() {
     isLoading: isLoadingProvider,
     error: providerError,
     refetch: refetchProvider,
-  } = useQuery<OAuthConfigSchema>({
+  } = useQuery<OAuthConfigSchema & { clientSecret?: string }>({
     queryKey: ['oauth-config', selectedProvider],
     queryFn: () => oauthConfigService.getConfigByProvider(selectedProvider ?? ''),
-    enabled: !!selectedProvider,
+    enabled: configs && configs.data.some((config) => config.provider === selectedProvider),
   });
 
   // Mutation to create OAuth configuration
@@ -68,7 +68,7 @@ export function useOAuthConfig() {
   const deleteConfigMutation = useMutation({
     mutationFn: (provider: string) => oauthConfigService.deleteConfig(provider),
     onSuccess: (_, provider) => {
-      void queryClient.invalidateQueries({ queryKey: ['oauth-configs'] });
+      queryClient.removeQueries({ queryKey: ['oauth-configs'] });
       queryClient.removeQueries({ queryKey: ['oauth-config', provider] });
       showToast(`OAuth configuration for ${provider} deleted successfully`, 'success');
       if (selectedProvider === provider) {

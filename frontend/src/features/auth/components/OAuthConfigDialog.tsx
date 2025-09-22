@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useForm, Controller, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
 import { OAuthProviderInfo } from './AuthMethodTab';
 import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
-import { isCloudEnvironment } from '@/features/auth/helpers';
+import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
@@ -40,10 +40,16 @@ export function OAuthConfigDialog({
   onClose,
   onSuccess,
 }: OAuthConfigDialogProps) {
-  const [loading, setLoading] = useState(false);
-  const [isUpdateMode, setIsUpdateMode] = useState(false);
-  const { getProviderConfig, createConfig, updateConfig, isCreating, isUpdating } =
-    useOAuthConfig();
+  const {
+    configs,
+    providerConfig,
+    createConfig,
+    updateConfig,
+    isCreating,
+    isUpdating,
+    setSelectedProvider,
+    isLoadingProvider,
+  } = useOAuthConfig();
 
   const form = useForm<OAuthConfigSchema & { clientSecret?: string }>({
     resolver: zodResolver(oAuthConfigSchema.extend({ clientSecret: z.string().optional() })),
@@ -64,31 +70,33 @@ export function OAuthConfigDialog({
     control: form.control,
   });
 
-  // Load OAuth configuration when dialog opens
+  // Set selected provider and refetch when dialog opens
   useEffect(() => {
     if (isOpen && provider) {
-      setLoading(true);
-      const existingConfig = getProviderConfig(provider.id);
-      if (existingConfig) {
-        setIsUpdateMode(true);
+      setSelectedProvider(provider.id);
+    }
+  }, [configs, isOpen, provider, setSelectedProvider]);
+
+  // Load OAuth configuration after fetching
+  useEffect(() => {
+    if (isOpen && provider && !isLoadingProvider) {
+      if (providerConfig) {
         form.reset({
           provider: provider.id,
-          clientId: existingConfig.clientId || '',
-          clientSecret: '',
-          useSharedKey: existingConfig.useSharedKey || false,
+          clientId: providerConfig.clientId || '',
+          clientSecret: providerConfig.clientSecret || '',
+          useSharedKey: providerConfig.useSharedKey || false,
         });
       } else {
-        setIsUpdateMode(false);
         form.reset({
           provider: provider.id,
           clientId: '',
           clientSecret: '',
-          useSharedKey: isCloudEnvironment() ? true : false,
+          useSharedKey: isInsForgeCloudProject(),
         });
       }
-      setLoading(false);
     }
-  }, [isOpen, provider, getProviderConfig, form]);
+  }, [isOpen, provider, providerConfig, form, isLoadingProvider]);
 
   const handleSubmitData = (data: OAuthConfigSchema & { clientSecret?: string }) => {
     if (!provider) {
@@ -96,9 +104,7 @@ export function OAuthConfigDialog({
     }
 
     try {
-      const existingConfig = getProviderConfig(provider.id);
-
-      if (existingConfig) {
+      if (providerConfig) {
         // Update existing config
         updateConfig({
           provider: provider.id,
@@ -144,7 +150,7 @@ export function OAuthConfigDialog({
     }
 
     // In update mode, require dirty state
-    if (isUpdateMode && !isDirty) {
+    if (providerConfig && !isDirty) {
       return true;
     }
 
@@ -163,7 +169,7 @@ export function OAuthConfigDialog({
         <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
-        {loading ? (
+        {isLoadingProvider ? (
           <div className="p-6 flex items-center justify-center">
             <div className="text-center">
               <div className="text-sm text-gray-500 dark:text-zinc-400">
@@ -283,12 +289,12 @@ export function OAuthConfigDialog({
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
                 {saving
-                  ? isUpdateMode
+                  ? providerConfig
                     ? 'Updating...'
                     : 'Adding...'
-                  : isUpdateMode
+                  : providerConfig
                     ? 'Update'
-                    : 'Add Integration'}
+                    : 'Add OAuth'}
               </Button>
             </DialogFooter>
           </>
