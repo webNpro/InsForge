@@ -15,16 +15,31 @@ self.onmessage = async (e) => {
   const { code, requestData, secrets = {} } = e.data;
 
   try {
-    // Create a mock Deno object with env containing the secrets
+    /**
+     * MOCK DENO OBJECT EXPLANATION:
+     * 
+     * Why we need a mock Deno object:
+     * - Edge functions run in isolated Web Workers (sandboxed environments)
+     * - Web Workers don't have access to the real Deno global object for security
+     * - We need to provide Deno.env functionality so functions can access secrets
+     * 
+     * How it works:
+     * 1. The main server (server.ts) fetches all secrets from the database
+     * 2. Secrets are decrypted and passed to this worker via the 'secrets' object
+     * 3. We create a mock Deno object that provides Deno.env.get()
+     * 4. When user code calls Deno.env.get('MY_SECRET'), it reads from our secrets object
+     * 
+     * This allows edge functions to use familiar Deno.env syntax while maintaining security
+     */
     const mockDeno = {
+      // Mock the Deno.env API - only get() is needed for reading secrets
       env: {
-        get: (key) => secrets[key] || undefined,
-        set: (key, value) => { secrets[key] = value; },
-        has: (key) => key in secrets,
-        toObject: () => ({ ...secrets }),
-        delete: (key) => { delete secrets[key]; return true; }
+        // Get a secret value by key (returns undefined if not found)
+        // This is the main method edge functions use to access secrets
+        get: (key) => secrets[key] || undefined
       },
-      // Include version info for compatibility
+      
+      // Include version info for compatibility with code that checks Deno.version
       version: typeof Deno !== 'undefined' ? Deno.version : { 
         deno: '1.0.0',
         v8: '10.0.0',
@@ -32,12 +47,24 @@ self.onmessage = async (e) => {
       }
     };
 
-    // Initialize function from code with SDK and mock Deno available
+    /**
+     * FUNCTION WRAPPING EXPLANATION:
+     * 
+     * Here we create a wrapper function that will execute the user's code.
+     * The user's function expects to have access to:
+     * - module.exports (to export their function)
+     * - createClient (the Insforge SDK)
+     * - Deno (for Deno.env.get() etc.)
+     * 
+     * We inject our mockDeno as the 'Deno' parameter, so when the user's code
+     * calls Deno.env.get('MY_SECRET'), it's actually calling mockDeno.env.get('MY_SECRET')
+     */
     const wrapper = new Function('exports', 'module', 'createClient', 'Deno', code);
     const exports = {};
     const module = { exports };
 
-    // Execute the wrapper with createClient and mockDeno injected
+    // Execute the wrapper, passing mockDeno as the Deno global
+    // This makes Deno.env.get() available inside the user's function
     wrapper(exports, module, createClient, mockDeno);
 
     // Get the exported function
