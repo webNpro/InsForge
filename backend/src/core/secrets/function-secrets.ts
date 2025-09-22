@@ -3,7 +3,6 @@ import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
-import { AuditService } from '@/core/logs/audit.js';
 import { EncryptionUtils } from './encryption.js';
 
 export interface FunctionSecretSchema {
@@ -16,10 +15,8 @@ export interface FunctionSecretSchema {
 
 export class FunctionSecretsService {
   private pool: Pool | null = null;
-  private auditService: AuditService;
 
   constructor() {
-    this.auditService = AuditService.getInstance();
   }
 
   private getPool(): Pool {
@@ -33,7 +30,7 @@ export class FunctionSecretsService {
   /**
    * Set or update a function secret
    */
-  async setSecret(key: string, value: string, actor?: string, ipAddress?: string): Promise<{ success: boolean; message: string }> {
+  async setSecret(key: string, value: string): Promise<{ success: boolean; message: string }> {
     // Validate input
     if (!key || !value) {
       throw new AppError('Both key and value are required', 400, ERROR_CODES.INVALID_INPUT);
@@ -70,16 +67,7 @@ export class FunctionSecretsService {
         [key, encryptedValue]
       );
 
-      // Log audit
-      await this.auditService.log({
-        actor: actor || 'api-key',
-        action: 'SET_FUNCTION_SECRET',
-        module: 'FUNCTIONS',
-        details: { key },
-        ip_address: ipAddress,
-      });
-
-      logger.info('Function secret set', { key, actor });
+      logger.info('Function secret set', { key });
       
       return {
         success: true,
@@ -152,7 +140,7 @@ export class FunctionSecretsService {
   /**
    * Delete a secret
    */
-  async deleteSecret(key: string, actor?: string, ipAddress?: string): Promise<{ success: boolean; message: string }> {
+  async deleteSecret(key: string): Promise<{ success: boolean; message: string }> {
     const client = await this.getPool().connect();
     try {
       // Check if reserved
@@ -173,16 +161,7 @@ export class FunctionSecretsService {
       const success = (result.rowCount ?? 0) > 0;
       
       if (success) {
-        // Log audit
-        await this.auditService.log({
-          actor: actor || 'api-key',
-          action: 'DELETE_FUNCTION_SECRET',
-          module: 'FUNCTIONS',
-          details: { key },
-          ip_address: ipAddress,
-        });
-        
-        logger.info('Function secret deleted', { key, actor });
+        logger.info('Function secret deleted', { key });
         
         return {
           success: true,
