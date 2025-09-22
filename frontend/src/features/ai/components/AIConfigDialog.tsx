@@ -11,8 +11,7 @@ import {
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
 } from '@insforge/shared-schemas';
-import { AIConfigCreateForm } from './AIConfigCreateForm';
-import { AIConfigEditForm } from './AIConfigEditForm';
+import { AIConfigForm } from './AIConfigForm';
 
 interface AIConfigDialogProps {
   open: boolean;
@@ -40,7 +39,10 @@ export function AIConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[640px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-w-[640px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]"
+      >
         <div className="flex flex-col">
           <DialogHeader className="px-6 py-3 flex flex-col gap-1 justify-start border-b border-zinc-200 dark:border-neutral-700">
             <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
@@ -48,16 +50,7 @@ export function AIConfigDialog({
             </DialogTitle>
           </DialogHeader>
 
-          {mode === 'create' ? (
-            <AIConfigCreateForm onSubmit={(data) => handleFormSubmit(data)} />
-          ) : (
-            editingConfig && (
-              <AIConfigEditForm
-                editingConfig={editingConfig}
-                onSubmit={(data) => handleFormSubmit(data)}
-              />
-            )
-          )}
+          <AIConfigForm mode={mode} editingConfig={editingConfig} onSubmit={handleFormSubmit} />
 
           <DialogFooter className="p-6 gap-3 border-t border-zinc-200 dark:border-neutral-700">
             <Button

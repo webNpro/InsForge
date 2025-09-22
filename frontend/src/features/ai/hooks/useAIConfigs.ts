@@ -7,6 +7,7 @@ import {
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
   ModalitySchema,
+  type OpenRouterModel,
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 import {
@@ -107,17 +108,27 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   const allTextModels = modelsData?.text?.flatMap((p) => p.models) || [];
   const allImageModels = modelsData?.image?.flatMap((p) => p.models) || [];
 
-  // Combined configured providers for easier consumption
-  const allConfiguredProviders = useMemo(
-    () => [...configuredTextProviders, ...configuredImageProviders],
-    [configuredTextProviders, configuredImageProviders]
-  );
+  // All configured models from all providers (flattened with deduplication)
+  const allConfiguredModels = useMemo(() => {
+    const uniqueModels = new Map<string, OpenRouterModel>();
+
+    [...configuredTextProviders, ...configuredImageProviders].forEach((provider) => {
+      provider.models.forEach((model) => {
+        // Only add if we haven't seen this model.id before
+        if (!uniqueModels.has(model.id)) {
+          uniqueModels.set(model.id, model);
+        }
+      });
+    });
+
+    return Array.from(uniqueModels.values());
+  }, [configuredTextProviders, configuredImageProviders]);
 
   // Helper function to get filtered and processed models
   const getFilteredModels = useCallback(
     (inputModality: ModalitySchema[], outputModality: ModalitySchema[]): ModelOption[] => {
       const filteredRawModels = filterModelsByModalities(
-        allConfiguredProviders,
+        allConfiguredModels,
         inputModality,
         outputModality
       );
@@ -136,7 +147,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
         };
       });
     },
-    [allConfiguredProviders]
+    [allConfiguredModels]
   );
 
   // Check if any providers are configured
@@ -157,7 +168,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     // Configured providers
     configuredTextProviders,
     configuredImageProviders,
-    allConfiguredProviders,
+    allConfiguredModels,
 
     // Unconfigured providers
     unconfiguredTextProviders,

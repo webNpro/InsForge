@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-// Core schemas
-export const modalitySchema = z.enum(['text', 'image', 'audio', 'video', 'file']);
+// Core schemas - only text and image supported currently
+export const modalitySchema = z.enum(['text', 'image']);
 
 export const aiConfigurationSchema = z.object({
   id: z.string().uuid(),
