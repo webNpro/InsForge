@@ -68,7 +68,9 @@ export function AIConfigForm({ mode, editingConfig, onSubmit }: AIConfigFormProp
 
   // Get filtered models for create mode
   const filteredModels = useMemo(() => {
-    if (!isCreateMode) return [];
+    if (!isCreateMode) {
+      return [];
+    }
     return getFilteredModels(selectedInputModality, selectedOutputModality);
   }, [isCreateMode, getFilteredModels, selectedInputModality, selectedOutputModality]);
 
@@ -106,7 +108,9 @@ export function AIConfigForm({ mode, editingConfig, onSubmit }: AIConfigFormProp
 
   // Check if model selection should be disabled (create mode only)
   const isModelSelectionDisabled = useMemo(() => {
-    if (!isCreateMode) return true;
+    if (!isCreateMode) {
+      return true;
+    }
     return selectedInputModality.length === 0 || selectedOutputModality.length === 0;
   }, [isCreateMode, selectedInputModality.length, selectedOutputModality.length]);
   const selectedModelId = createForm.watch('modelId');

@@ -40,7 +40,15 @@ export const ColumnTypeSelect = memo(function TableFormSelect({
       render={({ field }) => {
         const Icon = columnTypeIcons[field.value];
         return (
-          <Select disabled={disabled} value={field.value} onValueChange={field.onChange}>
+          <Select
+            disabled={disabled}
+            value={field.value}
+            onValueChange={(value) => {
+              if (value) {
+                field.onChange(value);
+              }
+            }}
+          >
             <SelectTrigger className={className}>
               <div className="flex items-center gap-2">
                 {Icon && <Icon className="h-4 w-4 text-zinc-500 dark:text-neutral-400" />}

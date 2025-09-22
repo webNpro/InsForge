@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/radix/Button';
 import {
   Tooltip,
@@ -46,18 +46,19 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
   const inputModality = config.inputModality;
   const outputModality = config.outputModality;
 
-  // Generate prompt text for copy button
-  const handleCopy = async () => {
-    if (promptText) {
-      return;
-    }
-    try {
-      const prompt = await generateAIIntegrationPrompt(config);
-      setPromptText(prompt);
-    } catch (error) {
-      console.error('Failed to generate prompt:', error);
-    }
-  };
+  // Generate prompt text when component mounts
+  useEffect(() => {
+    const generatePrompt = async () => {
+      try {
+        const prompt = await generateAIIntegrationPrompt(config);
+        setPromptText(prompt);
+      } catch (error) {
+        console.error('Failed to generate prompt:', error);
+      }
+    };
+
+    generatePrompt();
+  }, [config]);
 
   return (
     <TooltipProvider>
@@ -173,7 +174,6 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
           className="w-full h-9 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:dark:bg-neutral-700 data-[copied=true]:dark:hover:bg-neutral-700 data-[copied=true]:dark:text-white font-medium rounded transition-colors duration-200"
           copyText="Copy Prompt"
           copiedText="Copied - Paste to agent"
-          onCopy={() => void handleCopy()}
         />
       </div>
     </TooltipProvider>
