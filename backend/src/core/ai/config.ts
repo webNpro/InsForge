@@ -26,13 +26,7 @@ export class AIConfigService {
         `INSERT INTO _ai_configs (input_modality, output_modality, provider, model_id, system_prompt)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id`,
-        [
-          JSON.stringify(inputModality),
-          JSON.stringify(outputModality),
-          provider,
-          modelId,
-          systemPrompt || null,
-        ]
+        [inputModality, outputModality, provider, modelId, systemPrompt || null]
       );
 
       logger.info('AI configuration created', { id: result.rows[0].id });

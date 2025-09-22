@@ -1,17 +1,11 @@
 import { Label } from '@/components/radix/Label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/radix/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
 import { ModelOption } from '../../helpers';
 
 interface ModelSelectionFieldProps {
   models: ModelOption[];
   selectedModelId?: string;
-  onModelChange?: (modelId: string) => void;
+  onModelChange: (modelId: string) => void;
   isReadOnly?: boolean;
   readOnlyModelId?: string;
   isModelConfigured?: (modelId: string) => boolean;
@@ -49,20 +43,24 @@ export function ModelSelectionField({
       </Label>
       <Select
         value={selectedModelId || ''}
-        onValueChange={onModelChange || (() => {})}
+        onValueChange={(value) => {
+          if (value) {
+            onModelChange(value);
+          }
+        }}
         disabled={!hasModels || disabled}
       >
         <SelectTrigger
           id="model"
           className="w-full h-9 bg-transparent dark:bg-neutral-900 dark:border-neutral-700 dark:text-white"
         >
-          <SelectValue asChild placeholder={hasModels ? 'Select model' : 'No models available'}>
-            {selectedModelId &&
+          <div className="flex items-center justify-between w-full">
+            {selectedModelId ? (
               (() => {
                 const selectedModel = models.find((m) => m.value === selectedModelId);
                 if (selectedModel) {
                   return (
-                    <div className="flex items-center justify-between w-full mr-2">
+                    <>
                       <div className="flex items-center gap-2">
                         {selectedModel.logo ? (
                           <selectedModel.logo className="w-5 h-5" />
@@ -76,12 +74,17 @@ export function ModelSelectionField({
                       <div className={`text-xs font-medium ${selectedModel.priceColor}`}>
                         {selectedModel.priceLevel}
                       </div>
-                    </div>
+                    </>
                   );
                 }
-                return <span>{selectedModelId}</span>;
-              })()}
-          </SelectValue>
+                return <span className="text-zinc-500 dark:text-zinc-400">{selectedModelId}</span>;
+              })()
+            ) : (
+              <span className="text-zinc-500 dark:text-zinc-400">
+                {hasModels ? 'Select model' : 'No models available'}
+              </span>
+            )}
+          </div>
         </SelectTrigger>
         <SelectContent className="dark:bg-neutral-900 dark:border-neutral-700">
           {hasModels ? (
@@ -103,18 +106,20 @@ export function ModelSelectionField({
                       {modelOption.logo ? (
                         <modelOption.logo className="w-5 h-5" />
                       ) : (
-                        <div className="w-5 h-5 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                        <span className="w-5 h-5 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold">
                           {modelOption.company.slice(0, 1).toUpperCase()}
-                        </div>
+                        </span>
                       )}
-                      <span className="truncate">{modelOption.label}</span>
-                      {isConfigured && (
-                        <span className="text-xs opacity-60">(Already configured)</span>
-                      )}
+                      <span className="truncate flex-1">
+                        {modelOption.label}
+                        {isConfigured && (
+                          <span className="text-xs opacity-60"> (Already configured)</span>
+                        )}
+                      </span>
                     </div>
-                    <div className={`text-xs font-medium ${modelOption.priceColor}`}>
+                    <span className={`items-end text-xs font-medium ${modelOption.priceColor}`}>
                       {modelOption.priceLevel}
-                    </div>
+                    </span>
                   </div>
                 </SelectItem>
               );

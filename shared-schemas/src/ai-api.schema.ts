@@ -84,10 +84,8 @@ export const openRouterModelSchema = z.object({
   description: z.string().optional(),
   architecture: z
     .object({
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      input_modalities: z.array(z.string()),
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      output_modalities: z.array(z.string()),
+      inputModalities: z.array(z.string()),
+      outputModalities: z.array(z.string()),
       tokenizer: z.string(),
       instructType: z.string(),
     })

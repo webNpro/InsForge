@@ -232,41 +232,22 @@ const completion = await client.ai.chat.completions.create({
 
 // Helper function to filter AI models based on selected modalities
 export const filterModelsByModalities = (
-  providers: Array<{ models: OpenRouterModel[] }>,
+  models: OpenRouterModel[],
   selectedInputModalities: ModalitySchema[],
   selectedOutputModalities: ModalitySchema[]
 ): OpenRouterModel[] => {
-  const allModels: OpenRouterModel[] = [];
-  const processedModelIds = new Set<string>();
+  if (!models?.length) return [];
 
-  providers.forEach((provider) => {
-    provider.models.forEach((model) => {
-      if (processedModelIds.has(model.id)) {
-        return;
-      }
-      processedModelIds.add(model.id);
-
-      const inputModalities = model.architecture?.input_modalities || [];
-      const outputModalities = model.architecture?.output_modalities || [];
-
-      const supportsInput = selectedInputModalities.every((modality) =>
-        inputModalities.includes(modality)
+  return models
+    .filter((model) => {
+      const inputModalities = new Set(model.architecture?.inputModalities || []);
+      const outputModalities = new Set(model.architecture?.outputModalities || []);
+      return (
+        selectedInputModalities.every((m) => inputModalities.has(m)) &&
+        selectedOutputModalities.every((m) => outputModalities.has(m))
       );
-      const supportsOutput = selectedOutputModalities.every((modality) =>
-        outputModalities.includes(modality)
-      );
-
-      const userWantsMultiModal =
-        selectedInputModalities.length > 1 || selectedOutputModalities.length > 1;
-      const supportsMultiModal = inputModalities.length > 1 || outputModalities.length > 1;
-
-      if (supportsInput && supportsOutput && (!userWantsMultiModal || supportsMultiModal)) {
-        allModels.push(model);
-      }
-    });
-  });
-
-  return allModels.sort((a, b) => a.name.localeCompare(b.name));
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 };
 
 // Helper function to get friendly model name from model ID

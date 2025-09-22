@@ -1,6 +1,7 @@
 import { isCloudEnvironment } from '@/utils/environment';
 import { AIClientService } from './client';
-import type { OpenRouterModel } from '@/types/ai';
+import type { RawOpenRouterModel } from '@/types/ai';
+import type { OpenRouterModel } from '@insforge/shared-schemas';
 
 export interface ModelProviderInfo {
   provider: string;
@@ -60,7 +61,7 @@ export class AIModelService {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as { data: OpenRouterModel[] };
+    const data = (await response.json()) as { data: RawOpenRouterModel[] };
     const models = data.data || [];
 
     const textModels: OpenRouterModel[] = [];
@@ -68,12 +69,31 @@ export class AIModelService {
 
     for (const model of models) {
       // Classify based on output modality
+      const transformedModel: OpenRouterModel = {
+        ...model,
+        architecture: model.architecture
+          ? {
+              inputModalities: model.architecture.input_modalities || [],
+              outputModalities: model.architecture.output_modalities || [],
+              tokenizer: model.architecture.tokenizer || '',
+              instructType: model.architecture.instruct_type || '',
+            }
+          : undefined,
+        topProvider: model.topProvider
+          ? {
+              isModerated: model.topProvider.is_moderated,
+              contextLength: model.topProvider.context_length,
+              maxCompletionTokens: model.topProvider.max_completion_tokens,
+            }
+          : undefined,
+      };
+
       if (model.architecture?.output_modalities?.includes('image')) {
-        imageModels.push(model);
+        imageModels.push(transformedModel);
       }
 
       if (model.architecture?.output_modalities?.includes('text')) {
-        textModels.push(model);
+        textModels.push(transformedModel);
       }
     }
 

@@ -10,7 +10,7 @@ import {
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
-import { AIModelCard } from '@/features/ai/components/AIModelCard';
+import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
 import { getProviderLogo } from '../helpers';
 
