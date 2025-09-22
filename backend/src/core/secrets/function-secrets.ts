@@ -108,8 +108,7 @@ export class FunctionSecretsService {
         `INSERT INTO _function_secrets (key, value_ciphertext)
          VALUES ($1, $2)
          ON CONFLICT (key) DO UPDATE 
-         SET value_ciphertext = $2,
-             updated_at = NOW()`,
+         SET value_ciphertext = $2`,
         [key, encryptedValue]
       );
 
@@ -294,8 +293,7 @@ export class FunctionSecretsService {
            VALUES ($1, $2, true)
            ON CONFLICT (key) DO UPDATE 
            SET value_ciphertext = $2,
-               is_reserved = true,
-               updated_at = NOW()`,
+               is_reserved = true`,
           [secret.key, encrypted]
         );
       }
