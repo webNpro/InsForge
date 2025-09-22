@@ -24,7 +24,7 @@ export interface ModelOption {
 }
 
 import { authService } from '@/features/auth/services/auth.service';
-import { Type, Image, Mic, Video, File } from 'lucide-react';
+import { Type, Image } from 'lucide-react';
 import GrokIcon from '@/assets/icons/grok.svg?react';
 import GeminiIcon from '@/assets/icons/gemini.svg?react';
 import ClaudeIcon from '@/assets/icons/claude_code_logo.svg?react';
@@ -39,12 +39,12 @@ export const getModalityIcon = (
       return Type;
     case 'image':
       return Image;
-    case 'audio':
-      return Mic;
-    case 'video':
-      return Video;
-    case 'file':
-      return File;
+    // case 'audio':
+    //   return Mic;
+    // case 'video':
+    //   return Video;
+    // case 'file':
+    //   return File;
     default:
       return Type;
   }
@@ -236,7 +236,9 @@ export const filterModelsByModalities = (
   selectedInputModalities: ModalitySchema[],
   selectedOutputModalities: ModalitySchema[]
 ): OpenRouterModel[] => {
-  if (!models?.length) return [];
+  if (!models?.length) {
+    return [];
+  }
 
   return models
     .filter((model) => {
