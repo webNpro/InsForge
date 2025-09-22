@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import crypto from 'crypto';
 import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
+import { EncryptionUtils } from './encryption.js';
 
 export interface SecretSchema {
   id: string;
@@ -27,14 +28,9 @@ export interface UpdateSecretInput {
 
 export class SecretsService {
   private pool: Pool | null = null;
-  private encryptionKey: Buffer;
 
   constructor() {
-    const key = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET;
-    if (!key) {
-      throw new Error('ENCRYPTION_KEY or JWT_SECRET must be set for secrets encryption');
-    }
-    this.encryptionKey = crypto.createHash('sha256').update(key).digest();
+    // Encryption is now handled by the shared EncryptionUtils
   }
 
   private getPool(): Pool {
@@ -44,42 +40,6 @@ export class SecretsService {
     return this.pool;
   }
 
-  /**
-   * Encrypt a value using AES-256-GCM
-   */
-  private encrypt(value: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
-
-    let encrypted = cipher.update(value, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    const authTag = cipher.getAuthTag();
-
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
-  }
-
-  /**
-   * Decrypt a value using AES-256-GCM
-   */
-  private decrypt(ciphertext: string): string {
-    const parts = ciphertext.split(':');
-    if (parts.length !== 3) {
-      throw new Error('Invalid ciphertext format');
-    }
-
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-
-    const decipher = crypto.createDecipheriv('aes-256-gcm', this.encryptionKey, iv);
-    decipher.setAuthTag(authTag);
-
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    return decrypted;
-  }
 
   /**
    * Create a new secret
@@ -87,7 +47,7 @@ export class SecretsService {
   async createSecret(input: CreateSecretInput): Promise<{ id: string }> {
     const client = await this.getPool().connect();
     try {
-      const encryptedValue = this.encrypt(input.value);
+      const encryptedValue = EncryptionUtils.encrypt(input.value);
 
       const result = await client.query(
         `INSERT INTO _secrets (name, value_ciphertext, expires_at)
@@ -125,7 +85,7 @@ export class SecretsService {
         return null;
       }
 
-      const decryptedValue = this.decrypt(result.rows[0].value_ciphertext);
+      const decryptedValue = EncryptionUtils.decrypt(result.rows[0].value_ciphertext);
       logger.info('Secret retrieved', { id });
       return decryptedValue;
     } catch (error) {
@@ -155,7 +115,7 @@ export class SecretsService {
         return null;
       }
 
-      const decryptedValue = this.decrypt(result.rows[0].value_ciphertext);
+      const decryptedValue = EncryptionUtils.decrypt(result.rows[0].value_ciphertext);
       logger.info('Secret retrieved by name', { name });
       return decryptedValue;
     } catch (error) {
@@ -205,7 +165,7 @@ export class SecretsService {
       let paramCount = 1;
 
       if (input.value !== undefined) {
-        const encryptedValue = this.encrypt(input.value);
+        const encryptedValue = EncryptionUtils.encrypt(input.value);
         updates.push(`value_ciphertext = $${paramCount++}`);
         values.push(encryptedValue);
       }
@@ -262,7 +222,7 @@ export class SecretsService {
         return false;
       }
 
-      const decryptedValue = this.decrypt(result.rows[0].value_ciphertext);
+      const decryptedValue = EncryptionUtils.decrypt(result.rows[0].value_ciphertext);
       const matches = decryptedValue === value;
 
       // Update last_used_at if the check was successful
@@ -333,7 +293,7 @@ export class SecretsService {
         [id]
       );
 
-      const encryptedValue = this.encrypt(newValue);
+      const encryptedValue = EncryptionUtils.encrypt(newValue);
       const newSecretResult = await client.query(
         `INSERT INTO _secrets (name, value_ciphertext)
          VALUES ($1, $2)

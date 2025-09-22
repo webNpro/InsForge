@@ -1,10 +1,10 @@
 import { Pool } from 'pg';
-import crypto from 'crypto';
 import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AuditService } from '@/core/logs/audit.js';
+import { EncryptionUtils } from './encryption.js';
 
 export interface FunctionSecretSchema {
   id: string;
@@ -16,16 +16,9 @@ export interface FunctionSecretSchema {
 
 export class FunctionSecretsService {
   private pool: Pool | null = null;
-  private encryptionKey: Buffer;
   private auditService: AuditService;
 
   constructor() {
-    // Reuse same encryption key as SecretsService
-    const key = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET;
-    if (!key) {
-      throw new Error('ENCRYPTION_KEY or JWT_SECRET must be set for secrets encryption');
-    }
-    this.encryptionKey = crypto.createHash('sha256').update(key).digest();
     this.auditService = AuditService.getInstance();
   }
 
@@ -36,41 +29,6 @@ export class FunctionSecretsService {
     return this.pool;
   }
 
-  /**
-   * Encrypt a value using AES-256-GCM (same as SecretsService)
-   */
-  private encrypt(value: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
-    
-    let encrypted = cipher.update(value, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag();
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
-  }
-
-  /**
-   * Decrypt a value using AES-256-GCM (same as SecretsService)
-   */
-  private decrypt(ciphertext: string): string {
-    const parts = ciphertext.split(':');
-    if (parts.length !== 3) {
-      throw new Error('Invalid ciphertext format');
-    }
-    
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-    
-    const decipher = crypto.createDecipheriv('aes-256-gcm', this.encryptionKey, iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
-  }
 
   /**
    * Set or update a function secret
@@ -102,7 +60,7 @@ export class FunctionSecretsService {
         throw new AppError(`Cannot modify reserved secret: ${key}`, 403, ERROR_CODES.FORBIDDEN);
       }
 
-      const encryptedValue = this.encrypt(value);
+      const encryptedValue = EncryptionUtils.encrypt(value);
 
       await client.query(
         `INSERT INTO _function_secrets (key, value_ciphertext)
@@ -149,7 +107,7 @@ export class FunctionSecretsService {
       const secrets: Record<string, string> = {};
       for (const row of result.rows) {
         try {
-          secrets[row.key] = this.decrypt(row.value_ciphertext);
+          secrets[row.key] = EncryptionUtils.decrypt(row.value_ciphertext);
         } catch (error) {
           logger.error(`Failed to decrypt function secret ${row.key}`, { error });
           // Skip this secret if decryption fails
@@ -248,45 +206,18 @@ export class FunctionSecretsService {
   async initializeReservedSecrets(): Promise<void> {
     const client = await this.getPool().connect();
     try {
-      // Get the API key from main secrets table
-      const apiKeyResult = await client.query(
-        `SELECT value_ciphertext FROM _secrets WHERE name = 'API_KEY'`
-      );
-      
-      let apiKey = process.env.ACCESS_API_KEY || '';
-      
-      if (apiKeyResult.rows.length > 0) {
-        try {
-          apiKey = this.decrypt(apiKeyResult.rows[0].value_ciphertext);
-        } catch (error) {
-          logger.warn('Failed to decrypt API_KEY from _secrets table', { error });
-        }
-      }
-
-      if (!apiKey) {
-        logger.warn('No API_KEY available for function secrets');
-      }
-
-      // Reserved secrets that are always available in edge functions
+      // Reserved secret that is always available in edge functions
       const reservedSecrets = [
         {
           key: 'INSFORGE_API_URL',
           value: 'http://insforge:7130'  // Internal Docker network URL
-        },
-        {
-          key: 'INSFORGE_API_KEY',
-          value: apiKey
-        },
-        {
-          key: 'DENO_ENV',
-          value: process.env.NODE_ENV || 'production'
         }
       ];
 
       for (const secret of reservedSecrets) {
         if (!secret.value) continue; // Skip if no value
         
-        const encrypted = this.encrypt(secret.value);
+        const encrypted = EncryptionUtils.encrypt(secret.value);
         
         await client.query(
           `INSERT INTO _function_secrets (key, value_ciphertext, is_reserved)

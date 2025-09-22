@@ -34,17 +34,9 @@ self.onmessage = async (e) => {
     const mockDeno = {
       // Mock the Deno.env API - only get() is needed for reading secrets
       env: {
-        // Get a secret value by key (returns undefined if not found)
-        // This is the main method edge functions use to access secrets
         get: (key) => secrets[key] || undefined
       },
-      
-      // Include version info for compatibility with code that checks Deno.version
-      version: typeof Deno !== 'undefined' ? Deno.version : { 
-        deno: '1.0.0',
-        v8: '10.0.0',
-        typescript: '4.9.0'
-      }
+
     };
 
     /**
