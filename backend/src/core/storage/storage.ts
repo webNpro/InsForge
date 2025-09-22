@@ -462,13 +462,6 @@ export class StorageService {
       throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
     }
 
-    // Log the upload activity
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
-      size: file.size,
-      mime_type: file.mimetype,
-    });
-
     return {
       bucket,
       key,
@@ -523,24 +516,10 @@ export class StorageService {
     // Delete file using backend
     await this.backend.deleteObject(bucket, key);
 
-    // Get file info before deletion for logging
-    const fileInfo = (await db
-      .prepare('SELECT * FROM _storage WHERE bucket = ? AND key = ?')
-      .get(bucket, key)) as StorageRecord | undefined;
-
     // Delete from database
     const result = await db
       .prepare('DELETE FROM _storage WHERE bucket = ? AND key = ?')
       .run(bucket, key);
-
-    if (result.changes > 0 && fileInfo) {
-      // Log the deletion activity
-      const dbManager = DatabaseManager.getInstance();
-      await dbManager.logActivity('DELETE', `storage/${bucket}`, key, {
-        size: fileInfo.size,
-        mime_type: fileInfo.mime_type,
-      });
-    }
 
     return result.changes > 0;
   }
@@ -618,13 +597,6 @@ export class StorageService {
       )
       .run(isPublic, bucket);
 
-    // Log visibility change
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPDATE', 'storage', bucket, {
-      type: 'bucket_visibility',
-      public: isPublic,
-    });
-
     // Update storage metadata
     // Metadata is now updated on-demand
   }
@@ -662,10 +634,6 @@ export class StorageService {
     // Create bucket using backend
     await this.backend.createBucket(bucket);
 
-    // Log bucket creation
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('CREATE', 'storage', bucket, { type: 'bucket', public: isPublic });
-
     // Update storage metadata
     // Metadata is now updated on-demand
   }
@@ -684,23 +652,11 @@ export class StorageService {
       return false;
     }
 
-    // Get all files in bucket
-    const objects = (await db
-      .prepare('SELECT key FROM _storage WHERE bucket = ?')
-      .all(bucket)) as Pick<StorageRecord, 'key'>[];
-
     // Delete bucket using backend (handles all files)
     await this.backend.deleteBucket(bucket);
 
     // Delete from storage table (cascade will handle _storage entries)
     await db.prepare('DELETE FROM _storage_buckets WHERE name = ?').run(bucket);
-
-    // Log bucket deletion
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('DELETE', 'storage', bucket, {
-      type: 'bucket',
-      files_deleted: objects.length,
-    });
 
     // Update storage metadata
     // Metadata is now updated on-demand
@@ -803,14 +759,6 @@ export class StorageService {
     if (!result) {
       throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
     }
-
-    // Log the upload activity
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
-      size: metadata.size,
-      mime_type: metadata.contentType,
-      method: 'presigned',
-    });
 
     return {
       bucket,

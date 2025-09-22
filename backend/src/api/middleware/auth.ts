@@ -3,6 +3,7 @@ import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from './error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
 import { verifyCloudToken } from '@/utils/cloud-token.js';
+import { SecretsService } from '@/core/secrets/secrets.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -16,6 +17,7 @@ export interface AuthRequest extends Request {
 }
 
 const authService = AuthService.getInstance();
+const secretService = new SecretsService();
 
 // Helper function to extract Bearer token
 function extractBearerToken(authHeader: string | undefined): string | null {
@@ -131,7 +133,7 @@ export async function verifyApiKey(req: AuthRequest, _res: Response, next: NextF
       );
     }
 
-    const isValid = await authService.verifyApiKey(apiKey);
+    const isValid = await secretService.verifyApiKey(apiKey);
     if (!isValid) {
       throw new AppError(
         'Invalid API key',

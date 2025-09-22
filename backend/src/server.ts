@@ -6,13 +6,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import authRouter from '@/api/routes/auth.js';
-import { tableRouter } from '@/api/routes/tables.js';
-import { recordRouter } from '@/api/routes/records.js';
-import databaseRouter from '@/api/routes/database.js';
+import { databaseTablesRouter } from '@/api/routes/database.tables.js';
+import { databaseRecordsRouter } from '@/api/routes/database.records.js';
+import databaseAdvanceRouter from '@/api/routes/database.advance.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
-import { configRouter } from '@/api/routes/config.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
 import { usageRouter } from '@/api/routes/usage.js';
@@ -141,13 +140,12 @@ export async function createApp() {
 
   // Mount auth routes
   apiRouter.use('/auth', authRouter);
-  apiRouter.use('/database/tables', tableRouter);
-  apiRouter.use('/database/records', recordRouter);
-  apiRouter.use('/database/advance', databaseRouter);
+  apiRouter.use('/database/tables', databaseTablesRouter);
+  apiRouter.use('/database/records', databaseRecordsRouter);
+  apiRouter.use('/database/advance', databaseAdvanceRouter);
   apiRouter.use('/storage', storageRouter);
   apiRouter.use('/metadata', metadataRouter);
   apiRouter.use('/logs', logsRouter);
-  apiRouter.use('/config', configRouter);
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
   apiRouter.use('/usage', usageRouter);
@@ -187,18 +185,22 @@ export async function createApp() {
     try {
       const { slug } = req.params;
       const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
-      
+
       // Simple direct proxy - just pass everything through
-      const response = await fetch(`${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`, {
-        method: req.method,
-        headers: req.headers as any,
-        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-      });
+      const response = await fetch(
+        `${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`,
+        {
+          method: req.method,
+          headers: req.headers as any,
+          body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+        }
+      );
 
       // Get response text
       const responseText = await response.text();
-      
-      res.status(response.status)
+
+      res
+        .status(response.status)
         .set('Content-Type', response.headers.get('content-type') || 'application/json')
         .set('Access-Control-Allow-Origin', '*')
         .send(responseText);

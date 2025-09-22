@@ -1,6 +1,6 @@
-import { OAuthProviderInfo } from './components/OAuthConfiguration';
+import { OAuthProviderInfo } from './components/AuthMethodTab';
 
-export const generateAIAuthPrompt = (provider: OAuthProviderInfo) => {
+export const generateAIAuthPrompt = (providers: OAuthProviderInfo[]) => {
   const baseUrl = window.location.origin;
 
   return `## Setup
@@ -29,7 +29,7 @@ await client.auth.signInWithPassword({ email, password })
 ### signInWithOAuth
 \`\`\`javascript
 const { data, error } = await client.auth.signInWithOAuth({
-provider: '${provider.id}',
+provider: ${providers.map((provider) => `'${provider.id}'`).join('|')},
 redirectTo: window.location.origin,
 skipBrowserRedirect: true
 })

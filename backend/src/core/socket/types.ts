@@ -46,7 +46,7 @@ export enum DataUpdateResourceType {
   TABLE_SCHEMA = 'table_schema',
   STORAGE_SCHEMA = 'storage_schema',
   BUCKET_SCHEMA = 'bucket_schema',
-  OAUTH_SCHEMA = 'oauth_schmea',
+  AUTH_SCHEMA = 'auth_schmea',
 }
 
 export interface DataUpdatePayload {

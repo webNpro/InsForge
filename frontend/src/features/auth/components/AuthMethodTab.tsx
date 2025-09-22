@@ -1,0 +1,284 @@
+import { useState, useCallback, useMemo } from 'react';
+import { Button } from '@/components/radix/Button';
+import { useTheme } from '@/lib/contexts/ThemeContext';
+import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
+import GithubDark from '@/assets/icons/github_dark.svg';
+import GithubLight from '@/assets/icons/github.svg';
+import Google from '@/assets/icons/google.svg';
+import { generateAIAuthPrompt } from '@/features/auth/helpers';
+import { OAuthEmptyState } from './OAuthEmptyState';
+import { OAuthConfigDialog } from './OAuthConfigDialog';
+import { AddOAuthDialog } from './AddOAuthDialog';
+import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
+import { useConfirm } from '@/lib/hooks/useConfirm';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/radix/DropdownMenu';
+import { CopyButton } from '@/components/CopyButton';
+
+export interface OAuthProviderInfo {
+  id: 'google' | 'github';
+  name: string;
+  icon: string;
+  description: string;
+  setupUrl: string;
+}
+
+export function AuthMethodTab() {
+  const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const { confirm, confirmDialogProps } = useConfirm();
+  const {
+    configs,
+    isLoadingConfigs,
+    deleteConfig,
+    refetchConfigs,
+    getProviderConfig,
+    isProviderConfigured,
+  } = useOAuthConfig();
+
+  const providers: OAuthProviderInfo[] = useMemo(
+    () => [
+      {
+        id: 'google',
+        name: 'Google OAuth',
+        icon: Google,
+        description: 'Configure Google authentication for your users',
+        setupUrl: 'https://console.cloud.google.com/apis/credentials',
+      },
+      {
+        id: 'github',
+        name: 'GitHub OAuth',
+        icon: resolvedTheme === 'light' ? GithubDark : GithubLight,
+        description: 'Configure GitHub authentication for your users',
+        setupUrl: 'https://github.com/settings/developers',
+      },
+    ],
+    [resolvedTheme]
+  );
+
+  const handleConfigureProvider = (provider: OAuthProviderInfo) => {
+    setSelectedProvider(provider);
+    setIsDialogOpen(true);
+  };
+
+  const deleteOAuthConfig = async (providerId: 'google' | 'github', providerName: string) => {
+    const shouldDelete = await confirm({
+      title: `Delete ${providerName} OAuth`,
+      description: `Are you sure you want to delete the ${providerName} configuration? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (shouldDelete) {
+      try {
+        deleteConfig(providerId);
+      } catch (error) {
+        console.error(`Failed to delete ${providerId} OAuth:`, error);
+      }
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedProvider(undefined);
+  };
+
+  const hasAuthMethods = useMemo(() => {
+    return configs.length > 0;
+  }, [configs]);
+
+  const openSelectDialog = () => {
+    setIsSelectDialogOpen(true);
+  };
+
+  const enabledProviders = useMemo(() => {
+    return {
+      google: isProviderConfigured('google'),
+      github: isProviderConfigured('github'),
+    };
+  }, [isProviderConfigured]);
+
+  // Check if all providers are enabled
+  const allProvidersEnabled = useMemo(() => {
+    return providers.every((provider) => enabledProviders[provider.id]);
+  }, [providers, enabledProviders]);
+
+  const handleConfirmSelected = (selectedId: 'google' | 'github') => {
+    // Find the selected provider
+    const selectedProvider = providers.find((p) => p.id === selectedId);
+    if (!selectedProvider) {
+      return;
+    }
+
+    // Close the select dialog and open the method dialog
+    setIsSelectDialogOpen(false);
+    setSelectedProvider(selectedProvider);
+    setIsDialogOpen(true);
+  };
+
+  const handleSuccess = useCallback(() => {
+    // Refresh configuration after successful update
+    void refetchConfigs();
+  }, [refetchConfigs]);
+
+  // Generate combined prompt for all enabled providers
+  const generateCombinedPrompt = () => {
+    const enabledProvidersList = providers.filter((provider) =>
+      configs.some((config) => config.provider === provider.id)
+    );
+
+    if (enabledProvidersList.length === 0) {
+      return '';
+    }
+
+    return generateAIAuthPrompt(enabledProvidersList);
+  };
+
+  if (isLoadingConfigs) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="text-sm text-gray-500 dark:text-zinc-400">
+            Loading OAuth configuration...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-6 h-full overflow-hidden p-6 w-full max-w-[1080px] mx-auto">
+        {/* Copy Prompt Banner */}
+        {hasAuthMethods && (
+          <div className="bg-white dark:bg-emerald-300/5 border border-zinc-200 dark:border-green-300 rounded-sm py-3 px-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                  Integrate Authentication
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-neutral-400">
+                  Copy prompt to your agent and the authentication method below will be integrated
+                  automatically.
+                </p>
+              </div>
+              <CopyButton
+                text={generateCombinedPrompt()}
+                variant="default"
+                size="sm"
+                className="w-52.5 h-8 px-3 py-1 rounded text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
+                copyText="Copy Prompt"
+                copiedText="Copied - Paste to agent"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Auth Method</h2>
+          {!allProvidersEnabled && (
+            <Button
+              className="h-9 pr-3 pl-2 py-2 gap-2 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600 text-sm font-medium rounded-sm"
+              onClick={openSelectDialog}
+            >
+              <Plus className="w-5 h-5" />
+              Add Auth
+            </Button>
+          )}
+        </div>
+
+        <div className="flex-1">
+          {hasAuthMethods ? (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+              {providers.map((provider) => {
+                const providerConfig = getProviderConfig(provider.id);
+                if (!providerConfig) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={provider.id}
+                    className="flex items-center justify-between h-15 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
+                  >
+                    <div className="flex-1 flex items-center gap-3">
+                      <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
+
+                      <div className="text-sm font-medium text-black dark:text-white">
+                        {provider.name}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {providerConfig.useSharedKey && (
+                        <span className="px-2 py-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 border border-neutral-500 dark:border-neutral-400 rounded">
+                          Shared Keys
+                        </span>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="h-7 w-7 p-1 text-gray-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 py-1 px-2">
+                          <DropdownMenuItem
+                            onClick={() => handleConfigureProvider(provider)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer"
+                          >
+                            <Pencil className="w-5 h-5" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => void deleteOAuthConfig(provider.id, provider.name)}
+                            className="py-2 px-3 flex items-center gap-3 cursor-pointer text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <OAuthEmptyState />
+          )}
+        </div>
+      </div>
+
+      <OAuthConfigDialog
+        provider={selectedProvider}
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        onSuccess={handleSuccess}
+      />
+
+      <AddOAuthDialog
+        providers={providers}
+        open={isSelectDialogOpen}
+        onOpenChange={setIsSelectDialogOpen}
+        onConfirm={handleConfirmSelected}
+        enabledProviders={enabledProviders}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog {...confirmDialogProps} />
+    </>
+  );
+}

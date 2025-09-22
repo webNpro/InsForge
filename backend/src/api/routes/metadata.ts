@@ -11,6 +11,7 @@ import { ServerEvents } from '@/core/socket/types';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
+import { SecretsService } from '@/core/secrets/secrets';
 
 const router = Router();
 const dbAdvanceService = new DatabaseAdvanceService();
@@ -27,9 +28,9 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
     const functionsService = FunctionsService.getInstance();
 
     // Fetch all metadata in parallel for better performance
-    const [database, auth, storage, aiConfig, functions] = await Promise.all([
+    const [auth, database, storage, aiConfig, functions] = await Promise.all([
+      authService.getMetadata(),
       dbAdvanceService.getMetadata(),
-      authService.getOAuthStatus(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
       functionsService.getMetadata(),
@@ -64,7 +65,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
 router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authService = AuthService.getInstance();
-    const authMetadata = await authService.getOAuthStatus();
+    const authMetadata = await authService.getMetadata();
     successResponse(res, authMetadata);
   } catch (error) {
     next(error);
@@ -116,8 +117,8 @@ router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunc
 // Get API key (admin only)
 router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const authService = AuthService.getInstance();
-    const apiKey = await authService.initializeApiKey();
+    const sercretService = new SecretsService();
+    const apiKey = await sercretService.getSecretByName('API_KEY');
 
     successResponse(res, { apiKey: apiKey });
   } catch (error) {

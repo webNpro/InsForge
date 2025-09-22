@@ -89,3 +89,7 @@ export function convertValueForColumn(
 export function isEmptyValue(value: unknown): boolean {
   return value === null || value === undefined || value === '';
 }
+
+export const isInsForgeCloudProject = () => {
+  return window.location.hostname.endsWith('.insforge.app');
+};

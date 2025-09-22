@@ -54,22 +54,15 @@ export function CopyButton({
       size={size}
       onClick={() => void handleCopy()}
       disabled={disabled}
+      data-copied={copied}
       className={cn(
-        'px-3 w-fit h-8 rounded-md bg-zinc-50 dark:bg-neutral-700 hover:bg-bg-gray-hover dark:hover:bg-neutral-700 border-border-gray dark:border-neutral-700 border shadow gap-1.5 transition-all duration-200',
-        copied && 'bg-transparent cursor-default shadow-none border-none hover:bg-transparent',
+        'px-3 w-fit h-8 rounded-md bg-zinc-50 dark:bg-neutral-700 hover:bg-bg-gray-hover dark:hover:bg-neutral-700 border-border-gray dark:border-neutral-700 border text-zinc-950 dark:text-white shadow gap-1.5 transition-all duration-200',
+        'data-[copied=true]:bg-transparent data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent',
         className
       )}
     >
-      {copied ? (
-        <CheckedIcon className="w-4 h-4" />
-      ) : (
-        <Copy className="w-4 h-4 text-zinc-950 dark:text-white" />
-      )}
-      {showText && (
-        <span className="font-medium text-sm text-zinc-950 dark:text-white">
-          {copied ? copiedText : copyText}
-        </span>
-      )}
+      {copied ? <CheckedIcon className="w-4 h-4" /> : <Copy className="w-4 h-4 " />}
+      {showText && <span className="font-medium text-sm">{copied ? copiedText : copyText}</span>}
     </Button>
   );
 }

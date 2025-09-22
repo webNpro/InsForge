@@ -63,6 +63,7 @@ services:
       - API_BASE_URL=${API_BASE_URL:-}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-this-password}
       # PostgreSQL connection
@@ -75,13 +76,6 @@ services:
       - POSTGREST_BASE_URL=http://postgrest:3000
       # Deno Runtime URL (disabled)
       # - DENO_RUNTIME_URL=http://deno:7133
-      # OAuth Configuration
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:7130/api/auth/oauth/google/callback}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-http://localhost:7130/api/auth/oauth/github/callback}
       # Storage Configuration
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
       - AWS_REGION=${AWS_REGION:-}
@@ -90,6 +84,8 @@ services:
       - PROJECT_ID=${PROJECT_ID:-}
       - APP_KEY=${APP_KEY:-}
       - ACCESS_API_KEY=${ACCESS_API_KEY:-}
+      # LLM Model API keys
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     restart: unless-stopped
     networks:
       - insforge-network

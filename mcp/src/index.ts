@@ -860,11 +860,23 @@ server.tool(
   'create-function',
   'Create a new edge function that runs in Deno runtime. The code must be written to a file first for version control',
   {
-    slug: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Slug must be alphanumeric with hyphens or underscores only').describe('URL-friendly identifier (alphanumeric, hyphens, underscores only). Example: "my-calculator"'),
+    slug: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Slug must be alphanumeric with hyphens or underscores only')
+      .describe(
+        'URL-friendly identifier (alphanumeric, hyphens, underscores only). Example: "my-calculator"'
+      ),
     name: z.string().describe('Function display name. Example: "Calculator Function"'),
-    codeFile: z.string().describe('Path to JavaScript file containing the function code. Must export: module.exports = async function(request) { return new Response(...) }'),
+    codeFile: z
+      .string()
+      .describe(
+        'Path to JavaScript file containing the function code. Must export: module.exports = async function(request) { return new Response(...) }'
+      ),
     description: z.string().optional().describe('Description of what the function does'),
-    active: z.boolean().optional().describe('Set to true to deploy immediately, false for draft mode'),
+    active: z
+      .boolean()
+      .optional()
+      .describe('Set to true to deploy immediately, false for draft mode'),
   },
   withUsageTracking('create-function', async (args) => {
     try {
@@ -873,9 +885,11 @@ server.tool(
       try {
         code = await fs.readFile(args.codeFile, 'utf-8');
       } catch (fileError) {
-        throw new Error(`Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+        );
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/functions`, {
         method: 'POST',
         headers: {
@@ -892,12 +906,15 @@ server.tool(
       });
 
       const result = await handleApiResponse(response);
-      
+
       return await addBackgroundContext({
         content: [
           {
             type: 'text',
-            text: formatSuccessMessage(`Edge function '${args.slug}' created successfully from ${args.codeFile}`, result),
+            text: formatSuccessMessage(
+              `Edge function '${args.slug}' created successfully from ${args.codeFile}`,
+              result
+            ),
           },
         ],
       });
@@ -925,7 +942,6 @@ server.tool(
   },
   withUsageTracking('get-function', async (args) => {
     try {
-      
       const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
         method: 'GET',
         headers: {
@@ -934,7 +950,7 @@ server.tool(
       });
 
       const result = await handleApiResponse(response);
-      
+
       return await addBackgroundContext({
         content: [
           {
@@ -965,28 +981,43 @@ server.tool(
   {
     slug: z.string().describe('The slug identifier of the function to update'),
     name: z.string().optional().describe('New display name'),
-    codeFile: z.string().optional().describe('Path to JavaScript file containing the new function code. Must export: module.exports = async function(request) { return new Response(...) }'),
+    codeFile: z
+      .string()
+      .optional()
+      .describe(
+        'Path to JavaScript file containing the new function code. Must export: module.exports = async function(request) { return new Response(...) }'
+      ),
     description: z.string().optional().describe('New description'),
-    status: z.string().optional().describe('Function status: "draft" (not deployed), "active" (deployed), or "error"'),
+    status: z
+      .string()
+      .optional()
+      .describe('Function status: "draft" (not deployed), "active" (deployed), or "error"'),
   },
   withUsageTracking('update-function', async (args) => {
     try {
-      
       const updateData: any = {};
-      if (args.name) updateData.name = args.name;
-      
+      if (args.name) {
+        updateData.name = args.name;
+      }
+
       // Read code from file if provided
       if (args.codeFile) {
         try {
           updateData.code = await fs.readFile(args.codeFile, 'utf-8');
         } catch (fileError) {
-          throw new Error(`Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`);
+          throw new Error(
+            `Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+          );
         }
       }
-      
-      if (args.description !== undefined) updateData.description = args.description;
-      if (args.status) updateData.status = args.status;
-      
+
+      if (args.description !== undefined) {
+        updateData.description = args.description;
+      }
+      if (args.status) {
+        updateData.status = args.status;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
         method: 'PUT',
         headers: {
@@ -997,14 +1028,17 @@ server.tool(
       });
 
       const result = await handleApiResponse(response);
-      
+
       const fileInfo = args.codeFile ? ` from ${args.codeFile}` : '';
-      
+
       return await addBackgroundContext({
         content: [
           {
             type: 'text',
-            text: formatSuccessMessage(`Edge function '${args.slug}' updated successfully${fileInfo}`, result),
+            text: formatSuccessMessage(
+              `Edge function '${args.slug}' updated successfully${fileInfo}`,
+              result
+            ),
           },
         ],
       });
@@ -1032,7 +1066,6 @@ server.tool(
   },
   withUsageTracking('delete-function', async (args) => {
     try {
-      
       const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
         method: 'DELETE',
         headers: {
@@ -1041,7 +1074,7 @@ server.tool(
       });
 
       const result = await handleApiResponse(response);
-      
+
       return await addBackgroundContext({
         content: [
           {

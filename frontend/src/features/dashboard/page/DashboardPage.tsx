@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { metadataService } from '@/features/metadata/services/metadata.service';
-import { authService } from '@/features/auth/services/auth.service';
 import { Skeleton } from '@/components/radix/Skeleton';
 import { Card, CardContent } from '@/components/radix/Card';
 import {
@@ -22,6 +21,7 @@ import OpenAI from '@/assets/icons/openai.svg?react';
 import Gemini from '@/assets/icons/gemini.svg';
 import Claude from '@/assets/icons/claude_code_logo.svg';
 import Grok from '@/assets/icons/grok.svg?react';
+import { useUsers } from '@/features/auth';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -37,10 +37,7 @@ export default function DashboardPage() {
     queryFn: () => metadataService.getFullMetadata(),
   });
 
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users-count'],
-    queryFn: () => authService.getUsers(),
-  });
+  const { totalUsers } = useUsers();
 
   const { data: fullMetadata, isLoading: isLoadingFullMetadata } = useQuery({
     queryKey: ['full-metadata'],
@@ -121,15 +118,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex flex-col gap-4">
                   <div className="flex items-baseline gap-2">
-                    {isLoadingUsers ? (
+                    {isLoading ? (
                       <Skeleton className="h-8 w-16 bg-gray-200 dark:bg-neutral-700" />
                     ) : (
                       <>
                         <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
-                          {(usersData?.users.length || 0).toLocaleString()}
+                          {(totalUsers || 0).toLocaleString()}
                         </span>
                         <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
-                          {usersData?.users.length === 1 ? 'user' : 'users'}
+                          {totalUsers === 1 ? 'user' : 'users'}
                         </span>
                       </>
                     )}
@@ -139,9 +136,7 @@ export default function DashboardPage() {
                   ) : (
                     <p className="text-base text-gray-500 dark:text-neutral-400">
                       {(() => {
-                        const authCount =
-                          (fullMetadata?.auth?.google?.enabled ? 1 : 0) +
-                          (fullMetadata?.auth?.github?.enabled ? 1 : 0);
+                        const authCount = metadata?.auth.oauths.length;
                         return `${authCount} OAuth ${authCount === 1 ? 'provider' : 'providers'} enabled`;
                       })()}
                     </p>

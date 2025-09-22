@@ -1,14 +1,10 @@
 import { z } from 'zod';
 import { storageBucketSchema } from './storage.schema';
 import { tableSchema } from './database.schema';
+import { oAuthConfigSchema } from './auth.schema';
 
 export const authMetadataSchema = z.object({
-  google: z.object({
-    enabled: z.boolean(),
-  }),
-  github: z.object({
-    enabled: z.boolean(),
-  }),
+  oauths: z.array(oAuthConfigSchema),
 });
 
 export const databaseMetadataSchema = z.object({
@@ -42,8 +38,8 @@ export const aiMetadataSchema = z.object({
 });
 
 export const appMetaDataSchema = z.object({
-  database: databaseMetadataSchema,
   auth: authMetadataSchema,
+  database: databaseMetadataSchema,
   storage: storageMetadataSchema,
   aiIntegration: aiMetadataSchema.optional(),
   functions: z.array(edgeFunctionMetadataSchema),

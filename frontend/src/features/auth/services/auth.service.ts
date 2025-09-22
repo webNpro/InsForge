@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api/client';
-import type { User } from '@/features/auth/types';
+import { UserSchema } from '@insforge/shared-schemas';
 
 export class AuthService {
   async loginWithPassword(email: string, password: string) {
@@ -56,7 +56,10 @@ export class AuthService {
   async getUsers(
     queryParams: string = '',
     searchQuery?: string
-  ): Promise<{ users: User[]; pagination: { offset: number; limit: number; total: number } }> {
+  ): Promise<{
+    users: UserSchema[];
+    pagination: { offset: number; limit: number; total: number };
+  }> {
     let url = '/auth/users';
     const params = new URLSearchParams(queryParams);
 
@@ -69,7 +72,7 @@ export class AuthService {
     }
 
     const response: {
-      data: User[];
+      data: UserSchema[];
       pagination: { offset: number; limit: number; total: number };
     } = await apiClient.request(url);
 

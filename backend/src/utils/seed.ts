@@ -1,8 +1,9 @@
-import { AuthService } from '@/core/auth/auth.js';
 import { DatabaseManager } from '@/core/database/manager.js';
 import { AIConfigService } from '@/core/ai/config.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import logger from '@/utils/logger.js';
+import { SecretsService } from '@/core/secrets/secrets';
+import { OAuthConfigService } from '@/core/auth/oauth.js';
 
 /**
  * Validates admin credentials are configured
@@ -46,9 +47,45 @@ async function seedDefaultAIConfigs(): Promise<void> {
   logger.info('✅ Default AI models configured (cloud environment)');
 }
 
+/**
+ * Seeds default OAuth configurations for Google and GitHub
+ */
+async function seedDefaultOAuthConfigs(): Promise<void> {
+  const oauthService = OAuthConfigService.getInstance();
+
+  try {
+    // Check if OAuth configs already exist
+    const existingConfigs = await oauthService.getAllConfigs();
+    const existingProviders = existingConfigs.map((config) => config.provider.toLowerCase());
+
+    // Seed Google OAuth config if not exists
+    if (!existingProviders.includes('google')) {
+      await oauthService.createConfig({
+        provider: 'google',
+        useSharedKey: true,
+      });
+      logger.info('✅ Default Google OAuth config created');
+    }
+
+    // Seed GitHub OAuth config if not exists
+    if (!existingProviders.includes('github')) {
+      await oauthService.createConfig({
+        provider: 'github',
+        useSharedKey: true,
+      });
+      logger.info('✅ Default GitHub OAuth config created');
+    }
+  } catch (error) {
+    logger.warn('Failed to seed OAuth configs', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Don't throw error as OAuth configs are optional
+  }
+}
+
 // Create api key, admin user, and default AI configs
 export async function seedBackend(): Promise<void> {
-  const authService = AuthService.getInstance();
+  const secretService = new SecretsService();
   const dbManager = DatabaseManager.getInstance();
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -61,7 +98,7 @@ export async function seedBackend(): Promise<void> {
     ensureFirstAdmin(adminEmail, adminPassword);
 
     // Initialize API key (from env or generate)
-    const apiKey = await authService.initializeApiKey();
+    const apiKey = await secretService.initializeApiKey();
 
     // Get database stats
     const tableCount = await dbManager.getUserTableCount();
@@ -79,6 +116,11 @@ export async function seedBackend(): Promise<void> {
 
     // seed AI configs for cloud environment
     await seedDefaultAIConfigs();
+
+    // add default OAuth configs in Cloud hosting
+    if (isCloudEnvironment()) {
+      await seedDefaultOAuthConfigs();
+    }
 
     logger.info(`API key generated: ${apiKey}`);
     logger.info(`Setup complete:

@@ -38,6 +38,14 @@ export const userSchema = z.object({
   email: emailSchema,
   name: nameSchema,
   emailVerified: z.boolean(),
+  identities: z
+    .array(
+      z.object({
+        provider: z.string(),
+      })
+    )
+    .optional(),
+  providerType: z.string().optional(),
   createdAt: z.string(), // PostgreSQL timestamp
   updatedAt: z.string(), // PostgreSQL timestamp
 });
@@ -54,17 +62,12 @@ export const oAuthStateSchema = z.object({
 });
 
 // OAuth provider configuration schema
-export const oAuthProviderConfigSchema = z.object({
-  clientId: z.string().optional(),
-  clientSecret: z.string().optional(),
-  redirectUri: z.string().url().optional().or(z.literal('')),
-  enabled: z.boolean(),
-  useSharedKeys: z.boolean().optional(),
-});
-
 export const oAuthConfigSchema = z.object({
-  google: oAuthProviderConfigSchema,
-  github: oAuthProviderConfigSchema,
+  provider: z.string(),
+  clientId: z.string().optional(),
+  scopes: z.array(z.string()).optional(),
+  redirectUri: z.string().optional(),
+  useSharedKey: z.boolean(),
 });
 
 /**
@@ -88,5 +91,4 @@ export type PasswordSchema = z.infer<typeof passwordSchema>;
 export type RoleSchema = z.infer<typeof roleSchema>;
 export type UserSchema = z.infer<typeof userSchema>;
 export type TokenPayloadSchema = z.infer<typeof tokenPayloadSchema>;
-export type OAuthProviderConfigSchema = z.infer<typeof oAuthProviderConfigSchema>;
 export type OAuthConfigSchema = z.infer<typeof oAuthConfigSchema>;

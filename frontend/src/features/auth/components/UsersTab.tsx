@@ -3,21 +3,21 @@ import { useUsers } from '@/features/auth/hooks/useUsers';
 import { authService } from '@/features/auth/services/auth.service';
 import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
-import type { User } from '../types';
+import { UserSchema } from '@insforge/shared-schemas';
 
-interface UserManagementProps {
+interface UsersTabProps {
   searchQuery?: string;
   selectedRows?: Set<string>;
   onSelectedRowsChange?: (selectedRows: Set<string>) => void;
   onAddUser?: () => void;
 }
 
-export function UsersManagement({
+export function UsersTab({
   searchQuery: externalSearchQuery = '',
   selectedRows: externalSelectedRows,
   onSelectedRowsChange: externalOnSelectedRowsChange,
   onAddUser,
-}: UserManagementProps) {
+}: UsersTabProps) {
   // Default page size of 20 records per page
   const pageSize = 20;
   const { users, totalUsers, isLoading, currentPage, setCurrentPage, totalPages, refetch } =
@@ -76,17 +76,17 @@ export function UsersManagement({
     return [...users].sort((a, b) => {
       for (const sort of sortColumns) {
         const { columnKey, direction } = sort;
-        let aVal = a[columnKey as keyof User];
-        let bVal = b[columnKey as keyof User];
+        let aVal = a[columnKey as keyof UserSchema];
+        let bVal = b[columnKey as keyof UserSchema];
 
         // Handle null/undefined values
-        if (aVal === null && bVal === null) {
+        if ((aVal === null || aVal === undefined) && (bVal === null || bVal === undefined)) {
           continue;
         }
-        if (aVal === null) {
+        if (aVal === null || aVal === undefined) {
           return direction === 'ASC' ? -1 : 1;
         }
-        if (bVal === null) {
+        if (bVal === null || bVal === undefined) {
           return direction === 'ASC' ? 1 : -1;
         }
 
