@@ -207,30 +207,6 @@ server.tool(
 );
 
 server.tool(
-  'debug-backend',
-  'Debug Insforge backend issues requires this tool. <critical>MANDATORY: Always use this tool FIRST when encountering backend errors, API failures, or backend questions. It will diagnose issues by reading all documentation, verifying current state, and testing with curl.</critical>',
-  {},
-  withUsageTracking('debug-backend', async () => {
-    try {
-      const content = await fetchDocumentation('debug');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  })
-);
-
-server.tool(
   'get-api-key',
   'Retrieves the API key for the Insforge OSS backend. This is used to authenticate all requests to the backend.',
   {},
@@ -238,81 +214,6 @@ server.tool(
     try {
       return await addBackgroundContext({
         content: [{ type: 'text', text: `API key: ${getApiKey()}` }],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get database API documentation
-server.tool(
-  'get-db-api',
-  'Retrieves documentation for Insforge OSS database CRUD operations, including automatic table creation and smart schema management',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('db-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get authentication API documentation
-server.tool(
-  'get-auth-api',
-  'Retrieves documentation for Insforge OSS authentication API, including JWT tokens, project management, and API key generation',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('auth-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get storage API documentation
-server.tool(
-  'get-storage-api',
-  'Retrieves documentation for Insforge OSS file storage API, including file uploads, metadata handling, and automatic cleanup',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('storage-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
       });
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -387,7 +288,7 @@ server.tool(
 
 // --------------------------------------------------
 // Core Database Tools
-
+/*
 server.tool(
   'create-table',
   'Create a new table with explicit schema definition',
@@ -573,6 +474,7 @@ server.tool(
     }
   )
 );
+*/
 
 // Get table schema
 server.tool(

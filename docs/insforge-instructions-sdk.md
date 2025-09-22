@@ -22,7 +22,7 @@ Before ANY operation, call `get-backend-metadata` to get the current backend sta
 
 ### Use MCP Tools for:
 - Getting started & documentation (`get-instructions`)
-- Table creation/modification (`create-table`, `delete-table`, `modify-table`, `get-table-schema`)
+- Database operations (`run-raw-sql` for CREATE/ALTER/DROP tables, `get-table-schema` for inspection)
 - Backend metadata (`get-backend-metadata`)
 - Storage bucket creation (`create-bucket`, `list-buckets`, `delete-bucket`)
 - Edge Functions Creation and Upload (`create-function`, `get-function`, `update-function`, `delete-function`)
