@@ -126,6 +126,8 @@ services:
       - POSTGREST_BASE_URL=http://postgrest:3000
       # Worker timeout (30 seconds default)
       - WORKER_TIMEOUT_MS=${WORKER_TIMEOUT_MS:-30000}
+      # JWT Secret for decrypting function secrets
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./functions:/app/functions
       - deno_cache:/deno-dir

@@ -10,18 +10,35 @@
 // Import SDK at worker level - this will be available to all functions
 import { createClient } from 'npm:@insforge/sdk';
 
-// Handle the single message with both code and request data
+// Handle the single message with code, request data, and secrets
 self.onmessage = async (e) => {
-  const { code, requestData } = e.data;
+  const { code, requestData, secrets = {} } = e.data;
 
   try {
-    // Initialize function from code with SDK available
+    // Create a mock Deno object with env containing the secrets
+    const mockDeno = {
+      env: {
+        get: (key) => secrets[key] || undefined,
+        set: (key, value) => { secrets[key] = value; },
+        has: (key) => key in secrets,
+        toObject: () => ({ ...secrets }),
+        delete: (key) => { delete secrets[key]; return true; }
+      },
+      // Include version info for compatibility
+      version: typeof Deno !== 'undefined' ? Deno.version : { 
+        deno: '1.0.0',
+        v8: '10.0.0',
+        typescript: '4.9.0'
+      }
+    };
+
+    // Initialize function from code with SDK and mock Deno available
     const wrapper = new Function('exports', 'module', 'createClient', 'Deno', code);
     const exports = {};
     const module = { exports };
 
-    // Execute the wrapper with createClient and Deno injected
-    wrapper(exports, module, createClient, Deno);
+    // Execute the wrapper with createClient and mockDeno injected
+    wrapper(exports, module, createClient, mockDeno);
 
     // Get the exported function
     const functionHandler = module.exports || exports.default || exports;
