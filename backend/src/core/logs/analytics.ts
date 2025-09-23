@@ -3,7 +3,7 @@ import logger from '@/utils/logger.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import { LocalDBProvider } from './providers/localdb.provider.js';
 import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
-import { AnalyticsProvider } from './providers/analytics.provider.interface.js';
+import { AnalyticsProvider } from './providers/base.provider.js';
 
 export class AnalyticsManager {
   private static instance: AnalyticsManager;

@@ -7,7 +7,7 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs';
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
-import { BaseAnalyticsProvider } from './analytics.provider.interface.js';
+import { BaseAnalyticsProvider } from './base.provider.js';
 
 export class CloudWatchProvider extends BaseAnalyticsProvider {
   private cwClient: CloudWatchLogsClient | null = null;
