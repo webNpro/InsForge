@@ -29,7 +29,8 @@ export function CopyButton({
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
+  const handleCopy = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
     if (disabled) {
       return;
     }
@@ -52,7 +53,7 @@ export function CopyButton({
     <Button
       variant={variant}
       size={size}
-      onClick={() => void handleCopy()}
+      onClick={(e) => void handleCopy(e)}
       disabled={disabled}
       data-copied={copied}
       className={cn(
