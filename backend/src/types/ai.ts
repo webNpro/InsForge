@@ -13,7 +13,7 @@ export interface OpenRouterImageMessage {
 
 // ============= OpenRouter API Types =============
 
-export interface OpenRouterModel {
+export interface RawOpenRouterModel {
   id: string;
   name: string;
   created: number;
