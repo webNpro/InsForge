@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   DataGrid,
-  createDefaultCellRenderers,
+  createDefaultCellRenderer,
   type DataGridColumn,
   type DataGridProps,
   type DataGridRowType,
@@ -173,7 +173,7 @@ export function convertSchemaToColumns(
   }
 
   // Create typed cell renderers
-  const cellRenderers = createDefaultCellRenderers<DatabaseDataGridRow>();
+  const cellRenderers = createDefaultCellRenderer<DatabaseDataGridRow>();
 
   return schema.columns.map((col: ColumnSchema) => {
     const isEditable =

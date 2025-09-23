@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import {
   DataGrid,
-  createDefaultCellRenderers,
+  createDefaultCellRenderer,
   type DataGridProps,
   type RenderCellProps,
   type DataGridColumn,
@@ -93,7 +93,7 @@ export function createStorageColumns(
   isDownloading?: (key: string) => boolean
 ): DataGridColumn<StorageDataGridRow>[] {
   // Create typed cell renderers
-  const cellRenderers = createDefaultCellRenderers<StorageDataGridRow>();
+  const cellRenderers = createDefaultCellRenderer<StorageDataGridRow>();
 
   const columns: DataGridColumn<StorageDataGridRow>[] = [
     {

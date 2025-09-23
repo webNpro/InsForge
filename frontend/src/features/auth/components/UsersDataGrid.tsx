@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import {
   DataGrid,
-  createDefaultCellRenderers,
+  createDefaultCellRenderer,
   type DataGridProps,
   type DataGridColumn,
   type RenderCellProps,
@@ -94,7 +94,7 @@ const IdentitiesCellRenderer = ({ row }: RenderCellProps<UserDataGridRow>) => {
 
 // Convert users data to DataGrid columns
 export function createUsersColumns(): DataGridColumn<UserDataGridRow>[] {
-  const cellRenderers = createDefaultCellRenderers<UserDataGridRow>();
+  const cellRenderers = createDefaultCellRenderer<UserDataGridRow>();
 
   return [
     {
