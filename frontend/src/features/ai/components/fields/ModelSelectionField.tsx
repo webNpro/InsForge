@@ -112,9 +112,7 @@ export function ModelSelectionField({
                       )}
                       <span className="truncate flex-1">
                         {modelOption.label}
-                        {isConfigured && (
-                          <span className="text-xs opacity-60"> (Already configured)</span>
-                        )}
+                        {isConfigured && <span className="text-sm"> (Already configured)</span>}
                       </span>
                     </div>
                     <span className={`items-end text-xs font-medium ${modelOption.priceColor}`}>
