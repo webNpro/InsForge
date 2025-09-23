@@ -19,3 +19,6 @@ CREATE TRIGGER update__function_secrets_updated_at BEFORE UPDATE ON _function_se
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Note: Reserved system secrets will be initialized by the application on startup
+
+-- Rename _edge_functions table to functions
+ALTER TABLE IF EXISTS _edge_functions RENAME TO _functions;

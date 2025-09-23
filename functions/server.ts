@@ -80,7 +80,7 @@ async function getFunctionCode(slug: string): Promise<string | null> {
     await client.connect();
 
     const result = await client.queryObject<{ code: string }>`
-      SELECT code FROM _edge_functions 
+      SELECT code FROM _functions 
       WHERE slug = ${slug} AND status = 'active'
     `;
 
