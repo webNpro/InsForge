@@ -13,7 +13,7 @@ export interface ListModelsResponse {
   image: ModelProviderInfo[];
 }
 
-export class ModelService {
+export class AIModelService {
   /**
    * Get all available AI models
    * Fetches from cloud API if in cloud environment, otherwise from OpenRouter directly

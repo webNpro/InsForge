@@ -139,13 +139,15 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
             </button>
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-gray dark:border-neutral-700">
-              <p className="text-xs font-medium text-muted-foreground dark:text-white flex items-center gap-1.5">
-                Referencing record from
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground dark:text-white">
+                  Referencing record from
+                </span>
                 <TypeBadge
                   type={`${foreignKey.table}.${foreignKey.column}`}
                   className="dark:bg-neutral-800"
                 />
-              </p>
+              </div>
             </div>
 
             {/* Content */}

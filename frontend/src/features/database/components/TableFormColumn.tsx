@@ -48,9 +48,8 @@ export const TableFormColumn = memo(function TableFormColumn({
               />
             )}
           />
-          {/* Show key icon only for the first preset field in create mode (which is the system id) */}
-          {isSystemColumn && column.columnName === 'id' && (
-            <Key className="absolute left-[35px] top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+          {column.isPrimaryKey && (
+            <Key className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
           )}
         </div>
       </div>

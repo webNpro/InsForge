@@ -21,10 +21,54 @@ Before ANY operation, call `get-backend-metadata` to get the current backend sta
 - Application logic
 
 ### Use MCP Tools for:
-- Table creation/modification
-- Schema management
-- Backend metadata
-- Storage bucket creation
+- Getting started & documentation (`get-instructions`)
+- Database operations (`run-raw-sql` for CREATE/ALTER/DROP tables, `get-table-schema` for inspection)
+- Backend metadata (`get-backend-metadata`)
+- Storage bucket creation (`create-bucket`, `list-buckets`, `delete-bucket`)
+- Edge Functions Creation and Upload (`create-function`, `get-function`, `update-function`, `delete-function`)
+  - **Important**: Edge functions should only be used for backend API services
+  - **CRITICAL**: Edge functions do NOT support subpaths - single endpoint only per function
+  - ❌ **Will NOT work**: `/functions/my-api/users`, `/functions/my-api/posts/123`, `/functions/my-api/admin/stats`
+  - ✅ **Will work**: `/functions/my-api` with `{ "action": "getUsers" }`, `/functions/my-api` with `{ "action": "getPost", "id": 123 }`
+  - Use request method + body to route: `GET /functions/task-api?action=list`, `POST /functions/task-api {"action": "create", "title": "New"}`
+
+### Edge Functions Pattern
+
+**Create secure edge functions using Insforge SDK:**
+
+```javascript
+// No import needed - createClient is injected by the worker template
+module.exports = async function(request) {
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  };
+
+  // Handle OPTIONS
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // Extract token from request headers
+  const authHeader = request.headers.get('Authorization');
+  const userToken = authHeader ? authHeader.replace('Bearer ', '') : null;
+  
+  // Create client with the edge function token
+  const client = createClient({ 
+    baseUrl: 'http://insforge:7130',
+    edgeFunctionToken: userToken
+  });
+  
+  // Example: Get authenticated user for database operations
+  const { data: userData } = await client.auth.getCurrentUser();
+  if (userData?.user?.id) {
+    // Use userData.user.id for foreign key constraints
+    await client.database.from('table').insert([{ user_id: userData.user.id }]);
+  }
+}
+```
 
 ## Setup
 
@@ -121,6 +165,41 @@ const { data, error } = await client.database
   .eq('id', postId);
 ```
 
+## Edge Functions Invocation
+
+Invoke deployed edge functions from the SDK (similar to Supabase):
+
+```javascript
+// Basic invocation with JSON body (POST by default)
+const { data, error } = await client.functions.invoke('hello-world', {
+  body: { name: 'World' }
+});
+
+// GET request (no body)
+const { data, error } = await client.functions.invoke('my-function', {
+  method: 'GET'
+});
+
+// With custom headers
+const { data, error } = await client.functions.invoke('my-function', {
+  body: { action: 'create', item: 'task' },
+  headers: { 'x-custom-header': 'value' }
+});
+
+// Different HTTP methods
+const { data, error } = await client.functions.invoke('api-endpoint', {
+  method: 'PUT',
+  body: { id: '123', status: 'active' }
+});
+
+// Error handling
+if (error) {
+  console.error('Function error:', error.message);
+} else {
+  console.log('Success:', data);
+}
+```
+
 ## Storage Operations
 
 Before ANY operation, call `get-backend-metadata` to get the current backend state. 
@@ -158,7 +237,7 @@ Before ANY operation, call `get-backend-metadata` to get the current backend sta
 ```javascript
 // Non-streaming chat completion (OpenAI-compatible response)
 const completion = await client.ai.chat.completions.create({
-  model: 'anthropic/claude-3.5-haiku',
+  model: 'openai/gpt-4o',
   messages: [
     { 
       role: 'system', 
@@ -207,7 +286,7 @@ console.log(response.data[0].content);   // AI's text response about the image o
 ```javascript
 import { createClient } from '@insforge/sdk';
 
-const client = createClient({ baseUrl: 'http://localhost:7130' });
+const client = new createClient({ baseUrl: 'http://localhost:7130' });
 
 // 1. Sign up new user
 const { data: auth, error } = await client.auth.signUp({
@@ -245,6 +324,20 @@ console.log(otherUser.nickname); // Direct access to properties
 
 ## Key Points
 
+### Edge Functions
+- **SDK Availability**: `createClient` is globally available - no import needed
+- **Token Handling**: Extract from `Authorization` header, use as `anonKey` parameter
+- **Flexible Auth**: Can use user token or anon token (from `ACCESS_API_KEY` env var)
+- **Backend Validation**: Tokens are validated by backend on each SDK request
+- **Internal Networking**: Use `http://insforge:7130` for Docker container communication
+
+### Edge Functions Invocation (SDK)
+- **Simple API**: `client.functions.invoke(slug, options)
+- **Auto-authentication**: SDK automatically includes auth token from logged-in user
+- **Flexible body**: Accepts any JSON-serializable data
+- **HTTP methods**: Supports GET, POST, PUT, PATCH, DELETE (default: POST)
+- **Returns**: `{ data, error }` structure consistent with other SDK methods
+
 ### AI Operations - OpenAI Compatibility
 - **Request Format**: Consistent structure across chat and image generation
   - `model`: Model identifier (provider/model-name format)
@@ -266,6 +359,7 @@ console.log(otherUser.nickname); // Direct access to properties
 - All operations return `{data, error}` structure
 - Database insert requires array format: `[{...}]` even for single records
 - Use `.single()` to get object instead of array from queries
+- Raw SQL is NOT available in SDK 
 
 ### When to Use What
 - **SDK**: Authentication, database CRUD, profile management, AI operations, storage

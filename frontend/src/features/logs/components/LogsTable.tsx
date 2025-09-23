@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
-import { Badge } from '@/components/radix/Badge';
 import { PaginationControls } from '@/components/PaginationControls';
-import { LogEntry } from '../services/logs.service';
+import type { AuditLogSchema } from '@insforge/shared-schemas';
 
 interface LogsTableProps {
-  logs: LogEntry[];
-  schema?: any;
+  logs: AuditLogSchema[];
+  schema?: Record<string, unknown>;
   loading?: boolean;
   searchQuery?: string;
   onRefresh?: () => void;
@@ -44,9 +43,9 @@ export function LogsTable({
     return logs.filter(
       (log) =>
         log.action?.toLowerCase().includes(lowerQuery) ||
-        log.table_name?.toLowerCase().includes(lowerQuery) ||
-        log.record_id?.toString().toLowerCase().includes(lowerQuery) ||
-        log.details?.toLowerCase().includes(lowerQuery)
+        log.actor?.toLowerCase().includes(lowerQuery) ||
+        log.module?.toLowerCase().includes(lowerQuery) ||
+        (log.details && JSON.stringify(log.details).toLowerCase().includes(lowerQuery))
     );
   }, [logs, searchQuery]);
 
@@ -66,22 +65,6 @@ export function LogsTable({
   // Logs are audit records and should not be individually deletable
   // They can only be cleared in bulk by admins if needed
 
-  const getActionBadge = (action: string) => {
-    const actionMap: Record<string, { variant: any; label: string }> = {
-      INSERT: { variant: 'default', label: 'Create' },
-      UPDATE: { variant: 'secondary', label: 'Update' },
-      DELETE: { variant: 'destructive', label: 'Delete' },
-    };
-
-    const config = actionMap[action] || { variant: 'outline', label: action };
-
-    return (
-      <Badge variant={config.variant} className="text-xs">
-        {config.label}
-      </Badge>
-    );
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -96,7 +79,7 @@ export function LogsTable({
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500">Loading logs...</div>
+        <div className="text-gray-500 dark:text-neutral-400">Loading logs...</div>
       </div>
     );
   }
@@ -104,56 +87,56 @@ export function LogsTable({
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto relative">
-        <table className="w-full bg-white">
+        <table className="w-full bg-white dark:bg-neutral-900">
           <thead className="sticky top-0 z-20">
-            <tr className="h-12.5 bg-gray-50 border-b border-gray-200">
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 min-w-45">
+            <tr className="h-12.5 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700">
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-45">
                 Time
               </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 min-w-25">
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
+                Actor
+              </th>
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-25">
                 Action
               </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 min-w-37.5">
-                Table
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
+                Module
               </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 min-w-50">
-                Record ID
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 min-w-37.5">
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-37.5">
                 Details
+              </th>
+              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
+                IP Address
               </th>
             </tr>
           </thead>
           <tbody>
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
-                  {searchQuery ? 'No logs found matching your search' : 'No activity logs yet'}
+                <td
+                  colSpan={6}
+                  className="px-4 py-12 text-center text-gray-500 dark:text-neutral-400"
+                >
+                  {searchQuery ? 'No logs found matching your search' : 'No audit logs yet'}
                 </td>
               </tr>
             ) : (
               filteredLogs.map((log) => {
                 const isExpanded = expandedRows.has(String(log.id));
-                let details = null;
-
-                try {
-                  details = log.details ? JSON.parse(log.details) : null;
-                } catch (e) {
-                  details = log.details;
-                }
+                const details = log.details;
 
                 return (
                   <React.Fragment key={log.id}>
-                    <tr className="h-14 border-b border-gray-100 transition-colors hover:bg-gray-50/50">
-                      <td className="px-4 text-[13px] text-gray-600">
-                        {formatDate(log.created_at)}
+                    <tr className="h-14 border-b border-gray-100 dark:border-neutral-800 transition-colors hover:bg-gray-50/50 dark:hover:bg-neutral-800/50">
+                      <td className="px-4 text-[13px] text-gray-600 dark:text-neutral-400">
+                        {formatDate(log.createdAt)}
                       </td>
-                      <td className="px-4">{getActionBadge(log.action)}</td>
-                      <td className="px-4 text-sm font-medium text-gray-800">{log.table_name}</td>
-                      <td className="px-4">
-                        <span className="font-mono text-[13px] text-gray-500">
-                          {log.record_id || '-'}
-                        </span>
+                      <td className="px-4 text-sm font-medium text-gray-800 dark:text-neutral-200">
+                        {log.actor}
+                      </td>
+                      <td className="px-4 text-gray-700 dark:text-neutral-300">{log.action}</td>
+                      <td className="px-4 text-sm text-gray-700 dark:text-neutral-300">
+                        {log.module}
                       </td>
                       <td className="px-4">
                         {details && typeof details === 'object' ? (
@@ -161,24 +144,32 @@ export function LogsTable({
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleRowExpansion(String(log.id))}
-                            className="h-8 px-3 text-[13px]"
+                            className="h-8 px-3 text-[13px] text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-700"
                           >
                             {isExpanded ? (
-                              <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                              <ChevronDown className="h-3.5 w-3.5 mr-1 text-gray-600 dark:text-neutral-400" />
                             ) : (
-                              <ChevronRight className="h-3.5 w-3.5 mr-1" />
+                              <ChevronRight className="h-3.5 w-3.5 mr-1 text-gray-600 dark:text-neutral-400" />
                             )}
                             View Details
                           </Button>
                         ) : (
-                          <span className="text-[13px] text-gray-500">{details || '-'}</span>
+                          <span className="text-[13px] text-gray-500 dark:text-neutral-500">-</span>
                         )}
+                      </td>
+                      <td className="px-4">
+                        <span className="font-mono text-[12px] text-gray-500 dark:text-neutral-500">
+                          {log.ipAddress || '-'}
+                        </span>
                       </td>
                     </tr>
                     {isExpanded && details && typeof details === 'object' && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono bg-white p-3 rounded border border-border-gray">
+                        <td
+                          colSpan={6}
+                          className="px-4 py-3 bg-gray-50 dark:bg-neutral-800 border-b border-gray-100 dark:border-neutral-700"
+                        >
+                          <pre className="text-xs text-gray-700 dark:text-neutral-300 whitespace-pre-wrap font-mono bg-white dark:bg-neutral-900 p-3 rounded border border-border-gray dark:border-neutral-700">
                             {JSON.stringify(details, null, 2)}
                           </pre>
                         </td>

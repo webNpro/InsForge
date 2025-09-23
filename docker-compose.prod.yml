@@ -39,8 +39,6 @@ services:
     ports:
       - "5430:3000"
     depends_on:
-      vector:
-        condition: service_healthy
       postgres:
         condition: service_healthy
     networks:
@@ -56,8 +54,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      vector:
-        condition: service_healthy
     ports:
       - "7130:7130"
       - "7131:7131"
@@ -67,6 +63,7 @@ services:
       - API_BASE_URL=${API_BASE_URL:-}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-this-password}
       # PostgreSQL connection
@@ -79,13 +76,6 @@ services:
       - POSTGREST_BASE_URL=http://postgrest:3000
       # Deno Runtime URL (disabled)
       # - DENO_RUNTIME_URL=http://deno:7133
-      # OAuth Configuration
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:7130/api/auth/oauth/google/callback}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-http://localhost:7130/api/auth/oauth/github/callback}
       # Storage Configuration
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
       - AWS_REGION=${AWS_REGION:-}
@@ -94,6 +84,8 @@ services:
       - PROJECT_ID=${PROJECT_ID:-}
       - APP_KEY=${APP_KEY:-}
       - ACCESS_API_KEY=${ACCESS_API_KEY:-}
+      # LLM Model API keys
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     restart: unless-stopped
     networks:
       - insforge-network
@@ -132,97 +124,6 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - insforge-network
-
-  analytics:
-    container_name: insforge-analytics
-    image: supabase/logflare:1.14.2
-    restart: unless-stopped
-    ports:
-      - 4000:4000
-    # Uncomment to use Big Query backend for analytics
-    # volumes:
-    #   - type: bind
-    #     source: ${PWD}/gcloud.json
-    #     target: /opt/app/rel/logflare/bin/gcloud.json
-    #     read_only: true
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "http://localhost:4000/health"
-        ]
-      timeout: 10s
-      interval: 10s
-      retries: 5
-      start_period: 30s
-    depends_on:
-      postgres:
-        # Disable this if you are using an external Postgres database
-        condition: service_healthy
-    environment:
-      # Basic Logflare configuration
-      LOGFLARE_NODE_HOST: 127.0.0.1
-      PHX_HTTP_PORT: 4000
-      LOGFLARE_LOG_LEVEL: warn
-      # Database connection
-      DB_USERNAME: ${POSTGRES_USER:-postgres}
-      DB_DATABASE: _insforge
-      DB_HOSTNAME: postgres
-      DB_PORT: ${POSTGRES_PORT:-5432}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DB_SCHEMA: _analytics
-      # Access tokens
-      LOGFLARE_PUBLIC_ACCESS_TOKEN: ${LOGFLARE_PUBLIC_ACCESS_TOKEN}
-      LOGFLARE_PRIVATE_ACCESS_TOKEN: ${LOGFLARE_PRIVATE_ACCESS_TOKEN}
-      # Mode settings
-      LOGFLARE_SINGLE_TENANT: true
-      LOGFLARE_SUPABASE_MODE: true
-      LOGFLARE_MIN_CLUSTER_SIZE: 1
-      # Use postgres backend
-      POSTGRES_BACKEND_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:${POSTGRES_PORT:-5432}/_insforge
-      POSTGRES_BACKEND_SCHEMA: _analytics
-      LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
-      # Uncomment to use Big Query backend for analytics
-      # GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
-      # GOOGLE_PROJECT_NUMBER: ${GOOGLE_PROJECT_NUMBER}
-    networks:
-      - insforge-network
-
-  vector:
-    container_name: insforge-vector
-    image: timberio/vector:0.28.1-alpine
-    restart: unless-stopped
-    volumes:
-      - ./docker-init/logs/vector.yml:/etc/vector/vector.yml:ro,z
-      - ${DOCKER_SOCKET_LOCATION}:/var/run/docker.sock:ro,z
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://vector:7135/health"
-        ]
-      timeout: 5s
-      interval: 5s
-      retries: 3
-    depends_on:
-      analytics:
-        condition: service_healthy
-    environment:
-      LOGFLARE_PUBLIC_ACCESS_TOKEN: ${LOGFLARE_PUBLIC_ACCESS_TOKEN}
-    command:
-      [
-        "--config",
-        "/etc/vector/vector.yml"
-      ]
-    security_opt:
-      - "label=disable"
-    networks:
-      - insforge-network
 
 volumes:
   postgres-data:

@@ -1,23 +1,28 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { DatabaseError } from 'pg';
 import logger from '@/utils/logger.js';
 
 const router = Router();
 const db = DatabaseManager.getInstance();
+const auditService = AuditService.getInstance();
 
 // Schema for function upload
 const functionUploadSchema = z.object({
-  name: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Invalid name format'),
+  name: z.string().min(1, 'Name is required'),
   slug: z
     .string()
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid slug format')
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Invalid slug format - must be alphanumeric with hyphens or underscores only'
+    )
     .optional(),
   code: z.string().min(1),
   description: z.string().optional(),
-  status: z.enum(['draft', 'active']).optional().default('draft'),
+  status: z.enum(['draft', 'active']).optional().default('active'),
 });
 
 // Schema for function update
@@ -39,7 +44,7 @@ router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
         `SELECT 
           id, slug, name, description, status, 
           created_at, updated_at, deployed_at
-        FROM _edge_functions
+        FROM _functions
         ORDER BY created_at DESC`
       )
       .all();
@@ -68,7 +73,7 @@ router.get('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
       SELECT 
         id, slug, name, description, code, status,
         created_at, updated_at, deployed_at
-      FROM _edge_functions
+      FROM _functions
       WHERE slug = ?
     `
       )
@@ -132,7 +137,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
     await db
       .prepare(
         `
-      INSERT INTO _edge_functions (id, slug, name, description, code, status)
+      INSERT INTO _functions (id, slug, name, description, code, status)
       VALUES (?, ?, ?, ?, ?, ?)
     `
       )
@@ -143,7 +148,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       await db
         .prepare(
           `
-        UPDATE _edge_functions SET deployed_at = CURRENT_TIMESTAMP WHERE id = ?
+        UPDATE _functions SET deployed_at = CURRENT_TIMESTAMP WHERE id = ?
       `
         )
         .run(id);
@@ -154,13 +159,27 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       .prepare(
         `
       SELECT id, slug, name, description, status, created_at
-      FROM _edge_functions WHERE id = ?
+      FROM _functions WHERE id = ?
     `
       )
       .get(id);
 
     // Log function creation for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${name} (${slug}) created by ${req.user?.email}`);
+
+    // Log audit for function creation
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'CREATE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        functionId: id,
+        slug,
+        name,
+        status,
+      },
+      ip_address: req.ip,
+    });
 
     res.status(201).json({
       success: true,
@@ -206,7 +225,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
     const updates = validation.data;
 
     // Check if function exists
-    const existing = await db.prepare('SELECT id FROM _edge_functions WHERE slug = ?').get(slug);
+    const existing = await db.prepare('SELECT id FROM _functions WHERE slug = ?').get(slug);
     if (!existing) {
       return res.status(404).json({ error: 'Function not found' });
     }
@@ -214,38 +233,38 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
     // Update fields
     if (updates.name !== undefined) {
       await db
-        .prepare('UPDATE _edge_functions SET name = ? WHERE slug = ?')
+        .prepare('UPDATE _functions SET name = ? WHERE slug = ?')
         .run(updates.name, slug);
     }
 
     if (updates.description !== undefined) {
       await db
-        .prepare('UPDATE _edge_functions SET description = ? WHERE slug = ?')
+        .prepare('UPDATE _functions SET description = ? WHERE slug = ?')
         .run(updates.description, slug);
     }
 
     if (updates.code !== undefined) {
       await db
-        .prepare('UPDATE _edge_functions SET code = ? WHERE slug = ?')
+        .prepare('UPDATE _functions SET code = ? WHERE slug = ?')
         .run(updates.code, slug);
     }
 
     if (updates.status !== undefined) {
       await db
-        .prepare('UPDATE _edge_functions SET status = ? WHERE slug = ?')
+        .prepare('UPDATE _functions SET status = ? WHERE slug = ?')
         .run(updates.status, slug);
 
       // Update deployed_at if status changes to active
       if (updates.status === 'active') {
         await db
-          .prepare('UPDATE _edge_functions SET deployed_at = CURRENT_TIMESTAMP WHERE slug = ?')
+          .prepare('UPDATE _functions SET deployed_at = CURRENT_TIMESTAMP WHERE slug = ?')
           .run(slug);
       }
     }
 
     // Update updated_at
     await db
-      .prepare('UPDATE _edge_functions SET updated_at = CURRENT_TIMESTAMP WHERE slug = ?')
+      .prepare('UPDATE _functions SET updated_at = CURRENT_TIMESTAMP WHERE slug = ?')
       .run(slug);
 
     // Fetch updated function
@@ -253,13 +272,25 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
       .prepare(
         `
       SELECT id, slug, name, description, status, updated_at
-      FROM _edge_functions WHERE slug = ?
+      FROM _functions WHERE slug = ?
     `
       )
       .get(slug);
 
     // Log function update for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${slug} updated by ${req.user?.email}`);
+
+    // Log audit for function update
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'UPDATE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        slug,
+        changes: updates,
+      },
+      ip_address: req.ip,
+    });
 
     res.json({
       success: true,
@@ -283,7 +314,7 @@ router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => 
   try {
     const { slug } = req.params;
 
-    const result = await db.prepare('DELETE FROM _edge_functions WHERE slug = ?').run(slug);
+    const result = await db.prepare('DELETE FROM _functions WHERE slug = ?').run(slug);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Function not found' });
@@ -291,6 +322,17 @@ router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => 
 
     // Log function deletion for audit purposes, this is required before finishing serverless function completely
     logger.info(`Function ${slug} deleted by ${req.user?.email}`);
+
+    // Log audit for function deletion
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'DELETE_FUNCTION',
+      module: 'FUNCTIONS',
+      details: {
+        slug,
+      },
+      ip_address: req.ip,
+    });
 
     res.json({
       success: true,

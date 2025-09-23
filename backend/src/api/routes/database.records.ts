@@ -3,17 +3,19 @@ import axios from 'axios';
 import http from 'http';
 import https from 'https';
 import { AuthRequest, extractApiKey } from '@/api/middleware/auth.js';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
-import { AuthService } from '@/core/auth/auth.js';
 import logger from '@/utils/logger.js';
+import { SecretsService } from '@/core/secrets/secrets.js';
+import { AuthService } from '@/core/auth/auth.js';
 
 const router = Router();
 const authService = AuthService.getInstance();
+const secretService = new SecretsService();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
 
 // Create a dedicated HTTP agent with connection pooling for PostgREST
@@ -134,7 +136,7 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 
     // If we have an API key, verify it and use admin token for PostgREST
     if (apiKey) {
-      const isValid = await authService.verifyApiKey(apiKey);
+      const isValid = await secretService.verifyApiKey(apiKey);
       if (isValid) {
         axiosConfig.headers.authorization = `Bearer ${adminToken}`;
       }
@@ -242,4 +244,4 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
 router.all('/:tableName', forwardToPostgrest);
 router.all('/:tableName/*', forwardToPostgrest);
 
-export { router as recordRouter };
+export { router as databaseRecordsRouter };

@@ -133,15 +133,15 @@ if echo "$auth_response" | grep -q '"accessToken"'; then
     # Test pagination headers
     print_info "8. Testing Pagination Headers"
     # Use -I for headers, but we need both headers and body
-    full_response=$(curl -s -i "$API_BASE/logs?limit=10" \
+    full_response=$(curl -s -i "$API_BASE/logs/audits?limit=10" \
         -H "Authorization: Bearer $ADMIN_TOKEN")
     
     # Extract headers (everything before empty line)
     headers=$(echo "$full_response" | awk 'BEGIN{RS="\r\n\r\n"} NR==1')
     
-    test_response_format "X-Total-Count header" "$headers" 'X-Total-Count:'
-    test_response_format "X-Page header" "$headers" 'X-Page:'
-    test_response_format "X-Limit header" "$headers" 'X-Limit:'
+    # Test for PostgREST-style Content-Range header (format: start-end/total)
+    test_response_format "Content-Range header" "$headers" 'Content-Range:'
+    test_response_format "Preference-Applied header" "$headers" 'Preference-Applied:'
     
 else
     print_fail "Failed to register user"

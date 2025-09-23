@@ -62,6 +62,13 @@
     --fontFamilyMono: 'Ubuntu Mono', ui-monospace, monospace;
   }
 
+  /* Prevent document-level scrolling */
+  html,
+  body {
+    overflow: hidden;
+    height: 100%;
+  }
+
   /* Apply base font settings */
   body {
     font-family: var(--fontFamilyBase);
@@ -214,10 +221,6 @@
   --color-link-blue: #2c7fff;
   --color-bg-gray-hover: #ebebeb;
 }
-
-/* Allow natural scrolling behavior */
-
-/* Removed forced scrollbar to fix layout issues */
 
 /* Fix for Radix UI dropdowns to prevent scroll lock */
 [data-radix-popper-content-wrapper] {

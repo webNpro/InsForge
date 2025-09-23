@@ -1,23 +1,22 @@
 import { Lock, FormInput, Users } from 'lucide-react';
 import GoogleIcon from '@/assets/icons/google.svg';
 import GithubIcon from '@/assets/icons/github.svg';
-import { OAuthMetadataSchema } from '@insforge/shared-schemas';
+import { AuthMetadataSchema } from '@insforge/shared-schemas';
 import { cn } from '@/lib/utils/utils';
+import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
 
 interface AuthNodeProps {
   data: {
-    authMetadata: OAuthMetadataSchema;
+    authMetadata: AuthMetadataSchema;
     userCount?: number;
   };
 }
 
 export function AuthNode({ data }: AuthNodeProps) {
   const { authMetadata, userCount } = data;
+  const { isProviderConfigured } = useOAuthConfig();
 
-  const enabledProviders = Object.values(authMetadata).filter(
-    (provider) => provider.enabled || provider.useSharedKeys
-  );
-  const enabledCount = enabledProviders.length;
+  const enabledCount = authMetadata.oauths.length;
 
   return (
     <div className="bg-neutral-900 rounded-lg border border-[#363636] min-w-[280px]">
@@ -61,15 +60,13 @@ export function AuthNode({ data }: AuthNodeProps) {
           <div
             className={cn(
               'px-1.5 py-0.5 rounded flex items-center',
-              authMetadata.google.enabled || authMetadata.google.useSharedKeys
+              isProviderConfigured('google')
                 ? 'bg-lime-200 text-lime-900'
                 : 'bg-neutral-700 text-neutral-300'
             )}
           >
             <span className="text-xs font-medium">
-              {authMetadata.google.enabled || authMetadata.google.useSharedKeys
-                ? 'Enabled'
-                : 'Disabled'}
+              {isProviderConfigured('google') ? 'Enabled' : 'Disabled'}
             </span>
           </div>
         </div>
@@ -83,15 +80,13 @@ export function AuthNode({ data }: AuthNodeProps) {
           <div
             className={cn(
               'px-1.5 py-0.5 rounded flex items-center',
-              authMetadata.github.enabled || authMetadata.github.useSharedKeys
+              isProviderConfigured('github')
                 ? 'bg-lime-200 text-lime-900'
                 : 'bg-neutral-700 text-neutral-300'
             )}
           >
             <span className="text-xs font-medium">
-              {authMetadata.github.enabled || authMetadata.github.useSharedKeys
-                ? 'Enabled'
-                : 'Disabled'}
+              {isProviderConfigured('github') ? 'Enabled' : 'Disabled'}
             </span>
           </div>
         </div>

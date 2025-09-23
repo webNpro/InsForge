@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
-import { DatabaseController } from '@/controllers/database.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
+import { AuditService } from '@/core/logs/audit.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
@@ -12,7 +13,8 @@ import {
 import logger from '@/utils/logger';
 
 const router = Router();
-const databaseController = new DatabaseController();
+const dbAdvanceService = new DatabaseAdvanceService();
+const auditService = AuditService.getInstance();
 
 /**
  * Execute raw SQL query
@@ -31,7 +33,21 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     const { query, params = [] } = validation.data;
-    const response = await databaseController.executeRawSQL(query, params);
+    const response = await dbAdvanceService.executeRawSQL(query, params);
+
+    // Log audit for raw SQL execution
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'EXECUTE_RAW_SQL',
+      module: 'DATABASE',
+      details: {
+        query: query.substring(0, 300), // Limit query length in audit log
+        paramCount: params.length,
+        rowsAffected: response.rowCount,
+      },
+      ip_address: req.ip,
+    });
+
     res.json(response);
   } catch (error: unknown) {
     logger.warn('Raw SQL execution error:', error);
@@ -77,7 +93,7 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
       includeViews,
       rowLimit,
     } = validation.data;
-    const response = await databaseController.exportDatabase(
+    const response = await dbAdvanceService.exportDatabase(
       tables,
       format,
       includeData,
@@ -86,6 +102,18 @@ router.post('/export', verifyAdmin, async (req: AuthRequest, res: Response) => {
       includeViews,
       rowLimit
     );
+
+    // Log audit for database export
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'EXPORT_DATABASE',
+      module: 'DATABASE',
+      details: {
+        format: response.format,
+      },
+      ip_address: req.ip,
+    });
+
     res.json(response);
   } catch (error: unknown) {
     logger.warn('Database export error:', error);
@@ -125,12 +153,28 @@ router.post(
         throw new AppError('SQL file is required', 400, ERROR_CODES.INVALID_INPUT);
       }
 
-      const response = await databaseController.importDatabase(
+      const response = await dbAdvanceService.importDatabase(
         req.file.buffer,
         req.file.originalname,
         req.file.size,
         truncate
       );
+
+      // Log audit for database import
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'IMPORT_DATABASE',
+        module: 'DATABASE',
+        details: {
+          truncate,
+          filename: response.filename,
+          fileSize: response.fileSize,
+          tablesAffected: response.tables.length,
+          rowsImported: response.rowsImported,
+        },
+        ip_address: req.ip,
+      });
+
       res.json(response);
     } catch (error: unknown) {
       logger.warn('Database import error:', error);

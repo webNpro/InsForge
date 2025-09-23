@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { verifyApiKey, verifyCloudBackend } from '@/api/middleware/auth.js';
 
 export const usageRouter = Router();
@@ -51,9 +51,6 @@ usageRouter.get('/stats', verifyCloudBackend, async (req, res, next) => {
     const db = dbManager.getDb();
 
     // Get MCP tool usage count within date range
-    const endDatePlusOne = new Date(end_date as string);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-
     const mcpResult = await db
       .prepare(
         `
@@ -64,7 +61,7 @@ usageRouter.get('/stats', verifyCloudBackend, async (req, res, next) => {
         AND created_at < $2
     `
       )
-      .get(new Date(start_date as string), endDatePlusOne);
+      .get(new Date(start_date as string), new Date(end_date as string));
     const mcpUsageCount = parseInt(mcpResult?.count || '0');
 
     // Get database size (in bytes)

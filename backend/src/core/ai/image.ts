@@ -51,7 +51,7 @@ export class ImageService {
       if (aiConfig?.systemPrompt) {
         finalPrompt = `${aiConfig.systemPrompt}\n\n${options.prompt}`;
       }
-      
+
       // Build content for the message
       const userContent = options.images?.length
         ? [

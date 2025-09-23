@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useForm, Controller, useFormState } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { ExternalLink } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
@@ -13,105 +14,117 @@ import {
   DialogFooter,
 } from '@/components/radix/Dialog';
 import WarningIcon from '@/assets/icons/warning.svg';
-import { configService } from '@/features/auth/services/config.service';
-import { useToast } from '@/lib/hooks/useToast';
 import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
-import { OAuthProviderInfo } from './OAuthConfiguration';
+import { OAuthProviderInfo } from './AuthMethodTab';
+import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
+import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
-  return `${window.location.origin}/api/auth/oauth/${provider}/callback`;
+  const isHttp = window.location.protocol === 'http:';
+  const baseUrl = isHttp ? 'http://localhost:7130' : window.location.origin;
+  return `${baseUrl}/api/auth/oauth/${provider}/callback`;
 };
 
-interface OAuthDialogProps {
+interface OAuthConfigDialogProps {
   provider?: OAuthProviderInfo;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialogProps) {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { showToast } = useToast();
+export function OAuthConfigDialog({
+  provider,
+  isOpen,
+  onClose,
+  onSuccess,
+}: OAuthConfigDialogProps) {
+  const {
+    configs,
+    providerConfig,
+    createConfig,
+    updateConfig,
+    isCreating,
+    isUpdating,
+    setSelectedProvider,
+    isLoadingProvider,
+  } = useOAuthConfig();
 
-  const form = useForm<OAuthConfigSchema>({
-    resolver: zodResolver(oAuthConfigSchema),
+  const form = useForm<OAuthConfigSchema & { clientSecret?: string }>({
+    resolver: zodResolver(oAuthConfigSchema.extend({ clientSecret: z.string().optional() })),
     defaultValues: {
-      google: {
-        clientId: '',
-        clientSecret: '',
-        redirectUri: getCallbackUrl('google'),
-        enabled: false,
-        useSharedKeys: false,
-      },
-      github: {
-        clientId: '',
-        clientSecret: '',
-        redirectUri: getCallbackUrl('github'),
-        enabled: false,
-        useSharedKeys: false,
-      },
+      provider: provider?.id || 'google',
+      clientId: '',
+      clientSecret: '',
+      useSharedKey: false,
     },
   });
 
-  const currentProviderKey = provider?.id || 'google';
-  const useSharedKeys = form.watch(`${currentProviderKey}.useSharedKeys`);
-  const clientId = form.watch(`${currentProviderKey}.clientId`);
-  const clientSecret = form.watch(`${currentProviderKey}.clientSecret`);
+  const useSharedKey = form.watch('useSharedKey');
+  const clientId = form.watch('clientId');
+  const clientSecret = form.watch('clientSecret');
 
   // Use useFormState hook for better reactivity
   const { isDirty } = useFormState({
     control: form.control,
   });
 
-  const loadOAuthConfig = useCallback(async () => {
-    try {
-      setLoading(true);
-      const config = await configService.getOAuthConfig();
-      form.reset(config);
-    } catch (error) {
-      const errorMessage = 'Failed to load OAuth configuration';
-      showToast(errorMessage, 'error');
-      console.error('Error loading OAuth config:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [form, showToast]);
-
-  // Load OAuth configuration when dialog opens
+  // Set selected provider and refetch when dialog opens
   useEffect(() => {
     if (isOpen && provider) {
-      void loadOAuthConfig();
+      setSelectedProvider(provider.id);
     }
-  }, [isOpen, provider, loadOAuthConfig]);
+  }, [configs, isOpen, provider, setSelectedProvider]);
 
-  const handleSubmitData = async (data: OAuthConfigSchema) => {
+  // Load OAuth configuration after fetching
+  useEffect(() => {
+    if (isOpen && provider && !isLoadingProvider) {
+      if (providerConfig) {
+        form.reset({
+          provider: provider.id,
+          clientId: providerConfig.clientId || '',
+          clientSecret: providerConfig.clientSecret || '',
+          useSharedKey: providerConfig.useSharedKey || false,
+        });
+      } else {
+        form.reset({
+          provider: provider.id,
+          clientId: '',
+          clientSecret: '',
+          useSharedKey: isInsForgeCloudProject(),
+        });
+      }
+    }
+  }, [isOpen, provider, providerConfig, form, isLoadingProvider]);
+
+  const handleSubmitData = (data: OAuthConfigSchema & { clientSecret?: string }) => {
     if (!provider) {
       return;
     }
 
     try {
-      setSaving(true);
-
-      // Create updated config without enabling the OAuth method
-      const updatedConfig = {
-        ...data,
-        [currentProviderKey]: {
-          ...data[currentProviderKey],
-          useSharedKeys: useSharedKeys ?? true,
-        },
-      };
-
-      // Update OAuth configuration (only config data, not enable status)
-      await configService.updateOAuthConfig(updatedConfig);
-      await configService.reloadOAuthConfig();
-
-      showToast(`${provider.name} configuration updated successfully!`, 'success');
-
-      // Reset form state to mark as clean (not dirty)
-      form.reset(updatedConfig);
+      if (providerConfig) {
+        // Update existing config
+        updateConfig({
+          provider: provider.id,
+          config: data.useSharedKey
+            ? { useSharedKey: true }
+            : {
+                clientId: data.clientId,
+                clientSecret: data.clientSecret,
+                useSharedKey: false,
+              },
+        });
+      } else {
+        // Create new config
+        createConfig({
+          provider: provider.id,
+          clientId: data.useSharedKey ? undefined : data.clientId,
+          clientSecret: data.useSharedKey ? undefined : clientSecret,
+          useSharedKey: data.useSharedKey,
+        });
+      }
 
       // Call success callback if provided
       if (onSuccess) {
@@ -120,26 +133,29 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
       // Close dialog
       onClose();
     } catch (error) {
-      const errorMessage = `Failed to update ${provider.name} configuration. Please check running environment and try again.`;
-      showToast(errorMessage, 'error');
       console.error('Error saving OAuth config:', error);
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleSubmit = () => {
-    void handleSubmitData(form.getValues() as OAuthConfigSchema);
+    void handleSubmitData(form.getValues());
   };
 
+  const saving = isCreating || isUpdating;
+
   // Use RHF's built-in validation and dirty state
-  const isUpdateDisabled = () => {
-    if (saving || !isDirty) {
+  const isDisabled = () => {
+    if (saving) {
+      return true;
+    }
+
+    // In update mode, require dirty state
+    if (providerConfig && !isDirty) {
       return true;
     }
 
     // If using shared keys, always allow (no credential validation needed)
-    if (useSharedKeys) {
+    if (useSharedKey) {
       return false;
     }
 
@@ -153,7 +169,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
         <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700">
           <DialogTitle>{provider?.name}</DialogTitle>
         </DialogHeader>
-        {loading ? (
+        {isLoadingProvider ? (
           <div className="p-6 flex items-center justify-center">
             <div className="text-center">
               <div className="text-sm text-gray-500 dark:text-zinc-400">
@@ -168,7 +184,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                 {/* Shared Keys Toggle */}
                 <div className="flex items-center justify-start gap-2">
                   <Controller
-                    name={`${currentProviderKey}.useSharedKeys`}
+                    name="useSharedKey"
                     control={form.control}
                     render={({ field }) => {
                       return (
@@ -186,7 +202,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                   </span>
                 </div>
 
-                {useSharedKeys ? (
+                {useSharedKey ? (
                   /* Shared Keys Enabled */
                   <div className="space-y-6">
                     <p className="text-sm text-zinc-500 dark:text-neutral-400">
@@ -231,13 +247,13 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                   </div>
                 )}
               </div>
-              {!useSharedKeys && (
+              {!useSharedKey && (
                 <div className="space-y-6 p-6 border-t border-zinc-200 dark:border-neutral-700">
                   <div className="flex flex-row items-center justify-between gap-10">
                     <label className="text-sm text-zinc-950 dark:text-white">Client ID</label>
                     <Input
                       type="text"
-                      {...form.register(`${currentProviderKey}.clientId`)}
+                      {...form.register('clientId')}
                       placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App ID`}
                       className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
                     />
@@ -247,7 +263,7 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
                     <label className="text-sm text-zinc-950 dark:text-white">Client Secret</label>
                     <Input
                       type="password"
-                      {...form.register(`${currentProviderKey}.clientSecret`)}
+                      {...form.register('clientSecret')}
                       placeholder={`Enter ${provider?.name.split(' ')[0]} OAuth App Secret`}
                       className="w-[340px] dark:bg-neutral-900 dark:placeholder:text-neutral-400 dark:border-neutral-700 dark:text-white"
                     />
@@ -269,10 +285,16 @@ export function OAuthDialog({ provider, isOpen, onClose, onSuccess }: OAuthDialo
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isUpdateDisabled()}
+                disabled={isDisabled()}
                 className="h-9 w-30 px-3 py-2 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-400"
               >
-                {saving ? 'Saving...' : 'Update'}
+                {saving
+                  ? providerConfig
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : providerConfig
+                    ? 'Update'
+                    : 'Add OAuth'}
               </Button>
             </DialogFooter>
           </>

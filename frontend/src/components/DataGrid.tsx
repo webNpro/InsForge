@@ -8,7 +8,7 @@ import ReactDataGrid, {
 } from 'react-data-grid';
 import { Button } from '@/components/radix/Button';
 import { Badge } from '@/components/radix/Badge';
-import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import { Copy, Check, ArrowDownWideNarrow, ArrowUpNarrowWide, Key } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { format, parse } from 'date-fns';
 import { PaginationControls } from './PaginationControls';
@@ -268,6 +268,7 @@ export function SortableHeaderRenderer({
   return (
     <div className="group w-full h-full flex items-center cursor-pointer">
       <div className="flex flex-row gap-1 items-center">
+        {column.isPrimaryKey && <Key className="w-4 h-4 text-zinc-500 pointer-events-none mr-1" />}
         <span
           className={`truncate text-sm font-medium ${mutedHeader ? 'text-zinc-500 dark:text-neutral-400' : 'text-zinc-950 dark:text-zinc-300'} max-w-[120px]`}
           title={column.name}
@@ -468,7 +469,7 @@ export function DataGrid({
       <div className="flex-1 overflow-hidden relative mx-3 border border-border-gray dark:border-0">
         <ReactDataGrid
           columns={gridColumns}
-          rows={data || []}
+          rows={isRefreshing ? [] : data}
           rowKeyGetter={keyGetter}
           onRowsChange={() => {}}
           selectedRows={selectedRows}
@@ -488,7 +489,7 @@ export function DataGrid({
                   {emptyStateActionText && onEmptyStateAction && (
                     <button
                       onClick={onEmptyStateAction}
-                      className="inline-flex items-center text-sm font-medium text-chart-blue-dark focus:outline-none focus:ring-0 dark:text-zinc-400"
+                      className="inline-flex items-center text-sm font-medium text-chart-blue-dark focus:outline-none focus:ring-0 dark:text-emerald-300"
                     >
                       {emptyStateActionText}
                     </button>
@@ -501,7 +502,7 @@ export function DataGrid({
 
         {/* Loading mask overlay */}
         {isRefreshing && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-neutral-800/60 flex items-center justify-center z-50 mt-13">
+          <div className="absolute inset-0 bg-white dark:bg-neutral-800 flex items-center justify-center z-50 mt-9">
             <div className="flex items-center gap-1">
               <div className="w-5 h-5 border-2 border-zinc-500 dark:border-neutral-700 border-t-transparent rounded-full animate-spin" />
               <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading</span>

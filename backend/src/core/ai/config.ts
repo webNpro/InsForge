@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
 import { AIConfigurationSchema, AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 
@@ -153,6 +153,28 @@ export class AIConfigService {
       throw new Error('Failed to fetch AI configuration');
     } finally {
       client.release();
+    }
+  }
+
+  /**
+   * Get AI metadata
+   */
+  async getMetadata(): Promise<{ models: Array<{ modality: string; modelId: string }> }> {
+    try {
+      const configs = await this.findAll();
+
+      // Map configs to simplified model metadata
+      const models = configs.map((config) => ({
+        modality: config.modality,
+        modelId: config.modelId,
+      }));
+
+      return { models };
+    } catch (error) {
+      logger.error('Failed to get AI metadata', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { models: [] };
     }
   }
 }

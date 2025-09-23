@@ -3,9 +3,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import fetch from 'node-fetch';
 import { program } from 'commander';
-import { handleApiResponse, formatSuccessMessage } from './response-handler.js';
 import { promises as fs } from 'fs';
-import path from 'path';
+import { handleApiResponse, formatSuccessMessage } from './response-handler.js';
 import { UsageTracker } from './usage-tracker.js';
 import {
   ColumnType,
@@ -15,6 +14,8 @@ import {
   updateTableSchemaRequestSchema,
   CreateBucketRequest,
   createBucketRequestSchema,
+  rawSQLRequestSchema,
+  RawSQLRequest,
 } from '@insforge/shared-schemas';
 
 // Parse command line arguments
@@ -206,30 +207,6 @@ server.tool(
 );
 
 server.tool(
-  'debug-backend',
-  'Debug Insforge backend issues requires this tool. <critical>MANDATORY: Always use this tool FIRST when encountering backend errors, API failures, or backend questions. It will diagnose issues by reading all documentation, verifying current state, and testing with curl.</critical>',
-  {},
-  withUsageTracking('debug-backend', async () => {
-    try {
-      const content = await fetchDocumentation('debug');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  })
-);
-
-server.tool(
   'get-api-key',
   'Retrieves the API key for the Insforge OSS backend. This is used to authenticate all requests to the backend.',
   {},
@@ -237,81 +214,6 @@ server.tool(
     try {
       return await addBackgroundContext({
         content: [{ type: 'text', text: `API key: ${getApiKey()}` }],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get database API documentation
-server.tool(
-  'get-db-api',
-  'Retrieves documentation for Insforge OSS database CRUD operations, including automatic table creation and smart schema management',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('db-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get authentication API documentation
-server.tool(
-  'get-auth-api',
-  'Retrieves documentation for Insforge OSS authentication API, including JWT tokens, project management, and API key generation',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('auth-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
-      });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      return await addBackgroundContext({
-        content: [{ type: 'text', text: `Error: ${errMsg}` }],
-      });
-    }
-  }
-);
-
-// Get storage API documentation
-server.tool(
-  'get-storage-api',
-  'Retrieves documentation for Insforge OSS file storage API, including file uploads, metadata handling, and automatic cleanup',
-  {},
-  async () => {
-    try {
-      const content = await fetchDocumentation('storage-api');
-      return await addBackgroundContext({
-        content: [
-          {
-            type: 'text',
-            text: content,
-          },
-        ],
       });
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -386,7 +288,7 @@ server.tool(
 
 // --------------------------------------------------
 // Core Database Tools
-
+/*
 server.tool(
   'create-table',
   'Create a new table with explicit schema definition',
@@ -572,6 +474,7 @@ server.tool(
     }
   )
 );
+*/
 
 // Get table schema
 server.tool(
@@ -587,7 +490,7 @@ server.tool(
   withUsageTracking('get-table-schema', async ({ apiKey, tableName }) => {
     try {
       const actualApiKey = getApiKey(apiKey);
-      const response = await fetch(`${API_BASE_URL}/api/database/tables/${tableName}/schema`, {
+      const response = await fetch(`${API_BASE_URL}/api/metadata/${tableName}`, {
         method: 'GET',
         headers: {
           'x-api-key': actualApiKey,
@@ -655,6 +558,60 @@ server.tool(
           {
             type: 'text',
             text: `Error retrieving backend metadata: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
+
+// Execute raw SQL query
+server.tool(
+  'run-raw-sql',
+  'Execute raw SQL query with optional parameters. Admin access required. Use with caution as it can modify data directly.',
+  {
+    apiKey: z
+      .string()
+      .optional()
+      .describe('API key for authentication (optional if provided via --api_key)'),
+    ...rawSQLRequestSchema.shape,
+  },
+  withUsageTracking('run-raw-sql', async ({ apiKey, query, params }) => {
+    try {
+      const actualApiKey = getApiKey(apiKey);
+
+      const requestBody: RawSQLRequest = {
+        query,
+        params: params || [],
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/database/advance/rawsql`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': actualApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await handleApiResponse(response);
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage('SQL query executed', result),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error executing SQL query: ${errMsg}`,
           },
         ],
         isError: true,
@@ -792,6 +749,249 @@ server.tool(
           {
             type: 'text',
             text: `Error deleting bucket: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
+
+// Create edge function
+server.tool(
+  'create-function',
+  'Create a new edge function that runs in Deno runtime. The code must be written to a file first for version control',
+  {
+    slug: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Slug must be alphanumeric with hyphens or underscores only')
+      .describe(
+        'URL-friendly identifier (alphanumeric, hyphens, underscores only). Example: "my-calculator"'
+      ),
+    name: z.string().describe('Function display name. Example: "Calculator Function"'),
+    codeFile: z
+      .string()
+      .describe(
+        'Path to JavaScript file containing the function code. Must export: module.exports = async function(request) { return new Response(...) }'
+      ),
+    description: z.string().optional().describe('Description of what the function does'),
+    active: z
+      .boolean()
+      .optional()
+      .describe('Set to true to deploy immediately, false for draft mode'),
+  },
+  withUsageTracking('create-function', async (args) => {
+    try {
+      // Read code from file
+      let code: string;
+      try {
+        code = await fs.readFile(args.codeFile, 'utf-8');
+      } catch (fileError) {
+        throw new Error(
+          `Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+        );
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/functions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': getApiKey(),
+        },
+        body: JSON.stringify({
+          slug: args.slug,
+          name: args.name,
+          code: code,
+          description: args.description || '',
+          status: args.active ? 'active' : 'draft',
+        }),
+      });
+
+      const result = await handleApiResponse(response);
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage(
+              `Edge function '${args.slug}' created successfully from ${args.codeFile}`,
+              result
+            ),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error creating function: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
+
+// Get specific edge function
+server.tool(
+  'get-function',
+  'Get details of a specific edge function including its code',
+  {
+    slug: z.string().describe('The slug identifier of the function'),
+  },
+  withUsageTracking('get-function', async (args) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
+        method: 'GET',
+        headers: {
+          'x-api-key': getApiKey(),
+        },
+      });
+
+      const result = await handleApiResponse(response);
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage(`Edge function '${args.slug}' details`, result),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error getting function: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
+
+// Update edge function
+server.tool(
+  'update-function',
+  'Update an existing edge function code or metadata',
+  {
+    slug: z.string().describe('The slug identifier of the function to update'),
+    name: z.string().optional().describe('New display name'),
+    codeFile: z
+      .string()
+      .optional()
+      .describe(
+        'Path to JavaScript file containing the new function code. Must export: module.exports = async function(request) { return new Response(...) }'
+      ),
+    description: z.string().optional().describe('New description'),
+    status: z
+      .string()
+      .optional()
+      .describe('Function status: "draft" (not deployed), "active" (deployed), or "error"'),
+  },
+  withUsageTracking('update-function', async (args) => {
+    try {
+      const updateData: any = {};
+      if (args.name) {
+        updateData.name = args.name;
+      }
+
+      // Read code from file if provided
+      if (args.codeFile) {
+        try {
+          updateData.code = await fs.readFile(args.codeFile, 'utf-8');
+        } catch (fileError) {
+          throw new Error(
+            `Failed to read code file '${args.codeFile}': ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+          );
+        }
+      }
+
+      if (args.description !== undefined) {
+        updateData.description = args.description;
+      }
+      if (args.status) {
+        updateData.status = args.status;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': getApiKey(),
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const result = await handleApiResponse(response);
+
+      const fileInfo = args.codeFile ? ` from ${args.codeFile}` : '';
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage(
+              `Edge function '${args.slug}' updated successfully${fileInfo}`,
+              result
+            ),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error updating function: ${errMsg}`,
+          },
+        ],
+        isError: true,
+      });
+    }
+  })
+);
+
+// Delete edge function
+server.tool(
+  'delete-function',
+  'Delete an edge function permanently',
+  {
+    slug: z.string().describe('The slug identifier of the function to delete'),
+  },
+  withUsageTracking('delete-function', async (args) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/functions/${args.slug}`, {
+        method: 'DELETE',
+        headers: {
+          'x-api-key': getApiKey(),
+        },
+      });
+
+      const result = await handleApiResponse(response);
+
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: formatSuccessMessage(`Edge function '${args.slug}' deleted successfully`, result),
+          },
+        ],
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      return await addBackgroundContext({
+        content: [
+          {
+            type: 'text',
+            text: `Error deleting function: ${errMsg}`,
           },
         ],
         isError: true,

@@ -2,12 +2,13 @@ import { Router, Response, NextFunction } from 'express';
 import { ChatService } from '@/core/ai/chat';
 import { AuthRequest, verifyAdmin, verifyUser } from '../middleware/auth';
 import { ImageService } from '@/core/ai/image';
-import { ModelService } from '@/core/ai/model';
+import { AIModelService } from '@/core/ai/model';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
 import { AIConfigService } from '@/core/ai/config';
 import { AIUsageService } from '@/core/ai/usage';
+import { AuditService } from '@/core/logs/audit';
 import {
   createAIConfigurationRequestSchema,
   updateAIConfigurationRequestSchema,
@@ -21,6 +22,7 @@ const router = Router();
 const chatService = new ChatService();
 const aiConfigService = new AIConfigService();
 const aiUsageService = new AIUsageService();
+const auditService = AuditService.getInstance();
 
 /**
  * GET /api/ai/models
@@ -28,7 +30,7 @@ const aiUsageService = new AIUsageService();
  */
 router.get('/models', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const models = await ModelService.getModels();
+    const models = await AIModelService.getModels();
     res.json(models);
   } catch (error) {
     console.error('Error getting models:', error);
@@ -171,6 +173,20 @@ router.post(
 
       const result = await aiConfigService.create(modality, provider, modelId, systemPrompt);
 
+      // Log audit for AI configuration creation
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'CREATE_CONFIGURATION',
+        module: 'AI',
+        details: {
+          configId: result.id,
+          modality,
+          provider,
+          modelId,
+        },
+        ip_address: req.ip,
+      });
+
       successResponse(
         res,
         {
@@ -246,6 +262,18 @@ router.patch(
         throw new AppError('AI configuration not found', 404, ERROR_CODES.NOT_FOUND);
       }
 
+      // Log audit for AI configuration update
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'UPDATE_CONFIGURATION',
+        module: 'AI',
+        details: {
+          configId: req.params.id,
+          changes: { systemPrompt },
+        },
+        ip_address: req.ip,
+      });
+
       successResponse(res, {
         message: 'AI configuration updated successfully',
       });
@@ -279,6 +307,17 @@ router.delete(
       if (!deleted) {
         throw new AppError('AI configuration not found', 404, ERROR_CODES.NOT_FOUND);
       }
+
+      // Log audit for AI configuration deletion
+      await auditService.log({
+        actor: req.user?.email || 'api-key',
+        action: 'DELETE_CONFIGURATION',
+        module: 'AI',
+        details: {
+          configId: req.params.id,
+        },
+        ip_address: req.ip,
+      });
 
       successResponse(res, {
         message: 'AI configuration deleted successfully',

@@ -9,12 +9,13 @@ import LoginPage from './features/login/page/LoginPage';
 import DashboardPage from './features/dashboard/page/DashboardPage';
 import DatabasePage from './features/database/page/DatabasePage';
 import AuthenticationPage from './features/auth/page/AuthenticationPage';
-import LogsPage from './features/logs/page/LogsPage';
+import AuditsPage from './features/logs/page/AuditsPage';
 import AnalyticsLogsPage from './features/logs/page/AnalyticsLogsPage';
 import StoragePage from './features/storage/page/StoragePage';
 import MetadataPage from './features/metadata/page/MetadataPage';
 import OnBoardPage from './features/onboard/page/OnBoardPage';
 import VisualizerPage from './features/visualizer/page/VisualizerPage';
+import FunctionsPage from './features/functions/page/FunctionsPage';
 import Layout from './components/layout/Layout';
 import { OnboardStepProvider } from './lib/contexts/OnboardStepContext';
 import CloudLayout from './components/layout/CloudLayout';
@@ -67,6 +68,7 @@ function AppRoutes() {
                 <Route path="/database" element={<DatabasePage />} />
                 <Route path="/storage" element={<StoragePage />} />
                 <Route path="/analytics" element={<AnalyticsLogsPage />} />
+                <Route path="/functions" element={<FunctionsPage />} />
                 <Route path="/ai" element={<AiPage />} />
                 <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
               </Routes>
@@ -85,8 +87,9 @@ function AppRoutes() {
                 <Route path="/dashboard/authentication" element={<AuthenticationPage />} />
                 <Route path="/dashboard/database" element={<DatabasePage />} />
                 <Route path="/dashboard/storage" element={<StoragePage />} />
-                <Route path="/dashboard/logs" element={<LogsPage />} />
+                <Route path="/dashboard/audits" element={<AuditsPage />} />
                 <Route path="/dashboard/analytics" element={<AnalyticsLogsPage />} />
+                <Route path="/dashboard/functions" element={<FunctionsPage />} />
                 <Route path="/dashboard/metadata" element={<MetadataPage />} />
                 <Route path="/dashboard/onboard" element={<OnBoardPage />} />
                 <Route path="/dashboard/ai" element={<AiPage />} />

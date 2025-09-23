@@ -1,71 +1,61 @@
 import { apiClient } from '@/lib/api/client';
-
-export interface LogEntry {
-  id: number;
-  action: string;
-  table_name: string;
-  record_id: string | null;
-  details: string | null;
-  created_at: string;
-}
-
-export interface LogsResponse {
-  records: LogEntry[];
-  total: number;
-}
-
-export interface LogsStats {
-  actionStats: Array<{ action: string; count: number }>;
-  tableStats: Array<{ tableName: string; count: number }>;
-  recentActivity: number;
-  totalLogs: { count: number };
-}
+import {
+  GetAuditLogsResponse,
+  ClearAuditLogsResponse,
+  GetAuditLogsRequest,
+  GetAuditLogStatsResponse,
+} from '@insforge/shared-schemas';
 
 export class LogsService {
-  async getLogs(
+  async getAuditLogs({
     limit = 100,
     offset = 0,
-    filters?: { action?: string; table?: string }
-  ): Promise<LogsResponse> {
+    ...filters
+  }: GetAuditLogsRequest): Promise<GetAuditLogsResponse> {
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
     });
 
+    if (filters?.actor) {
+      params.append('actor', filters.actor);
+    }
     if (filters?.action) {
       params.append('action', filters.action);
     }
-    if (filters?.table) {
-      params.append('table', filters.table);
+    if (filters?.module) {
+      params.append('module', filters.module);
+    }
+    if (filters?.startDate) {
+      params.append('start_date', filters.startDate);
+    }
+    if (filters?.endDate) {
+      params.append('end_date', filters.endDate);
     }
 
-    const response = await apiClient.request(`/logs?${params.toString()}`, {
-      includeHeaders: true,
+    return apiClient.request(`/logs/audits?${params.toString()}`, {
+      headers: apiClient.withAccessToken(),
+    });
+  }
+
+  async getAuditLogStats(days = 7): Promise<GetAuditLogStatsResponse> {
+    const params = new URLSearchParams({
+      days: days.toString(),
     });
 
-    // Traditional REST with pagination headers
-    if (response.data && Array.isArray(response.data)) {
-      return {
-        records: response.data,
-        total: response.pagination?.totalCount || response.data.length,
-      };
-    }
-
-    // Fallback for unexpected response
-    return {
-      records: [],
-      total: 0,
-    };
+    return apiClient.request(`/logs/audits/stats?${params.toString()}`, {
+      headers: apiClient.withAccessToken(),
+    });
   }
 
-  getStats(): Promise<LogsStats> {
-    return apiClient.request('/logs/stats');
-  }
+  async clearAuditLogs(daysToKeep = 90): Promise<ClearAuditLogsResponse> {
+    const params = new URLSearchParams({
+      days_to_keep: daysToKeep.toString(),
+    });
 
-  clearLogs(before?: string): Promise<{ message: string; deleted: number }> {
-    const params = before ? `?before=${before}` : '';
-    return apiClient.request(`/logs${params}`, {
+    return apiClient.request(`/logs/audits?${params.toString()}`, {
       method: 'DELETE',
+      headers: apiClient.withAccessToken(),
     });
   }
 }
@@ -86,11 +76,9 @@ export interface AnalyticsLogRecord {
 }
 
 export interface AnalyticsLogResponse {
-  source: string;
   logs: AnalyticsLogRecord[];
   total: number;
-  page: number;
-  pageSize: number;
+  tableName: string;
 }
 
 export interface LogSourceStats {
@@ -114,9 +102,7 @@ class AnalyticsService {
   async getLogsBySource(
     sourceName: string,
     limit = 100,
-    beforeTimestamp?: string,
-    startTime?: string,
-    endTime?: string
+    beforeTimestamp?: string
   ): Promise<AnalyticsLogResponse> {
     const params = new URLSearchParams({
       limit: limit.toString(),
@@ -124,12 +110,6 @@ class AnalyticsService {
 
     if (beforeTimestamp) {
       params.append('before_timestamp', beforeTimestamp);
-    }
-    if (startTime) {
-      params.append('start_time', startTime);
-    }
-    if (endTime) {
-      params.append('end_time', endTime);
     }
 
     return apiClient.request(`/logs/analytics/${sourceName}?${params.toString()}`);
@@ -156,14 +136,14 @@ class AnalyticsService {
     }
 
     const response = await apiClient.request(`/logs/analytics/search?${params.toString()}`, {
-      includeHeaders: true,
+      returnFullResponse: true,
     });
 
-    // Handle paginated response
-    if (response.data && Array.isArray(response.data)) {
+    // Handle response - search returns {logs: [], total: number}
+    if (response.logs && Array.isArray(response.logs)) {
       return {
-        records: response.data,
-        total: response.pagination?.totalCount || response.data.length,
+        records: response.logs,
+        total: response.total || response.logs.length,
       };
     }
 

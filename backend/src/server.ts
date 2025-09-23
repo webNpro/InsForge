@@ -6,25 +6,24 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import authRouter from '@/api/routes/auth.js';
-import { tableRouter } from '@/api/routes/tables.js';
-import { recordRouter } from '@/api/routes/records.js';
-import databaseRouter from '@/api/routes/database.js';
+import { databaseTablesRouter } from '@/api/routes/database.tables.js';
+import { databaseRecordsRouter } from '@/api/routes/database.records.js';
+import databaseAdvanceRouter from '@/api/routes/database.advance.js';
 import { storageRouter } from '@/api/routes/storage.js';
 import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
-import { configRouter } from '@/api/routes/config.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
+import functionSecretsRouter from '@/api/routes/functions.secrets.js';
 import { usageRouter } from '@/api/routes/usage.js';
 import { openAPIRouter } from '@/api/routes/openapi.js';
 import { agentDocsRouter } from '@/api/routes/agent.js';
 import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch from 'node-fetch';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AnalyticsManager } from '@/core/analytics/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
@@ -51,9 +50,7 @@ export async function createApp() {
   const storageService = StorageService.getInstance();
   await storageService.initialize(); // create data/storage
 
-  // Initialize metadata service
-  const metadataService = MetadataService.getInstance();
-  await metadataService.initialize(); // populate _metadata table
+  // Metadata is now handled by individual modules on-demand
 
   // Initialize analytics service
   const analyticsManager = AnalyticsManager.getInstance();
@@ -144,15 +141,15 @@ export async function createApp() {
 
   // Mount auth routes
   apiRouter.use('/auth', authRouter);
-  apiRouter.use('/database/tables', tableRouter);
-  apiRouter.use('/database/records', recordRouter);
-  apiRouter.use('/database/advance', databaseRouter);
+  apiRouter.use('/database/tables', databaseTablesRouter);
+  apiRouter.use('/database/records', databaseRecordsRouter);
+  apiRouter.use('/database/advance', databaseAdvanceRouter);
   apiRouter.use('/storage', storageRouter);
   apiRouter.use('/metadata', metadataRouter);
   apiRouter.use('/logs', logsRouter);
-  apiRouter.use('/config', configRouter);
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
+  apiRouter.use('/function-secrets', functionSecretsRouter);
   apiRouter.use('/usage', usageRouter);
   apiRouter.use('/openapi', openAPIRouter);
   apiRouter.use('/agent-docs', agentDocsRouter);
@@ -190,30 +187,25 @@ export async function createApp() {
     try {
       const { slug } = req.params;
       const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
-      const queryString = new URL(req.url, `http://localhost`).search;
 
-      // Convert headers to fetch-compatible format
-      const headers: Record<string, string> = {};
-      Object.entries(req.headers).forEach(([key, value]) => {
-        if (value) {
-          headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
+      // Simple direct proxy - just pass everything through
+      const response = await fetch(
+        `${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`,
+        {
+          method: req.method,
+          headers: req.headers as any,
+          body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
         }
-      });
-      headers['X-Forwarded-For'] = req.ip || req.socket.remoteAddress || '';
-      headers['X-Original-Host'] = req.hostname;
+      );
 
-      const response = await fetch(`${denoUrl}/${slug}${queryString}`, {
-        method: req.method,
-        headers,
-        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
-      });
+      // Get response text
+      const responseText = await response.text();
 
-      // Copy response headers
-      for (const [key, value] of response.headers.entries()) {
-        res.setHeader(key, value);
-      }
-
-      res.status(response.status).send(await response.text());
+      res
+        .status(response.status)
+        .set('Content-Type', response.headers.get('content-type') || 'application/json')
+        .set('Access-Control-Allow-Origin', '*')
+        .send(responseText);
     } catch (error) {
       logger.error('Failed to execute function', {
         error: error instanceof Error ? error.message : String(error),

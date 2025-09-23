@@ -1,14 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { DatabaseManager } from '@/core/database/database.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { StorageRecord, BucketRecord } from '@/types/storage.js';
 import {
   StorageFileSchema,
   UploadStrategyResponse,
   DownloadStrategyResponse,
+  StorageMetadataSchema,
 } from '@insforge/shared-schemas';
-import { MetadataService } from '@/core/metadata/metadata.js';
 import {
   S3Client,
   PutObjectCommand,
@@ -462,13 +462,6 @@ export class StorageService {
       throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
     }
 
-    // Log the upload activity
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
-      size: file.size,
-      mime_type: file.mimetype,
-    });
-
     return {
       bucket,
       key,
@@ -523,24 +516,10 @@ export class StorageService {
     // Delete file using backend
     await this.backend.deleteObject(bucket, key);
 
-    // Get file info before deletion for logging
-    const fileInfo = (await db
-      .prepare('SELECT * FROM _storage WHERE bucket = ? AND key = ?')
-      .get(bucket, key)) as StorageRecord | undefined;
-
     // Delete from database
     const result = await db
       .prepare('DELETE FROM _storage WHERE bucket = ? AND key = ?')
       .run(bucket, key);
-
-    if (result.changes > 0 && fileInfo) {
-      // Log the deletion activity
-      const dbManager = DatabaseManager.getInstance();
-      await dbManager.logActivity('DELETE', `storage/${bucket}`, key, {
-        size: fileInfo.size,
-        mime_type: fileInfo.mime_type,
-      });
-    }
 
     return result.changes > 0;
   }
@@ -618,15 +597,8 @@ export class StorageService {
       )
       .run(isPublic, bucket);
 
-    // Log visibility change
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPDATE', 'storage', bucket, {
-      type: 'bucket_visibility',
-      public: isPublic,
-    });
-
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
   }
 
   async listBuckets(): Promise<string[]> {
@@ -662,12 +634,8 @@ export class StorageService {
     // Create bucket using backend
     await this.backend.createBucket(bucket);
 
-    // Log bucket creation
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('CREATE', 'storage', bucket, { type: 'bucket', public: isPublic });
-
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
   }
 
   async deleteBucket(bucket: string): Promise<boolean> {
@@ -684,26 +652,14 @@ export class StorageService {
       return false;
     }
 
-    // Get all files in bucket
-    const objects = (await db
-      .prepare('SELECT key FROM _storage WHERE bucket = ?')
-      .all(bucket)) as Pick<StorageRecord, 'key'>[];
-
     // Delete bucket using backend (handles all files)
     await this.backend.deleteBucket(bucket);
 
     // Delete from storage table (cascade will handle _storage entries)
     await db.prepare('DELETE FROM _storage_buckets WHERE name = ?').run(bucket);
 
-    // Log bucket deletion
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('DELETE', 'storage', bucket, {
-      type: 'bucket',
-      files_deleted: objects.length,
-    });
-
     // Update storage metadata
-    await MetadataService.getInstance().updateStorageMetadata();
+    // Metadata is now updated on-demand
 
     return true;
   }
@@ -804,14 +760,6 @@ export class StorageService {
       throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
     }
 
-    // Log the upload activity
-    const dbManager = DatabaseManager.getInstance();
-    await dbManager.logActivity('UPLOAD', `storage/${bucket}`, key, {
-      size: metadata.size,
-      mime_type: metadata.contentType,
-      method: 'presigned',
-    });
-
     return {
       bucket,
       key,
@@ -820,5 +768,81 @@ export class StorageService {
       uploadedAt: result.uploadedAt,
       url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
+  }
+
+  /**
+   * Get storage metadata
+   */
+  async getMetadata(): Promise<StorageMetadataSchema> {
+    const db = DatabaseManager.getInstance().getDb();
+    // Get storage buckets from _storage_buckets table
+    const storageBuckets = (await db
+      .prepare('SELECT name, public, created_at FROM _storage_buckets ORDER BY name')
+      .all()) as { name: string; public: boolean; created_at: string }[];
+
+    const bucketsMetadata = storageBuckets.map((b) => ({
+      name: b.name,
+      public: b.public,
+      createdAt: b.created_at,
+    }));
+
+    // Get object counts for each bucket
+    const bucketsObjectCountMap = await this.getBucketsObjectCount();
+    const storageSize = await this.getStorageSizeInGB();
+
+    return {
+      buckets: bucketsMetadata.map((bucket) => ({
+        ...bucket,
+        objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
+      })),
+      totalSize: storageSize,
+    };
+  }
+
+  private async getBucketsObjectCount(): Promise<Map<string, number>> {
+    const db = DatabaseManager.getInstance().getDb();
+    try {
+      // Query to get object count for each bucket
+      const bucketCounts = (await db
+        .prepare('SELECT bucket, COUNT(*) as count FROM _storage GROUP BY bucket')
+        .all()) as { bucket: string; count: number }[];
+
+      // Convert to Map for easy lookup
+      const countMap = new Map<string, number>();
+      bucketCounts.forEach((row) => {
+        countMap.set(row.bucket, row.count);
+      });
+
+      return countMap;
+    } catch (error) {
+      logger.error('Error getting bucket object counts', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Return empty map on error
+      return new Map<string, number>();
+    }
+  }
+
+  private async getStorageSizeInGB(): Promise<number> {
+    const db = DatabaseManager.getInstance().getDb();
+    try {
+      // Query the _storage table to sum all file sizes
+      const result = (await db
+        .prepare(
+          `
+        SELECT COALESCE(SUM(size), 0) as total_size
+        FROM _storage
+      `
+        )
+        .get()) as { total_size: number } | null;
+
+      // Convert bytes to GB
+      return (result?.total_size || 0) / (1024 * 1024 * 1024);
+    } catch (error) {
+      logger.error('Error getting storage size', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return 0;
+    }
   }
 }

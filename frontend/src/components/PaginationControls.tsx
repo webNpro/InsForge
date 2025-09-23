@@ -18,7 +18,7 @@ export function PaginationControls({
   pageSize = 50,
   recordLabel = 'results',
 }: PaginationControlsProps) {
-  const startRecord = (currentPage - 1) * pageSize + 1;
+  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endRecord = Math.min(currentPage * pageSize, totalRecords);
 
   return (
@@ -37,7 +37,7 @@ export function PaginationControls({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm text-gray-700 dark:text-zinc-300">
-          Page {currentPage} of {totalPages}
+          Page {totalRecords === 0 ? 0 : currentPage} of {totalPages}
         </span>
         <Button
           variant="outline"

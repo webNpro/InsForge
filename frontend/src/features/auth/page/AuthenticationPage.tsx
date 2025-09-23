@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { UserPlus, Users, Key } from 'lucide-react';
 import { Button, SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
-import { UsersManagement } from '@/features/auth/components/UsersManagement';
+import { UsersTab } from '@/features/auth/components/UsersTab';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/components/radix/Tooltip';
 import { UserFormDialog } from '@/features/auth/components/UserFormDialog';
-import { OAuthConfiguration } from '@/features/auth/components/OAuthConfiguration';
+import { AuthMethodTab } from '@/features/auth/components/AuthMethodTab';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
@@ -137,7 +137,7 @@ export default function AuthenticationPage() {
         {/* Main Content */}
 
         {selectedSection === 'users' && (
-          <UsersManagement
+          <UsersTab
             searchQuery={searchQuery}
             selectedRows={selectedRows}
             onSelectedRowsChange={setSelectedRows}
@@ -145,9 +145,7 @@ export default function AuthenticationPage() {
           />
         )}
 
-        {selectedSection === 'auth-methods' && (
-          <OAuthConfiguration onNavigateToUsers={() => setSelectedSection('users')} />
-        )}
+        {selectedSection === 'auth-methods' && <AuthMethodTab />}
       </div>
 
       <UserFormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />

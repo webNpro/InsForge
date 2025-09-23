@@ -242,13 +242,15 @@ export function LinkRecordModal({
           <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
             Link Record
           </DialogTitle>
-          <p className="text-sm text-zinc-500 dark:text-neutral-400 flex items-center gap-1.5">
-            Select a record to reference from
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-zinc-500 dark:text-neutral-400">
+              Select a record to reference from
+            </span>
             <TypeBadge
               type={`${referenceTable}.${referenceColumn}`}
               className="dark:bg-neutral-700"
             />
-          </p>
+          </div>
         </DialogHeader>
 
         {/* Search Bar */}

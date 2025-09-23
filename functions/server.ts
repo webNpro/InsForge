@@ -20,6 +20,49 @@ async function getWorkerTemplateCode(): Promise<string> {
   return workerTemplateCode;
 }
 
+// Decrypt function for Deno (compatible with Node.js encryption)
+async function decryptSecret(ciphertext: string, key: string): Promise<string> {
+  try {
+    const parts = ciphertext.split(':');
+    if (parts.length !== 3) {
+      throw new Error('Invalid ciphertext format');
+    }
+
+    // Get the encryption key by hashing the JWT secret
+    const keyData = new TextEncoder().encode(key);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      hashBuffer,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    );
+
+    // Extract IV, auth tag, and encrypted data
+    const iv = Uint8Array.from(parts[0].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+    const authTag = Uint8Array.from(parts[1].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+    const encrypted = Uint8Array.from(parts[2].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+
+    // Combine encrypted data and auth tag (GCM expects them together)
+    const cipherData = new Uint8Array(encrypted.length + authTag.length);
+    cipherData.set(encrypted);
+    cipherData.set(authTag, encrypted.length);
+
+    // Decrypt
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
+      cipherData
+    );
+
+    return new TextDecoder().decode(decryptedBuffer);
+  } catch (error) {
+    console.error('Failed to decrypt secret:', error);
+    throw error;
+  }
+}
+
 // Database connection
 const dbConfig = {
   user: Deno.env.get('POSTGRES_USER') || 'postgres',
@@ -37,7 +80,7 @@ async function getFunctionCode(slug: string): Promise<string | null> {
     await client.connect();
 
     const result = await client.queryObject<{ code: string }>`
-      SELECT code FROM _edge_functions 
+      SELECT code FROM _functions 
       WHERE slug = ${slug} AND status = 'active'
     `;
 
@@ -54,10 +97,57 @@ async function getFunctionCode(slug: string): Promise<string | null> {
   }
 }
 
+// Get all function secrets from database and decrypt them
+async function getFunctionSecrets(): Promise<Record<string, string>> {
+  const client = new Client(dbConfig);
+  
+  try {
+    await client.connect();
+    
+    // Get the encryption key from environment
+    const encryptionKey = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('JWT_SECRET');
+    if (!encryptionKey) {
+      console.error('No encryption key available for decrypting secrets');
+      return {};
+    }
+    
+    // Fetch all function secrets
+    const result = await client.queryObject<{ 
+      key: string; 
+      value_ciphertext: string 
+    }>`
+      SELECT key, value_ciphertext 
+      FROM _function_secrets
+    `;
+    
+    const secrets: Record<string, string> = {};
+    
+    // Decrypt each secret
+    for (const row of result.rows) {
+      try {
+        secrets[row.key] = await decryptSecret(row.value_ciphertext, encryptionKey);
+      } catch (error) {
+        console.error(`Failed to decrypt secret ${row.key}:`, error);
+        // Skip this secret if decryption fails
+      }
+    }
+    
+    return secrets;
+  } catch (error) {
+    console.error('Error fetching function secrets:', error);
+    return {};
+  } finally {
+    await client.end();
+  }
+}
+
 // Execute function in isolated worker
 async function executeInWorker(code: string, request: Request): Promise<Response> {
   // Get worker template
   const template = await getWorkerTemplateCode();
+  
+  // Fetch all function secrets
+  const secrets = await getFunctionSecrets();
 
   // Create blob for worker
   const workerBlob = new Blob([template], { type: 'application/javascript' });
@@ -86,6 +176,7 @@ async function executeInWorker(code: string, request: Request): Promise<Response
 
       if (e.data.success) {
         const { response } = e.data;
+        // The worker now properly sends null for bodyless responses
         resolve(
           new Response(response.body, {
             status: response.status,
@@ -126,8 +217,8 @@ async function executeInWorker(code: string, request: Request): Promise<Response
       body,
     };
 
-    // Send single message with both code and request data
-    worker.postMessage({ code, requestData });
+    // Send message with code, request data, and secrets
+    worker.postMessage({ code, requestData, secrets });
   });
 }
 
@@ -151,8 +242,8 @@ Deno.serve({ port }, async (req: Request) => {
     );
   }
 
-  // Function execution - match any slug pattern
-  const slugMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)\/?$/);
+  // Function execution - match ONLY exact slug, no subpaths
+  const slugMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)$/);
   if (slugMatch) {
     const slug = slugMatch[1];
 
@@ -166,7 +257,7 @@ Deno.serve({ port }, async (req: Request) => {
       });
     }
 
-    // Execute in worker
+    // Execute in worker with original request
     try {
       return await executeInWorker(code, req);
     } catch (error) {

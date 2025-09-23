@@ -1,14 +1,11 @@
-import { MetadataService } from '@/core/metadata/metadata.js';
+import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { TableSchema } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 
 export class AgentAPIDocService {
   private static instance: AgentAPIDocService;
-  private metadataService: MetadataService;
 
-  private constructor() {
-    this.metadataService = MetadataService.getInstance();
-  }
+  private constructor() {}
 
   static getInstance(): AgentAPIDocService {
     if (!AgentAPIDocService.instance) {
@@ -64,8 +61,10 @@ export class AgentAPIDocService {
    */
   async generateAgentDocumentation(): Promise<any> {
     try {
-      // Get fresh metadata
-      const metadata = await this.metadataService.getFullMetadata();
+      // Get fresh metadata from database controller
+      const dbAdvanceService = new DatabaseAdvanceService();
+      const databaseMetadata = await dbAdvanceService.getMetadata();
+      const metadata = { database: databaseMetadata };
 
       // Filter out system tables
       const tables = metadata.database.tables.filter((table) => {

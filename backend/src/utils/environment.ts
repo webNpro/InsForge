@@ -13,10 +13,10 @@ export function isCloudEnvironment(): boolean {
 }
 
 /**
- * Check if the application should use shared OAuth keys
+ * Check if the application can use shared OAuth keys
  * This is typically enabled in cloud environments to avoid storing secrets
  */
-export function shouldUseSharedOAuthKeys(): boolean {
+export function isOAuthSharedKeysAvailable(): boolean {
   return isCloudEnvironment();
 }
 

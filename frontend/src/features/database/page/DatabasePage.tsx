@@ -339,7 +339,6 @@ export default function DatabasePage() {
     try {
       // Find column schema to determine the correct type conversion
       const columnSchema = tableData?.schema?.columns?.find((col) => col.columnName === columnKey);
-
       if (columnSchema) {
         // Convert value based on column type using utility function
         const conversionResult = convertValueForColumn(columnSchema.type, newValue);
@@ -568,7 +567,7 @@ export default function DatabasePage() {
                         />
                       )}
                       <div className="flex items-center gap-2 ml-4">
-                        {selectedRows.size === 0 && (
+                        {selectedRows.size === 0 && selectedTable !== 'users' && (
                           <>
                             {/* Add Record Button */}
                             <Button

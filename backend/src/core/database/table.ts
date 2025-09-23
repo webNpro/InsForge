@@ -1,5 +1,4 @@
-import { DatabaseManager } from '@/core/database/database.js';
-import { MetadataService } from '@/core/metadata/metadata.js';
+import { DatabaseManager } from '@/core/database/manager.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import {
@@ -75,20 +74,18 @@ export function formatDefaultValue(
   return `DEFAULT ${getSafeDollarQuotedLiteral(value)}`;
 }
 
-export class TablesController {
+export class DatabaseTableService {
   private dbManager: DatabaseManager;
-  private metadataService: MetadataService;
 
   constructor() {
     this.dbManager = DatabaseManager.getInstance();
-    this.metadataService = MetadataService.getInstance();
   }
 
   /**
    * List all tables
    */
   async listTables(): Promise<string[]> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     const tables = await db
       .prepare(
         `
@@ -146,7 +143,7 @@ export class TablesController {
       }
     });
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Check if table exists
     const tableExists = await db
@@ -173,11 +170,15 @@ export class TablesController {
     // Map columns to SQL with proper type conversion
     const columnDefs = validatedColumns
       .map((col: ColumnSchema) => {
-        const fieldType = COLUMN_TYPES[col.type];
+        const fieldType = COLUMN_TYPES[col.type as ColumnType];
         const sqlType = fieldType.sqlType;
 
         // Handle default values
-        const defaultClause = formatDefaultValue(col.defaultValue, col.type, col.isNullable);
+        const defaultClause = formatDefaultValue(
+          col.defaultValue,
+          col.type as ColumnType,
+          col.isNullable
+        );
 
         const nullable = col.isNullable ? '' : 'NOT NULL';
         const unique = col.isUnique ? 'UNIQUE' : '';
@@ -236,20 +237,15 @@ export class TablesController {
       )
       .exec();
 
-    // Log the table creation activity
-    await this.dbManager.logActivity('CREATE_TABLE', table_name, undefined, {
-      columns: validatedColumns,
-    });
-
     // Update metadata
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     return {
       message: 'table created successfully',
       tableName: table_name,
       columns: validatedColumns.map((col) => ({
         ...col,
-        sqlType: COLUMN_TYPES[col.type].sqlType,
+        sqlType: COLUMN_TYPES[col.type as ColumnType].sqlType,
       })),
       autoFields: ['id', 'created_at', 'updated_at'],
       nextActions: 'you can now use the table with the POST /api/database/tables/{table} endpoint',
@@ -284,7 +280,7 @@ export class TablesController {
   }
 
   async getTableSchema(table: string): Promise<GetTableSchemaResponse> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Get column information from information_schema
     const columns = await db
@@ -395,7 +391,7 @@ export class TablesController {
       );
     }
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
 
     // Check if table exists
     const tableExists = await db
@@ -623,7 +619,7 @@ export class TablesController {
     }
 
     // Update metadata after schema changes
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     // enable postgrest to query this table
     await db
@@ -658,11 +654,11 @@ export class TablesController {
       throw new AppError('Cannot delete users table', 403, ERROR_CODES.DATABASE_FORBIDDEN);
     }
 
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     await db.prepare(`DROP TABLE IF EXISTS ${this.quoteIdentifier(table)} CASCADE`).run();
 
     // Update metadata
-    await this.metadataService.updateDatabaseMetadata();
+    // Metadata is now updated on-demand
 
     // enable postgrest to query this table
     await db
@@ -729,7 +725,7 @@ export class TablesController {
   }
 
   private async getFkeyConstraints(table: string): Promise<Map<string, ForeignKeyInfo>> {
-    const db = this.dbManager.getAppDb();
+    const db = this.dbManager.getDb();
     const foreignKeys = await db
       .prepare(
         `
