@@ -21,6 +21,7 @@ export default function AIPage() {
     createConfiguration,
     updateConfiguration,
     deleteConfiguration,
+    anonKey,
   } = useAIConfigs();
 
   const { confirm, confirmDialogProps } = useConfirm();
@@ -121,6 +122,7 @@ export default function AIPage() {
                   <AIModelCard
                     key={config.id}
                     config={extendedConfig}
+                    anonKey={anonKey}
                     onEdit={handleEdit}
                     onDelete={() => void handleDelete(config.id)}
                   />

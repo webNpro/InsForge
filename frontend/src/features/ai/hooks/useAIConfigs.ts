@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
+import { authService } from '@/features/auth/services/auth.service';
 import {
   ListModelsResponse,
   AIConfigurationWithUsageSchema,
@@ -51,6 +52,17 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     queryFn: () => aiService.listConfigurations(),
     enabled: enabled,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Fetch anonymous token (shared across all configs)
+  const {
+    data: anonTokenData,
+    isLoading: isLoadingAnonToken,
+  } = useQuery({
+    queryKey: ['anon-token'],
+    queryFn: () => authService.generateAnonToken(),
+    enabled: enabled,
+    staleTime: 30 * 60 * 1000, // Cache for 30 minutes since token never expires
   });
 
   // Create configuration mutation
@@ -187,6 +199,10 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     configurations: configurations || [],
     isLoadingConfigurations,
     configurationsError,
+
+    // Anonymous token data
+    anonKey: anonTokenData?.accessToken,
+    isLoadingAnonToken,
 
     // Configuration mutations
     createConfiguration: createConfigurationMutation.mutate,
