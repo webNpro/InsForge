@@ -49,9 +49,9 @@ export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardPr
 
   // Generate prompt text when component mounts or anonKey changes
   useEffect(() => {
-    const generatePrompt = async () => {
+    const generatePrompt = () => {
       try {
-        const prompt = await generateAIIntegrationPrompt(config, anonKey);
+        const prompt = generateAIIntegrationPrompt(config, anonKey);
         setPromptText(prompt);
       } catch (error) {
         console.error('Failed to generate prompt:', error);

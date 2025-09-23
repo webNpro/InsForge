@@ -55,10 +55,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   });
 
   // Fetch anonymous token (shared across all configs)
-  const {
-    data: anonTokenData,
-    isLoading: isLoadingAnonToken,
-  } = useQuery({
+  const { data: anonTokenData, isLoading: isLoadingAnonToken } = useQuery({
     queryKey: ['anon-token'],
     queryFn: () => authService.generateAnonToken(),
     enabled: enabled,
