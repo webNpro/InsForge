@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { AnalyticsManager } from '@/core/analytics/analytics.js';
+import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
