@@ -3,6 +3,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAIConfigs } from '../hooks/useAIConfigs';
+import { useAIRemainingCredits } from '../hooks/useAIUsage';
 import {
   AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
@@ -24,7 +25,17 @@ export default function AIPage() {
     anonKey,
   } = useAIConfigs();
 
+  const { data: credits } = useAIRemainingCredits();
+
   const { confirm, confirmDialogProps } = useConfirm();
+
+  // Format credits display
+  const formatCredits = (remaining: number) => {
+    if (remaining >= 1000) {
+      return `${(remaining / 1000).toFixed(1)}K`;
+    }
+    return remaining.toFixed(2);
+  };
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -89,7 +100,14 @@ export default function AIPage() {
         {/* Header Section */}
         <div className="w-full flex items-start justify-between">
           <div className="flex flex-col items-start gap-2">
-            <h1 className="text-xl font-semibold text-black dark:text-white">AI Integration</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-semibold text-black dark:text-white">AI Integration</h1>
+              {credits?.remaining && (
+                <span className="text-sm font-normal text-emerald-500 dark:text-emerald-400 mt-[2.5px]">
+                  {formatCredits(credits.remaining)} credit{credits.remaining !== 1 ? 's' : ''} left
+                </span>
+              )}
+            </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
               Copy prompt to your agent and the AI Model below will be integrated automatically.
             </p>

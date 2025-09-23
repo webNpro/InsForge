@@ -18,6 +18,15 @@ interface CloudCredentials {
   expiredAt?: Date | null;
 }
 
+interface OpenRouterKeyInfo {
+  data: {
+    label: string;
+    usage: number;
+    limit: number | null;
+    is_free_tier: boolean;
+  };
+}
+
 export class AIClientService {
   private static instance: AIClientService;
   private cloudCredentials: CloudCredentials | undefined;
@@ -98,6 +107,45 @@ export class AIClientService {
       return true;
     }
     return !!process.env.OPENROUTER_API_KEY;
+  }
+
+  /**
+   * Get remaining credits for the current API key from OpenRouter
+   */
+  async getRemainingCredits(): Promise<{
+    usage: number;
+    limit: number | null;
+    remaining: number | null;
+  }> {
+    try {
+      const apiKey = await this.getApiKey();
+
+      const response = await fetch('https://openrouter.ai/api/v1/key', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch key info: ${response.statusText}`);
+      }
+
+      const keyInfo = (await response.json()) as OpenRouterKeyInfo;
+      const cloudBoost = isCloudEnvironment() ? 10 : 1;
+
+      return {
+        usage: keyInfo.data.usage * cloudBoost,
+        limit: keyInfo.data.limit !== null ? keyInfo.data.limit * cloudBoost : null,
+        remaining:
+          keyInfo.data.limit !== null
+            ? (keyInfo.data.limit - keyInfo.data.usage) * cloudBoost
+            : null,
+      };
+    } catch (error) {
+      console.error('Failed to fetch remaining credits:', error);
+      throw error;
+    }
   }
 
   /**
