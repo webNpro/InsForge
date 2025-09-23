@@ -1,4 +1,4 @@
--- Migration: 009 - Modify AI configurations table to support input/output modalities
+-- Migration: 010 - Modify AI configurations table to support input/output modalities
 -- This migration modifies the _ai_configs table to:
 -- 1. Add new columns: input_modality and output_modality (TEXT arrays)
 -- 2. Migrate existing modality data to input_modality
