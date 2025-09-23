@@ -60,3 +60,17 @@ export function useAIConfigUsage(options: UseAIConfigUsageOptions) {
     staleTime: 60 * 1000, // Cache for 1 minute
   });
 }
+
+export function useAIRemainingCredits(enabled = true) {
+  return useQuery<{
+    usage: number;
+    limit: number | null;
+    remaining: number | null;
+  }>({
+    queryKey: ['ai-remaining-credits'],
+    queryFn: () => aiService.getRemainingCredits(),
+    enabled: enabled,
+    staleTime: 30 * 1000, // Cache for 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every minute
+  });
+}

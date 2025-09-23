@@ -8,6 +8,7 @@ import { ERROR_CODES } from '@/types/error-constants';
 import { successResponse } from '@/utils/response';
 import { AIConfigService } from '@/core/ai/config';
 import { AIUsageService } from '@/core/ai/usage';
+import { AIClientService } from '@/core/ai/client';
 import { AuditService } from '@/core/logs/audit';
 import {
   createAIConfigurationRequestSchema,
@@ -452,5 +453,26 @@ router.get(
     }
   }
 );
+
+/**
+ * GET /api/ai/credits
+ * Get remaining credits for the current API key
+ */
+router.get('/credits', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const aiClientService = AIClientService.getInstance();
+    const credits = await aiClientService.getRemainingCredits();
+
+    successResponse(res, credits);
+  } catch (error) {
+    next(
+      new AppError(
+        error instanceof Error ? error.message : 'Failed to fetch remaining credits',
+        500,
+        ERROR_CODES.INTERNAL_ERROR
+      )
+    );
+  }
+});
 
 export { router as aiRouter };
