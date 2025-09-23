@@ -29,11 +29,12 @@ interface AIConfigExtended extends AIConfigurationWithUsageSchema {
 
 interface AIModelCardProps {
   config: AIConfigExtended;
+  anonKey?: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
+export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardProps) {
   const [promptText, setPromptText] = useState<string>('');
 
   // Extract provider info
@@ -46,19 +47,22 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
   const inputModality = config.inputModality;
   const outputModality = config.outputModality;
 
-  // Generate prompt text when component mounts
+  // Generate prompt text when component mounts or anonKey changes
   useEffect(() => {
     const generatePrompt = async () => {
       try {
-        const prompt = await generateAIIntegrationPrompt(config);
+        const prompt = await generateAIIntegrationPrompt(config, anonKey);
         setPromptText(prompt);
       } catch (error) {
         console.error('Failed to generate prompt:', error);
       }
     };
 
-    generatePrompt();
-  }, [config]);
+    // Only generate prompt if we have anonKey
+    if (anonKey) {
+      generatePrompt();
+    }
+  }, [config, anonKey]);
 
   return (
     <TooltipProvider>

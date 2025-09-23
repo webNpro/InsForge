@@ -23,7 +23,6 @@ export interface ModelOption {
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
 }
 
-import { authService } from '@/features/auth/services/auth.service';
 import { Type, Image } from 'lucide-react';
 import GrokIcon from '@/assets/icons/grok.svg?react';
 import GeminiIcon from '@/assets/icons/gemini.svg?react';
@@ -122,10 +121,11 @@ export const calculatePriceLevel = (
 };
 
 export const generateAIIntegrationPrompt = async (
-  config: AIConfigurationSchema
+  config: AIConfigurationSchema,
+  anonKey?: string
 ): Promise<string> => {
   const baseUrl = window.location.origin;
-  const { accessToken: anonKey } = await authService.generateAnonToken();
+  const token = anonKey;
 
   const supportsImageOutput = config.outputModality.includes('image');
   const supportsImageInput = config.inputModality.includes('image');
@@ -149,7 +149,7 @@ import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
   baseUrl: '${baseUrl}',
-  anonKey: '${anonKey}'
+  anonKey: '${token}'
 });
 \`\`\``;
 
@@ -184,8 +184,7 @@ console.log(response.data[0].content);   // AI's text response about the image o
 const completion = await client.ai.chat.completions.create({
   model: "${config.modelId}",
   messages: [
-    { role: "user", content: "Hello, how are you?" }${
-      supportsImageInput
+    { role: "user", content: "Hello, how are you?" }${supportsImageInput
         ? `,
     { 
       role: 'user', 
@@ -196,7 +195,7 @@ const completion = await client.ai.chat.completions.create({
       ]
     }`
         : ''
-    }
+      }
   ]
 });
 // Access response - OpenAI format
@@ -210,8 +209,7 @@ const completion = await client.ai.chat.completions.create({
     { role: "system", content: "You are a helpful assistant" },
     { role: "user", content: "What is TypeScript?" },
     { role: "assistant", content: "TypeScript is a typed superset of JavaScript..." },
-    { role: "user", content: "Can you give me an example?" }${
-      supportsImageInput
+    { role: "user", content: "Can you give me an example?" }${supportsImageInput
         ? `,
     { 
       role: 'user', 
@@ -221,7 +219,7 @@ const completion = await client.ai.chat.completions.create({
       ]
     }`
         : ''
-    }
+      }
   ],
 });
 \`\`\``;
