@@ -58,23 +58,6 @@ export function useFunctions() {
     },
   });
 
-  // Update function mutation (for future use when API is available)
-  // const updateFunctionMutation = useMutation({
-  //   mutationFn: ({ slug, data }: { slug: string; data: Partial<EdgeFunction> }) =>
-  //     functionsService.updateFunction(slug, data),
-  //   onSuccess: (updatedFunction) => {
-  //     void queryClient.invalidateQueries({ queryKey: ['functions'] });
-  //     showToast('Function updated successfully', 'success');
-  //     if (selectedFunction && selectedFunction.slug === updatedFunction.slug) {
-  //       setSelectedFunction(updatedFunction);
-  //     }
-  //   },
-  //   onError: (error: Error) => {
-  //     const errorMessage = error instanceof Error ? error.message : 'Failed to update function';
-  //     showToast(errorMessage, 'error');
-  //   },
-  // });
-
   // Helper to check if a function is selected
   const isViewingDetail = selectedFunction !== null;
 
@@ -96,7 +79,6 @@ export function useFunctions() {
     // Loading states
     isLoading,
     isDeleting: deleteFunctionMutation.isPending,
-    // isUpdating: updateFunctionMutation.isPending, // TODO: Enable when API is available
 
     // Error
     error,
@@ -105,7 +87,6 @@ export function useFunctions() {
     selectFunction,
     clearSelection,
     deleteFunction: deleteFunctionMutation.mutate,
-    // updateFunction: updateFunctionMutation.mutate, // TODO: Enable when API is available
     refetch,
 
     // Helpers
