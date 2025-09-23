@@ -1,12 +1,12 @@
 import { ColumnType } from '@insforge/shared-schemas';
-import type { ConvertedValue, DataGridRow, DataGridRowType } from './datagridTypes';
+import type { ConvertedValue, DataGridRowType } from './datagridTypes';
 import { RenderCellProps } from 'react-data-grid';
 import { cn, formatValueForDisplay } from '@/lib/utils/utils';
 import { Badge } from '@/components/radix/Badge';
 import IdCell from './IdCell';
 
-// Generic cell renderers factory
-function createDefaultCellRenderers<TRow extends DataGridRowType>() {
+// Generic cell renderer factory
+function createDefaultCellRenderer<TRow extends DataGridRowType>() {
   return {
     text: ({ row, column }: RenderCellProps<TRow>) => {
       const value = row[column.key] as ConvertedValue;
@@ -110,8 +110,5 @@ function createDefaultCellRenderers<TRow extends DataGridRowType>() {
   };
 }
 
-// Default instance for backward compatibility
-export const DefaultCellRenderers = createDefaultCellRenderers<DataGridRow>();
-
 // Export the factory function for custom types
-export { createDefaultCellRenderers };
+export { createDefaultCellRenderer };

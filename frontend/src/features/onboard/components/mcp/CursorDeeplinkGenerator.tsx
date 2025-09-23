@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { createMCPServerConfig, type PlatformType } from '@/components/mcp/mcp-helper';
+import { createMCPServerConfig, type PlatformType } from './mcp-helper';
 
 interface CursorDeeplinkGeneratorProps {
   apiKey?: string;
