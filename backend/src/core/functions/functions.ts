@@ -22,7 +22,7 @@ export class FunctionsService {
       const functions = await this.db
         .prepare(
           `SELECT slug, name, description, status
-          FROM _edge_functions
+          FROM _functions
           ORDER BY created_at DESC`
         )
         .all();
