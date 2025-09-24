@@ -3,7 +3,6 @@ export interface MCPAgent {
   id: string;
   displayName: string;
   logo?: ReactElement;
-  description?: string;
 }
 
 import TraeLogo from '@/assets/logos/trae.svg?react';
@@ -28,48 +27,40 @@ export const MCP_AGENTS: MCPAgent[] = [
     id: 'trae',
     displayName: 'Trae',
     logo: <TraeLogo className="w-6 h-6" />,
-    description: 'AI-powered code editor with built-in MCP support',
   },
   {
     id: 'cursor',
     displayName: 'Cursor',
     logo: <CursorLogo className="w-6 h-6" />,
-    description: 'AI-powered code editor with built-in MCP support',
   },
   {
     id: 'claude-code',
     displayName: 'Claude Code',
     logo: <ClaudeLogo className="w-6 h-6" />,
-    description: "Anthropic's Claude with MCP integration",
   },
   {
     id: 'windsurf',
     displayName: 'Windsurf',
     logo: <WindsurfLogo className="w-6 h-6 dark:text-white" />,
-    description: 'Next-generation AI development environment',
   },
   {
     id: 'cline',
     displayName: 'Cline',
     logo: <ClineLogo className="w-6 h-6 dark:text-white" />,
-    description: 'Intelligent coding assistant with MCP support',
   },
   {
     id: 'roocode',
     displayName: 'Roo Code',
     logo: <img src={RooCodeLogo} alt="" className="dark:invert" />,
-    description: 'Smart code completion and assistance tool',
   },
   {
     id: 'codex',
     displayName: 'Codex',
     logo: <CodexLogo className="w-5 h-5 dark:text-white" />,
-    description: 'AI-powered code editor with built-in MCP support',
   },
   {
     id: 'mcp',
     displayName: 'MCP JSON',
-    description: 'Direct MCP configuration for manual setup',
   },
 ];
 
