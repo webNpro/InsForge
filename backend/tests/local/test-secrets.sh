@@ -34,15 +34,15 @@ if [ -z "$ADMIN_TOKEN" ]; then
 fi
 print_success "Admin logged in"
 
-# 3. List initial secrets (should include INSFORGE_API_URL)
+# 3. List initial secrets (should include BACKEND_INTERNAL_URL)
 print_info "3. Listing initial secrets"
 response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | jq -e '.secrets | map(select(.name == "INSFORGE_API_URL")) | length == 1' >/dev/null 2>&1; then
-    print_success "System secret INSFORGE_API_URL exists"
+if echo "$response" | jq -e '.secrets | map(select(.name == "BACKEND_INTERNAL_URL")) | length == 1' >/dev/null 2>&1; then
+    print_success "System secret BACKEND_INTERNAL_URL exists"
 else
-    print_fail "Expected INSFORGE_API_URL secret to exist"
+    print_fail "Expected BACKEND_INTERNAL_URL secret to exist"
     echo "Response: $response"
     track_test_failure
 fi
@@ -138,7 +138,7 @@ print_info "9. Creating edge function to test secret access"
 cat > /tmp/test-secrets-function.js << EOF
 module.exports = async function(request) {
   const testSecret = Deno.env.get('$TEST_KEY');
-  const systemSecret = Deno.env.get('INSFORGE_API_URL');
+  const systemSecret = Deno.env.get('BACKEND_INTERNAL_URL');
   
   return new Response(JSON.stringify({
     testSecretFound: !!testSecret,
