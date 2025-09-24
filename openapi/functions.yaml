@@ -1,14 +1,14 @@
 openapi: 3.0.3
 info:
-  title: Insforge Edge Functions API
+  title: Insforge Functions API
   version: 1.0.0
-  description: Serverless edge functions running in Deno runtime
+  description: Serverless functions running in Deno runtime
 
 paths:
   /api/functions:
     get:
       summary: List all functions
-      description: Get all edge functions with their metadata
+      description: Get all functions with their metadata
       tags:
         - Admin
       security:
@@ -52,7 +52,7 @@ paths:
 
     post:
       summary: Create new function
-      description: Create a new edge function with code that runs in Deno runtime
+      description: Create a new function with code that runs in Deno runtime
       tags:
         - Admin
       security:
@@ -294,7 +294,7 @@ paths:
 
     delete:
       summary: Delete function
-      description: Permanently delete an edge function
+      description: Permanently delete a function
       tags:
         - Admin
       security:
@@ -341,7 +341,7 @@ paths:
   /functions/{slug}:
     all:
       summary: Execute function
-      description: Execute an edge function with the provided request (supports all HTTP methods)
+      description: Execute a function with the provided request (supports all HTTP methods)
       tags:
         - Client
       parameters:
