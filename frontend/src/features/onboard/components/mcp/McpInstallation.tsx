@@ -12,7 +12,7 @@ import {
   GenerateInstallCommand,
   type MCPAgent,
   type PlatformType,
-} from '@/components/mcp/mcp-helper';
+} from './mcp-helper';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 
