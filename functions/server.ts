@@ -97,7 +97,7 @@ async function getFunctionCode(slug: string): Promise<string | null> {
   }
 }
 
-// Get all function secrets from database and decrypt them
+// Get all secrets from main secrets table and decrypt them
 async function getFunctionSecrets(): Promise<Record<string, string>> {
   const client = new Client(dbConfig);
   
@@ -111,13 +111,15 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
       return {};
     }
     
-    // Fetch all function secrets
+    // Fetch all active secrets from _secrets table
     const result = await client.queryObject<{ 
-      key: string; 
+      name: string; 
       value_ciphertext: string 
     }>`
-      SELECT key, value_ciphertext 
-      FROM _function_secrets
+      SELECT name, value_ciphertext 
+      FROM _secrets
+      WHERE is_active = true 
+        AND (expires_at IS NULL OR expires_at > NOW())
     `;
     
     const secrets: Record<string, string> = {};
@@ -125,16 +127,23 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
     // Decrypt each secret
     for (const row of result.rows) {
       try {
-        secrets[row.key] = await decryptSecret(row.value_ciphertext, encryptionKey);
+        secrets[row.name] = await decryptSecret(row.value_ciphertext, encryptionKey);
+        
+        // Update last_used_at timestamp
+        await client.queryObject`
+          UPDATE _secrets 
+          SET last_used_at = NOW() 
+          WHERE name = ${row.name}
+        `;
       } catch (error) {
-        console.error(`Failed to decrypt secret ${row.key}:`, error);
+        console.error(`Failed to decrypt secret ${row.name}:`, error);
         // Skip this secret if decryption fails
       }
     }
     
     return secrets;
   } catch (error) {
-    console.error('Error fetching function secrets:', error);
+    console.error('Error fetching secrets:', error);
     return {};
   } finally {
     await client.end();

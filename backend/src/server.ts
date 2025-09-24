@@ -14,7 +14,7 @@ import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
-import functionSecretsRouter from '@/api/routes/functions.secrets.js';
+import secretsRouter from '@/api/routes/secrets.js';
 import { usageRouter } from '@/api/routes/usage.js';
 import { openAPIRouter } from '@/api/routes/openapi.js';
 import { agentDocsRouter } from '@/api/routes/agent.js';
@@ -149,7 +149,7 @@ export async function createApp() {
   apiRouter.use('/logs', logsRouter);
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
-  apiRouter.use('/function-secrets', functionSecretsRouter);
+  apiRouter.use('/secrets', secretsRouter);
   apiRouter.use('/usage', usageRouter);
   apiRouter.use('/openapi', openAPIRouter);
   apiRouter.use('/agent-docs', agentDocsRouter);
