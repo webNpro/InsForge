@@ -27,6 +27,20 @@ interface OpenRouterKeyInfo {
   };
 }
 
+interface OpenRouterLimitation {
+  label: string;
+  limit: number | null;
+  usage: number;
+  is_provisioning_key: boolean;
+  limit_remaining: number | null;
+  is_free_tier: boolean;
+  rate_limit: {
+    requests: number;
+    interval: string;
+    note: string;
+  };
+}
+
 export class AIClientService {
   private static instance: AIClientService;
   private cloudCredentials: CloudCredentials | undefined;
@@ -120,28 +134,48 @@ export class AIClientService {
     try {
       const apiKey = await this.getApiKey();
 
-      const response = await fetch('https://openrouter.ai/api/v1/key', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      });
+      if (isCloudEnvironment()) {
+        // Use InsForge API for cloud environment
+        const response = await fetch(
+          `https://api.insforge.dev/ai/v1/limitations?credential=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'GET',
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch key info: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch key info: ${response.statusText}`);
+        }
+
+        const result = (await response.json()) as { data: OpenRouterLimitation };
+        const keyInfo = result.data;
+
+        return {
+          usage: keyInfo.usage,
+          limit: keyInfo.limit,
+          remaining: keyInfo.limit_remaining,
+        };
+      } else {
+        // Use OpenRouter API for local environment
+        const response = await fetch('https://openrouter.ai/api/v1/key', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch key info: ${response.statusText}`);
+        }
+
+        const keyInfo = (await response.json()) as OpenRouterKeyInfo;
+
+        return {
+          usage: keyInfo.data.usage,
+          limit: keyInfo.data.limit,
+          remaining: keyInfo.data.limit !== null ? keyInfo.data.limit - keyInfo.data.usage : null,
+        };
       }
-
-      const keyInfo = (await response.json()) as OpenRouterKeyInfo;
-      const cloudBoost = isCloudEnvironment() ? 10 : 1;
-
-      return {
-        usage: keyInfo.data.usage * cloudBoost,
-        limit: keyInfo.data.limit !== null ? keyInfo.data.limit * cloudBoost : null,
-        remaining:
-          keyInfo.data.limit !== null
-            ? (keyInfo.data.limit - keyInfo.data.usage) * cloudBoost
-            : null,
-      };
     } catch (error) {
       console.error('Failed to fetch remaining credits:', error);
       throw error;
