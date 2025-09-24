@@ -18,6 +18,29 @@ interface CloudCredentials {
   expiredAt?: Date | null;
 }
 
+interface OpenRouterKeyInfo {
+  data: {
+    label: string;
+    usage: number;
+    limit: number | null;
+    is_free_tier: boolean;
+  };
+}
+
+interface OpenRouterLimitation {
+  label: string;
+  limit: number | null;
+  usage: number;
+  is_provisioning_key: boolean;
+  limit_remaining: number | null;
+  is_free_tier: boolean;
+  rate_limit: {
+    requests: number;
+    interval: string;
+    note: string;
+  };
+}
+
 export class AIClientService {
   private static instance: AIClientService;
   private cloudCredentials: CloudCredentials | undefined;
@@ -98,6 +121,65 @@ export class AIClientService {
       return true;
     }
     return !!process.env.OPENROUTER_API_KEY;
+  }
+
+  /**
+   * Get remaining credits for the current API key from OpenRouter
+   */
+  async getRemainingCredits(): Promise<{
+    usage: number;
+    limit: number | null;
+    remaining: number | null;
+  }> {
+    try {
+      const apiKey = await this.getApiKey();
+
+      if (isCloudEnvironment()) {
+        // Use InsForge API for cloud environment
+        const response = await fetch(
+          `https://api.insforge.dev/ai/v1/limitations?credential=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'GET',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch key info: ${response.statusText}`);
+        }
+
+        const result = (await response.json()) as { data: OpenRouterLimitation };
+        const keyInfo = result.data;
+
+        return {
+          usage: keyInfo.usage,
+          limit: keyInfo.limit,
+          remaining: keyInfo.limit_remaining,
+        };
+      } else {
+        // Use OpenRouter API for local environment
+        const response = await fetch('https://openrouter.ai/api/v1/key', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch key info: ${response.statusText}`);
+        }
+
+        const keyInfo = (await response.json()) as OpenRouterKeyInfo;
+
+        return {
+          usage: keyInfo.data.usage,
+          limit: keyInfo.data.limit,
+          remaining: keyInfo.data.limit !== null ? keyInfo.data.limit - keyInfo.data.usage : null,
+        };
+      }
+    } catch (error) {
+      console.error('Failed to fetch remaining credits:', error);
+      throw error;
+    }
   }
 
   /**
