@@ -272,16 +272,12 @@ export function DatabaseDataGrid({
     return convertSchemaToColumns(schema, onCellEdit, onJumpToTable);
   }, [schema, onCellEdit, onJumpToTable]);
 
-  const defaultEmptyDescription = searchQuery
-    ? 'No records match your search criteria'
-    : 'This table contains no records';
-
   return (
     <DataGrid<DatabaseDataGridRow>
       {...props}
       columns={columns}
-      emptyStateTitle={emptyStateTitle}
-      emptyStateDescription={emptyStateDescription || defaultEmptyDescription}
+      emptyStateTitle={searchQuery ? 'No records match your search criteria' : undefined}
+      emptyStateDescription={emptyStateDescription}
       showSelection={true}
       showPagination={true}
     />

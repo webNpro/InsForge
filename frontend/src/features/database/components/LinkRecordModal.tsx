@@ -256,12 +256,10 @@ export function LinkRecordModal({
             onPageChange={setCurrentPage}
             showSelection={false}
             showPagination={true}
-            emptyStateTitle="No records found"
-            emptyStateDescription={
-              searchQuery
-                ? 'No records match your search criteria'
-                : 'This table contains no records'
+            emptyStateTitle={
+              searchQuery ? 'No records match your search criteria' : 'No records found'
             }
+            emptyStateDescription={undefined}
           />
         </div>
 
