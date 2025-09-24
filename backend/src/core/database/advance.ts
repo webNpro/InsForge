@@ -537,22 +537,28 @@ export class DatabaseAdvanceService {
           // Get foreign keys
           const foreignKeysResult = await client.query(
             `
-            SELECT 
+            SELECT DISTINCT
               tc.constraint_name as "constraintName",
-              kcu.column_name as "columnName", 
+              kcu.column_name as "columnName",
               ccu.table_name as "foreignTableName",
               ccu.column_name as "foreignColumnName",
               rc.delete_rule as "deleteRule",
               rc.update_rule as "updateRule"
-            FROM information_schema.table_constraints AS tc 
+            FROM information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
               ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+              AND kcu.table_name = tc.table_name
             JOIN information_schema.constraint_column_usage AS ccu
               ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
             LEFT JOIN information_schema.referential_constraints AS rc
               ON tc.constraint_name = rc.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
+              AND tc.table_schema = rc.constraint_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
             AND tc.table_name = $1
+            AND tc.table_schema = 'public'
+            ORDER BY tc.constraint_name, kcu.column_name
           `,
             [table]
           );
