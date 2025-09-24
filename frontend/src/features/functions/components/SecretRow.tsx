@@ -2,7 +2,7 @@ import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { type FunctionSecret } from '../services/secrets.service';
 import { cn } from '@/lib/utils/utils';
-import { formatRelativeTime } from '../helpers';
+import { formatDistance } from 'date-fns';
 
 interface SecretRowProps {
   secret: FunctionSecret;
@@ -25,7 +25,7 @@ export function SecretRow({ secret, onDelete, className }: SecretRowProps) {
     >
       <div className="grid grid-cols-12 h-full items-center">
         {/* Name Column */}
-        <div className="col-span-3 min-w-0 px-3 py-1.5">
+        <div className="col-span-8 min-w-0 px-3 py-1.5">
           <p
             className="text-sm text-zinc-950 dark:text-white truncate font-medium"
             title={secret.key}
@@ -35,16 +35,15 @@ export function SecretRow({ secret, onDelete, className }: SecretRowProps) {
         </div>
 
         {/* Digest Column */}
-        <div className="col-span-5 min-w-0 px-3 py-1.5">
+        {/* <div className="col-span-5 min-w-0 px-3 py-1.5">
           <span className="text-sm text-zinc-950 dark:text-white font-mono truncate">
-            {secret.key.substring(0, 32)}...
           </span>
-        </div>
+        </div> */}
 
         {/* Updated at Column */}
         <div className="col-span-3 px-3 py-1.5">
           <span className="text-sm text-zinc-950 dark:text-white truncate">
-            {secret.updatedAt ? formatRelativeTime(secret.updatedAt) : 'Never'}
+            {secret.updatedAt ? formatDistance(new Date(secret.updatedAt), new Date(), { addSuffix: true }) : 'Never'}
           </span>
         </div>
 

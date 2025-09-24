@@ -17,7 +17,7 @@ export interface SecretsListResponse {
   secrets: FunctionSecret[];
 }
 
-export class SecretsService {
+export class FunctionSecretsService {
   async listSecrets(): Promise<FunctionSecret[]> {
     const data = (await apiClient.request('/function-secrets', {
       headers: apiClient.withAccessToken(),
@@ -46,4 +46,4 @@ export class SecretsService {
   }
 }
 
-export const secretsService = new SecretsService();
+export const functionSecretsService = new FunctionSecretsService();
