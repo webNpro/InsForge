@@ -2,7 +2,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { useToast } from '@/lib/hooks/useToast';
 import { type EdgeFunction } from '../services/functions.service';
 import { cn } from '@/lib/utils/utils';
-import { formatCreatedDate, formatRelativeTime } from '../helpers';
+import { format, formatDistance } from 'date-fns';
 
 interface FunctionRowProps {
   function: EdgeFunction;
@@ -57,7 +57,7 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             className="text-sm text-muted-foreground dark:text-white truncate"
             title={func.created_at}
           >
-            {formatCreatedDate(func.created_at)}
+            {format(new Date(func.created_at), 'MMM dd, yyyy HH:mm')}
           </span>
         </div>
 
@@ -67,7 +67,7 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             className="text-sm text-muted-foreground dark:text-white truncate"
             title={func.deployed_at}
           >
-            {func.deployed_at ? formatRelativeTime(func.deployed_at) : 'Never'}
+            {func.deployed_at ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true }) : 'Never'}
           </span>
         </div>
       </div>

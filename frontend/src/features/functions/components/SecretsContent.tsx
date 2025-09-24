@@ -6,7 +6,7 @@ import { SearchInput } from '@/components/SearchInput';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SecretRow } from './SecretRow';
 import SecretEmptyState from './SecretEmptyState';
-import { useSecrets } from '../hooks/useSecrets';
+import { useSecrets } from '../hooks/useFunctionSecrets';
 
 export function SecretsContent() {
   const [newSecretKey, setNewSecretKey] = useState('');
@@ -83,8 +83,8 @@ export function SecretsContent() {
         <div className="flex flex-col gap-2">
           {/* Table Header */}
           <div className="grid grid-cols-12 px-3 text-sm text-muted-foreground dark:text-neutral-400">
-            <div className="col-span-3 py-1 px-3">Name</div>
-            <div className="col-span-5 py-1 px-3">Digest</div>
+            <div className="col-span-8 py-1 px-3">Name</div>
+            {/* <div className="col-span-5 py-1 px-3">Digest</div> */}
             <div className="col-span-3 py-1 px-3">Updated at</div>
             <div className="col-span-1 py-1 px-3" />
           </div>
