@@ -259,7 +259,6 @@ export function LinkRecordModal({
             emptyStateTitle={
               searchQuery ? 'No records match your search criteria' : 'No records found'
             }
-            emptyStateDescription={undefined}
           />
         </div>
 

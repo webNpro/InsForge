@@ -203,7 +203,6 @@ export interface StorageDataGridProps extends Omit<DataGridProps<StorageDataGrid
   onDownload?: (file: StorageFileSchema) => void;
   onDelete?: (file: StorageFileSchema) => void;
   isDownloading?: (key: string) => boolean;
-  searchQuery?: string;
 }
 
 // Specialized DataGrid for storage files
@@ -212,19 +211,12 @@ export function StorageDataGrid({
   onDownload,
   onDelete,
   isDownloading,
-  emptyStateTitle = 'No files found',
-  emptyStateDescription,
-  searchQuery,
   ...props
 }: StorageDataGridProps) {
   const columns = useMemo(
     () => createStorageColumns(onPreview, onDownload, onDelete, isDownloading),
     [onPreview, onDownload, onDelete, isDownloading]
   );
-
-  const defaultEmptyDescription = searchQuery
-    ? 'No files match your search criteria'
-    : 'Upload files to this bucket to see them here';
 
   // Ensure each row has an id for selection
   const dataWithIds = useMemo(() => {
@@ -239,8 +231,6 @@ export function StorageDataGrid({
       {...props}
       data={dataWithIds}
       columns={columns}
-      emptyStateTitle={emptyStateTitle}
-      emptyStateDescription={emptyStateDescription || defaultEmptyDescription}
       showSelection={true}
       showPagination={true}
       rowKeyGetter={(row) => row.key}
