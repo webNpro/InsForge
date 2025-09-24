@@ -34,7 +34,6 @@ export interface DataGridProps<TRow extends DataGridRowType = DataGridRow> {
   totalRecords?: number;
   onPageChange?: (page: number) => void;
   emptyStateTitle?: string;
-  emptyStateDescription?: string;
   emptyStateActionText?: string;
   onEmptyStateAction?: () => void;
   rowKeyGetter?: (row: TRow) => string;
@@ -62,7 +61,6 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
   totalRecords,
   onPageChange,
   emptyStateTitle = 'No data available',
-  emptyStateDescription,
   emptyStateActionText,
   onEmptyStateAction,
   rowKeyGetter,
@@ -236,11 +234,6 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
                       </button>
                     )}
                   </div>
-                  {emptyStateDescription && (
-                    <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {emptyStateDescription}
-                    </div>
-                  )}
                 </div>
               </div>
             ),

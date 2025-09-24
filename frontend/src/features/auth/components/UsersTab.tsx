@@ -101,17 +101,13 @@ export function UsersTab({
           onSelectedRowsChange={setSelectedRows}
           sortColumns={sortColumns}
           onSortColumnsChange={setSortColumns}
-          searchQuery={externalSearchQuery}
           currentPage={currentPage}
           totalPages={totalPages}
           pageSize={pageSize}
           totalRecords={totalUsers}
           onPageChange={setCurrentPage}
-          emptyStateTitle="No users found"
-          emptyStateDescription={
-            externalSearchQuery
-              ? 'No users match your search criteria'
-              : 'Get started by adding your first user'
+          emptyStateTitle={
+            externalSearchQuery ? 'No users match your search criteria' : 'No users found'
           }
           emptyStateActionText={!externalSearchQuery && onAddUser ? 'Add User' : undefined}
           onEmptyStateAction={!externalSearchQuery && onAddUser ? onAddUser : undefined}

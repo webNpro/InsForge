@@ -264,7 +264,6 @@ export function DatabaseDataGrid({
   onCellEdit,
   onJumpToTable,
   emptyStateTitle = 'No data available',
-  emptyStateDescription,
   searchQuery,
   ...props
 }: DatabaseDataGridProps) {
@@ -277,7 +276,6 @@ export function DatabaseDataGrid({
       {...props}
       columns={columns}
       emptyStateTitle={searchQuery ? 'No records match your search criteria' : undefined}
-      emptyStateDescription={emptyStateDescription}
       showSelection={true}
       showPagination={true}
     />

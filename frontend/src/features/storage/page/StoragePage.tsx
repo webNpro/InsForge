@@ -275,6 +275,10 @@ export default function StoragePage() {
     await handleFileUpload(event.target.files);
   };
 
+  const handleAddRecord = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   const handleDeleteBucket = async (bucketName: string) => {
     const confirmOptions = {
       title: 'Delete Bucket',
@@ -504,6 +508,7 @@ export default function StoragePage() {
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
                 isRefreshing={isRefreshing}
+                onAddRecord={handleAddRecord}
               />
             </div>
           </>
