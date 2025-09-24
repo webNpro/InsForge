@@ -128,13 +128,6 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
     for (const row of result.rows) {
       try {
         secrets[row.key] = await decryptSecret(row.value_ciphertext, encryptionKey);
-        
-        // Update last_used_at timestamp
-        await client.queryObject`
-          UPDATE _secrets 
-          SET last_used_at = NOW() 
-          WHERE key = ${row.key}
-        `;
       } catch (error) {
         console.error(`Failed to decrypt secret ${row.key}:`, error);
         // Skip this secret if decryption fails
