@@ -71,7 +71,7 @@ export function McpInstallation({
                 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
                 data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-gray-900"
             >
-              {agent.logo && agent.logo}
+              {agent.logo}
               {agent.displayName}
             </TabsTrigger>
           ))}
