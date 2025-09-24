@@ -6,8 +6,9 @@ import { EncryptionUtils } from './encryption.js';
 
 export interface SecretSchema {
   id: string;
-  name: string;
+  key: string;
   isActive: boolean;
+  isReserved: boolean;
   lastUsedAt: Date | null;
   expiresAt: Date | null;
   createdAt: Date;
@@ -15,14 +16,16 @@ export interface SecretSchema {
 }
 
 export interface CreateSecretInput {
-  name: string;
+  key: string;
   value: string;
+  isReserved?: boolean;
   expiresAt?: Date;
 }
 
 export interface UpdateSecretInput {
   value?: string;
   isActive?: boolean;
+  isReserved?: boolean;
   expiresAt?: Date | null;
 }
 
@@ -50,16 +53,16 @@ export class SecretsService {
       const encryptedValue = EncryptionUtils.encrypt(input.value);
 
       const result = await client.query(
-        `INSERT INTO _secrets (name, value_ciphertext, expires_at)
-         VALUES ($1, $2, $3)
+        `INSERT INTO _secrets (key, value_ciphertext, is_reserved, expires_at)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [input.name, encryptedValue, input.expiresAt || null]
+        [input.key, encryptedValue, input.isReserved || false, input.expiresAt || null]
       );
 
-      logger.info('Secret created', { id: result.rows[0].id, name: input.name });
+      logger.info('Secret created', { id: result.rows[0].id, key: input.key });
       return { id: result.rows[0].id };
     } catch (error) {
-      logger.error('Failed to create secret', { error, name: input.name });
+      logger.error('Failed to create secret', { error, key: input.key });
       throw new Error('Failed to create secret');
     } finally {
       client.release();
@@ -97,18 +100,18 @@ export class SecretsService {
   }
 
   /**
-   * Get a decrypted secret by name
+   * Get a decrypted secret by key
    */
-  async getSecretByName(name: string): Promise<string | null> {
+  async getSecretByKey(key: string): Promise<string | null> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
         `UPDATE _secrets
          SET last_used_at = NOW()
-         WHERE name = $1 AND is_active = true
+         WHERE key = $1 AND is_active = true
          AND (expires_at IS NULL OR expires_at > NOW())
          RETURNING value_ciphertext`,
-        [name]
+        [key]
       );
 
       if (result.rows.length === 0) {
@@ -116,10 +119,10 @@ export class SecretsService {
       }
 
       const decryptedValue = EncryptionUtils.decrypt(result.rows[0].value_ciphertext);
-      logger.info('Secret retrieved by name', { name });
+      logger.info('Secret retrieved by key', { key });
       return decryptedValue;
     } catch (error) {
-      logger.error('Failed to get secret by name', { error, name });
+      logger.error('Failed to get secret by key', { error, key });
       throw new Error('Failed to get secret');
     } finally {
       client.release();
@@ -135,8 +138,9 @@ export class SecretsService {
       const result = await client.query(
         `SELECT
           id,
-          name,
+          key,
           is_active as "isActive",
+          is_reserved as "isReserved",
           last_used_at as "lastUsedAt",
           expires_at as "expiresAt",
           created_at as "createdAt",
@@ -175,6 +179,11 @@ export class SecretsService {
         values.push(input.isActive);
       }
 
+      if (input.isReserved !== undefined) {
+        updates.push(`is_reserved = $${paramCount++}`);
+        values.push(input.isReserved);
+      }
+
       if (input.expiresAt !== undefined) {
         updates.push(`expires_at = $${paramCount++}`);
         values.push(input.expiresAt);
@@ -205,20 +214,20 @@ export class SecretsService {
   /**
    * Check if a secret value matches the stored value
    */
-  async checkSecretByName(name: string, value: string): Promise<boolean> {
+  async checkSecretByKey(key: string, value: string): Promise<boolean> {
     const client = await this.getPool().connect();
     try {
       const result = await client.query(
         `SELECT value_ciphertext FROM _secrets
-         WHERE name = $1
+         WHERE key = $1
          AND is_active = true
          AND (expires_at IS NULL OR expires_at > NOW())
          LIMIT 1`,
-        [name]
+        [key]
       );
 
       if (result.rows.length === 0) {
-        logger.warn('Secret not found for verification', { name });
+        logger.warn('Secret not found for verification', { key });
         return false;
       }
 
@@ -230,18 +239,18 @@ export class SecretsService {
         await client.query(
           `UPDATE _secrets
            SET last_used_at = NOW()
-           WHERE name = $1
+           WHERE key = $1
            AND is_active = true`,
-          [name]
+          [key]
         );
-        logger.info('Secret check successful', { name });
+        logger.info('Secret check successful', { key });
       } else {
-        logger.warn('Secret check failed - value mismatch', { name });
+        logger.warn('Secret check failed - value mismatch', { key });
       }
 
       return matches;
     } catch (error) {
-      logger.error('Failed to check secret', { error, name });
+      logger.error('Failed to check secret', { error, key });
       return false;
     } finally {
       client.release();
@@ -254,6 +263,16 @@ export class SecretsService {
   async deleteSecret(id: string): Promise<boolean> {
     const client = await this.getPool().connect();
     try {
+      // Check if secret is reserved first
+      const checkResult = await client.query(
+        'SELECT is_reserved FROM _secrets WHERE id = $1',
+        [id]
+      );
+      
+      if (checkResult.rows.length > 0 && checkResult.rows[0].is_reserved) {
+        throw new Error('Cannot delete reserved secret');
+      }
+      
       const result = await client.query('DELETE FROM _secrets WHERE id = $1', [id]);
 
       const success = (result.rowCount ?? 0) > 0;
@@ -277,13 +296,13 @@ export class SecretsService {
     try {
       await client.query('BEGIN');
 
-      const oldSecretResult = await client.query(`SELECT name FROM _secrets WHERE id = $1`, [id]);
+      const oldSecretResult = await client.query(`SELECT key FROM _secrets WHERE id = $1`, [id]);
 
       if (oldSecretResult.rows.length === 0) {
         throw new Error('Secret not found');
       }
 
-      const secretName = oldSecretResult.rows[0].name;
+      const secretKey = oldSecretResult.rows[0].key;
 
       await client.query(
         `UPDATE _secrets
@@ -295,10 +314,10 @@ export class SecretsService {
 
       const encryptedValue = EncryptionUtils.encrypt(newValue);
       const newSecretResult = await client.query(
-        `INSERT INTO _secrets (name, value_ciphertext)
+        `INSERT INTO _secrets (key, value_ciphertext)
          VALUES ($1, $2)
          RETURNING id`,
-        [secretName, encryptedValue]
+        [secretKey, encryptedValue]
       );
 
       await client.query('COMMIT');
@@ -306,7 +325,7 @@ export class SecretsService {
       logger.info('Secret rotated', {
         oldId: id,
         newId: newSecretResult.rows[0].id,
-        name: secretName,
+        key: secretKey,
       });
 
       return { newId: newSecretResult.rows[0].id };
@@ -359,7 +378,7 @@ export class SecretsService {
     if (!apiKey) {
       return false;
     }
-    return this.checkSecretByName('API_KEY', apiKey);
+    return this.checkSecretByKey('API_KEY', apiKey);
   }
 
   /**
@@ -367,7 +386,7 @@ export class SecretsService {
    * Seeds from environment variable if database is empty
    */
   async initializeApiKey(): Promise<string> {
-    let apiKey = await this.getSecretByName('API_KEY');
+    let apiKey = await this.getSecretByKey('API_KEY');
 
     if (!apiKey) {
       // Check if ACCESS_API_KEY is provided via environment
@@ -376,12 +395,12 @@ export class SecretsService {
       if (envApiKey && envApiKey.trim() !== '') {
         // Use the provided API key from environment, ensure it has 'ik_' prefix
         apiKey = envApiKey.startsWith('ik_') ? envApiKey : 'ik_' + envApiKey;
-        await this.createSecret({ name: 'API_KEY', value: apiKey });
+        await this.createSecret({ key: 'API_KEY', value: apiKey, isReserved: true });
         logger.info('✅ API key initialized from ACCESS_API_KEY environment variable');
       } else {
         // Generate a new API key if none provided
         apiKey = this.generateApiKey();
-        await this.createSecret({ name: 'API_KEY', value: apiKey });
+        await this.createSecret({ key: 'API_KEY', value: apiKey, isReserved: true });
         logger.info('✅ API key generated and stored');
       }
     } else {

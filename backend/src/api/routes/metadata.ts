@@ -118,7 +118,7 @@ router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunc
 router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const sercretService = new SecretsService();
-    const apiKey = await sercretService.getSecretByName('API_KEY');
+    const apiKey = await sercretService.getSecretByKey('API_KEY');
 
     successResponse(res, { apiKey: apiKey });
   } catch (error) {

@@ -1,8 +1,7 @@
 import crypto from 'crypto';
 
 /**
- * Shared encryption utilities for secrets management
- * Used by both SecretsService and FunctionSecretsService
+ * Encryption utilities for secrets management
  */
 export class EncryptionUtils {
   private static encryptionKey: Buffer | null = null;

@@ -56,8 +56,9 @@ module.exports = async function(request) {
   const userToken = authHeader ? authHeader.replace('Bearer ', '') : null;
   
   // Create client with the edge function token
+  // Use BACKEND_INTERNAL_URL environment variable for internal Docker communication
   const client = createClient({ 
-    baseUrl: 'http://insforge:7130',
+    baseUrl: Deno.env.get('BACKEND_INTERNAL_URL') || 'http://insforge:7130',
     edgeFunctionToken: userToken
   });
   
@@ -329,7 +330,7 @@ console.log(otherUser.nickname); // Direct access to properties
 - **Token Handling**: Extract from `Authorization` header, use as `anonKey` parameter
 - **Flexible Auth**: Can use user token or anon token (from `ACCESS_API_KEY` env var)
 - **Backend Validation**: Tokens are validated by backend on each SDK request
-- **Internal Networking**: Use `http://insforge:7130` for Docker container communication
+- **Internal Networking**: Use `BACKEND_INTERNAL_URL` environment variable (defaults to `http://insforge:7130` for Docker container communication)
 
 ### Edge Functions Invocation (SDK)
 - **Simple API**: `client.functions.invoke(slug, options)

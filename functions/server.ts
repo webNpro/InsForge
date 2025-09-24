@@ -97,7 +97,7 @@ async function getFunctionCode(slug: string): Promise<string | null> {
   }
 }
 
-// Get all function secrets from database and decrypt them
+// Get all secrets from main secrets table and decrypt them
 async function getFunctionSecrets(): Promise<Record<string, string>> {
   const client = new Client(dbConfig);
   
@@ -111,13 +111,15 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
       return {};
     }
     
-    // Fetch all function secrets
+    // Fetch all active secrets from _secrets table
     const result = await client.queryObject<{ 
       key: string; 
       value_ciphertext: string 
     }>`
       SELECT key, value_ciphertext 
-      FROM _function_secrets
+      FROM _secrets
+      WHERE is_active = true 
+        AND (expires_at IS NULL OR expires_at > NOW())
     `;
     
     const secrets: Record<string, string> = {};
@@ -134,7 +136,7 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
     
     return secrets;
   } catch (error) {
-    console.error('Error fetching function secrets:', error);
+    console.error('Error fetching secrets:', error);
     return {};
   } finally {
     await client.end();

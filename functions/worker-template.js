@@ -24,12 +24,14 @@ self.onmessage = async (e) => {
      * - We need to provide Deno.env functionality so functions can access secrets
      * 
      * How it works:
-     * 1. The main server (server.ts) fetches all secrets from the database
-     * 2. Secrets are decrypted and passed to this worker via the 'secrets' object
-     * 3. We create a mock Deno object that provides Deno.env.get()
-     * 4. When user code calls Deno.env.get('MY_SECRET'), it reads from our secrets object
+     * 1. The main server (server.ts) fetches all active secrets from the _secrets table
+     * 2. Only active (is_active=true) and non-expired secrets are included
+     * 3. Secrets are decrypted and passed to this worker via the 'secrets' object
+     * 4. We create a mock Deno object that provides Deno.env.get()
+     * 5. When user code calls Deno.env.get('MY_SECRET'), it reads from our secrets object
      * 
      * This allows edge functions to use familiar Deno.env syntax while maintaining security
+     * Secrets are managed via the /api/secrets endpoint
      */
     const mockDeno = {
       // Mock the Deno.env API - only get() is needed for reading secrets

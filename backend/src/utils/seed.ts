@@ -3,7 +3,6 @@ import { AIConfigService } from '@/core/ai/config.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import logger from '@/utils/logger.js';
 import { SecretsService } from '@/core/secrets/secrets';
-import { FunctionSecretsService } from '@/core/secrets/function-secrets.js';
 import { OAuthConfigService } from '@/core/auth/oauth.js';
 
 /**
@@ -123,10 +122,19 @@ export async function seedBackend(): Promise<void> {
       await seedDefaultOAuthConfigs();
     }
 
-    // Initialize reserved function secrets
-    const functionSecretsService = new FunctionSecretsService();
-    await functionSecretsService.initializeReservedSecrets();
-    logger.info('✅ Function secrets initialized');
+    // Initialize reserved secrets for edge functions
+    // Add INSFORGE_INTERNAL_URL for Deno-to-backend container communication
+    const insforgInternalUrl = 'http://insforge:7130';
+    const existingSecret = await secretService.getSecretByKey('INSFORGE_INTERNAL_URL');
+    
+    if (existingSecret === null) {
+      await secretService.createSecret({
+        key: 'INSFORGE_INTERNAL_URL',
+        isReserved: true,
+        value: insforgInternalUrl
+      });
+      logger.info('✅ System secrets initialized');
+    }
 
     logger.info(`API key generated: ${apiKey}`);
     logger.info(`Setup complete:

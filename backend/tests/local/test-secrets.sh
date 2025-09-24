@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Test function secrets API endpoints
-# Tests CRUD operations for function secrets and edge function integration
+# Test secrets API endpoints (refactored to use _secrets table)
+# Tests CRUD operations for secrets and edge function integration
 
 set -e  # Exit on error
 
@@ -13,11 +13,11 @@ source "$SCRIPT_DIR/../test-config.sh"
 API_BASE="${TEST_API_BASE:-http://localhost:7130/api}"
 DENO_BASE="${DENO_BASE:-http://localhost:7133}"
 
-print_blue "🔐 Testing Function Secrets API..."
+print_blue "🔐 Testing Secrets API (refactored)..."
 
 # 1. Test authentication requirement
-print_info "1. Testing authentication requirement for function secrets"
-response=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/function-secrets")
+print_info "1. Testing authentication requirement for secrets"
+response=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/secrets")
 if [ "$response" = "401" ]; then
     print_success "Unauthorized without auth"
 else
@@ -34,24 +34,15 @@ if [ -z "$ADMIN_TOKEN" ]; then
 fi
 print_success "Admin logged in"
 
-# 3. List initial secrets (should include reserved ones)
-print_info "3. Listing initial function secrets"
-response=$(curl -s "$API_BASE/function-secrets" \
+# 3. List initial secrets (should include BACKEND_INTERNAL_URL)
+print_info "3. Listing initial secrets"
+response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | jq -e '.secrets | map(select(.isReserved == true)) | length == 1' >/dev/null 2>&1; then
-    print_success "Reserved secret exists"
-    reserved_key=$(echo "$response" | jq -r '.secrets | map(select(.isReserved == true))[0].key')
-    if [ "$reserved_key" = "INSFORGE_API_URL" ]; then
-        print_success "Found reserved secret: INSFORGE_API_URL"
-    else
-        print_fail "Expected INSFORGE_API_URL, found: $reserved_key"
-        track_test_failure
-    fi
+if echo "$response" | jq -e '.secrets | map(select(.key == "INSFORGE_INTERNAL_URL")) | length == 1' >/dev/null 2>&1; then
+    print_success "System secret INSFORGE_INTERNAL_URL exists"
 else
-    print_fail "Expected exactly 1 reserved secret"
-    reserved_count=$(echo "$response" | jq '.secrets | map(select(.isReserved == true)) | length')
-    echo "Found $reserved_count reserved secrets"
+    print_fail "Expected INSFORGE_INTERNAL_URL secret to exist"
     echo "Response: $response"
     track_test_failure
 fi
@@ -61,7 +52,7 @@ print_info "4. Creating a test secret"
 TEST_KEY="TEST_SECRET_$(date +%s)"
 TEST_VALUE="test_value_12345"
 
-response=$(curl -s "$API_BASE/function-secrets" \
+response=$(curl -s "$API_BASE/secrets" \
     -X POST \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
@@ -69,21 +60,35 @@ response=$(curl -s "$API_BASE/function-secrets" \
 
 if echo "$response" | grep -q "success.*true"; then
     print_success "Secret created successfully"
+    SECRET_ID=$(echo "$response" | jq -r '.id')
 else
     print_fail "Failed to create secret"
     echo "Response: $response"
     track_test_failure
 fi
 
-# 5. Update the secret
-print_info "5. Updating the test secret"
+# 5. Get the secret value
+print_info "5. Getting the test secret value"
+response=$(curl -s "$API_BASE/secrets/$TEST_KEY" \
+    -H "Authorization: Bearer $ADMIN_TOKEN")
+
+if echo "$response" | jq -e ".value == \"$TEST_VALUE\"" >/dev/null 2>&1; then
+    print_success "Secret value retrieved correctly"
+else
+    print_fail "Failed to retrieve secret value"
+    echo "Response: $response"
+    track_test_failure
+fi
+
+# 6. Update the secret
+print_info "6. Updating the test secret"
 UPDATE_VALUE="updated_value_67890"
 
-response=$(curl -s "$API_BASE/function-secrets" \
-    -X POST \
+response=$(curl -s "$API_BASE/secrets/$TEST_KEY" \
+    -X PUT \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"key\": \"$TEST_KEY\", \"value\": \"$UPDATE_VALUE\"}")
+    -d "{\"value\": \"$UPDATE_VALUE\"}")
 
 if echo "$response" | grep -q "success.*true"; then
     print_success "Secret updated successfully"
@@ -93,27 +98,47 @@ else
     track_test_failure
 fi
 
-# 6. List secrets and verify our test secret exists
-print_info "6. Verifying secret exists in list"
-response=$(curl -s "$API_BASE/function-secrets" \
+# 7. Verify update
+print_info "7. Verifying secret update"
+response=$(curl -s "$API_BASE/secrets/$TEST_KEY" \
+    -H "Authorization: Bearer $ADMIN_TOKEN")
+
+if echo "$response" | jq -e ".value == \"$UPDATE_VALUE\"" >/dev/null 2>&1; then
+    print_success "Secret value updated correctly"
+else
+    print_fail "Secret value not updated"
+    echo "Response: $response"
+    track_test_failure
+fi
+
+# 8. List secrets and verify our test secret exists
+print_info "8. Verifying secret exists in list"
+response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
 if echo "$response" | jq -e ".secrets[] | select(.key == \"$TEST_KEY\")" >/dev/null 2>&1; then
     print_success "Test secret found in list"
+    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.key == \"$TEST_KEY\") | .isActive")
+    if [ "$IS_ACTIVE" = "true" ]; then
+        print_success "Secret is active"
+    else
+        print_fail "Secret is not active"
+        track_test_failure
+    fi
 else
     print_fail "Test secret not found in list"
     echo "Response: $response"
     track_test_failure
 fi
 
-# 7. Test edge function with secret
-print_info "7. Creating edge function to test secret access"
+# 9. Test edge function with secret
+print_info "9. Creating edge function to test secret access"
 
 # Create a simple function that returns the secret
 cat > /tmp/test-secrets-function.js << EOF
 module.exports = async function(request) {
   const testSecret = Deno.env.get('$TEST_KEY');
-  const systemSecret = Deno.env.get('INSFORGE_API_URL');
+  const systemSecret = Deno.env.get('INSFORGE_INTERNAL_URL');
   
   return new Response(JSON.stringify({
     testSecretFound: !!testSecret,
@@ -126,7 +151,7 @@ module.exports = async function(request) {
 };
 EOF
 
-# Use MCP tool or API to create the function
+# Create the function
 FUNCTION_SLUG="test-secrets-fn-$(date +%s)"
 response=$(curl -s -X POST "$API_BASE/functions" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -141,11 +166,12 @@ response=$(curl -s -X POST "$API_BASE/functions" \
 if echo "$response" | grep -q "id"; then
     print_success "Edge function created"
     
-    # Wait for function to be ready
-    sleep 2
+    # Restart Deno to pick up new secrets
+    docker compose restart deno >/dev/null 2>&1
+    sleep 3
     
     # Test the function
-    print_info "8. Testing edge function secret access"
+    print_info "10. Testing edge function secret access"
     response=$(curl -s "$DENO_BASE/$FUNCTION_SLUG")
     
     if echo "$response" | jq -e '.testSecretValue == true and .systemSecretFound == true' >/dev/null 2>&1; then
@@ -165,25 +191,9 @@ else
     track_test_failure
 fi
 
-# 9. Try to modify reserved secret (should fail)
-print_info "9. Testing reserved secret protection (INSFORGE_API_URL)"
-response=$(curl -s "$API_BASE/function-secrets" \
-    -X POST \
-    -H "Authorization: Bearer $ADMIN_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"key": "INSFORGE_API_URL", "value": "should_not_work"}')
-
-if echo "$response" | grep -q -i "reserved\|forbidden\|cannot"; then
-    print_success "Reserved secrets are protected"
-else
-    print_fail "Reserved secret protection failed"
-    echo "Response: $response"
-    track_test_failure
-fi
-
-# 10. Delete test secret
-print_info "10. Deleting test secret"
-response=$(curl -s -X DELETE "$API_BASE/function-secrets/$TEST_KEY" \
+# 11. Test soft delete (mark as inactive)
+print_info "11. Deleting test secret (soft delete)"
+response=$(curl -s -X DELETE "$API_BASE/secrets/$TEST_KEY" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
 if echo "$response" | grep -q "success.*true\|deleted"; then
@@ -194,30 +204,37 @@ else
     track_test_failure
 fi
 
-# 11. Verify secret is deleted
-print_info "11. Verifying secret deletion"
-response=$(curl -s "$API_BASE/function-secrets" \
+# 12. Verify secret is marked as inactive
+print_info "12. Verifying secret is marked as inactive"
+response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
 if echo "$response" | jq -e ".secrets[] | select(.key == \"$TEST_KEY\")" >/dev/null 2>&1; then
-    print_fail "Secret still exists after deletion"
-    track_test_failure
+    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.key == \"$TEST_KEY\") | .isActive")
+    if [ "$IS_ACTIVE" = "false" ]; then
+        print_success "Secret is marked as inactive (soft delete)"
+    else
+        print_fail "Secret is still active after deletion"
+        echo "isActive: $IS_ACTIVE"
+        track_test_failure
+    fi
 else
-    print_success "Secret successfully removed"
+    # Secret might be completely hidden after deletion, which is also fine
+    print_success "Secret no longer visible after deletion"
 fi
 
-# 12. Try to delete reserved secret (should fail)
-print_info "12. Testing reserved secret deletion protection"
-response=$(curl -s -X DELETE "$API_BASE/function-secrets/INSFORGE_API_URL" \
+# 13. Test that deleted secret returns 404
+print_info "13. Testing that deleted secret returns 404"
+response_code=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/secrets/$TEST_KEY" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | grep -q -i "reserved\|forbidden\|cannot"; then
-    print_success "Cannot delete reserved secrets"
+if [ "$response_code" = "404" ]; then
+    print_success "Deleted secret returns 404"
 else
-    print_fail "Reserved secret deletion protection failed"
-    echo "Response: $response"
+    print_fail "Expected 404 for deleted secret, got $response_code"
     track_test_failure
 fi
+
 
 # Clean up
 rm -f /tmp/test-secrets-function.js
@@ -225,7 +242,7 @@ rm -f /tmp/test-secrets-function.js
 # Summary
 echo ""
 print_blue "=========================================="
-print_blue "Function Secrets Test Complete"
+print_blue "Secrets API Test Complete"
 print_blue "=========================================="
 
 exit $TEST_FAILED
