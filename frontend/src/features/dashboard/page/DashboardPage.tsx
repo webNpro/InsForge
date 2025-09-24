@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import { Skeleton } from '@/components/radix/Skeleton';
 import { Card, CardContent } from '@/components/radix/Card';
@@ -14,19 +13,17 @@ import {
   ArrowLeftRight,
   Link2,
 } from 'lucide-react';
-import GithubLight from '@/assets/icons/github.svg';
-import Google from '@/assets/icons/google.svg';
-import GithubDark from '@/assets/icons/github_dark.svg';
-import OpenAI from '@/assets/icons/openai.svg?react';
-import Gemini from '@/assets/icons/gemini.svg';
-import Claude from '@/assets/icons/claude_code_logo.svg';
-import Grok from '@/assets/icons/grok.svg?react';
+import Github from '@/assets/logos/github.svg?react';
+import Google from '@/assets/logos/google.svg?react';
+import OpenAI from '@/assets/logos/openai.svg?react';
+import Gemini from '@/assets/logos/gemini.svg?react';
+import Claude from '@/assets/logos/claude_code.svg?react';
+import Grok from '@/assets/logos/grok.svg?react';
 import { useUsers } from '@/features/auth';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { resolvedTheme } = useTheme();
 
   const {
     data: metadata,
@@ -243,12 +240,8 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <img src={Google} alt="Google" className="w-5 h-5" />
-                      <img
-                        src={resolvedTheme === 'dark' ? GithubLight : GithubDark}
-                        alt="Github"
-                        className="w-5 h-5"
-                      />
+                      <Google className="w-5 h-5" />
+                      <Github className="w-5 h-5 dark:text-white" />
                       <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                     </div>
                   </div>
@@ -267,8 +260,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <OpenAI className="w-5 h-5 fill-black dark:fill-white" />
-                      <img src={Gemini} alt="Gemini" className="w-5 h-5" />
-                      <img src={Claude} alt="Claude" className="w-5 h-5" />
+                      <Gemini className="w-5 h-5" />
+                      <Claude className="w-5 h-5" />
                       <Grok className="w-5 h-5 fill-black dark:fill-white" />
                       <ChevronRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
                     </div>

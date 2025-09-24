@@ -14,7 +14,6 @@ import {
   type PlatformType,
 } from './mcp-helper';
 import { metadataService } from '@/features/metadata/services/metadata.service';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 
 interface McpInstallerProps {
   className?: string;
@@ -31,7 +30,6 @@ export function McpInstallation({
     return MCP_AGENTS.find((agent) => agent.id === defaultAgent) || MCP_AGENTS[0];
   });
   const [activeTab, setActiveTab] = useState<PlatformType>('macos-linux');
-  const { resolvedTheme } = useTheme();
 
   const { data: apiKey } = useQuery({
     queryKey: ['apiKey'],
@@ -61,7 +59,7 @@ export function McpInstallation({
       >
         <TabsList
           className={cn(
-            'grid w-full grid-cols-6 bg-neutral-200 dark:bg-neutral-900 p-1 rounded-lg h-fit mb-2',
+            'grid w-full grid-cols-8 bg-neutral-200 dark:bg-neutral-900 p-1 rounded-lg h-fit mb-2',
             TabListClassName
           )}
         >
@@ -73,13 +71,7 @@ export function McpInstallation({
                 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
                 data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-gray-900"
             >
-              {agent.logo && agent.darkLogo && (
-                <img
-                  src={resolvedTheme === 'light' ? agent.logo : agent.darkLogo}
-                  alt={agent.displayName}
-                  className="w-5 h-5"
-                />
-              )}
+              {agent.logo && agent.logo}
               {agent.displayName}
             </TabsTrigger>
           ))}

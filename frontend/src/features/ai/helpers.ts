@@ -24,11 +24,11 @@ export interface ModelOption {
 }
 
 import { Type, Image } from 'lucide-react';
-import GrokIcon from '@/assets/icons/grok.svg?react';
-import GeminiIcon from '@/assets/icons/gemini.svg?react';
-import ClaudeIcon from '@/assets/icons/claude_code_logo.svg?react';
-import OpenAIIcon from '@/assets/icons/openai.svg?react';
-import AmazonIcon from '@/assets/icons/amazon.svg?react';
+import GrokIcon from '@/assets/logos/grok.svg?react';
+import GeminiIcon from '@/assets/logos/gemini.svg?react';
+import ClaudeIcon from '@/assets/logos/claude_code.svg?react';
+import OpenAIIcon from '@/assets/logos/openai.svg?react';
+import AmazonIcon from '@/assets/logos/amazon.svg?react';
 
 export const getModalityIcon = (
   modality: ModalitySchema

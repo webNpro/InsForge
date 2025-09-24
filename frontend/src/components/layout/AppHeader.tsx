@@ -13,10 +13,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 
 // Import SVG icons
-import DiscordIcon from '@/assets/icons/discord.svg';
-import GitHubIcon from '@/assets/icons/github.svg';
-import InsForgeLogoLight from '@/assets/insforge_light.svg';
-import InsForgeLogoDark from '@/assets/insforge_dark.svg';
+import DiscordIcon from '@/assets/logos/discord.svg?react';
+import GitHubIcon from '@/assets/logos/github.svg?react';
+import InsForgeLogoLight from '@/assets/logos/insforge_light.svg';
+import InsForgeLogoDark from '@/assets/logos/insforge_dark.svg';
 
 interface AppHeaderProps {
   currentUser: any;
@@ -83,7 +83,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-black hover:bg-[#28282F] rounded-full transition-all duration-200"
         >
-          <img src={GitHubIcon} alt="GitHub Icon" className="h-5 w-5" />
+          <GitHubIcon className="h-5 w-5 dark:text-white" />
           <p className="text-sm text-white">
             We need you
             <span className="text-md ml-1">{emojis[currentEmojiIndex]}</span>
@@ -97,7 +97,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-[#5765F2] hover:bg-[#3E4CD7] rounded-full transition-all duration-200"
         >
-          <img src={DiscordIcon} alt="Discord Icon" className="h-5 w-5" />
+          <DiscordIcon className="h-5 w-5" />
           <p className="text-sm text-white mr-1.5">Ask us anything</p>
         </a>
         <Separator className="h-6 mx-1" orientation="vertical" />

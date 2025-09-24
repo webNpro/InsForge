@@ -1,10 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, ReactElement } from 'react';
 import { Button } from '@/components/radix/Button';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
-import GithubDark from '@/assets/icons/github_dark.svg';
-import GithubLight from '@/assets/icons/github.svg';
-import Google from '@/assets/icons/google.svg';
+import Github from '@/assets/logos/github.svg?react';
+import Google from '@/assets/logos/google.svg?react';
 import { generateAIAuthPrompt } from '@/features/auth/helpers';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
@@ -23,7 +21,7 @@ import { CopyButton } from '@/components/CopyButton';
 export interface OAuthProviderInfo {
   id: 'google' | 'github';
   name: string;
-  icon: string;
+  icon: ReactElement;
   description: string;
   setupUrl: string;
 }
@@ -32,7 +30,6 @@ export function AuthMethodTab() {
   const [selectedProvider, setSelectedProvider] = useState<OAuthProviderInfo>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSelectDialogOpen, setIsSelectDialogOpen] = useState(false);
-  const { resolvedTheme } = useTheme();
   const { confirm, confirmDialogProps } = useConfirm();
   const {
     configs,
@@ -43,25 +40,22 @@ export function AuthMethodTab() {
     isProviderConfigured,
   } = useOAuthConfig();
 
-  const providers: OAuthProviderInfo[] = useMemo(
-    () => [
-      {
-        id: 'google',
-        name: 'Google OAuth',
-        icon: Google,
-        description: 'Configure Google authentication for your users',
-        setupUrl: 'https://console.cloud.google.com/apis/credentials',
-      },
-      {
-        id: 'github',
-        name: 'GitHub OAuth',
-        icon: resolvedTheme === 'light' ? GithubDark : GithubLight,
-        description: 'Configure GitHub authentication for your users',
-        setupUrl: 'https://github.com/settings/developers',
-      },
-    ],
-    [resolvedTheme]
-  );
+  const providers: OAuthProviderInfo[] = [
+    {
+      id: 'google',
+      name: 'Google OAuth',
+      icon: <Google className="w-6 h-6" />,
+      description: 'Configure Google authentication for your users',
+      setupUrl: 'https://console.cloud.google.com/apis/credentials',
+    },
+    {
+      id: 'github',
+      name: 'GitHub OAuth',
+      icon: <Github className="w-6 h-6 dark:text-white" />,
+      description: 'Configure GitHub authentication for your users',
+      setupUrl: 'https://github.com/settings/developers',
+    },
+  ];
 
   const handleConfigureProvider = (provider: OAuthProviderInfo) => {
     setSelectedProvider(provider);
@@ -210,7 +204,7 @@ export function AuthMethodTab() {
                     className="flex items-center justify-between h-15 p-4 bg-white rounded-[8px] border border-gray-200 dark:border-transparent dark:bg-[#333333]"
                   >
                     <div className="flex-1 flex items-center gap-3">
-                      <img src={provider.icon} alt={provider.name} className="w-6 h-6" />
+                      {provider.icon}
 
                       <div className="text-sm font-medium text-black dark:text-white">
                         {provider.name}
