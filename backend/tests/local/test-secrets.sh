@@ -39,10 +39,10 @@ print_info "3. Listing initial secrets"
 response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | jq -e '.secrets | map(select(.name == "BACKEND_INTERNAL_URL")) | length == 1' >/dev/null 2>&1; then
-    print_success "System secret BACKEND_INTERNAL_URL exists"
+if echo "$response" | jq -e '.secrets | map(select(.key == "INSFORGE_INTERNAL_URL")) | length == 1' >/dev/null 2>&1; then
+    print_success "System secret INSFORGE_INTERNAL_URL exists"
 else
-    print_fail "Expected BACKEND_INTERNAL_URL secret to exist"
+    print_fail "Expected INSFORGE_INTERNAL_URL secret to exist"
     echo "Response: $response"
     track_test_failure
 fi
@@ -56,7 +56,7 @@ response=$(curl -s "$API_BASE/secrets" \
     -X POST \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"name\": \"$TEST_KEY\", \"value\": \"$TEST_VALUE\"}")
+    -d "{\"key\": \"$TEST_KEY\", \"value\": \"$TEST_VALUE\"}")
 
 if echo "$response" | grep -q "success.*true"; then
     print_success "Secret created successfully"
@@ -116,9 +116,9 @@ print_info "8. Verifying secret exists in list"
 response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | jq -e ".secrets[] | select(.name == \"$TEST_KEY\")" >/dev/null 2>&1; then
+if echo "$response" | jq -e ".secrets[] | select(.key == \"$TEST_KEY\")" >/dev/null 2>&1; then
     print_success "Test secret found in list"
-    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.name == \"$TEST_KEY\") | .isActive")
+    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.key == \"$TEST_KEY\") | .isActive")
     if [ "$IS_ACTIVE" = "true" ]; then
         print_success "Secret is active"
     else
@@ -138,7 +138,7 @@ print_info "9. Creating edge function to test secret access"
 cat > /tmp/test-secrets-function.js << EOF
 module.exports = async function(request) {
   const testSecret = Deno.env.get('$TEST_KEY');
-  const systemSecret = Deno.env.get('BACKEND_INTERNAL_URL');
+  const systemSecret = Deno.env.get('INSFORGE_INTERNAL_URL');
   
   return new Response(JSON.stringify({
     testSecretFound: !!testSecret,
@@ -209,8 +209,8 @@ print_info "12. Verifying secret is marked as inactive"
 response=$(curl -s "$API_BASE/secrets" \
     -H "Authorization: Bearer $ADMIN_TOKEN")
 
-if echo "$response" | jq -e ".secrets[] | select(.name == \"$TEST_KEY\")" >/dev/null 2>&1; then
-    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.name == \"$TEST_KEY\") | .isActive")
+if echo "$response" | jq -e ".secrets[] | select(.key == \"$TEST_KEY\")" >/dev/null 2>&1; then
+    IS_ACTIVE=$(echo "$response" | jq -r ".secrets[] | select(.key == \"$TEST_KEY\") | .isActive")
     if [ "$IS_ACTIVE" = "false" ]; then
         print_success "Secret is marked as inactive (soft delete)"
     else
