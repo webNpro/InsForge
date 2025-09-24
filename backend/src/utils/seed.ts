@@ -123,14 +123,15 @@ export async function seedBackend(): Promise<void> {
     }
 
     // Initialize reserved secrets for edge functions
-    // Add BACKEND_INTERNAL_URL for Deno-to-backend container communication
-    const backendInternalUrl = 'http://insforge:7130';
-    const existingSecret = await secretService.getSecretByName('BACKEND_INTERNAL_URL');
+    // Add INSFORGE_INTERNAL_URL for Deno-to-backend container communication
+    const insforgInternalUrl = 'http://insforge:7130';
+    const existingSecret = await secretService.getSecretByKey('INSFORGE_INTERNAL_URL');
     
     if (existingSecret === null) {
       await secretService.createSecret({
-        name: 'BACKEND_INTERNAL_URL',
-        value: backendInternalUrl
+        key: 'INSFORGE_INTERNAL_URL',
+        isReserved: true,
+        value: insforgInternalUrl
       });
       logger.info('✅ System secrets initialized');
     }
