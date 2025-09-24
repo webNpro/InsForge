@@ -522,17 +522,18 @@ export class DatabaseAdvanceService {
           // Get indexes
           const indexesResult = await client.query(
             `
-            SELECT 
-              indexname,
-              indexdef,
-              indisunique as "isUnique",
-              indisprimary as "isPrimary"
-            FROM pg_indexes 
-            JOIN pg_class ON pg_class.relname = pg_indexes.tablename
-            JOIN pg_index ON pg_index.indexrelid = (SELECT oid FROM pg_class WHERE relname = pg_indexes.indexname)
-            WHERE pg_indexes.tablename = $1 
-            AND pg_indexes.schemaname = 'public'
-            ORDER BY indexname
+            SELECT DISTINCT
+              pi.indexname,
+              pi.indexdef,
+              idx.indisunique as "isUnique",
+              idx.indisprimary as "isPrimary"
+            FROM pg_indexes pi
+            JOIN pg_class cls ON cls.relname = pi.indexname
+              AND cls.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = pi.schemaname)
+            JOIN pg_index idx ON idx.indexrelid = cls.oid
+            WHERE pi.tablename = $1
+            AND pi.schemaname = 'public'
+            ORDER BY pi.indexname
           `,
             [table]
           );
@@ -870,21 +871,23 @@ export class DatabaseAdvanceService {
           CASE WHEN uk.column_name IS NOT NULL THEN true ELSE false END as is_unique
         FROM information_schema.columns c
         LEFT JOIN (
-          SELECT kcu.column_name
+          SELECT DISTINCT kcu.column_name
           FROM information_schema.key_column_usage kcu
           JOIN information_schema.table_constraints tc
             ON kcu.constraint_name = tc.constraint_name
             AND kcu.table_schema = tc.table_schema
+            AND kcu.table_name = tc.table_name
           WHERE tc.table_schema = 'public'
             AND tc.table_name = ?
             AND tc.constraint_type = 'PRIMARY KEY'
         ) pk ON c.column_name = pk.column_name
         LEFT JOIN (
-          SELECT kcu.column_name
+          SELECT DISTINCT kcu.column_name
           FROM information_schema.key_column_usage kcu
           JOIN information_schema.table_constraints tc
             ON kcu.constraint_name = tc.constraint_name
             AND kcu.table_schema = tc.table_schema
+            AND kcu.table_name = tc.table_name
           WHERE tc.table_schema = 'public'
             AND tc.table_name = ?
             AND tc.constraint_type = 'UNIQUE'
