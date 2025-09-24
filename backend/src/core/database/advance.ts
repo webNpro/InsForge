@@ -182,33 +182,36 @@ export class DatabaseAdvanceService {
     // Export foreign key constraints
     const foreignKeysResult = await client.query(
       `
-      SELECT 
-        'ALTER TABLE ' || quote_ident(tc.table_name) || 
-        ' ADD CONSTRAINT ' || quote_ident(tc.constraint_name) || 
+      SELECT DISTINCT
+        'ALTER TABLE ' || quote_ident(tc.table_name) ||
+        ' ADD CONSTRAINT ' || quote_ident(tc.constraint_name) ||
         ' FOREIGN KEY (' || quote_ident(kcu.column_name) || ')' ||
-        ' REFERENCES ' || quote_ident(ccu.table_name) || 
+        ' REFERENCES ' || quote_ident(ccu.table_name) ||
         ' (' || quote_ident(ccu.column_name) || ')' ||
-        CASE 
+        CASE
           WHEN rc.delete_rule != 'NO ACTION' THEN ' ON DELETE ' || rc.delete_rule
           ELSE ''
         END ||
-        CASE 
-          WHEN rc.update_rule != 'NO ACTION' THEN ' ON UPDATE ' || rc.update_rule  
+        CASE
+          WHEN rc.update_rule != 'NO ACTION' THEN ' ON UPDATE ' || rc.update_rule
           ELSE ''
-        END || ';' as fk_statement
-      FROM information_schema.table_constraints AS tc 
+        END || ';' as fk_statement,
+        tc.constraint_name
+      FROM information_schema.table_constraints AS tc
       JOIN information_schema.key_column_usage AS kcu
         ON tc.constraint_name = kcu.constraint_name
         AND tc.table_schema = kcu.table_schema
+        AND kcu.table_name = tc.table_name
       JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
         AND ccu.table_schema = tc.table_schema
       LEFT JOIN information_schema.referential_constraints AS rc
         ON tc.constraint_name = rc.constraint_name
         AND tc.table_schema = rc.constraint_schema
-      WHERE tc.constraint_type = 'FOREIGN KEY' 
+      WHERE tc.constraint_type = 'FOREIGN KEY'
       AND tc.table_name = $1
       AND tc.table_schema = 'public'
+      ORDER BY tc.constraint_name
     `,
       [table]
     );
@@ -519,17 +522,18 @@ export class DatabaseAdvanceService {
           // Get indexes
           const indexesResult = await client.query(
             `
-            SELECT 
-              indexname,
-              indexdef,
-              indisunique as "isUnique",
-              indisprimary as "isPrimary"
-            FROM pg_indexes 
-            JOIN pg_class ON pg_class.relname = pg_indexes.tablename
-            JOIN pg_index ON pg_index.indexrelid = (SELECT oid FROM pg_class WHERE relname = pg_indexes.indexname)
-            WHERE pg_indexes.tablename = $1 
-            AND pg_indexes.schemaname = 'public'
-            ORDER BY indexname
+            SELECT DISTINCT
+              pi.indexname,
+              pi.indexdef,
+              idx.indisunique as "isUnique",
+              idx.indisprimary as "isPrimary"
+            FROM pg_indexes pi
+            JOIN pg_class cls ON cls.relname = pi.indexname
+              AND cls.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = pi.schemaname)
+            JOIN pg_index idx ON idx.indexrelid = cls.oid
+            WHERE pi.tablename = $1
+            AND pi.schemaname = 'public'
+            ORDER BY pi.indexname
           `,
             [table]
           );
@@ -537,22 +541,28 @@ export class DatabaseAdvanceService {
           // Get foreign keys
           const foreignKeysResult = await client.query(
             `
-            SELECT 
+            SELECT DISTINCT
               tc.constraint_name as "constraintName",
-              kcu.column_name as "columnName", 
+              kcu.column_name as "columnName",
               ccu.table_name as "foreignTableName",
               ccu.column_name as "foreignColumnName",
               rc.delete_rule as "deleteRule",
               rc.update_rule as "updateRule"
-            FROM information_schema.table_constraints AS tc 
+            FROM information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
               ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+              AND kcu.table_name = tc.table_name
             JOIN information_schema.constraint_column_usage AS ccu
               ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
             LEFT JOIN information_schema.referential_constraints AS rc
               ON tc.constraint_name = rc.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY' 
+              AND tc.table_schema = rc.constraint_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
             AND tc.table_name = $1
+            AND tc.table_schema = 'public'
+            ORDER BY "constraintName", "columnName"
           `,
             [table]
           );
@@ -861,21 +871,23 @@ export class DatabaseAdvanceService {
           CASE WHEN uk.column_name IS NOT NULL THEN true ELSE false END as is_unique
         FROM information_schema.columns c
         LEFT JOIN (
-          SELECT kcu.column_name
+          SELECT DISTINCT kcu.column_name
           FROM information_schema.key_column_usage kcu
           JOIN information_schema.table_constraints tc
             ON kcu.constraint_name = tc.constraint_name
             AND kcu.table_schema = tc.table_schema
+            AND kcu.table_name = tc.table_name
           WHERE tc.table_schema = 'public'
             AND tc.table_name = ?
             AND tc.constraint_type = 'PRIMARY KEY'
         ) pk ON c.column_name = pk.column_name
         LEFT JOIN (
-          SELECT kcu.column_name
+          SELECT DISTINCT kcu.column_name
           FROM information_schema.key_column_usage kcu
           JOIN information_schema.table_constraints tc
             ON kcu.constraint_name = tc.constraint_name
             AND kcu.table_schema = tc.table_schema
+            AND kcu.table_name = tc.table_name
           WHERE tc.table_schema = 'public'
             AND tc.table_name = ?
             AND tc.constraint_type = 'UNIQUE'
@@ -915,7 +927,7 @@ export class DatabaseAdvanceService {
       const foreignKeys = (await db
         .prepare(
           `
-        SELECT
+        SELECT DISTINCT
           kcu.column_name as from_column,
           ccu.table_name AS foreign_table,
           ccu.column_name AS foreign_column,
@@ -925,6 +937,7 @@ export class DatabaseAdvanceService {
         JOIN information_schema.key_column_usage AS kcu
           ON tc.constraint_name = kcu.constraint_name
           AND tc.table_schema = kcu.table_schema
+          AND kcu.table_name = tc.table_name
         JOIN information_schema.constraint_column_usage AS ccu
           ON ccu.constraint_name = tc.constraint_name
           AND ccu.table_schema = tc.table_schema
