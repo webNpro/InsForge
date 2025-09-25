@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import fetch from 'node-fetch';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { DatabaseManager } from '@/core/database/manager.js';
 import { AuditService } from '@/core/logs/audit.js';
@@ -49,7 +50,28 @@ router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       )
       .all();
 
-    res.json(functions);
+    // Check if Deno runtime is healthy
+    let runtimeHealthy = false;
+    try {
+      const denoUrl = process.env.DENO_RUNTIME_URL || 'http://localhost:7133';
+      const healthResponse = await fetch(`${denoUrl}/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000), // 2 second timeout
+      });
+      runtimeHealthy = healthResponse.ok;
+    } catch (error) {
+      logger.debug('Deno runtime health check failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // Include runtime status in response
+    res.json({
+      functions,
+      runtime: {
+        status: runtimeHealthy ? 'running' : 'unavailable',
+      },
+    });
   } catch (error) {
     logger.error('Failed to list functions', {
       error: error instanceof Error ? error.message : String(error),
