@@ -1,10 +1,17 @@
+import { ReactElement } from 'react';
 export interface MCPAgent {
   id: string;
   displayName: string;
-  logo?: string;
-  darkLogo?: string;
-  description?: string;
+  logo?: ReactElement;
 }
+
+import TraeLogo from '@/assets/logos/trae.svg?react';
+import CursorLogo from '@/assets/logos/cursor.svg?react';
+import ClaudeLogo from '@/assets/logos/claude_code.svg?react';
+import WindsurfLogo from '@/assets/logos/windsurf.svg?react';
+import ClineLogo from '@/assets/logos/cline.svg?react';
+import RooCodeLogo from '@/assets/logos/roo_code.svg';
+// import CodexLogo from '@/assets/logos/openai.svg?react';
 
 export type PlatformType = 'macos-linux' | 'windows';
 
@@ -17,44 +24,43 @@ export const GenerateInstallCommand = (agent: MCPAgent, apiKey: string) => {
 
 export const MCP_AGENTS: MCPAgent[] = [
   {
+    id: 'trae',
+    displayName: 'Trae',
+    logo: <TraeLogo className="w-6 h-6" />,
+  },
+  {
     id: 'cursor',
     displayName: 'Cursor',
-    logo: '/icons/cursor_logo.svg',
-    darkLogo: '/icons/cursor_logo.svg',
-    description: 'AI-powered code editor with built-in MCP support',
+    logo: <CursorLogo className="w-6 h-6" />,
   },
   {
     id: 'claude-code',
     displayName: 'Claude Code',
-    logo: '/icons/claude_code_logo.svg',
-    darkLogo: '/icons/claude_code_logo.svg',
-    description: "Anthropic's Claude with MCP integration",
+    logo: <ClaudeLogo className="w-6 h-6" />,
   },
   {
     id: 'windsurf',
     displayName: 'Windsurf',
-    logo: '/icons/windsurf_logo.svg',
-    darkLogo: '/icons/windsurf_logo_dark.svg',
-    description: 'Next-generation AI development environment',
+    logo: <WindsurfLogo className="w-6 h-6 dark:text-white" />,
   },
   {
     id: 'cline',
     displayName: 'Cline',
-    logo: '/icons/cline_logo.svg',
-    darkLogo: '/icons/cline_logo_dark.svg',
-    description: 'Intelligent coding assistant with MCP support',
+    logo: <ClineLogo className="w-6 h-6 dark:text-white" />,
   },
   {
     id: 'roocode',
     displayName: 'Roo Code',
-    logo: '/icons/roo_code_logo.svg',
-    darkLogo: '/icons/roo_code_logo_dark.svg',
-    description: 'Smart code completion and assistance tool',
+    logo: <img src={RooCodeLogo} alt="" className="dark:invert" />,
   },
+  // {
+  //   id: 'codex',
+  //   displayName: 'Codex',
+  //   logo: <CodexLogo className="w-5 h-5 dark:text-white" />,
+  // },
   {
     id: 'mcp',
     displayName: 'MCP JSON',
-    description: 'Direct MCP configuration for manual setup',
   },
 ];
 
