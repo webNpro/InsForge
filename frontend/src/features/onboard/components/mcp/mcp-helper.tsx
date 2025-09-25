@@ -78,13 +78,13 @@ export const createMCPServerConfig = (
   if (platform === 'windows') {
     return {
       command: 'cmd',
-      args: ['/c', 'npx', '-y', '@insforge/insforge-mcp@latest'],
+      args: ['/c', 'npx', '-y', '@insforge/mcp@latest'],
       env,
     };
   } else {
     return {
       command: 'npx',
-      args: ['-y', '@insforge/insforge-mcp@latest'],
+      args: ['-y', '@insforge/mcp@latest'],
       env,
     };
   }
