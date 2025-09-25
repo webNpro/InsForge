@@ -75,10 +75,9 @@ const forwardToPostgrest = async (req: AuthRequest, res: Response, next: NextFun
   try {
     // Validate table name with operation type
     const method = req.method.toUpperCase();
-    const operation = method === 'GET' ? 'READ' : 'WRITE';
 
     try {
-      validateTableName(tableName, operation);
+      validateTableName(tableName);
     } catch (error) {
       if (error instanceof AppError) {
         throw error;

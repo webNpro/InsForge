@@ -12,9 +12,9 @@ import {
   type RenderHeaderCellProps,
   type SortColumn,
   SortableHeaderRenderer,
-  type DataGridColumn,
   type DatabaseRecord,
   type ConvertedValue,
+  type DataGridRowType,
 } from '@/components/datagrid';
 import { formatValueForDisplay } from '@/lib/utils/utils';
 import { ColumnType } from '@insforge/shared-schemas';
@@ -86,7 +86,10 @@ export function LinkRecordModal({
     setCurrentPage(1);
   }, [searchQuery]);
 
-  const records = useMemo(() => recordsData?.records || [], [recordsData?.records]);
+  const records = useMemo(
+    (): DataGridRowType[] => recordsData?.records || [],
+    [recordsData?.records]
+  );
   const totalRecords = recordsData?.totalRecords || 0;
   const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
 
@@ -100,7 +103,7 @@ export function LinkRecordModal({
 
   // Handle cell click to select record - only for reference column
   const handleCellClick = useCallback(
-    (args: CellClickArgs<DatabaseRecord>, event: CellMouseEvent) => {
+    (args: CellClickArgs<DataGridRowType>, event: CellMouseEvent) => {
       // Only allow selection when clicking on the reference column
       if (args.column.key !== referenceColumn) {
         // Prevent the default selection behavior for non-reference columns
@@ -119,7 +122,7 @@ export function LinkRecordModal({
 
   // Convert schema to columns for the DataGrid with visual distinction
   const columns = useMemo(() => {
-    const cols: DataGridColumn<DatabaseRecord>[] = convertSchemaToColumns(schema);
+    const cols = convertSchemaToColumns(schema);
     // Add visual indication for the reference column (clickable column)
     return cols.map((col) => {
       const baseCol = {
@@ -138,7 +141,7 @@ export function LinkRecordModal({
       if (col.key === referenceColumn) {
         return {
           ...baseCol,
-          renderCell: (props: RenderCellProps<DatabaseRecord>) => {
+          renderCell: (props: RenderCellProps<DataGridRowType>) => {
             const displayValue = renderCellValue(String(props.row[col.key]), col.type);
             return (
               <div className="w-full h-full flex items-center cursor-pointer">
@@ -148,7 +151,7 @@ export function LinkRecordModal({
               </div>
             );
           },
-          renderHeaderCell: (props: RenderHeaderCellProps<DatabaseRecord>) => (
+          renderHeaderCell: (props: RenderHeaderCellProps<DataGridRowType>) => (
             <SortableHeaderRenderer
               column={col}
               sortDirection={props.sortDirection}
@@ -163,7 +166,7 @@ export function LinkRecordModal({
       return {
         ...baseCol,
         cellClass: 'link-modal-disabled-cell',
-        renderCell: (props: RenderCellProps<DatabaseRecord>) => {
+        renderCell: (props: RenderCellProps<DataGridRowType>) => {
           const displayValue = renderCellValue(String(props.row[col.key]), col.type);
           return (
             <div className="w-full h-full flex items-center cursor-not-allowed relative">
@@ -174,7 +177,7 @@ export function LinkRecordModal({
             </div>
           );
         },
-        renderHeaderCell: (props: RenderHeaderCellProps<DatabaseRecord>) => (
+        renderHeaderCell: (props: RenderHeaderCellProps<DataGridRowType>) => (
           <SortableHeaderRenderer
             column={col}
             sortDirection={props.sortDirection}
