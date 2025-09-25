@@ -36,13 +36,19 @@ async function seedDefaultAIConfigs(): Promise<void> {
   }
 
   await aiConfigService.create(
-    'text',
+    ['text', 'image'],
+    ['text'],
     'openrouter',
     'openai/gpt-4o',
     'You are a helpful assistant.'
   );
 
-  await aiConfigService.create('image', 'openrouter', 'google/gemini-2.5-flash-image-preview');
+  await aiConfigService.create(
+    ['text', 'image'],
+    ['text', 'image'],
+    'openrouter',
+    'google/gemini-2.5-flash-image-preview'
+  );
 
   logger.info('✅ Default AI models configured (cloud environment)');
 }
