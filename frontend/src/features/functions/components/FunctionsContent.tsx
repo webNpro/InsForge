@@ -22,7 +22,7 @@ export function FunctionsContent() {
   useEffect(() => {
     if (!isRuntimeAvailable && !toastShownRef.current) {
       toastShownRef.current = true;
-      showToast('Functions runtime is currently unavailable. Please try again later.', 'error');
+      showToast('Function container is unhealthy.', 'error');
     }
   }, [isRuntimeAvailable, showToast]);
 
