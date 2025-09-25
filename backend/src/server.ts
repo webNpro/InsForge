@@ -28,6 +28,7 @@ import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
 import { isProduction } from './utils/environment';
+import packageJson from '../../package.json';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,9 +133,11 @@ export async function createApp() {
 
   apiRouter.get('/health', (_req: Request, res: Response) => {
     // Traditional REST: return data directly
+    const version = packageJson.version;
     res.json({
       status: 'ok',
-      service: 'Insforge Backend',
+      version,
+      service: 'Insforge OSS Backend',
       timestamp: new Date().toISOString(),
     });
   });
