@@ -1,9 +1,7 @@
 import { CopyButton } from '@/components/CopyButton';
-import { useToast } from '@/lib/hooks/useToast';
 import { type EdgeFunction } from '../services/functions.service';
 import { cn } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
-
 interface FunctionRowProps {
   function: EdgeFunction;
   onClick: () => void;
@@ -11,11 +9,7 @@ interface FunctionRowProps {
 }
 
 export function FunctionRow({ function: func, onClick, className }: FunctionRowProps) {
-  const { showToast } = useToast();
-
-  const handleCopyUrl = () => {
-    showToast('URL copied to clipboard', 'success');
-  };
+  const functionUrl = `${window.location.origin}/functions/${func.slug}`;
 
   return (
     <div
@@ -38,14 +32,13 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
           <div className="flex items-center gap-3">
             <span
               className="text-sm text-muted-foreground dark:text-white truncate"
-              title={`/functions/v1/${func.slug}`}
+              title={functionUrl}
             >
-              /functions/v1/{func.slug}
+              {functionUrl}
             </span>
             <CopyButton
               showText={false}
-              text={`/functions/v1/${func.slug}`}
-              onCopy={handleCopyUrl}
+              text={functionUrl}
               className="h-7 w-7 dark:hover:bg-neutral-500 dark:data-[copied=true]:group-hover:bg-neutral-700 dark:data-[copied=true]:hover:bg-neutral-700"
             />
           </div>
@@ -67,7 +60,9 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             className="text-sm text-muted-foreground dark:text-white truncate"
             title={func.deployed_at}
           >
-            {func.deployed_at ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true }) : 'Never'}
+            {func.deployed_at
+              ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true })
+              : 'Never'}
           </span>
         </div>
       </div>

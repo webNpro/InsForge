@@ -1,12 +1,12 @@
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
-import { type FunctionSecret } from '../services/secrets.service';
+import { type Secret } from '@/features/secrets/services/secrets.service';
 import { cn } from '@/lib/utils/utils';
 import { formatDistance } from 'date-fns';
 
 interface SecretRowProps {
-  secret: FunctionSecret;
-  onDelete: (secret: FunctionSecret) => void;
+  secret: Secret;
+  onDelete: (secret: Secret) => void;
   className?: string;
 }
 
@@ -43,7 +43,9 @@ export function SecretRow({ secret, onDelete, className }: SecretRowProps) {
         {/* Updated at Column */}
         <div className="col-span-3 px-3 py-1.5">
           <span className="text-sm text-zinc-950 dark:text-white truncate">
-            {secret.updatedAt ? formatDistance(new Date(secret.updatedAt), new Date(), { addSuffix: true }) : 'Never'}
+            {secret.updatedAt
+              ? formatDistance(new Date(secret.updatedAt), new Date(), { addSuffix: true })
+              : 'Never'}
           </span>
         </div>
 
