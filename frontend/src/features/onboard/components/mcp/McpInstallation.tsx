@@ -59,7 +59,7 @@ export function McpInstallation({
       >
         <TabsList
           className={cn(
-            'grid w-full grid-cols-8 bg-neutral-200 dark:bg-neutral-900 p-1 rounded-lg h-fit mb-2',
+            'grid w-full grid-cols-7 bg-neutral-200 dark:bg-neutral-900 p-1 rounded-lg h-fit mb-2',
             TabListClassName
           )}
         >

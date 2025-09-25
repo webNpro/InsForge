@@ -11,7 +11,7 @@ import ClaudeLogo from '@/assets/logos/claude_code.svg?react';
 import WindsurfLogo from '@/assets/logos/windsurf.svg?react';
 import ClineLogo from '@/assets/logos/cline.svg?react';
 import RooCodeLogo from '@/assets/logos/roo_code.svg';
-import CodexLogo from '@/assets/logos/openai.svg?react';
+// import CodexLogo from '@/assets/logos/openai.svg?react';
 
 export type PlatformType = 'macos-linux' | 'windows';
 
@@ -53,11 +53,11 @@ export const MCP_AGENTS: MCPAgent[] = [
     displayName: 'Roo Code',
     logo: <img src={RooCodeLogo} alt="" className="dark:invert" />,
   },
-  {
-    id: 'codex',
-    displayName: 'Codex',
-    logo: <CodexLogo className="w-5 h-5 dark:text-white" />,
-  },
+  // {
+  //   id: 'codex',
+  //   displayName: 'Codex',
+  //   logo: <CodexLogo className="w-5 h-5 dark:text-white" />,
+  // },
   {
     id: 'mcp',
     displayName: 'MCP JSON',
