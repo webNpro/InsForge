@@ -3,8 +3,6 @@ import { useToast } from '@/lib/hooks/useToast';
 import { type EdgeFunction } from '../services/functions.service';
 import { cn } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
-
 interface FunctionRowProps {
   function: EdgeFunction;
   onClick: () => void;
@@ -17,6 +15,8 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
   const handleCopyUrl = () => {
     showToast('URL copied to clipboard', 'success');
   };
+
+  const functionUrl = `${window.location.origin}/functions/${func.slug}`;
 
   return (
     <div
@@ -39,13 +39,13 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
           <div className="flex items-center gap-3">
             <span
               className="text-sm text-muted-foreground dark:text-white truncate"
-              title={`${BASE_URL}/functions/${func.slug}`}
+              title={functionUrl}
             >
-              {BASE_URL}/functions/{func.slug}
+              {functionUrl}
             </span>
             <CopyButton
               showText={false}
-              text={`${BASE_URL}/functions/${func.slug}`}
+              text={functionUrl}
               onCopy={handleCopyUrl}
               className="h-7 w-7 dark:hover:bg-neutral-500 dark:data-[copied=true]:group-hover:bg-neutral-700 dark:data-[copied=true]:hover:bg-neutral-700"
             />
