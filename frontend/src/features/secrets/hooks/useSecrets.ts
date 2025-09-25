@@ -4,7 +4,7 @@ import {
   secretsService,
   type Secret,
   type CreateSecretInput,
-} from '../services/secrets.service';
+} from '@/features/secrets/services/secrets.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 
