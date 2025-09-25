@@ -16,7 +16,7 @@ export function useSecrets() {
 
   // Query to fetch all secrets
   const {
-    data: secrets = [],
+    data: allSecrets = [],
     isLoading,
     error,
     refetch,
@@ -25,6 +25,9 @@ export function useSecrets() {
     queryFn: () => secretsService.listSecrets(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
+
+  // Filter out inactive secrets
+  const secrets = allSecrets.filter((secret: Secret) => secret.isActive);
 
   // Create secret mutation
   const createSecretMutation = useMutation({
