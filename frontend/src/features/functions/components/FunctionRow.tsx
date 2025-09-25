@@ -1,5 +1,4 @@
 import { CopyButton } from '@/components/CopyButton';
-import { useToast } from '@/lib/hooks/useToast';
 import { type EdgeFunction } from '../services/functions.service';
 import { cn } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
@@ -10,12 +9,6 @@ interface FunctionRowProps {
 }
 
 export function FunctionRow({ function: func, onClick, className }: FunctionRowProps) {
-  const { showToast } = useToast();
-
-  const handleCopyUrl = () => {
-    showToast('URL copied to clipboard', 'success');
-  };
-
   const functionUrl = `${window.location.origin}/functions/${func.slug}`;
 
   return (
@@ -46,7 +39,6 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             <CopyButton
               showText={false}
               text={functionUrl}
-              onCopy={handleCopyUrl}
               className="h-7 w-7 dark:hover:bg-neutral-500 dark:data-[copied=true]:group-hover:bg-neutral-700 dark:data-[copied=true]:hover:bg-neutral-700"
             />
           </div>
