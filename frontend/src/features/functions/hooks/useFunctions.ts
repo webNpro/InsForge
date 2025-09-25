@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { functionsService, type EdgeFunction } from '../services/functions.service';
 import { useToast } from '@/lib/hooks/useToast';
@@ -10,7 +10,7 @@ export function useFunctions() {
 
   // Query to fetch all functions
   const {
-    data: functions = [],
+    data: functionsData,
     isLoading,
     error,
     refetch,
@@ -19,6 +19,13 @@ export function useFunctions() {
     queryFn: () => functionsService.listFunctions(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
+
+  // Extract functions and runtime status from response
+  const functions = useMemo(() => functionsData?.functions || [], [functionsData]);
+  const runtimeStatus = useMemo(
+    () => functionsData?.runtime?.status || 'unavailable',
+    [functionsData]
+  );
 
   // Function to fetch and set selected function details
   const selectFunction = useCallback(
@@ -61,20 +68,22 @@ export function useFunctions() {
   // Helper to check if a function is selected
   const isViewingDetail = selectedFunction !== null;
 
-  // Helper to get function by slug
-  const getFunctionBySlug = useCallback(
-    (slug: string): EdgeFunction | undefined => {
-      return functions.find((func) => func.slug === slug);
-    },
-    [functions]
+  // Only show functions if runtime is available
+  const displayFunctions = useMemo(
+    () => (runtimeStatus === 'running' ? functions : []),
+    [functions, runtimeStatus]
   );
 
   return {
     // Data
-    functions,
-    functionsCount: functions.length,
+    functions: displayFunctions,
+    functionsCount: displayFunctions.length,
     selectedFunction,
     isViewingDetail,
+
+    // Runtime status
+    runtimeStatus,
+    isRuntimeAvailable: runtimeStatus === 'running',
 
     // Loading states
     isLoading,
@@ -90,6 +99,11 @@ export function useFunctions() {
     refetch,
 
     // Helpers
-    getFunctionBySlug,
+    getFunctionBySlug: useCallback(
+      (slug: string): EdgeFunction | undefined => {
+        return displayFunctions.find((func) => func.slug === slug);
+      },
+      [displayFunctions]
+    ),
   };
 }
