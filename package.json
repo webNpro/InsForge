@@ -47,9 +47,16 @@
     "clean": "npm run clean:backend && npm run clean:frontend",
     "clean:backend": "cd backend && npm run clean",
     "clean:frontend": "cd frontend && rimraf dist",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "release": "release-it",
+    "release:patch": "release-it patch",
+    "release:minor": "release-it minor",
+    "release:major": "release-it major",
+    "release:dry": "release-it --dry-run",
+    "release:beta": "release-it --preRelease=beta"
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^10.0.1",
     "@eslint/js": "^9.31.0",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
@@ -62,7 +69,8 @@
     "prettier": "^3.6.2",
     "rimraf": "^5.0.5",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "release-it": "^19.0.4"
   },
   "repository": {
     "type": "git",
