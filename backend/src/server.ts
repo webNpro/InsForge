@@ -207,11 +207,17 @@ export async function createApp() {
         .set('Access-Control-Allow-Origin', '*')
         .send(responseText);
     } catch (error) {
-      logger.error('Failed to execute function', {
+      logger.error('Failed to proxy to Deno runtime', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
+        slug: req.params.slug,
       });
-      res.status(502).json({ error: 'Failed to execute function' });
+
+      // Return the actual error from Deno or connection error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(502).json({
+        error: errorMessage,
+      });
     }
   });
 
