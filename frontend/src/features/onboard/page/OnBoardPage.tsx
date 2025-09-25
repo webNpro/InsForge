@@ -43,7 +43,7 @@ export default function OnBoardPage() {
 
   return (
     <div className="min-h-screen bg-bg-gray dark:bg-neutral-900">
-      <div className="container max-w-[1224px] mx-auto px-6 py-12">
+      <div className="container max-w-[1080px] mx-auto px-6 py-12">
         {/* Header with Linear Stepper */}
         <div className="mb-12 space-y-3">
           <h1 className="text-2xl font-bold text-black dark:text-white">Get Started</h1>
