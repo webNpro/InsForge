@@ -112,22 +112,6 @@ export function useSecrets() {
     secret.key.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Helper to check if a key already exists
-  const keyExists = useCallback(
-    (key: string): boolean => {
-      return secrets.some((secret) => secret.key.toLowerCase() === key.toLowerCase());
-    },
-    [secrets]
-  );
-
-  // Helper to get secret by key
-  const getSecretByKey = useCallback(
-    (key: string): Secret | undefined => {
-      return secrets.find((secret) => secret.key === key);
-    },
-    [secrets]
-  );
-
   return {
     // Data
     secrets,
@@ -148,10 +132,6 @@ export function useSecrets() {
     deleteSecret,
     setSearchQuery,
     refetch,
-
-    // Helpers
-    keyExists,
-    getSecretByKey,
 
     // Confirm dialog props
     confirmDialogProps,

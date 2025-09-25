@@ -33,18 +33,6 @@ export class SecretsService {
     return data.secrets || [];
   }
 
-  async getSecretValue(key: string): Promise<string | null> {
-    try {
-      const data = (await apiClient.request(`/secrets/${encodeURIComponent(key)}`, {
-        headers: apiClient.withAccessToken(),
-      })) as SecretValueResponse;
-      return data.value;
-    } catch (error) {
-      // Return null if secret not found (404) or other errors
-      return null;
-    }
-  }
-
   async createSecret(
     input: CreateSecretInput
   ): Promise<{ success: boolean; message: string; id?: string }> {
