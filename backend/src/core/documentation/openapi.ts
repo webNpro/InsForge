@@ -52,7 +52,7 @@ export class OpenAPIService {
         baseType = z.string().uuid();
         break;
       case ColumnType.JSON:
-        baseType = z.any();
+        baseType = z.record(z.unknown());
         break;
       default:
         baseType = z.unknown();
@@ -74,7 +74,7 @@ export class OpenAPIService {
   /**
    * Generate Zod schema for a table
    */
-  private generateTableSchema(table: TableSchema): z.ZodObject<any> {
+  private generateTableSchema(table: TableSchema): z.ZodObject<Record<string, z.ZodTypeAny>> {
     const schemaFields: Record<string, z.ZodTypeAny> = {};
 
     for (const column of table.columns) {
@@ -87,7 +87,7 @@ export class OpenAPIService {
   /**
    * Generate filter schema for query parameters
    */
-  private generateFilterSchema(table: TableSchema): z.ZodObject<any> {
+  private generateFilterSchema(table: TableSchema): z.ZodObject<Record<string, z.ZodTypeAny>> {
     const filterFields: Record<string, z.ZodTypeAny> = {};
 
     // Standard PostgREST query parameters
@@ -391,7 +391,7 @@ export class OpenAPIService {
             'multipart/form-data': {
               schema: z
                 .object({
-                  file: z.any().describe('File to upload'),
+                  file: z.instanceof(File).describe('File to upload'),
                 })
                 .openapi('FileUpload'),
             },
@@ -447,7 +447,7 @@ export class OpenAPIService {
             'multipart/form-data': {
               schema: z
                 .object({
-                  file: z.any().describe('File to upload'),
+                  file: z.instanceof(File).describe('File to upload'),
                 })
                 .openapi('FileUpload'),
             },
@@ -504,7 +504,7 @@ export class OpenAPIService {
           description: 'File content',
           content: {
             'application/octet-stream': {
-              schema: z.any().describe('Binary file data'),
+              schema: z.instanceof(Buffer).describe('Binary file data'),
             },
           },
         },
@@ -789,7 +789,7 @@ export class OpenAPIService {
   /**
    * Generate OpenAPI document
    */
-  async generateOpenAPIDocument(): Promise<any> {
+  async generateOpenAPIDocument() {
     try {
       // Get fresh metadata from database controller
       const dbAdvanceService = new DatabaseAdvanceService();
@@ -835,7 +835,7 @@ export class OpenAPIService {
         openapi: '3.0.0',
         info: {
           title: 'InsForge Dynamic API',
-          version: metadata.version || '1.0.0',
+          version: process.env.npm_package_version || '1.0.0',
           description: 'Automatically generated API documentation for InsForge database tables',
         },
         servers: [

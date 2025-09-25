@@ -43,7 +43,6 @@ export class SecretsService {
     return this.pool;
   }
 
-
   /**
    * Create a new secret
    */
@@ -264,15 +263,14 @@ export class SecretsService {
     const client = await this.getPool().connect();
     try {
       // Check if secret is reserved first
-      const checkResult = await client.query(
-        'SELECT is_reserved FROM _secrets WHERE id = $1',
-        [id]
-      );
-      
+      const checkResult = await client.query('SELECT is_reserved FROM _secrets WHERE id = $1', [
+        id,
+      ]);
+
       if (checkResult.rows.length > 0 && checkResult.rows[0].is_reserved) {
         throw new Error('Cannot delete reserved secret');
       }
-      
+
       const result = await client.query('DELETE FROM _secrets WHERE id = $1', [id]);
 
       const success = (result.rowCount ?? 0) > 0;

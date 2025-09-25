@@ -17,39 +17,38 @@ self.onmessage = async (e) => {
   try {
     /**
      * MOCK DENO OBJECT EXPLANATION:
-     * 
+     *
      * Why we need a mock Deno object:
      * - Edge functions run in isolated Web Workers (sandboxed environments)
      * - Web Workers don't have access to the real Deno global object for security
      * - We need to provide Deno.env functionality so functions can access secrets
-     * 
+     *
      * How it works:
      * 1. The main server (server.ts) fetches all active secrets from the _secrets table
      * 2. Only active (is_active=true) and non-expired secrets are included
      * 3. Secrets are decrypted and passed to this worker via the 'secrets' object
      * 4. We create a mock Deno object that provides Deno.env.get()
      * 5. When user code calls Deno.env.get('MY_SECRET'), it reads from our secrets object
-     * 
+     *
      * This allows edge functions to use familiar Deno.env syntax while maintaining security
      * Secrets are managed via the /api/secrets endpoint
      */
     const mockDeno = {
       // Mock the Deno.env API - only get() is needed for reading secrets
       env: {
-        get: (key) => secrets[key] || undefined
+        get: (key) => secrets[key] || undefined,
       },
-
     };
 
     /**
      * FUNCTION WRAPPING EXPLANATION:
-     * 
+     *
      * Here we create a wrapper function that will execute the user's code.
      * The user's function expects to have access to:
      * - module.exports (to export their function)
      * - createClient (the Insforge SDK)
      * - Deno (for Deno.env.get() etc.)
-     * 
+     *
      * We inject our mockDeno as the 'Deno' parameter, so when the user's code
      * calls Deno.env.get('MY_SECRET'), it's actually calling mockDeno.env.get('MY_SECRET')
      */

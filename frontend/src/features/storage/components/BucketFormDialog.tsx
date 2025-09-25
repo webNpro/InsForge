@@ -58,8 +58,8 @@ export function BucketFormDialog({
       showToast('Bucket created successfully', 'success');
       handleClose();
     },
-    onError: (error: any) => {
-      setError(error.response?.data?.error?.message || error.message || 'Failed to create bucket');
+    onError: (error: Error) => {
+      setError(error.message || 'Failed to create bucket');
     },
   });
 
@@ -71,8 +71,8 @@ export function BucketFormDialog({
       showToast('Bucket updated successfully', 'success');
       handleClose();
     },
-    onError: (error: any) => {
-      setError(error.response?.data?.error?.message || error.message || 'Failed to update bucket');
+    onError: (error: Error) => {
+      setError(error.message || 'Failed to update bucket');
     },
   });
 

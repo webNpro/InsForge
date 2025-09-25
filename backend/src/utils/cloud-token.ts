@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, JWTPayload, jwtVerify } from 'jose';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
 
@@ -8,7 +8,7 @@ import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
  */
 export async function verifyCloudToken(
   token: string
-): Promise<{ projectId: string; payload: any }> {
+): Promise<{ projectId: string; payload: JWTPayload }> {
   // Create JWKS endpoint for remote key set
   const JWKS = createRemoteJWKSet(
     new URL((process.env.CLOUD_API_HOST || 'https://api.insforge.dev') + '/.well-known/jwks.json')
@@ -20,7 +20,7 @@ export async function verifyCloudToken(
   });
 
   // Verify project_id matches if configured
-  const tokenProjectId = (payload as any).projectId;
+  const tokenProjectId = payload['projectId'] as string;
   const expectedProjectId = process.env.PROJECT_ID;
 
   if (expectedProjectId && tokenProjectId !== expectedProjectId) {

@@ -25,7 +25,6 @@ import { OnboardButton } from '@/features/onboard/components/OnboardButton';
 import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
-  currentUser: any;
   onLogout: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -58,7 +57,6 @@ const bottomNavigation = [
 ];
 
 export default function AppSidebar({
-  currentUser: _currentUser,
   onLogout: _onLogout,
   isCollapsed,
   onToggleCollapse,

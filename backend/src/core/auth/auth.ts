@@ -19,8 +19,9 @@ import type {
   AuthMetadataSchema,
 } from '@insforge/shared-schemas';
 import { OAuthConfigService } from './oauth';
+import { GitHubEmailInfo, GitHubUserInfo, GoogleUserInfo, UserRecord } from '@/types/auth';
 
-const JWT_SECRET = () => process.env.JWT_SECRET;
+const JWT_SECRET = () => process.env.JWT_SECRET ?? '';
 const JWT_EXPIRES_IN = '7d';
 
 /**
@@ -53,8 +54,8 @@ export class AuthService {
       throw new Error('JWT_SECRET environment variable is required');
     }
 
-    this.adminEmail = process.env.ADMIN_EMAIL!;
-    this.adminPassword = process.env.ADMIN_PASSWORD!;
+    this.adminEmail = process.env.ADMIN_EMAIL ?? '';
+    this.adminPassword = process.env.ADMIN_PASSWORD ?? '';
 
     if (!this.adminEmail || !this.adminPassword) {
       throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required');
@@ -80,7 +81,7 @@ export class AuthService {
   /**
    * Transform database user to API format (snake_case to camelCase)
    */
-  private dbUserToApiUser(dbUser: any): UserSchema {
+  private dbUserToApiUser(dbUser: UserRecord): UserSchema {
     return {
       id: dbUser.id,
       email: dbUser.email,
@@ -92,26 +93,10 @@ export class AuthService {
   }
 
   /**
-   * Transform multiple database users to API format
-   * Public method for use in auth routes
-   */
-  public transformUsers(dbUsers: any[]): UserSchema[] {
-    return dbUsers.map((user) => this.dbUserToApiUser(user));
-  }
-
-  /**
-   * Transform single database user to API format
-   * Public method for use in auth routes
-   */
-  public transformUser(dbUser: any): UserSchema {
-    return this.dbUserToApiUser(dbUser);
-  }
-
-  /**
    * Generate JWT token for users and admins
    */
   generateToken(payload: TokenPayloadSchema): string {
-    return jwt.sign(payload, JWT_SECRET()!, {
+    return jwt.sign(payload, JWT_SECRET(), {
       algorithm: 'HS256',
       expiresIn: JWT_EXPIRES_IN,
     });
@@ -126,7 +111,7 @@ export class AuthService {
       email: 'anon@insforge.com',
       role: 'anon',
     };
-    return jwt.sign(payload, JWT_SECRET()!, {
+    return jwt.sign(payload, JWT_SECRET(), {
       algorithm: 'HS256',
       // No expiresIn means token never expires
     });
@@ -137,7 +122,7 @@ export class AuthService {
    */
   verifyToken(token: string): TokenPayloadSchema {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET()!) as TokenPayloadSchema;
+      const decoded = jwt.verify(token, JWT_SECRET()) as TokenPayloadSchema;
       return {
         sub: decoded.sub,
         email: decoded.email,
@@ -254,20 +239,20 @@ export class AuthService {
       const { payload } = await verifyCloudToken(code);
 
       // If verification succeeds, extract user info and generate internal token
-      const adminId = (payload as any).userId || '00000000-0000-0000-0000-000000000001';
-      const email = (payload as any).email || payload.sub || 'admin@insforge.local';
+      const adminId = payload['userId'] || '00000000-0000-0000-0000-000000000001';
+      const email = payload['email'] || payload['sub'] || 'admin@insforge.local';
 
       // Generate internal access token
       const accessToken = this.generateToken({
-        sub: adminId,
-        email,
+        sub: adminId as string,
+        email: email as string,
         role: 'project_admin',
       });
 
       return {
         user: {
-          id: adminId,
-          email: email,
+          id: adminId as string,
+          email: email as string,
           name: 'Administrator',
           emailVerified: true,
           createdAt: new Date().toISOString(),
@@ -291,7 +276,7 @@ export class AuthService {
     email: string,
     userName: string,
     avatarUrl: string,
-    identityData: any
+    identityData: GoogleUserInfo | GitHubUserInfo | Record<string, unknown>
   ): Promise<CreateSessionResponse> {
     // First, try to find existing user by provider ID in _account_providers table
     const account = await this.db
@@ -370,7 +355,7 @@ export class AuthService {
     userName: string,
     email: string,
     providerId: string,
-    identityData: any,
+    identityData: GoogleUserInfo | GitHubUserInfo | Record<string, unknown>,
     avatarUrl: string
   ): Promise<CreateSessionResponse> {
     const userId = crypto.randomUUID();
@@ -632,7 +617,7 @@ export class AuthService {
   /**
    * Verify Google ID token and get user info
    */
-  async verifyGoogleToken(idToken: string): Promise<any> {
+  async verifyGoogleToken(idToken: string) {
     const oauthConfigService = OAuthConfigService.getInstance();
     const config = await oauthConfigService.getConfigByProvider('google');
 
@@ -680,7 +665,7 @@ export class AuthService {
   /**
    * Find or create Google user
    */
-  async findOrCreateGoogleUser(googleUserInfo: any): Promise<CreateSessionResponse> {
+  async findOrCreateGoogleUser(googleUserInfo: GoogleUserInfo): Promise<CreateSessionResponse> {
     const userName = googleUserInfo.name || googleUserInfo.email.split('@')[0];
     return this.findOrCreateThirdPartyUser(
       'google',
@@ -730,7 +715,7 @@ export class AuthService {
   /**
    * Get GitHub user info
    */
-  async getGitHubUserInfo(accessToken: string): Promise<any> {
+  async getGitHubUserInfo(accessToken: string) {
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -747,7 +732,7 @@ export class AuthService {
         },
       });
 
-      const primaryEmail = emailResponse.data.find((e: any) => e.primary);
+      const primaryEmail = emailResponse.data.find((e: GitHubEmailInfo) => e.primary);
       email = primaryEmail ? primaryEmail.email : emailResponse.data[0]?.email;
     }
 
@@ -763,7 +748,7 @@ export class AuthService {
   /**
    * Find or create GitHub user
    */
-  async findOrCreateGitHubUser(githubUserInfo: any): Promise<CreateSessionResponse> {
+  async findOrCreateGitHubUser(githubUserInfo: GitHubUserInfo): Promise<CreateSessionResponse> {
     const userName = githubUserInfo.name || githubUserInfo.login;
     const email = githubUserInfo.email || `${githubUserInfo.login}@users.noreply.github.com`;
 

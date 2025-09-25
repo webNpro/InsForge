@@ -106,14 +106,18 @@ export function formatValueForDisplay(value: ConvertedValue, type?: ColumnType):
 
     case ColumnType.DATE: {
       const date = parse(String(value), 'yyyy-MM-dd', new Date());
-      if (!isValid(date)) return 'Invalid date';
+      if (!isValid(date)) {
+        return 'Invalid date';
+      }
       const displayValue = format(date, 'MMM dd, yyyy');
       return displayValue;
     }
 
     case ColumnType.DATETIME: {
       const date = parseISO(String(value));
-      if (!isValid(date)) return 'Invalid date time';
+      if (!isValid(date)) {
+        return 'Invalid date time';
+      }
       const displayValue = format(date, 'MMM dd, yyyy, hh:mm a');
       return displayValue;
     }

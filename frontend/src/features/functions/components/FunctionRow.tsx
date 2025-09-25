@@ -67,7 +67,9 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             className="text-sm text-muted-foreground dark:text-white truncate"
             title={func.deployed_at}
           >
-            {func.deployed_at ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true }) : 'Never'}
+            {func.deployed_at
+              ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true })
+              : 'Never'}
           </span>
         </div>
       </div>

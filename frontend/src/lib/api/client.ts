@@ -2,14 +2,13 @@ const API_BASE = '/api';
 
 interface ApiError extends Error {
   response?: {
-    data: any;
+    data: unknown;
     status: number;
   };
 }
 
 export class ApiClient {
   private token: string | null = null;
-  private tokenRefreshPromise: Promise<void> | null = null;
   private onAuthError?: () => void;
 
   constructor() {

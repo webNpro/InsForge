@@ -135,9 +135,8 @@ export default function StoragePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error?.message || error.message || 'Failed to upload file';
+    onError: (error: Error) => {
+      const errorMessage = error.message || 'Failed to upload file';
       showToast(errorMessage, 'error');
     },
   });
@@ -303,9 +302,8 @@ export default function StoragePage() {
             queryClient.getQueryData<typeof buckets>(['storage', 'buckets']) || [];
           setSelectedBucket(updatedBuckets[0]?.name || null);
         }
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.error?.message || error.message || 'Failed to delete bucket';
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete bucket';
         showToast(errorMessage, 'error');
       }
     }

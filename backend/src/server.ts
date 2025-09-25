@@ -20,7 +20,7 @@ import { openAPIRouter } from '@/api/routes/openapi.js';
 import { agentDocsRouter } from '@/api/routes/agent.js';
 import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
-import fetch from 'node-fetch';
+import fetch, { HeadersInit } from 'node-fetch';
 import { DatabaseManager } from '@/core/database/manager.js';
 import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
@@ -193,7 +193,7 @@ export async function createApp() {
         `${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`,
         {
           method: req.method,
-          headers: req.headers as any,
+          headers: req.headers as HeadersInit,
           body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
         }
       );

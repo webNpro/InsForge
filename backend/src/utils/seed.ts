@@ -126,12 +126,12 @@ export async function seedBackend(): Promise<void> {
     // Add INSFORGE_INTERNAL_URL for Deno-to-backend container communication
     const insforgInternalUrl = 'http://insforge:7130';
     const existingSecret = await secretService.getSecretByKey('INSFORGE_INTERNAL_URL');
-    
+
     if (existingSecret === null) {
       await secretService.createSecret({
         key: 'INSFORGE_INTERNAL_URL',
         isReserved: true,
-        value: insforgInternalUrl
+        value: insforgInternalUrl,
       });
       logger.info('✅ System secrets initialized');
     }

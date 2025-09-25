@@ -325,9 +325,8 @@ function DatabasePageContent() {
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.error?.message || error.message || 'Failed to delete table';
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete table';
         showToast(errorMessage, 'error');
       }
     }

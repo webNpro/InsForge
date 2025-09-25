@@ -62,7 +62,7 @@ export function SecretsContent() {
               />
             </div>
             <Button
-              onClick={handleSaveNewSecret}
+              onClick={() => void handleSaveNewSecret()}
               className="bg-emerald-300 hover:bg-emerald-400 text-black px-3 py-2 w-20 h-9 rounded"
               disabled={!newSecretKey.trim() || !newSecretValue.trim()}
             >
@@ -101,7 +101,7 @@ export function SecretsContent() {
                 <SecretRow
                   key={secret.id}
                   secret={secret}
-                  onDelete={deleteSecret}
+                  onDelete={() => void deleteSecret(secret)}
                   className="cols-span-full"
                 />
               ))}
