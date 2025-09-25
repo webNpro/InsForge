@@ -168,7 +168,7 @@ export class OAuthConfigService {
       if (input.clientSecret && !input.useSharedKey) {
         // Create new secret
         const secret = await this.secretsService.createSecret({
-          name: `${input.provider.toUpperCase()}_CLIENT_SECRET`,
+          key: `${input.provider.toUpperCase()}_CLIENT_SECRET`,
           value: input.clientSecret,
         });
         secretId = secret.id;
@@ -258,7 +258,7 @@ export class OAuthConfigService {
         } else {
           // Create new secret if it doesn't exist
           const secret = await this.secretsService.createSecret({
-            name: `${provider.toUpperCase()}_CLIENT_SECRET`,
+            key: `${provider.toUpperCase()}_CLIENT_SECRET`,
             value: input.clientSecret,
           });
           // Add secret_id to the update query

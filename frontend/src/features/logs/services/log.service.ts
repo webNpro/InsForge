@@ -67,11 +67,24 @@ export interface LogSource {
   token: string;
 }
 
+export interface AnalyticsLogBody {
+  status_code?: number;
+  duration?: string;
+  size?: number;
+  log_type?: string;
+  ip?: string;
+  user_agent?: string;
+  path?: string;
+  error?: string;
+  stack?: string;
+  [key: string]: unknown;
+}
+
 export interface AnalyticsLogRecord {
   id: string;
   event_message: string;
   timestamp: string;
-  body: Record<string, unknown>;
+  body: AnalyticsLogBody;
   source?: string; // Added for search results
 }
 
