@@ -232,9 +232,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
 
     // Update fields
     if (updates.name !== undefined) {
-      await db
-        .prepare('UPDATE _functions SET name = ? WHERE slug = ?')
-        .run(updates.name, slug);
+      await db.prepare('UPDATE _functions SET name = ? WHERE slug = ?').run(updates.name, slug);
     }
 
     if (updates.description !== undefined) {
@@ -244,15 +242,11 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     if (updates.code !== undefined) {
-      await db
-        .prepare('UPDATE _functions SET code = ? WHERE slug = ?')
-        .run(updates.code, slug);
+      await db.prepare('UPDATE _functions SET code = ? WHERE slug = ?').run(updates.code, slug);
     }
 
     if (updates.status !== undefined) {
-      await db
-        .prepare('UPDATE _functions SET status = ? WHERE slug = ?')
-        .run(updates.status, slug);
+      await db.prepare('UPDATE _functions SET status = ? WHERE slug = ?').run(updates.status, slug);
 
       // Update deployed_at if status changes to active
       if (updates.status === 'active') {

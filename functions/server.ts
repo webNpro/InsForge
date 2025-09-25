@@ -31,18 +31,14 @@ async function decryptSecret(ciphertext: string, key: string): Promise<string> {
     // Get the encryption key by hashing the JWT secret
     const keyData = new TextEncoder().encode(key);
     const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      hashBuffer,
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt']
-    );
+    const cryptoKey = await crypto.subtle.importKey('raw', hashBuffer, { name: 'AES-GCM' }, false, [
+      'decrypt',
+    ]);
 
     // Extract IV, auth tag, and encrypted data
-    const iv = Uint8Array.from(parts[0].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
-    const authTag = Uint8Array.from(parts[1].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
-    const encrypted = Uint8Array.from(parts[2].match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+    const iv = Uint8Array.from(parts[0].match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
+    const authTag = Uint8Array.from(parts[1].match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
+    const encrypted = Uint8Array.from(parts[2].match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
 
     // Combine encrypted data and auth tag (GCM expects them together)
     const cipherData = new Uint8Array(encrypted.length + authTag.length);
@@ -100,30 +96,30 @@ async function getFunctionCode(slug: string): Promise<string | null> {
 // Get all secrets from main secrets table and decrypt them
 async function getFunctionSecrets(): Promise<Record<string, string>> {
   const client = new Client(dbConfig);
-  
+
   try {
     await client.connect();
-    
+
     // Get the encryption key from environment
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('JWT_SECRET');
     if (!encryptionKey) {
       console.error('No encryption key available for decrypting secrets');
       return {};
     }
-    
+
     // Fetch all active secrets from _secrets table
-    const result = await client.queryObject<{ 
-      key: string; 
-      value_ciphertext: string 
+    const result = await client.queryObject<{
+      key: string;
+      value_ciphertext: string;
     }>`
       SELECT key, value_ciphertext 
       FROM _secrets
       WHERE is_active = true 
         AND (expires_at IS NULL OR expires_at > NOW())
     `;
-    
+
     const secrets: Record<string, string> = {};
-    
+
     // Decrypt each secret
     for (const row of result.rows) {
       try {
@@ -133,7 +129,7 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
         // Skip this secret if decryption fails
       }
     }
-    
+
     return secrets;
   } catch (error) {
     console.error('Error fetching secrets:', error);
@@ -147,7 +143,7 @@ async function getFunctionSecrets(): Promise<Record<string, string>> {
 async function executeInWorker(code: string, request: Request): Promise<Response> {
   // Get worker template
   const template = await getWorkerTemplateCode();
-  
+
   // Fetch all function secrets
   const secrets = await getFunctionSecrets();
 

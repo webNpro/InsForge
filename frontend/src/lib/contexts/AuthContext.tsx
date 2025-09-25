@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/features/auth/services/auth.service';
 import { apiClient } from '@/lib/api/client';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   name?: string;

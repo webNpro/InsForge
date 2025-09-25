@@ -263,7 +263,6 @@ export function DatabaseDataGrid({
   schema,
   onCellEdit,
   onJumpToTable,
-  emptyStateTitle = 'No data available',
   searchQuery,
   ...props
 }: DatabaseDataGridProps) {

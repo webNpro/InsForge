@@ -29,7 +29,6 @@ export default function Layout({ children }: LayoutProps) {
           )}
         >
           <AppSidebar
-            currentUser={user}
             onLogout={logout}
             isCollapsed={is2xl ? sidebarCollapsed : !isHovering}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}

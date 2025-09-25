@@ -84,8 +84,8 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
       setJsonText(JSON.stringify(parsed, null, 2));
       setIsValid(true);
       setError(null);
-    } catch (e) {
-      // Already showing error from validation
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -101,8 +101,8 @@ export function JsonCellEditor({ value, nullable, onValueChange, onCancel }: Jso
       setJsonText(JSON.stringify(parsed));
       setIsValid(true);
       setError(null);
-    } catch (e) {
-      // Already showing error from validation
+    } catch (error) {
+      console.error(error);
     }
   };
 

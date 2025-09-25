@@ -62,7 +62,7 @@ export function isValidIdentifier(identifier: string): boolean {
  * @returns true if valid
  * @throws AppError if invalid
  */
-export function validateTableName(tableName: string, operation?: 'READ' | 'WRITE'): boolean {
+export function validateTableName(tableName: string): boolean {
   validateIdentifier(tableName, 'table');
 
   // Prevent access to all other system tables (starting with _)

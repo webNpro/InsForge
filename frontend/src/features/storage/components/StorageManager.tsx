@@ -219,9 +219,7 @@ export function StorageManager({
           onDownload={(file) => void handleDownload(file)}
           onDelete={(file) => void handleDelete(file)}
           isDownloading={isDownloading}
-          emptyStateTitle={
-            searchQuery ? 'No files match your search criteria' : 'No files found'
-          }
+          emptyStateTitle={searchQuery ? 'No files match your search criteria' : 'No files found'}
           emptyStateActionText={!searchQuery && onAddRecord ? 'Add Record' : undefined}
           onEmptyStateAction={!searchQuery && onAddRecord ? onAddRecord : undefined}
         />

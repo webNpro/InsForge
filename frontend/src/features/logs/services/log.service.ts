@@ -71,7 +71,7 @@ export interface AnalyticsLogRecord {
   id: string;
   event_message: string;
   timestamp: string;
-  body: Record<string, any>;
+  body: Record<string, unknown>;
   source?: string; // Added for search results
 }
 
