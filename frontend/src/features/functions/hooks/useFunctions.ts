@@ -44,11 +44,11 @@ export function useFunctions() {
   // Delete function mutation (for future use)
   const deleteFunctionMutation = useMutation({
     mutationFn: (slug: string) => functionsService.deleteFunction(slug),
-    onSuccess: () => {
+    onSuccess: (_, slug) => {
       void queryClient.invalidateQueries({ queryKey: ['functions'] });
       showToast('Function deleted successfully', 'success');
       // Clear selection if deleted function was selected
-      if (selectedFunction && selectedFunction.slug === arguments[0]) {
+      if (selectedFunction && selectedFunction.slug === slug) {
         setSelectedFunction(null);
       }
     },

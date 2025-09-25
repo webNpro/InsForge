@@ -260,7 +260,7 @@ function FieldLabel({
 // Generic component for any field type with foreign key linking
 interface FieldWithLinkProps {
   field: ColumnSchema;
-  control: Control<any, any, any>;
+  control: Control<DatabaseRecord>;
   children: React.ReactNode;
 }
 
@@ -287,7 +287,7 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
           const existingClassName = childElement.props.className || '';
           const paddingClass = hasLinkedValue ? 'pr-16' : 'pr-11';
           const modifiedChildren = React.cloneElement(childElement, {
-            value: formField.value,
+            value: formField.value as UserInputValue,
             className: `${existingClassName} ${paddingClass}`.trim(),
           });
 
@@ -318,11 +318,14 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                           openModal({
                             referenceTable: field.foreignKey.referenceTable,
                             referenceColumn: field.foreignKey.referenceColumn,
-                            currentValue: formField.value,
+                            currentValue: formField.value ? String(formField.value) : null,
                             onSelectRecord: (record: DatabaseRecord) => {
                               if (field.foreignKey) {
                                 const referenceValue = record[field.foreignKey.referenceColumn];
-                                const result = convertValueForColumn(field.type, String(referenceValue || ''));
+                                const result = convertValueForColumn(
+                                  field.type,
+                                  String(referenceValue || '')
+                                );
                                 if (result.success) {
                                   formField.onChange(result.value);
                                 } else {

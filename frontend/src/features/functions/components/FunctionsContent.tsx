@@ -59,7 +59,7 @@ export function FunctionsContent() {
               <FunctionRow
                 key={func.id}
                 function={func}
-                onClick={() => selectFunction(func)}
+                onClick={() => void selectFunction(func)}
                 className="cols-span-full"
               />
             ))}

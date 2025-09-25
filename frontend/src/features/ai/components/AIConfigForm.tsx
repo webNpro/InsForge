@@ -162,14 +162,7 @@ export function AIConfigForm({ mode, editingConfig, onSubmit }: AIConfigFormProp
         onSubmit(data as UpdateAIConfigurationRequest);
       }
     },
-    [
-      isCreateMode,
-      onSubmit,
-      selectedInputModality.length,
-      selectedOutputModality.length,
-      allConfiguredModels,
-      showToast,
-    ]
+    [isCreateMode, onSubmit, allConfiguredModels, showToast]
   );
 
   return (

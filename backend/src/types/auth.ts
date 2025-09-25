@@ -1,3 +1,15 @@
+// Type definitions for database user records
+export interface UserRecord {
+  id: string;
+  email: string;
+  name: string;
+  email_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  password: string | null;
+  providers: string | null;
+}
+
 // OAuth provider data from external providers
 export interface OAuthIdentityData {
   sub?: string; // Subject identifier from provider
@@ -48,4 +60,31 @@ export interface SuperUserProfileRecord {
   name: string;
   created_at: string;
   updated_at: string;
+}
+
+// Type definitions for OAuth providers
+export interface GoogleUserInfo {
+  sub: string;
+  email: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+  given_name?: string;
+  family_name?: string;
+  locale?: string;
+}
+
+export interface GitHubUserInfo {
+  id: number;
+  login: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+}
+
+export interface GitHubEmailInfo {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+  visibility?: string;
 }

@@ -21,6 +21,7 @@ import {
   type DeleteUsersResponse,
   exchangeAdminSessionRequestSchema,
 } from '@insforge/shared-schemas';
+import { UserRecord } from '@/types/auth.js';
 
 const router = Router();
 const authService = AuthService.getInstance();
@@ -171,7 +172,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
       FROM _accounts u
       LEFT JOIN _account_providers a ON u.id = a.user_id
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (search) {
       query += ' WHERE u.email LIKE ? OR u.name LIKE ?';
@@ -184,7 +185,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     const dbUsers = await db.prepare(query).all(...params);
 
     // Simple transformation - just format the provider as identities
-    const users = dbUsers.map((dbUser: any) => {
+    const users = dbUsers.map((dbUser: UserRecord) => {
       const identities = [];
       const providers: string[] = [];
 
@@ -206,7 +207,7 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
       const firstProvider = providers[0];
       const provider_type = firstProvider === 'email' ? 'email' : 'social';
 
-      // Return snake_case for frontend compatibility
+      // Return for frontend compatibility
       return {
         id: dbUser.id,
         email: dbUser.email,
@@ -220,12 +221,12 @@ router.get('/users', verifyAdmin, async (req: Request, res: Response, next: Next
     });
 
     let countQuery = 'SELECT COUNT(*) as count FROM _accounts';
-    const countParams: any[] = [];
+    const countParams: string[] = [];
     if (search) {
       countQuery += ' WHERE email LIKE ? OR name LIKE ?';
       countParams.push(`%${search}%`, `%${search}%`);
     }
-    const { count } = await db.prepare(countQuery).get(...countParams);
+    const { count } = (await db.prepare(countQuery).get(...countParams)) as { count: number };
 
     const response: ListUsersResponse = {
       data: users,
@@ -257,15 +258,15 @@ router.get(
       const userId = userIdValidation.data;
       const db = authService.getDb();
 
-      const dbUser = await db
+      const dbUser = (await db
         .prepare(
           `
-      SELECT 
-        u.id, 
-        u.email, 
-        u.name, 
-        u.email_verified, 
-        u.created_at, 
+      SELECT
+        u.id,
+        u.email,
+        u.name,
+        u.email_verified,
+        u.created_at,
         u.updated_at,
         u.password,
         STRING_AGG(a.provider, ',') as providers
@@ -275,7 +276,7 @@ router.get(
       GROUP BY u.id
     `
         )
-        .get(userId);
+        .get(userId)) as UserRecord | undefined;
 
       if (!dbUser) {
         throw new AppError('User not found', 404, ERROR_CODES.NOT_FOUND);

@@ -116,8 +116,6 @@ export class DatabaseService {
       },
     });
 
-    console.log(response);
-
     return {
       records: response.data,
       pagination: response.pagination,
