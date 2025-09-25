@@ -36,7 +36,7 @@ export default function AnalyticsLogsPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   // intervalRef is used for auto-refresh but currently not actively used
-  const _intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // const _intervalRef = useRef<NodeJS.Timeout | null>(null);
   const pageSize = 100;
 
   // Fetch log sources
