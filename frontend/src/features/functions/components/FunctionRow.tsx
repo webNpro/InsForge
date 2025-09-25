@@ -3,6 +3,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { type EdgeFunction } from '../services/functions.service';
 import { cn } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7130';
 
 interface FunctionRowProps {
   function: EdgeFunction;
@@ -38,13 +39,13 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
           <div className="flex items-center gap-3">
             <span
               className="text-sm text-muted-foreground dark:text-white truncate"
-              title={`/functions/v1/${func.slug}`}
+              title={`${BASE_URL}/functions/${func.slug}`}
             >
-              /functions/v1/{func.slug}
+              {BASE_URL}/functions/{func.slug}
             </span>
             <CopyButton
               showText={false}
-              text={`/functions/v1/${func.slug}`}
+              text={`${BASE_URL}/functions/${func.slug}`}
               onCopy={handleCopyUrl}
               className="h-7 w-7 dark:hover:bg-neutral-500 dark:data-[copied=true]:group-hover:bg-neutral-700 dark:data-[copied=true]:hover:bg-neutral-700"
             />
@@ -67,7 +68,9 @@ export function FunctionRow({ function: func, onClick, className }: FunctionRowP
             className="text-sm text-muted-foreground dark:text-white truncate"
             title={func.deployed_at}
           >
-            {func.deployed_at ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true }) : 'Never'}
+            {func.deployed_at
+              ? formatDistance(new Date(func.deployed_at), new Date(), { addSuffix: true })
+              : 'Never'}
           </span>
         </div>
       </div>

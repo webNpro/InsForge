@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  functionSecretsService,
-  type FunctionSecret,
+  secretsService,
+  type Secret,
   type CreateSecretInput,
 } from '../services/secrets.service';
 import { useToast } from '@/lib/hooks/useToast';
@@ -21,16 +21,16 @@ export function useSecrets() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['function-secrets'],
-    queryFn: () => functionSecretsService.listSecrets(),
+    queryKey: ['secrets'],
+    queryFn: () => secretsService.listSecrets(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
-  // Create or update secret mutation
+  // Create secret mutation
   const createSecretMutation = useMutation({
-    mutationFn: (input: CreateSecretInput) => functionSecretsService.createOrUpdateSecret(input),
+    mutationFn: (input: CreateSecretInput) => secretsService.createSecret(input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['function-secrets'] });
+      void queryClient.invalidateQueries({ queryKey: ['secrets'] });
       showToast('Secret created successfully', 'success');
     },
     onError: (error: Error) => {
@@ -42,9 +42,9 @@ export function useSecrets() {
 
   // Delete secret mutation
   const deleteSecretMutation = useMutation({
-    mutationFn: (key: string) => functionSecretsService.deleteSecret(key),
+    mutationFn: (key: string) => secretsService.deleteSecret(key),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['function-secrets'] });
+      void queryClient.invalidateQueries({ queryKey: ['secrets'] });
       showToast('Secret deleted successfully', 'success');
     },
     onError: (error: Error) => {
@@ -77,7 +77,7 @@ export function useSecrets() {
 
   // Delete secret with confirmation
   const deleteSecret = useCallback(
-    async (secret: FunctionSecret) => {
+    async (secret: Secret) => {
       if (secret.isReserved) {
         showToast('Cannot delete reserved secrets', 'error');
         return false;
@@ -105,7 +105,7 @@ export function useSecrets() {
   );
 
   // Filter secrets based on search query
-  const filteredSecrets = secrets.filter((secret) =>
+  const filteredSecrets = secrets.filter((secret: Secret) =>
     secret.key.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -119,7 +119,7 @@ export function useSecrets() {
 
   // Helper to get secret by key
   const getSecretByKey = useCallback(
-    (key: string): FunctionSecret | undefined => {
+    (key: string): Secret | undefined => {
       return secrets.find((secret) => secret.key === key);
     },
     [secrets]

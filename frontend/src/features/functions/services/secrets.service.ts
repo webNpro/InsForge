@@ -1,9 +1,12 @@
 import { apiClient } from '@/lib/api/client';
 
-export interface FunctionSecret {
+export interface Secret {
   id: string;
   key: string;
+  isActive: boolean;
   isReserved: boolean;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -14,21 +17,38 @@ export interface CreateSecretInput {
 }
 
 export interface SecretsListResponse {
-  secrets: FunctionSecret[];
+  secrets: Secret[];
 }
 
-export class FunctionSecretsService {
-  async listSecrets(): Promise<FunctionSecret[]> {
-    const data = (await apiClient.request('/function-secrets', {
+export interface SecretValueResponse {
+  key: string;
+  value: string;
+}
+
+export class SecretsService {
+  async listSecrets(): Promise<Secret[]> {
+    const data = (await apiClient.request('/secrets', {
       headers: apiClient.withAccessToken(),
     })) as SecretsListResponse;
     return data.secrets || [];
   }
 
-  async createOrUpdateSecret(
+  async getSecretValue(key: string): Promise<string | null> {
+    try {
+      const data = (await apiClient.request(`/secrets/${encodeURIComponent(key)}`, {
+        headers: apiClient.withAccessToken(),
+      })) as SecretValueResponse;
+      return data.value;
+    } catch (error) {
+      // Return null if secret not found (404) or other errors
+      return null;
+    }
+  }
+
+  async createSecret(
     input: CreateSecretInput
-  ): Promise<{ success: boolean; message: string }> {
-    return apiClient.request('/function-secrets', {
+  ): Promise<{ success: boolean; message: string; id?: string }> {
+    return apiClient.request('/secrets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,11 +59,11 @@ export class FunctionSecretsService {
   }
 
   async deleteSecret(key: string): Promise<{ success: boolean; message: string }> {
-    return apiClient.request(`/function-secrets/${encodeURIComponent(key)}`, {
+    return apiClient.request(`/secrets/${encodeURIComponent(key)}`, {
       method: 'DELETE',
       headers: apiClient.withAccessToken(),
     });
   }
 }
 
-export const functionSecretsService = new FunctionSecretsService();
+export const secretsService = new SecretsService();
