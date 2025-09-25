@@ -18,6 +18,23 @@ import {
 } from '@/components/radix/DropdownMenu';
 import { CopyButton } from '@/components/CopyButton';
 
+const providers: OAuthProviderInfo[] = [
+  {
+    id: 'google',
+    name: 'Google OAuth',
+    icon: <Google className="w-6 h-6" />,
+    description: 'Configure Google authentication for your users',
+    setupUrl: 'https://console.cloud.google.com/apis/credentials',
+  },
+  {
+    id: 'github',
+    name: 'GitHub OAuth',
+    icon: <Github className="w-6 h-6 dark:text-white" />,
+    description: 'Configure GitHub authentication for your users',
+    setupUrl: 'https://github.com/settings/developers',
+  },
+];
+
 export interface OAuthProviderInfo {
   id: 'google' | 'github';
   name: string;
@@ -39,23 +56,6 @@ export function AuthMethodTab() {
     getProviderConfig,
     isProviderConfigured,
   } = useOAuthConfig();
-
-  const providers: OAuthProviderInfo[] = [
-    {
-      id: 'google',
-      name: 'Google OAuth',
-      icon: <Google className="w-6 h-6" />,
-      description: 'Configure Google authentication for your users',
-      setupUrl: 'https://console.cloud.google.com/apis/credentials',
-    },
-    {
-      id: 'github',
-      name: 'GitHub OAuth',
-      icon: <Github className="w-6 h-6 dark:text-white" />,
-      description: 'Configure GitHub authentication for your users',
-      setupUrl: 'https://github.com/settings/developers',
-    },
-  ];
 
   const handleConfigureProvider = (provider: OAuthProviderInfo) => {
     setSelectedProvider(provider);
@@ -103,7 +103,7 @@ export function AuthMethodTab() {
   // Check if all providers are enabled
   const allProvidersEnabled = useMemo(() => {
     return providers.every((provider) => enabledProviders[provider.id]);
-  }, [providers, enabledProviders]);
+  }, [enabledProviders]);
 
   const handleConfirmSelected = (selectedId: 'google' | 'github') => {
     // Find the selected provider
