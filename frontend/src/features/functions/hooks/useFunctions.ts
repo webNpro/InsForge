@@ -22,10 +22,7 @@ export function useFunctions() {
 
   // Extract functions and runtime status from response
   const functions = useMemo(() => functionsData?.functions || [], [functionsData]);
-  const runtimeStatus = useMemo(
-    () => functionsData?.runtime?.status || 'running',
-    [functionsData]
-  );
+  const runtimeStatus = useMemo(() => functionsData?.runtime?.status || 'running', [functionsData]);
 
   // Function to fetch and set selected function details
   const selectFunction = useCallback(
