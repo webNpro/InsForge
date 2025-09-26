@@ -1,6 +1,7 @@
 import { DatabaseAdvanceService } from '@/core/database/advance.js';
-import { TableSchema } from '@insforge/shared-schemas';
+import { StorageBucketSchema, TableSchema } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
+import { StorageService } from '../storage/storage';
 
 export class AgentAPIDocService {
   private static instance: AgentAPIDocService;
@@ -59,15 +60,16 @@ export class AgentAPIDocService {
   /**
    * Generate AI-native API documentation
    */
-  async generateAgentDocumentation(): Promise<any> {
+  async generateAgentDocumentation(): Promise<Record<string, unknown>> {
     try {
       // Get fresh metadata from database controller
       const dbAdvanceService = new DatabaseAdvanceService();
+      const storageService = StorageService.getInstance();
       const databaseMetadata = await dbAdvanceService.getMetadata();
-      const metadata = { database: databaseMetadata };
+      const storageMetadata = await storageService.getMetadata();
 
       // Filter out system tables
-      const tables = metadata.database.tables.filter((table) => {
+      const tables = databaseMetadata.tables.filter((table) => {
         if (table.tableName.startsWith('_')) {
           return false;
         }
@@ -87,12 +89,12 @@ export class AgentAPIDocService {
       }
 
       // Get storage buckets
-      const buckets = metadata.storage?.buckets || [];
-      const bucketList = buckets.map((bucket: any) => bucket.name);
+      const buckets = storageMetadata.buckets || [];
+      const bucketList = buckets.map((bucket: StorageBucketSchema) => bucket.name);
 
       const document = {
         '<critical>': 'Re-read this documentation at the start of each conversation',
-        version: metadata.version || '1.0.0',
+        version: process.env.npm_package_version || '1.0.0',
         baseUrl: process.env.API_BASE_URL || 'http://localhost:7130',
         securitySchemes: {
           method: 'bearerToken',

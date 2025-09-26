@@ -35,9 +35,5 @@ export { Checkbox } from './Checkbox';
 export { TypeBadge } from './TypeBadge';
 
 // Data Grid Components
-export { DataGrid, DefaultCellRenderers, SortableHeaderRenderer } from './DataGrid';
-export type { DataGridColumn, DataGridProps } from './DataGrid';
-
-// MCP Components
-export { McpInstallation, CursorDeeplinkGenerator } from './mcp';
-export type { MCPAgent, PlatformType } from './mcp';
+export { DataGrid, SortableHeaderRenderer } from './datagrid';
+export type { DataGridProps } from './datagrid';

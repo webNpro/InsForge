@@ -1,5 +1,7 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Mail } from 'lucide-react';
 import {
   Card,
@@ -21,7 +23,6 @@ import { Input } from '@/components/radix/Input';
 import { ButtonWithLoading } from '@/components/ButtonWithLoading';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useStandardForm } from '@/lib/hooks/useStandardForm';
 import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
 import { loginFormSchema, LoginFormData } from '@/lib/utils/validation-schemas';
 
@@ -29,19 +30,27 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { loginWithPassword, isAuthenticated } = useAuth();
   const { isCompleted } = useOnboardingCompletion();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Determine where to redirect based on onboarding completion status
   const getRedirectPath = useCallback(() => {
     return isCompleted ? '/dashboard' : '/dashboard/onboard';
   }, [isCompleted]);
 
-  const form = useStandardForm<LoginFormData>({
-    schema: loginFormSchema,
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: 'admin@example.com',
       password: 'change-this-password',
     },
-    onSubmit: async (data) => {
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
       const success = await loginWithPassword(data.email, data.password);
 
       if (success) {
@@ -49,8 +58,13 @@ export default function LoginPage() {
       } else {
         throw new Error('Invalid email or password');
       }
-    },
-  });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +87,7 @@ export default function LoginPage() {
         {/* Login Card */}
         <Card>
           <Form {...form}>
-            <form onSubmit={(e) => void form.onSubmit(e)}>
+            <form onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}>
               <CardHeader>
                 <CardTitle>Sign In</CardTitle>
                 <CardDescription>Enter your admin credentials to continue</CardDescription>
@@ -125,9 +139,9 @@ export default function LoginPage() {
                   )}
                 />
 
-                {form.submitError && (
+                {submitError && (
                   <Alert variant="destructive">
-                    <AlertDescription>{form.submitError}</AlertDescription>
+                    <AlertDescription>{submitError}</AlertDescription>
                   </Alert>
                 )}
               </CardContent>
@@ -135,8 +149,8 @@ export default function LoginPage() {
                 <ButtonWithLoading
                   type="submit"
                   className="w-full"
-                  loading={form.isSubmitting}
-                  disabled={form.isSubmitting}
+                  loading={isSubmitting}
+                  disabled={isSubmitting}
                 >
                   Sign in
                 </ButtonWithLoading>

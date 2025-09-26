@@ -31,7 +31,8 @@ export const edgeFunctionMetadataSchema = z.object({
 export const aiMetadataSchema = z.object({
   models: z.array(
     z.object({
-      modality: z.string(),
+      inputModality: z.array(z.string()),
+      outputModality: z.array(z.string()),
       modelId: z.string(),
     })
   ),

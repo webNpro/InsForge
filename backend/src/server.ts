@@ -14,20 +14,21 @@ import { metadataRouter } from '@/api/routes/metadata.js';
 import { logsRouter } from '@/api/routes/logs.js';
 import { docsRouter } from '@/api/routes/docs.js';
 import functionsRouter from '@/api/routes/functions.js';
-import functionSecretsRouter from '@/api/routes/functions.secrets.js';
+import secretsRouter from '@/api/routes/secrets.js';
 import { usageRouter } from '@/api/routes/usage.js';
 import { openAPIRouter } from '@/api/routes/openapi.js';
 import { agentDocsRouter } from '@/api/routes/agent.js';
 import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
-import fetch from 'node-fetch';
+import fetch, { HeadersInit } from 'node-fetch';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { AnalyticsManager } from '@/core/analytics/analytics.js';
+import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
 import logger from '@/utils/logger.js';
 import { isProduction } from './utils/environment';
+import packageJson from '../../package.json';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,9 +133,11 @@ export async function createApp() {
 
   apiRouter.get('/health', (_req: Request, res: Response) => {
     // Traditional REST: return data directly
+    const version = packageJson.version;
     res.json({
       status: 'ok',
-      service: 'Insforge Backend',
+      version,
+      service: 'Insforge OSS Backend',
       timestamp: new Date().toISOString(),
     });
   });
@@ -149,7 +152,7 @@ export async function createApp() {
   apiRouter.use('/logs', logsRouter);
   apiRouter.use('/docs', docsRouter);
   apiRouter.use('/functions', functionsRouter);
-  apiRouter.use('/function-secrets', functionSecretsRouter);
+  apiRouter.use('/secrets', secretsRouter);
   apiRouter.use('/usage', usageRouter);
   apiRouter.use('/openapi', openAPIRouter);
   apiRouter.use('/agent-docs', agentDocsRouter);
@@ -193,7 +196,7 @@ export async function createApp() {
         `${denoUrl}/${slug}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`,
         {
           method: req.method,
-          headers: req.headers as any,
+          headers: req.headers as HeadersInit,
           body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
         }
       );
@@ -207,11 +210,17 @@ export async function createApp() {
         .set('Access-Control-Allow-Origin', '*')
         .send(responseText);
     } catch (error) {
-      logger.error('Failed to execute function', {
+      logger.error('Failed to proxy to Deno runtime', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
+        slug: req.params.slug,
       });
-      res.status(502).json({ error: 'Failed to execute function' });
+
+      // Return the actual error from Deno or connection error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(502).json({
+        error: errorMessage,
+      });
     }
   });
 

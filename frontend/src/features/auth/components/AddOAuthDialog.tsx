@@ -70,7 +70,7 @@ export function AddOAuthDialog({
                     <Checkbox checked={selectedId === p.id} onChange={() => selectProvider(p.id)} />
                   </div>
                   <div className="flex items-center gap-3">
-                    <img src={p.icon} alt={p.name} className="w-6 h-6" />
+                    {p.icon}
                     <p className="text-sm font-medium text-zinc-950 dark:text-white">{p.name}</p>
                   </div>
                 </button>

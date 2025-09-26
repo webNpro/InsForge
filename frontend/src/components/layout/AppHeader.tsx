@@ -6,20 +6,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/radix/DropdownMenu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/radix/Avatar';
+import { Avatar, AvatarFallback } from '@/components/radix/Avatar';
 import { Separator } from '@/components/radix/Separator';
 import { cn } from '@/lib/utils/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 
 // Import SVG icons
-import DiscordIcon from '@/assets/icons/discord.svg';
-import GitHubIcon from '@/assets/icons/github.svg';
-import InsForgeLogoLight from '@/assets/insforge_light.svg';
-import InsForgeLogoDark from '@/assets/insforge_dark.svg';
+import DiscordIcon from '@/assets/logos/discord.svg?react';
+import GitHubIcon from '@/assets/logos/github.svg?react';
+import InsForgeLogoLight from '@/assets/logos/insforge_light.svg';
+import InsForgeLogoDark from '@/assets/logos/insforge_dark.svg';
+import { User } from '@/lib/contexts/AuthContext';
 
 interface AppHeaderProps {
-  currentUser: any;
+  currentUser: User | null;
   onLogout: () => void;
 }
 
@@ -83,7 +84,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-black hover:bg-[#28282F] rounded-full transition-all duration-200"
         >
-          <img src={GitHubIcon} alt="GitHub Icon" className="h-5 w-5" />
+          <GitHubIcon className="h-5 w-5 dark:text-white" />
           <p className="text-sm text-white">
             We need you
             <span className="text-md ml-1">{emojis[currentEmojiIndex]}</span>
@@ -97,7 +98,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-[#5765F2] hover:bg-[#3E4CD7] rounded-full transition-all duration-200"
         >
-          <img src={DiscordIcon} alt="Discord Icon" className="h-5 w-5" />
+          <DiscordIcon className="h-5 w-5" />
           <p className="text-sm text-white mr-1.5">Ask us anything</p>
         </a>
         <Separator className="h-6 mx-1" orientation="vertical" />
@@ -109,14 +110,13 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
           <DropdownMenuTrigger asChild>
             <button className="w-50 flex items-center gap-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-[8px] pr-3 transition-all duration-200 group">
               <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-gray-700 shadow-sm">
-                <AvatarImage src={currentUser?.avatar} />
                 <AvatarFallback
                   className={cn(
                     'text-white font-medium text-sm',
-                    getAvatarColor(currentUser?.email)
+                    getAvatarColor(currentUser?.email ?? '')
                   )}
                 >
-                  {getUserInitials(currentUser?.email)}
+                  {getUserInitials(currentUser?.email ?? '')}
                 </AvatarFallback>
               </Avatar>
               <div className="text-left hidden md:block">

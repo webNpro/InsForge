@@ -1,19 +1,51 @@
-import { AIConfigurationSchema } from '@insforge/shared-schemas';
-import { authService } from '@/features/auth/services/auth.service';
-import { FileText, Image, Mic, Video } from 'lucide-react';
+import { AIConfigurationSchema, OpenRouterModel, ModalitySchema } from '@insforge/shared-schemas';
 
-export const getModalityIcon = (modality: string) => {
+// Type for pricing information from OpenRouter model
+type ModelPricing = {
+  prompt: string;
+  completion: string;
+  image?: string;
+  request?: string;
+  webSearch?: string;
+  internalReasoning?: string;
+  inputCacheRead?: string;
+  inputCacheWrite?: string;
+};
+
+export type ModelPriceLevel = 'FREE' | '$' | '$$' | '$$$';
+
+export interface ModelOption {
+  value: string;
+  label: string;
+  company: string;
+  priceLevel: ModelPriceLevel;
+  priceColor: string;
+  logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
+}
+
+import { Type, Image } from 'lucide-react';
+import GrokIcon from '@/assets/logos/grok.svg?react';
+import GeminiIcon from '@/assets/logos/gemini.svg?react';
+import ClaudeIcon from '@/assets/logos/claude_code.svg?react';
+import OpenAIIcon from '@/assets/logos/openai.svg?react';
+import AmazonIcon from '@/assets/logos/amazon.svg?react';
+
+export const getModalityIcon = (
+  modality: ModalitySchema
+): React.FunctionComponent<React.SVGProps<SVGSVGElement>> => {
   switch (modality) {
     case 'text':
-      return FileText;
+      return Type;
     case 'image':
       return Image;
-    case 'audio':
-      return Mic;
-    case 'video':
-      return Video;
+    // case 'audio':
+    //   return Mic;
+    // case 'video':
+    //   return Video;
+    // case 'file':
+    //   return File;
     default:
-      return FileText; // Default fallback icon
+      return Type;
   }
 };
 
@@ -44,64 +76,67 @@ export const getProviderDisplayName = (providerId: string): string => {
   );
 };
 
-export const generateAIIntegrationPrompt = async (
-  config: AIConfigurationSchema
-): Promise<string> => {
-  const baseUrl = window.location.origin;
-  const { accessToken: anonKey } = await authService.generateAnonToken();
+export const getProviderLogo = (
+  providerId: string
+): React.FunctionComponent<React.SVGProps<SVGSVGElement>> | undefined => {
+  const logoMap: Record<string, React.FunctionComponent<React.SVGProps<SVGSVGElement>>> = {
+    anthropic: ClaudeIcon,
+    openai: OpenAIIcon,
+    google: GeminiIcon,
+    xai: GrokIcon,
+    amazon: AmazonIcon,
+  };
+  return logoMap[providerId];
+};
 
-  // Text modality - Chat endpoint only
-  if (config.modality === 'text') {
-    return `# InsForge AI SDK - Chat Integration
-
-## Setup
-
-\`\`\`bash
-npm install @insforge/sdk
-\`\`\`
-
-\`\`\`javascript
-import { createClient } from '@insforge/sdk';
-
-const client = createClient({ 
-  baseUrl: '${baseUrl}',
-  anonKey: '${anonKey}'
-});
-\`\`\`
-
-## Chat Completion (OpenAI-Compatible)
-
-\`\`\`javascript
-// Simple chat completion - OpenAI format
-const completion = await client.ai.chat.completions.create({
-  model: "${config.modelId}",
-  messages: [
-    { role: "user", content: "Hello, how are you?" }
-  ]
-});
-// Access response - OpenAI format
-console.log(completion.choices[0].message.content);  // AI response text
-console.log(completion.usage.total_tokens);          // Token usage
-
-// With conversation history and parameters
-const completion = await client.ai.chat.completions.create({
-  model: "${config.modelId}",
-  messages: [
-    { role: "system", content: "You are a helpful assistant" },
-    { role: "user", content: "What is TypeScript?" },
-    { role: "assistant", content: "TypeScript is a typed superset of JavaScript..." },
-    { role: "user", content: "Can you give me an example?" }
-  ],
-});
-\`\`\`
-`;
+// Calculate price level based on pricing data
+export const calculatePriceLevel = (
+  pricing: ModelPricing | undefined | null
+): { level: ModelPriceLevel; color: string } => {
+  if (!pricing) {
+    return { level: 'FREE', color: 'text-green-400' };
   }
 
-  // Image modality - Image generation endpoint only
-  if (config.modality === 'image') {
-    return `# InsForge AI SDK - Image + Text Generation
-    
-This model can generate images AND provide text responses 
+  // Check if it's free
+  if (pricing.prompt === '0' && pricing.completion === '0') {
+    return { level: 'FREE', color: 'text-green-400' };
+  }
+
+  // Calculate average cost per 1M tokens (prompt + completion)
+  // Convert from per-token to per-1M-tokens
+  const promptCostPerToken = parseFloat(pricing.prompt) || 0;
+  const completionCostPerToken = parseFloat(pricing.completion) || 0;
+  const promptCostPer1M = promptCostPerToken * 1000000;
+  const completionCostPer1M = completionCostPerToken * 1000000;
+  const avgCostPer1M = (promptCostPer1M + completionCostPer1M) / 2;
+
+  // Adjusted thresholds based on actual pricing data and user feedback
+  if (avgCostPer1M <= 3) {
+    return { level: '$', color: 'text-green-400' };
+  } // ≤$3/1M tokens (Haiku, Gemini Flash, etc.)
+  if (avgCostPer1M <= 15) {
+    return { level: '$$', color: 'text-amber-400' };
+  } // ≤$15/1M tokens (GPT-4o, Claude Sonnet, etc.)
+  return { level: '$$$', color: 'text-red-400' }; // >$15/1M tokens (Claude Opus, etc.)
+};
+
+export const generateAIIntegrationPrompt = (
+  config: AIConfigurationSchema,
+  anonKey?: string
+): string => {
+  const baseUrl = window.location.origin;
+  const token = anonKey;
+
+  const supportsImageOutput = config.outputModality.includes('image');
+  const supportsImageInput = config.inputModality.includes('image');
+
+  // Determine the main endpoint and title based on output capabilities
+  const isImageGeneration = supportsImageOutput;
+  const endpointTitle = isImageGeneration
+    ? 'Image + Text Generation'
+    : 'Chat Completion (OpenAI-Compatible)';
+
+  const setupSection = `# InsForge AI SDK - ${endpointTitle}
 
 ## Setup
 
@@ -114,10 +149,15 @@ import { createClient } from '@insforge/sdk';
 
 const client = createClient({ 
   baseUrl: '${baseUrl}',
-  anonKey: '${anonKey}'
+  anonKey: '${token}'
 });
-\`\`\`
+\`\`\``;
 
+  let examplesSection = '';
+
+  if (isImageGeneration) {
+    // Image generation endpoint - use images.generate for any model that outputs images
+    examplesSection = `
 ## Image + Text Generation
 
 \`\`\`javascript
@@ -133,8 +173,93 @@ const response = await client.ai.images.generate({
 // Access response - OpenAI format
 console.log(response.data[0].b64_json);  // Base64 encoded image string (OpenAI format)
 console.log(response.data[0].content);   // AI's text response about the image or prompt
-\`\`\`
-`;
+\`\`\``;
+  } else {
+    // Chat completion endpoint
+    examplesSection = `
+## Chat Completion
+
+\`\`\`javascript
+// Simple chat completion - OpenAI format
+const completion = await client.ai.chat.completions.create({
+  model: "${config.modelId}",
+  messages: [
+    { role: "user", content: "Hello, how are you?" }${
+      supportsImageInput
+        ? `,
+    { 
+      role: 'user', 
+      content: 'What is the capital of France?',
+      images: [  // Optional: attach images for vision models
+        { url: 'https://example.com/image.jpg' },
+        { url: 'data:image/jpeg;base64,...' }  // Base64 also supported
+      ]
+    }`
+        : ''
+    }
+  ]
+});
+// Access response - OpenAI format
+console.log(completion.choices[0].message.content);  // AI response text
+console.log(completion.usage.total_tokens);          // Token usage
+
+// With conversation history and parameters
+const completion = await client.ai.chat.completions.create({
+  model: "${config.modelId}",
+  messages: [
+    { role: "system", content: "You are a helpful assistant" },
+    { role: "user", content: "What is TypeScript?" },
+    { role: "assistant", content: "TypeScript is a typed superset of JavaScript..." },
+    { role: "user", content: "Can you give me an example?" }${
+      supportsImageInput
+        ? `,
+    { 
+      role: 'user', 
+      content: 'Can you explain this code?',
+      images: [
+        { url: 'https://example.com/code-screenshot.jpg' }
+      ]
+    }`
+        : ''
+    }
+  ],
+});
+\`\`\``;
   }
-  return '';
+
+  return setupSection + examplesSection;
+};
+
+// Helper function to filter AI models based on selected modalities
+export const filterModelsByModalities = (
+  models: OpenRouterModel[],
+  selectedInputModalities: ModalitySchema[],
+  selectedOutputModalities: ModalitySchema[]
+): OpenRouterModel[] => {
+  if (!models?.length) {
+    return [];
+  }
+
+  return models
+    .filter((model) => {
+      const inputModalities = new Set(model.architecture?.inputModalities || []);
+      const outputModalities = new Set(model.architecture?.outputModalities || []);
+      return (
+        selectedInputModalities.every((m) => inputModalities.has(m)) &&
+        selectedOutputModalities.every((m) => outputModalities.has(m))
+      );
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+// Helper function to get friendly model name from model ID
+export const getFriendlyModelName = (modelId: string): string => {
+  // Extract the model name part (after the last slash)
+  const modelName = modelId.split('/').pop() || modelId;
+
+  // Convert kebab-case to Title Case
+  return modelName
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };

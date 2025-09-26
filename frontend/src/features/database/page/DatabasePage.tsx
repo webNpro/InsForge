@@ -25,6 +25,8 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn } from '@/lib/utils/utils';
+import { LinkModalProvider, useLinkModal } from '@/features/database/hooks/UseLinkModal';
+import { LinkRecordModal } from '@/features/database/components/LinkRecordModal';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -35,7 +37,7 @@ import {
 
 const PAGE_SIZE = 50;
 
-export default function DatabasePage() {
+function DatabasePageContent() {
   // Load selected table from localStorage on mount
   const [selectedTable, setSelectedTable] = useState<string | null>(() => {
     return localStorage.getItem('selectedTable');
@@ -55,6 +57,7 @@ export default function DatabasePage() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { modalState, closeModal } = useLinkModal();
 
   const { socket, isConnected } = useSocket();
 
@@ -322,9 +325,8 @@ export default function DatabasePage() {
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.error?.message || error.message || 'Failed to delete table';
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete table';
         showToast(errorMessage, 'error');
       }
     }
@@ -355,37 +357,6 @@ export default function DatabasePage() {
     } catch (error) {
       showToast('Failed to update record', 'error');
       throw error;
-    }
-  };
-
-  // Handle record delete
-  const handleRecordDelete = async (id: string) => {
-    if (!selectedTable) {
-      return;
-    }
-    const shouldDelete = await confirm({
-      title: 'Delete Record',
-      description: 'Are you sure you want to delete this record? This action cannot be undone.',
-      confirmText: 'Delete',
-      destructive: true,
-    });
-
-    if (shouldDelete) {
-      try {
-        await databaseService.deleteRecord(selectedTable, id);
-        await Promise.all([
-          refetchTableData(),
-          refetchMetadata(), // Also refresh metadata to update sidebar record counts
-        ]);
-        setSelectedRows((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(id);
-          return newSet;
-        });
-        showToast('Record deleted successfully', 'success');
-      } catch {
-        showToast('Failed to delete record', 'error');
-      }
     }
   };
 
@@ -621,8 +592,6 @@ export default function DatabasePage() {
                   pageSize={PAGE_SIZE}
                   totalRecords={tableData?.totalRecords || 0}
                   onPageChange={setCurrentPage}
-                  onDeleteRecord={(id) => void handleRecordDelete(id)}
-                  onNewRecord={() => setShowRecordForm(true)}
                 />
               )}
             </div>
@@ -649,6 +618,29 @@ export default function DatabasePage() {
 
       {/* Confirm Dialog */}
       <ConfirmDialog {...confirmDialogProps} />
+
+      {/* Global Link Record Modal */}
+      {modalState.isOpen && modalState.referenceTable && modalState.referenceColumn && (
+        <LinkRecordModal
+          open={modalState.isOpen}
+          onOpenChange={closeModal}
+          referenceTable={modalState.referenceTable}
+          referenceColumn={modalState.referenceColumn}
+          currentValue={modalState.currentValue}
+          onSelectRecord={(record) => {
+            modalState.onSelectRecord?.(record);
+            closeModal();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+export default function DatabasePage() {
+  return (
+    <LinkModalProvider>
+      <DatabasePageContent />
+    </LinkModalProvider>
   );
 }

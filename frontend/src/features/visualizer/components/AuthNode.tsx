@@ -1,6 +1,6 @@
 import { Lock, FormInput, Users } from 'lucide-react';
-import GoogleIcon from '@/assets/icons/google.svg';
-import GithubIcon from '@/assets/icons/github.svg';
+import GoogleIcon from '@/assets/logos/google.svg';
+import GithubIcon from '@/assets/logos/github.svg';
 import { AuthMetadataSchema } from '@insforge/shared-schemas';
 import { cn } from '@/lib/utils/utils';
 import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';

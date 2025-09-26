@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react';
+import { Component, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/radix/Alert';
@@ -23,8 +23,8 @@ export class AuthErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Auth error handled silently
+  public componentDidCatch(error: Error) {
+    console.error(error);
   }
 
   private handleReset = () => {

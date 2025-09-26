@@ -145,6 +145,7 @@ router.get('/shared/callback/:state', async (req: Request, res: Response, next: 
       // Handle GitHub OAuth payload
       const githubUserInfo = {
         id: payloadData.providerId,
+        login: payloadData.login || '',
         email: payloadData.email,
         name: payloadData.name || '',
         avatar_url: payloadData.avatar || '',

@@ -6,7 +6,7 @@ export const SYSTEM_FIELDS = ['id', 'created_at', 'updated_at'];
 
 // Helper function to build dynamic Zod schema based on column definitions
 export function buildDynamicSchema(columns: ColumnSchema[]) {
-  const schemaFields: Record<string, any> = {};
+  const schemaFields: Record<string, z.ZodTypeAny> = {};
 
   columns.forEach((column) => {
     // Skip system fields
@@ -73,8 +73,8 @@ export function buildDynamicSchema(columns: ColumnSchema[]) {
 }
 
 // Get initial values for form based on column definitions
-export function getInitialValues(columns: ColumnSchema[]): Record<string, any> {
-  const values: Record<string, any> = {};
+export function getInitialValues(columns: ColumnSchema[]): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
 
   columns.forEach((column) => {
     // Skip auto-generated fields

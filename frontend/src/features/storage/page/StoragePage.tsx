@@ -135,9 +135,8 @@ export default function StoragePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.error?.message || error.message || 'Failed to upload file';
+    onError: (error: Error) => {
+      const errorMessage = error.message || 'Failed to upload file';
       showToast(errorMessage, 'error');
     },
   });
@@ -275,6 +274,10 @@ export default function StoragePage() {
     await handleFileUpload(event.target.files);
   };
 
+  const handleAddRecord = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   const handleDeleteBucket = async (bucketName: string) => {
     const confirmOptions = {
       title: 'Delete Bucket',
@@ -299,9 +302,8 @@ export default function StoragePage() {
             queryClient.getQueryData<typeof buckets>(['storage', 'buckets']) || [];
           setSelectedBucket(updatedBuckets[0]?.name || null);
         }
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.error?.message || error.message || 'Failed to delete bucket';
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete bucket';
         showToast(errorMessage, 'error');
       }
     }
@@ -504,6 +506,7 @@ export default function StoragePage() {
                 selectedFiles={selectedFiles}
                 onSelectedFilesChange={setSelectedFiles}
                 isRefreshing={isRefreshing}
+                onAddRecord={handleAddRecord}
               />
             </div>
           </>

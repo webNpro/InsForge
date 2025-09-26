@@ -19,7 +19,7 @@ import {
   AppMetadataSchema,
   TableSchema,
   StorageBucketSchema,
-  OAuthMetadataSchema,
+  AuthMetadataSchema,
 } from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
@@ -37,7 +37,7 @@ type BucketNodeData = {
 };
 
 type AuthNodeData = {
-  authMetadata: OAuthMetadataSchema;
+  authMetadata: AuthMetadataSchema;
   userCount?: number;
 };
 

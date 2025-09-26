@@ -133,6 +133,16 @@ export class AiService {
       headers: apiClient.withAccessToken(),
     });
   }
+
+  async getRemainingCredits(): Promise<{
+    usage: number;
+    limit: number | null;
+    remaining: number | null;
+  }> {
+    return apiClient.request('/ai/credits', {
+      headers: apiClient.withAccessToken(),
+    });
+  }
 }
 
 export const aiService = new AiService();

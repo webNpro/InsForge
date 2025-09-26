@@ -1,6 +1,6 @@
 import { OnboardStep } from '../types';
 import { CodeBlock } from '@/components/CodeBlock';
-import { McpInstallation } from '@/components/mcp';
+import { McpInstallation } from '@/features/onboard/components/mcp';
 import { TestConnectionStep } from './TestConnectionStep';
 
 interface StepContentProps {
