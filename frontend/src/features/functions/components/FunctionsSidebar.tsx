@@ -1,16 +1,13 @@
 import { cn } from '@/lib/utils/utils';
+import { useFunctions } from '../hooks/useFunctions';
 
 interface FunctionsSidebarProps {
   selectedSection: 'functions' | 'secrets';
   onSectionSelect: (section: 'functions' | 'secrets') => void;
-  onBackToList?: () => void;
 }
 
-export function FunctionsSidebar({
-  selectedSection,
-  onSectionSelect,
-  onBackToList,
-}: FunctionsSidebarProps) {
+export function FunctionsSidebar({ selectedSection, onSectionSelect }: FunctionsSidebarProps) {
+  const { clearSelection } = useFunctions();
   const sections = [
     {
       id: 'functions' as const,
@@ -36,8 +33,8 @@ export function FunctionsSidebar({
               <button
                 key={section.id}
                 onClick={() => {
-                  if (section.id === 'functions' && onBackToList) {
-                    onBackToList();
+                  if (section.id === 'functions') {
+                    clearSelection();
                   }
                   onSectionSelect(section.id);
                 }}

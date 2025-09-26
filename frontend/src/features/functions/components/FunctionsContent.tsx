@@ -4,15 +4,28 @@ import { FunctionRow } from './FunctionRow';
 import { CodeEditor } from './FunctionViewer';
 import FunctionEmptyState from './FunctionEmptyState';
 import { useFunctions } from '../hooks/useFunctions';
+import { useToast } from '@/lib/hooks/useToast';
+import { useEffect, useRef } from 'react';
 
 export function FunctionsContent() {
+  const toastShownRef = useRef(false);
+  const { showToast } = useToast();
   const {
     functions,
+    isRuntimeAvailable,
     selectedFunction,
     isLoading: loading,
     selectFunction,
     clearSelection,
   } = useFunctions();
+
+  useEffect(() => {
+    if (!isRuntimeAvailable && !toastShownRef.current) {
+      toastShownRef.current = true;
+      showToast('Function container is unhealthy.', 'error');
+    }
+  }, [isRuntimeAvailable, showToast]);
+
   // If a function is selected, show the detail view
   if (selectedFunction) {
     return (
