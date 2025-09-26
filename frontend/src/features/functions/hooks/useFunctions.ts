@@ -23,7 +23,7 @@ export function useFunctions() {
   // Extract functions and runtime status from response
   const functions = useMemo(() => functionsData?.functions || [], [functionsData]);
   const runtimeStatus = useMemo(
-    () => functionsData?.runtime?.status || 'unavailable',
+    () => functionsData?.runtime?.status || 'running',
     [functionsData]
   );
 
