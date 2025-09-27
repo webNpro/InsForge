@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import RefreshIcon from '@/assets/icons/refresh.svg?react';
 import { databaseService } from '@/features/database/services/database.service';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { TableSidebar } from '@/features/database/components/TableSidebar';
@@ -97,15 +97,7 @@ function DatabasePageContent() {
   );
 
   // Fetch metadata
-  const {
-    data: metadata,
-    isLoading,
-    error: metadataError,
-    refetch: refetchMetadata,
-  } = useQuery({
-    queryKey: ['database-metadata'],
-    queryFn: () => metadataService.getDatabaseMetadata(),
-  });
+  const { tables, isLoading, error: metadataError, refetch: refetchMetadata } = useMetadata();
 
   // Fetch table data when selected
   const {
@@ -202,27 +194,25 @@ function DatabasePageContent() {
     }
   }, [isLoadingTable, isSorting]);
 
-  const filteredTables = useMemo(() => Object.keys(metadata?.tables ?? {}), [metadata]);
-
   // Auto-select first table (excluding system tables)
   useEffect(() => {
-    if (metadata) {
-      if (pendingTableSelection && filteredTables.includes(pendingTableSelection)) {
+    if (!isLoading && tables) {
+      if (pendingTableSelection && tables.includes(pendingTableSelection)) {
         setSelectedTable(pendingTableSelection);
         setPendingTableSelection(undefined);
         return;
       }
 
-      if (selectedTable && !filteredTables.includes(selectedTable)) {
+      if (selectedTable && !tables.includes(selectedTable)) {
         setSelectedTable(null);
         return;
       }
 
-      if (!selectedTable && filteredTables.length > 0 && !showTableForm && !pendingTableSelection) {
-        setSelectedTable(filteredTables[0]);
+      if (!selectedTable && tables.length > 0 && !showTableForm && !pendingTableSelection) {
+        setSelectedTable(tables[0]);
       }
     }
-  }, [filteredTables, metadata, pendingTableSelection, selectedTable, showTableForm]);
+  }, [tables, pendingTableSelection, selectedTable, showTableForm, isLoading]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -311,7 +301,7 @@ function DatabasePageContent() {
         showToast('Table deleted successfully', 'success');
 
         // Invalidate all related queries for the deleted table
-        void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
+        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
         void queryClient.invalidateQueries({ queryKey: ['tables'] });
         void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
         void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
@@ -414,7 +404,7 @@ function DatabasePageContent() {
     <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       {/* Secondary Sidebar - Table List */}
       <TableSidebar
-        tables={filteredTables}
+        tables={tables}
         selectedTable={selectedTable || undefined}
         onTableSelect={handleSelectTable}
         loading={isLoading}

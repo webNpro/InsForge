@@ -161,6 +161,7 @@ export const exportJsonDataSchema = z.object({
         })
       ),
       rows: z.array(z.any()).optional(),
+      recordCount: z.number().optional(),
     })
   ),
   functions: z.array(

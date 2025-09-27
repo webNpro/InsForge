@@ -1002,8 +1002,50 @@ export class DatabaseAdvanceService {
 
     const databaseSize = await this.getDatabaseSizeInGB();
 
+    // Get record counts for each table
+    const tablesSchemas = (dbMetadata.data as ExportDatabaseJsonData).tables;
+    const db = this.dbManager.getDb();
+
+    for (const tableName of allTables) {
+      let recordCount = 0;
+      try {
+        // there is a race condition here, if the table is immeditely deleted, so added an extra check to see if the table exists
+        const tableExists = (await db
+          .prepare(
+            `
+          SELECT EXISTS (
+            SELECT 1 FROM pg_class
+            WHERE relname = ?
+            AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+            AND relkind = 'r'
+          ) as exists
+        `
+          )
+          .get(tableName)) as { exists: boolean } | null;
+
+        if (tableExists?.exists) {
+          const countResult = (await db
+            .prepare(`SELECT COUNT(*) as count FROM "${tableName}"`)
+            .get()) as { count: number } | null;
+          recordCount = countResult?.count || 0;
+        }
+      } catch (error) {
+        // Handle any unexpected errors
+        logger.warn('Could not get record count for table', {
+          table: tableName,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        recordCount = 0;
+      }
+
+      // Only add recordCount if the table exists in tablesSchemas
+      if (tablesSchemas[tableName]) {
+        tablesSchemas[tableName].recordCount = recordCount;
+      }
+    }
+
     return {
-      tables: (dbMetadata.data as ExportDatabaseJsonData).tables,
+      tables: tablesSchemas,
       totalSize: databaseSize,
     };
   }

@@ -17,7 +17,6 @@ import { AuthNode } from './AuthNode';
 import { BucketNode } from './BucketNode';
 import {
   AppMetadataSchema,
-  TableSchema,
   StorageBucketSchema,
   AuthMetadataSchema,
 } from '@insforge/shared-schemas';
@@ -27,8 +26,25 @@ interface SchemaVisualizerProps {
   userCount?: number;
 }
 
+// Define types that match what TableNode expects
+type VisualizerColumn = {
+  columnName: string;
+  type: string;
+  isPrimaryKey?: boolean;
+  foreignKey?: {
+    referenceTable: string;
+    referenceColumn: string;
+  };
+};
+
+type VisualizerTable = {
+  tableName: string;
+  columns: VisualizerColumn[];
+  recordCount: number;
+};
+
 type TableNodeData = {
-  table: TableSchema;
+  table: VisualizerTable;
   referencedColumns: string[];
 };
 
@@ -181,11 +197,59 @@ const getNodeColor = (node: Node<CustomNodeData>) => {
 };
 
 export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps) {
+  // Transform the new metadata structure to the visualizer format
+  const tables = useMemo(() => {
+    const tablesRecord = metadata.database.tables;
+    return Object.entries(tablesRecord).map(([tableName, tableData]): VisualizerTable => {
+      // Check for primary key columns from indexes
+      const primaryKeyColumns = new Set<string>();
+
+      tableData.indexes.forEach((index) => {
+        if (index.isPrimary) {
+          // Extract column names from index definition
+          const match = index.indexdef.match(/\(([^)]+)\)/);
+          if (match) {
+            match[1].split(',').forEach((col) => {
+              primaryKeyColumns.add(col.trim().replace(/"/g, ''));
+            });
+          }
+        }
+      });
+
+      // Transform columns from the new schema format
+      const columns: VisualizerColumn[] = tableData.schema.map((col) => {
+        const column: VisualizerColumn = {
+          columnName: col.columnName,
+          type: col.dataType.toLowerCase().substring(0, 4), // Truncate type to first 4 characters
+          isPrimaryKey: primaryKeyColumns.has(col.columnName),
+          foreignKey: undefined,
+        };
+
+        // Find foreign key info for this column
+        const foreignKey = tableData.foreignKeys.find((fk) => fk.columnName === col.columnName);
+        if (foreignKey) {
+          column.foreignKey = {
+            referenceTable: foreignKey.foreignTableName,
+            referenceColumn: foreignKey.foreignColumnName,
+          };
+        }
+
+        return column;
+      });
+
+      return {
+        tableName,
+        columns,
+        recordCount: tableData.recordCount ?? 0, // Use actual record count from metadata
+      };
+    });
+  }, [metadata.database.tables]);
+
   const initialNodes = useMemo(() => {
     // First, collect all referenced columns for each table
     const referencedColumnsByTable: Record<string, string[]> = {};
 
-    metadata.database.tables.forEach((table) => {
+    tables.forEach((table) => {
       table.columns.forEach((column) => {
         if (column.foreignKey) {
           const targetTable = column.foreignKey.referenceTable;
@@ -201,7 +265,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
       });
     });
 
-    const tableNodes: Node<TableNodeData>[] = metadata.database.tables.map((table, _) => ({
+    const tableNodes: Node<TableNodeData>[] = tables.map((table) => ({
       id: table.tableName,
       type: 'tableNode',
       position: { x: 0, y: 0 },
@@ -232,12 +296,12 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
     });
 
     return nodes;
-  }, [metadata, userCount]);
+  }, [metadata, userCount, tables]);
 
   const initialEdges = useMemo(() => {
     const edges: BuiltInEdge[] = [];
 
-    metadata.database.tables.forEach((table) => {
+    tables.forEach((table) => {
       table.columns.forEach((column) => {
         if (column.foreignKey) {
           const edgeId = `${table.tableName}-${column.columnName}-${column.foreignKey.referenceTable}`;
@@ -262,7 +326,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
     // Add authentication edges if authData exists
 
     return edges;
-  }, [metadata]);
+  }, [tables]);
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
     () => getLayoutedElements(initialNodes, initialEdges),
