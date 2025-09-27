@@ -477,9 +477,7 @@ export class StorageService {
       }
 
       // Generate the next available filename
-      if (incrementNumber >= 0) {
-        finalKey = `${baseName} (${incrementNumber + 1})${extension}`;
-      }
+      finalKey = `${baseName} (${incrementNumber + 1})${extension}`;
     }
 
     // Save file using backend
