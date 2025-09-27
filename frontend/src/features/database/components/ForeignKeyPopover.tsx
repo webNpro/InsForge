@@ -3,18 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/radix/Dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/radix/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
 import { metadataService } from '@/features/metadata/services/metadata.service';
 import { databaseService } from '@/features/database/services/database.service';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
 import { ColumnSchema, OnDeleteActionSchema, OnUpdateActionSchema } from '@insforge/shared-schemas';
+import { cn } from '@/lib/utils/utils';
 
 interface ForeignKeyPopoverProps {
   form: UseFormReturn<TableFormSchema>;
@@ -157,7 +152,14 @@ export function ForeignKeyPopover({
                 }
               >
                 <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                  <SelectValue placeholder="Select column" />
+                  <span
+                    className={cn(
+                      'text-sm text-muted-foreground dark:text-neutral-400',
+                      newForeignKey.columnName && 'text-black dark:text-white'
+                    )}
+                  >
+                    {newForeignKey.columnName || 'Select column'}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   {columns
@@ -194,7 +196,14 @@ export function ForeignKeyPopover({
                 }}
               >
                 <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                  <SelectValue placeholder="Select table" />
+                  <span
+                    className={cn(
+                      'text-sm text-muted-foreground dark:text-neutral-400',
+                      newForeignKey.referenceTable && 'text-black dark:text-white'
+                    )}
+                  >
+                    {newForeignKey.referenceTable || 'Select table'}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   {availableTables.map((table) => (
@@ -220,7 +229,14 @@ export function ForeignKeyPopover({
                   }
                 >
                   <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                    <SelectValue placeholder="Select column" />
+                    <span
+                      className={cn(
+                        'text-sm text-muted-foreground dark:text-neutral-400',
+                        newForeignKey.referenceColumn && 'text-black dark:text-white'
+                      )}
+                    >
+                      {newForeignKey.referenceColumn || 'Select column'}
+                    </span>
                   </SelectTrigger>
                   <SelectContent className="max-w-[360px]">
                     {(() => {
@@ -296,7 +312,9 @@ export function ForeignKeyPopover({
                 }
               >
                 <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                  <SelectValue />
+                  <span className="text-sm text-black dark:text-white">
+                    {newForeignKey.onUpdate}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NO ACTION">No Action</SelectItem>
@@ -319,7 +337,9 @@ export function ForeignKeyPopover({
                 }
               >
                 <SelectTrigger className="w-70 h-10 border-zinc-200 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
-                  <SelectValue />
+                  <span className="text-sm text-black dark:text-white">
+                    {newForeignKey.onDelete}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NO ACTION">No Action</SelectItem>
