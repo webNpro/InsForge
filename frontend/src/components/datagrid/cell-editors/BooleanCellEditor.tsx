@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/radix/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
 import type { BooleanCellEditorProps } from './types';
 import { cn } from '@/lib/utils/utils';
 
