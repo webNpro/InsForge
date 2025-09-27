@@ -135,7 +135,10 @@ export default function StoragePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage'] });
     },
-    // Remove global onError handler - errors are now handled individually in uploadFiles
+    onError: (error: Error) => {
+      const errorMessage = error.message || 'Failed to upload file';
+      showToast(errorMessage, 'error');
+    },
   });
 
   useEffect(() => {
@@ -226,55 +229,35 @@ export default function StoragePage() {
       },
     });
 
-    let successCount = 0;
-    let failedFiles: string[] = [];
+    try {
+      // Upload files sequentially with progress tracking
+      for (let i = 0; i < files.length; i++) {
+        if (uploadAbortControllerRef.current?.signal.aborted) {
+          break;
+        }
 
-    // Upload files sequentially with individual error handling
-    for (let i = 0; i < files.length; i++) {
-      if (uploadAbortControllerRef.current?.signal.aborted) {
-        break;
-      }
+        // Update progress
+        const progress = Math.round(((i + 1) / files.length) * 100);
+        updateUploadProgress(toastId, progress);
 
-      // Update progress
-      const progress = Math.round(((i + 1) / files.length) * 100);
-      updateUploadProgress(toastId, progress);
-
-      try {
         await uploadMutation.mutateAsync({
           bucket: selectedBucket,
           file: files[i],
         });
-        successCount++;
-      } catch (error: any) {
-        // Handle individual file upload error
-        const fileName = files[i].name;
-        failedFiles.push(fileName);
-        
-        // Show individual file error (but don't stop the overall process)
-        const errorMessage = error.message || 'Upload failed';
-        showToast(`Failed to upload "${fileName}": ${errorMessage}`, 'error');
       }
-    }
+      showToast('File uploaded successfully', 'success');
+    } catch {
+      // Error is handled in mutation onError
+      cancelUpload(toastId);
+    } finally {
+      // Always reset uploading state
+      setIsUploading(false);
+      uploadAbortControllerRef.current = null;
 
-    // Show final result summary
-    if (successCount > 0) {
-      if (failedFiles.length === 0) {
-        showToast(`All ${successCount} files uploaded successfully`, 'success');
-      } else {
-        showToast(`${successCount} files uploaded successfully, ${failedFiles.length} failed`, 'warn');
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-    }
-
-    // Complete the upload toast
-    cancelUpload(toastId);
-
-    // Always reset uploading state
-    setIsUploading(false);
-    uploadAbortControllerRef.current = null;
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
   };
 
