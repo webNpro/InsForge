@@ -56,7 +56,7 @@ docker compose up
 
 ### 2. Connect an AI Agent
 
-Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow the "Get Started" guide, and set up your MCP.
+Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow the "Connect" guide, and set up your MCP.
 
 <div align="center">
   <table>
