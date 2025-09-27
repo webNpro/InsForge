@@ -12,12 +12,7 @@ import {
 import { JsonHighlight } from '@/components';
 
 export default function MetadataPage() {
-  const {
-    metadata,
-    isLoading,
-    error,
-    refetch: refetchMetadata,
-  } = useMetadata();
+  const { metadata, isLoading, error, refetch: refetchMetadata } = useMetadata();
 
   const handleRefresh = () => {
     void refetchMetadata();
