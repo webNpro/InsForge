@@ -18,7 +18,7 @@ router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const result = await functionsService.listFunctions();
     res.json(result);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to list functions' });
   }
 });
@@ -37,7 +37,7 @@ router.get('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     res.json(func);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to get function' });
   }
 });
@@ -84,7 +84,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
         message: error.message,
       });
     }
-    
+
     res.status(500).json({
       error: 'INTERNAL_ERROR',
       message: error instanceof Error ? error.message : 'Failed to create function',
@@ -138,7 +138,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
         message: error.message,
       });
     }
-    
+
     res.status(500).json({
       error: 'INTERNAL_ERROR',
       message: error instanceof Error ? error.message : 'Failed to update function',
@@ -175,7 +175,7 @@ router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => 
       success: true,
       message: `Function ${slug} deleted successfully`,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to delete function' });
   }
 });

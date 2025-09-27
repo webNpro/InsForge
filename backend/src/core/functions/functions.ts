@@ -1,5 +1,9 @@
 import { DatabaseManager } from '@/core/database/manager.js';
-import { EdgeFunctionMetadataSchema, FunctionUploadRequest, FunctionUpdateRequest } from '@insforge/shared-schemas';
+import {
+  EdgeFunctionMetadataSchema,
+  FunctionUploadRequest,
+  FunctionUpdateRequest,
+} from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { DatabaseError } from 'pg';
 import fetch from 'node-fetch';
@@ -7,7 +11,7 @@ import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 
 export interface FunctionWithRuntime {
-  functions: any[];
+  functions: Record<string, unknown>[];
   runtime: {
     status: 'running' | 'unavailable';
   };
@@ -76,7 +80,7 @@ export class FunctionsService {
   /**
    * Get a specific function by slug
    */
-  async getFunction(slug: string): Promise<any> {
+  async getFunction(slug: string): Promise<Record<string, unknown> | undefined> {
     try {
       const func = await this.db
         .prepare(
@@ -102,7 +106,7 @@ export class FunctionsService {
   /**
    * Create a new function
    */
-  async createFunction(data: FunctionUploadRequest): Promise<any> {
+  async createFunction(data: FunctionUploadRequest): Promise<Record<string, unknown>> {
     try {
       const { name, code, description, status } = data;
       const slug = data.slug || name.toLowerCase().replace(/\s+/g, '-');
@@ -164,7 +168,10 @@ export class FunctionsService {
   /**
    * Update an existing function
    */
-  async updateFunction(slug: string, updates: FunctionUpdateRequest): Promise<any> {
+  async updateFunction(
+    slug: string,
+    updates: FunctionUpdateRequest
+  ): Promise<Record<string, unknown> | null> {
     try {
       // Check if function exists
       const existing = await this.db.prepare('SELECT id FROM _functions WHERE slug = ?').get(slug);
@@ -179,7 +186,9 @@ export class FunctionsService {
 
       // Update fields
       if (updates.name !== undefined) {
-        await this.db.prepare('UPDATE _functions SET name = ? WHERE slug = ?').run(updates.name, slug);
+        await this.db
+          .prepare('UPDATE _functions SET name = ? WHERE slug = ?')
+          .run(updates.name, slug);
       }
 
       if (updates.description !== undefined) {
@@ -189,11 +198,15 @@ export class FunctionsService {
       }
 
       if (updates.code !== undefined) {
-        await this.db.prepare('UPDATE _functions SET code = ? WHERE slug = ?').run(updates.code, slug);
+        await this.db
+          .prepare('UPDATE _functions SET code = ? WHERE slug = ?')
+          .run(updates.code, slug);
       }
 
       if (updates.status !== undefined) {
-        await this.db.prepare('UPDATE _functions SET status = ? WHERE slug = ?').run(updates.status, slug);
+        await this.db
+          .prepare('UPDATE _functions SET status = ? WHERE slug = ?')
+          .run(updates.status, slug);
 
         // Update deployed_at if status changes to active
         if (updates.status === 'active') {
