@@ -46,11 +46,13 @@ export function BooleanCellEditor({
           className
         )}
       >
-        <span className="capitalize">{stringValue}</span>
+        <span>
+          {stringValue === 'true' ? 'True' : stringValue === 'false' ? 'False' : stringValue}
+        </span>
       </SelectTrigger>
       <SelectContent align="start" className="min-w-25">
-        <SelectItem value="true">true</SelectItem>
-        <SelectItem value="false">false</SelectItem>
+        <SelectItem value="true">True</SelectItem>
+        <SelectItem value="false">False</SelectItem>
         {nullable && <SelectItem value="null">null</SelectItem>}
       </SelectContent>
     </Select>
