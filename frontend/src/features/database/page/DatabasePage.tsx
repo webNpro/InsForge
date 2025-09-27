@@ -202,15 +202,7 @@ function DatabasePageContent() {
     }
   }, [isLoadingTable, isSorting]);
 
-  const filteredTables = useMemo(
-    () =>
-      metadata?.tables
-        ? metadata.tables
-            .map((table) => table.tableName)
-            .filter((tableName) => !tableName.startsWith('_'))
-        : [],
-    [metadata]
-  );
+  const filteredTables = useMemo(() => Object.keys(metadata?.tables ?? {}), [metadata]);
 
   // Auto-select first table (excluding system tables)
   useEffect(() => {
