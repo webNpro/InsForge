@@ -6,6 +6,7 @@
 </div>
 <p align="center">
    <a href="#quickstart-tldr">Get Started</a> · 
+   <a href="https://docs.insforge.dev/introduction">Documentation</a> · 
    <a href="https://discord.gg/MPxwj5xVvW">Discord</a>
 </p>
 <p align="center">
@@ -24,7 +25,7 @@
 - **Authentication** - Complete user management system
 - **Database** - Flexible data storage and retrieval
 - **Storage** - File management and organization
-- **Serverless Functions** *(coming soon)* - Scalable compute power
+- **Serverless Functions** - Scalable compute power
 - **Site Deployment** *(coming soon)* - Easy application deployment
 
 ### Use Cases: Building full-stack applications using natural language
@@ -55,7 +56,7 @@ docker compose up
 
 ### 2. Connect an AI Agent
 
-Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow the "Get Started" guide, and set up your MCP.
+Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow the "Connect" guide, and set up your MCP.
 
 <div align="center">
   <table>
@@ -66,7 +67,7 @@ Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow th
         <em>Sign in to InsForge</em>
       </td>
       <td align="center">
-        <img src="assets/mcpInstall.png" alt="MCP Configuration"">
+        <img src="assets/mcpInstallv2.png" alt="MCP Configuration"">
         <br>
         <em>Configure MCP connection</em>
       </td>
@@ -89,12 +90,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ### 4. Start Using InsForge
 
-Start building your project in a new directory, and using InsForge with this init prompt:
-```
-Learn how to use InsForge
-```
-
-Build your next todo app, Instagram clone, or online platform in seconds!
+Start building your project in a new directory! Build your next todo app, Instagram clone, or online platform in seconds!
 
 **Sample Project Prompts:**
 - "Build a todo app with user authentication"
@@ -120,7 +116,7 @@ Build your next todo app, Instagram clone, or online platform in seconds!
 ## Documentation & Support
 
 ### Documentation
-- **Official Docs**: **WIP** - Coming soon with comprehensive guides!
+- **[Official Docs](https://docs.insforge.dev/introduction)** - Comprehensive guides and API references
 
 ### Community
 - **[Discord](https://discord.gg/D3Vf8zD2ZS)** - Join our vibrant community
