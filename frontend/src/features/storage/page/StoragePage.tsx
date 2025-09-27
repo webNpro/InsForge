@@ -128,8 +128,16 @@ export default function StoragePage() {
 
   // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: async ({ bucket, file }: { bucket: string; file: File }) => {
-      const key = file.name;
+    mutationFn: async ({
+      bucket,
+      file,
+      fileName,
+    }: {
+      bucket: string;
+      file: File;
+      fileName?: string;
+    }) => {
+      const key = fileName || file.name;
       return await storageService.uploadObject(bucket, key, file);
     },
     onSuccess: () => {
@@ -227,7 +235,6 @@ export default function StoragePage() {
     });
 
     let successCount = 0;
-    let failedFiles: string[] = [];
 
     // Upload files sequentially with individual error handling
     for (let i = 0; i < files.length; i++) {
@@ -243,30 +250,19 @@ export default function StoragePage() {
         await uploadMutation.mutateAsync({
           bucket: selectedBucket,
           file: files[i],
+          fileName: files[i].name, // Backend will auto-rename if needed
         });
         successCount++;
       } catch (error: any) {
         // Handle individual file upload error
         const fileName = files[i].name;
-        failedFiles.push(fileName);
 
         // Show individual file error (but don't stop the overall process)
         const errorMessage = error.message || 'Upload failed';
         showToast(`Failed to upload "${fileName}": ${errorMessage}`, 'error');
       }
     }
-
-    // Show final result summary
-    if (successCount > 0) {
-      if (failedFiles.length === 0) {
-        showToast(`All ${successCount} files uploaded successfully`, 'success');
-      } else {
-        showToast(
-          `${successCount} files uploaded successfully, ${failedFiles.length} failed`,
-          'warn'
-        );
-      }
-    }
+    showToast(`${successCount} files uploaded successfully`, 'success');
 
     // Complete the upload toast
     cancelUpload(toastId);

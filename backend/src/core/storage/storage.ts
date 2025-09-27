@@ -426,26 +426,64 @@ export class StorageService {
 
   async putObject(
     bucket: string,
-    key: string,
+    originalKey: string,
     file: Express.Multer.File,
     userId?: string
   ): Promise<StorageFileSchema> {
     this.validateBucketName(bucket);
-    this.validateKey(key);
+    this.validateKey(originalKey);
 
     const db = DatabaseManager.getInstance().getDb();
 
-    // Check if file already exists
-    const existing = await db
-      .prepare('SELECT key FROM _storage WHERE bucket = ? AND key = ?')
-      .get(bucket, key);
+    // Parse filename and extension for potential auto-renaming
+    const lastDotIndex = originalKey.lastIndexOf('.');
+    const baseName = lastDotIndex > 0 ? originalKey.substring(0, lastDotIndex) : originalKey;
+    const extension = lastDotIndex > 0 ? originalKey.substring(lastDotIndex) : '';
 
-    if (existing) {
-      throw new Error(`File "${key}" already exists in bucket "${bucket}"`);
+    // Use efficient SQL query to find the highest existing counter
+    // This query finds all files matching the pattern and extracts the counter number
+    const existingFiles = await db
+      .prepare(
+        `
+        SELECT key FROM _storage 
+        WHERE bucket = ? 
+        AND (key = ? OR key LIKE ?)
+      `
+      )
+      .all(
+        bucket,
+        originalKey,
+        `${baseName.replace(/([%_\\])/g, '\\$1')} (%)${extension.replace(/([%_\\])/g, '\\$1')}`
+      );
+
+    let finalKey = originalKey;
+
+    if (existingFiles.length > 0) {
+      // Extract counter numbers from existing files
+      let incrementNumber = 0;
+      const counterRegex = new RegExp(
+        `^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\((\\d+)\\)${extension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`
+      );
+
+      for (const file of existingFiles as { key: string }[]) {
+        if (file.key === originalKey) {
+          incrementNumber = Math.max(incrementNumber, 0); // Original file exists, so we need at least (1)
+        } else {
+          const match = file.key.match(counterRegex);
+          if (match) {
+            incrementNumber = Math.max(incrementNumber, parseInt(match[1], 10));
+          }
+        }
+      }
+
+      // Generate the next available filename
+      if (incrementNumber >= 0) {
+        finalKey = `${baseName} (${incrementNumber + 1})${extension}`;
+      }
     }
 
     // Save file using backend
-    await this.backend.putObject(bucket, key, file);
+    await this.backend.putObject(bucket, finalKey, file);
 
     // Save metadata to database
     await db
@@ -457,7 +495,7 @@ export class StorageService {
       )
       .run(
         bucket,
-        key,
+        finalKey,
         file.size,
         file.mimetype || null,
         userId && userId !== ADMIN_ID ? userId : null
@@ -466,19 +504,19 @@ export class StorageService {
     // Get the actual uploaded_at timestamp from database (with alias for camelCase)
     const result = (await db
       .prepare('SELECT uploaded_at as uploadedAt FROM _storage WHERE bucket = ? AND key = ?')
-      .get(bucket, key)) as { uploadedAt: string } | undefined;
+      .get(bucket, finalKey)) as { uploadedAt: string } | undefined;
 
     if (!result) {
-      throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${key}`);
+      throw new Error(`Failed to retrieve upload timestamp for ${bucket}/${finalKey}`);
     }
 
     return {
       bucket,
-      key,
+      key: finalKey,
       size: file.size,
       mimeType: file.mimetype,
       uploadedAt: result.uploadedAt,
-      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(finalKey)}`,
     };
   }
 
