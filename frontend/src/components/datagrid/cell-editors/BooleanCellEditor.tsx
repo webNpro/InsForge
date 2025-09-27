@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from '@/components/radix/Select';
 import type { BooleanCellEditorProps } from './types';
+import { cn } from '@/lib/utils/utils';
 
 export function BooleanCellEditor({
   value,
@@ -40,9 +41,12 @@ export function BooleanCellEditor({
       onOpenChange={handleOpenChange}
     >
       <SelectTrigger
-        className={`w-full h-full border-0 focus:ring-0 focus:ring-offset-0 p-0 text-black dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700 ${className || ''}`}
+        className={cn(
+          'w-full h-full border-0 focus:ring-0 focus:ring-offset-0 p-0 text-black dark:text-white dark:placeholder:text-neutral-400 dark:border-neutral-700',
+          className
+        )}
       >
-        <SelectValue />
+        <span className="capitalize">{stringValue}</span>
       </SelectTrigger>
       <SelectContent align="start" className="min-w-25">
         <SelectItem value="true">true</SelectItem>
