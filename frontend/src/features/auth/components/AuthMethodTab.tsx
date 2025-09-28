@@ -3,7 +3,6 @@ import { Button } from '@/components/radix/Button';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import Github from '@/assets/logos/github.svg?react';
 import Google from '@/assets/logos/google.svg?react';
-import { generateAIAuthPrompt } from '@/features/auth/helpers';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
 import { AddOAuthDialog } from './AddOAuthDialog';
@@ -16,7 +15,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/radix/DropdownMenu';
-import { CopyButton } from '@/components/CopyButton';
 
 const providers: OAuthProviderInfo[] = [
   {
@@ -123,19 +121,6 @@ export function AuthMethodTab() {
     void refetchConfigs();
   }, [refetchConfigs]);
 
-  // Generate combined prompt for all enabled providers
-  const generateCombinedPrompt = () => {
-    const enabledProvidersList = providers.filter((provider) =>
-      configs.some((config) => config.provider === provider.id)
-    );
-
-    if (enabledProvidersList.length === 0) {
-      return '';
-    }
-
-    return generateAIAuthPrompt(enabledProvidersList);
-  };
-
   if (isLoadingConfigs) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -151,31 +136,6 @@ export function AuthMethodTab() {
   return (
     <>
       <div className="flex flex-col gap-6 h-full overflow-hidden p-6 w-full max-w-[1080px] mx-auto">
-        {/* Copy Prompt Banner */}
-        {hasAuthMethods && (
-          <div className="bg-white dark:bg-emerald-300/5 border border-zinc-200 dark:border-green-300 rounded-sm py-3 px-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-white">
-                  Integrate Authentication
-                </p>
-                <p className="text-sm text-zinc-500 dark:text-neutral-400">
-                  Copy prompt to your agent and the authentication method below will be integrated
-                  automatically.
-                </p>
-              </div>
-              <CopyButton
-                text={generateCombinedPrompt()}
-                variant="default"
-                size="sm"
-                className="w-52.5 h-8 px-3 py-1 rounded text-xs font-medium text-zinc-900 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:bg-transparent dark:data-[copied=true]:bg-neutral-700 data-[copied=true]:cursor-default data-[copied=true]:shadow-none data-[copied=true]:border-none data-[copied=true]:hover:bg-transparent dark:data-[copied=true]:text-white"
-                copyText="Copy Prompt"
-                copiedText="Copied - Paste to agent"
-              />
-            </div>
-          </div>
-        )}
-
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Auth Method</h2>
           {!allProvidersEnabled && (

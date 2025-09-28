@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/radix/Button';
 import {
   Tooltip,
@@ -14,14 +14,12 @@ import {
 } from '@/components/radix/DropdownMenu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
-  generateAIIntegrationPrompt,
   //   formatTokenCount,
   getProviderDisplayName,
   getFriendlyModelName,
   getModalityIcon,
 } from '../helpers';
 import { AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
-import { CopyButton } from '@/components/CopyButton';
 
 interface AIConfigExtended extends AIConfigurationWithUsageSchema {
   logo?: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
@@ -29,14 +27,11 @@ interface AIConfigExtended extends AIConfigurationWithUsageSchema {
 
 interface AIModelCardProps {
   config: AIConfigExtended;
-  anonKey?: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardProps) {
-  const [promptText, setPromptText] = useState<string>('');
-
+export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
   // Extract provider info
   const companyId = config.modelId.split('/')[0];
   const providerName = getProviderDisplayName(companyId);
@@ -46,23 +41,6 @@ export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardPr
 
   const inputModality = config.inputModality;
   const outputModality = config.outputModality;
-
-  // Generate prompt text when component mounts or anonKey changes
-  useEffect(() => {
-    const generatePrompt = () => {
-      try {
-        const prompt = generateAIIntegrationPrompt(config, anonKey);
-        setPromptText(prompt);
-      } catch (error) {
-        console.error('Failed to generate prompt:', error);
-      }
-    };
-
-    // Only generate prompt if we have anonKey
-    if (anonKey) {
-      generatePrompt();
-    }
-  }, [config, anonKey]);
 
   return (
     <TooltipProvider>
@@ -126,7 +104,7 @@ export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardPr
         <div className="h-[1px] bg-neutral-200 dark:bg-neutral-700 my-3" />
 
         {/* Modality indicators */}
-        <div className="flex flex-col gap-3 items-stretch mb-5">
+        <div className="flex flex-col gap-3 items-stretch">
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Input</span>
             <div className="flex items-center gap-2">
@@ -170,15 +148,6 @@ export function AIModelCard({ config, anonKey, onEdit, onDelete }: AIModelCardPr
             <span>{config.usageStats?.totalRequests || 0}</span>
           </div>
         </div>
-
-        <CopyButton
-          text={promptText}
-          variant="default"
-          size="sm"
-          className="w-full h-9 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black data-[copied=true]:dark:bg-neutral-700 data-[copied=true]:dark:hover:bg-neutral-700 data-[copied=true]:dark:text-white font-medium rounded transition-colors duration-200"
-          copyText="Copy Prompt"
-          copiedText="Copied - Paste to agent"
-        />
       </div>
     </TooltipProvider>
   );
