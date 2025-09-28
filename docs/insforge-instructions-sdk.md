@@ -100,6 +100,33 @@ const { data, error } = await client.auth.signInWithPassword({
 });
 // Token stored automatically for all requests
 
+// Sign In with OAuth
+const { data, error } = await client.auth.signInWithOAuth({ 
+  provider: 'google'|'github', 
+  redirectTo: window.location.origin,
+  skipBrowserRedirect: true
+})
+// Returns: { data: { url, provider }, error }
+
+// Manual redirect required
+if (data?.url) {
+  window.location.href = data.url
+}
+
+// ⚠️ IMPORTANT: No callback handling needed!
+// After OAuth, user returns to redirectTo URL already authenticated
+// The SDK automatically:
+// - Handles the OAuth callback
+// - Stores the JWT token
+// - Makes user available via getCurrentUser()
+
+// ❌ DON'T DO THIS (not needed):
+// const accessToken = urlParams.get('access_token')
+// const userId = urlParams.get('user_id')
+
+// ✅ DO THIS INSTEAD (after redirect back):
+const { data, error } = await client.auth.getCurrentUser()
+
 // Get Current User (with profile)
 const { data, error } = await client.auth.getCurrentUser();
 // Returns: { 
