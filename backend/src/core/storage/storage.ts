@@ -56,7 +56,7 @@ interface StorageBackend {
 
 // Local filesystem storage implementation
 class LocalStorageBackend implements StorageBackend {
-  constructor(private baseDir: string) { }
+  constructor(private baseDir: string) {}
 
   async initialize(): Promise<void> {
     await fs.mkdir(this.baseDir, { recursive: true });
@@ -158,7 +158,7 @@ class S3StorageBackend implements StorageBackend {
     private s3Bucket: string,
     private appKey: string,
     private region: string = 'us-east-2'
-  ) { }
+  ) {}
 
   initialize(): void {
     // On EC2: Use IAM roles attached to the instance for S3 permissions
