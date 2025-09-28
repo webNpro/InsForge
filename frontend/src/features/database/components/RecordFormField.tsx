@@ -16,6 +16,7 @@ import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { useLinkModal } from '@/features/database/hooks/UseLinkModal';
 import { convertValueForColumn, cn, formatValueForDisplay } from '@/lib/utils/utils';
 import { TypeBadge } from '@/components/TypeBadge';
+import { isValid, parseISO } from 'date-fns';
 
 // Helper function to get appropriate placeholder text
 function getPlaceholderText(field: ColumnSchema): string {
@@ -106,10 +107,27 @@ function FormDateEditor({
     setShowEditor(false);
   };
 
+  const formatDisplayValue = () => {
+    if (!value || value === 'null') {
+      return getPlaceholderText(field);
+    }
+
+    return formatValueForDisplay(value, type);
+  };
+
+  const formatValue = () => {
+    if (!value || value === 'null') {
+      return null;
+    }
+
+    const date = parseISO(value);
+    return isValid(date) ? value : null;
+  };
+
   if (showEditor) {
     return (
       <DateCellEditor
-        value={value}
+        value={formatValue()}
         type={type}
         nullable={field.isNullable}
         onValueChange={handleValueChange}
@@ -118,14 +136,6 @@ function FormDateEditor({
       />
     );
   }
-
-  const formatDisplayValue = () => {
-    if (!value || value === 'null') {
-      return getPlaceholderText(field);
-    }
-
-    return formatValueForDisplay(value, type);
-  };
 
   return (
     <Button

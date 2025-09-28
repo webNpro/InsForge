@@ -101,9 +101,6 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, unknow
           values[column.columnName] = parseFloat(column.defaultValue);
         }
         break;
-      case ColumnType.STRING:
-        values[column.columnName] = column.defaultValue ?? '';
-        break;
       case ColumnType.UUID:
         if (column.defaultValue && !column.defaultValue.endsWith('()')) {
           // Static UUID default value
@@ -113,28 +110,9 @@ export function getInitialValues(columns: ColumnSchema[]): Record<string, unknow
           values[column.columnName] = '';
         }
         break;
+      case ColumnType.STRING:
       case ColumnType.DATE:
-        if (
-          column.defaultValue &&
-          !column.defaultValue.includes('CURRENT_') &&
-          !column.defaultValue.endsWith('()')
-        ) {
-          values[column.columnName] = column.defaultValue;
-        } else {
-          values[column.columnName] = '';
-        }
-        break;
       case ColumnType.DATETIME:
-        if (
-          column.defaultValue &&
-          !column.defaultValue.includes('CURRENT_') &&
-          !column.defaultValue.endsWith('()')
-        ) {
-          values[column.columnName] = column.defaultValue;
-        } else {
-          values[column.columnName] = '';
-        }
-        break;
       case ColumnType.JSON:
         values[column.columnName] = column.defaultValue ?? '';
         break;
