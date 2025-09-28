@@ -435,6 +435,8 @@ export class AuthService {
       throw new Error('Google OAuth not configured');
     }
 
+    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+
     if (config?.useSharedKey) {
       if (!state) {
         logger.warn('Shared Google OAuth called without state parameter');
@@ -442,7 +444,6 @@ export class AuthService {
       }
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
-      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
       const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
       const authUrl = await fetch(
         `${cloudBaseUrl}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
@@ -470,7 +471,7 @@ export class AuthService {
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.set('client_id', config.clientId ?? '');
-    authUrl.searchParams.set('redirect_uri', config.redirectUri ?? '');
+    authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/google/callback`);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set(
       'scope',
@@ -495,6 +496,8 @@ export class AuthService {
       throw new Error('GitHub OAuth not configured');
     }
 
+    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+
     if (config?.useSharedKey) {
       if (!state) {
         logger.warn('Shared GitHub OAuth called without state parameter');
@@ -502,7 +505,6 @@ export class AuthService {
       }
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
-      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
       const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
       const authUrl = await fetch(
         `${cloudBaseUrl}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
@@ -530,7 +532,7 @@ export class AuthService {
 
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.set('client_id', config.clientId ?? '');
-    authUrl.searchParams.set('redirect_uri', config.redirectUri ?? '');
+    authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/github/callback`);
     authUrl.searchParams.set('scope', config.scopes ? config.scopes.join(' ') : 'user:email');
     if (state) {
       authUrl.searchParams.set('state', state);
@@ -571,12 +573,12 @@ export class AuthService {
       });
 
       const clientSecret = await oauthConfigService.getClientSecretByProvider('google');
-
+      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
       const response = await axios.post('https://oauth2.googleapis.com/token', {
         code,
         client_id: config.clientId,
         client_secret: clientSecret,
-        redirect_uri: config.redirectUri,
+        redirect_uri: `${selfBaseUrl}/api/auth/oauth/google/callback`,
         grant_type: 'authorization_code',
       });
 
@@ -689,14 +691,14 @@ export class AuthService {
     }
 
     const clientSecret = await oauthConfigService.getClientSecretByProvider('github');
-
+    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
     const response = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
         client_id: config.clientId,
         client_secret: clientSecret,
         code,
-        redirect_uri: config.redirectUri,
+        redirect_uri: `${selfBaseUrl}/api/auth/oauth/github/callback`,
       },
       {
         headers: {

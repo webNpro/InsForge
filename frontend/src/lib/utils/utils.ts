@@ -158,3 +158,8 @@ export function isEmptyValue(value: unknown): boolean {
 export const isInsForgeCloudProject = () => {
   return window.location.hostname.endsWith('.insforge.app');
 };
+
+export const getBackendUrl = () => {
+  const isHttp = window.location.protocol === 'http:';
+  return isHttp ? 'http://localhost:7130' : window.location.origin;
+};

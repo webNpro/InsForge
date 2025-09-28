@@ -32,7 +32,7 @@ router.get('/google', async (req: Request, res: Response, next: NextFunction) =>
 
     const jwtPayload = {
       provider: 'google',
-      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
+      redirectUri: redirect_uri ? (redirect_uri as string) : undefined,
       createdAt: Date.now(),
     };
     const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
@@ -64,7 +64,7 @@ router.get('/github', async (req: Request, res: Response, next: NextFunction) =>
 
     const jwtPayload = {
       provider: 'github',
-      redirectUrl: redirect_uri ? (redirect_uri as string) : undefined,
+      redirectUri: redirect_uri ? (redirect_uri as string) : undefined,
       createdAt: Date.now(),
     };
     const state = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'default_secret', {
@@ -98,14 +98,14 @@ router.get('/shared/callback/:state', async (req: Request, res: Response, next: 
       throw new AppError('State parameter is required', 400, ERROR_CODES.INVALID_INPUT);
     }
 
-    let redirectUrl: string;
+    let redirectUri: string;
     let provider: string;
     try {
       const decodedState = jwt.verify(state, process.env.JWT_SECRET || 'default_secret') as {
         provider: string;
-        redirectUrl: string;
+        redirectUri: string;
       };
-      redirectUrl = decodedState.redirectUrl || '/';
+      redirectUri = decodedState.redirectUri || '/';
       provider = decodedState.provider || '';
     } catch {
       logger.warn('Invalid state parameter', { state });
@@ -116,14 +116,14 @@ router.get('/shared/callback/:state', async (req: Request, res: Response, next: 
       logger.warn('Invalid provider in state', { provider });
       throw new AppError('Invalid provider in state', 400, ERROR_CODES.INVALID_INPUT);
     }
-    if (!redirectUrl) {
+    if (!redirectUri) {
       throw new AppError('Redirect URL is required', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     if (success !== 'true') {
       const errorMessage = error || 'OAuth authentication failed';
       logger.warn('Shared OAuth callback failed', { error: errorMessage, provider });
-      return res.redirect(`${redirectUrl}?error=${encodeURIComponent(String(errorMessage))}`);
+      return res.redirect(`${redirectUri}?error=${encodeURIComponent(String(errorMessage))}`);
     }
     if (!payload) {
       throw new AppError('No payload provided in callback', 400, ERROR_CODES.INVALID_INPUT);
@@ -153,12 +153,12 @@ router.get('/shared/callback/:state', async (req: Request, res: Response, next: 
       result = await authService.findOrCreateGitHubUser(githubUserInfo);
     }
 
-    const finalRedirectUrl = new URL(redirectUrl);
-    finalRedirectUrl.searchParams.set('access_token', result?.accessToken ?? '');
-    finalRedirectUrl.searchParams.set('user_id', result?.user.id ?? '');
-    finalRedirectUrl.searchParams.set('email', result?.user.email ?? '');
-    finalRedirectUrl.searchParams.set('name', result?.user.name ?? '');
-    res.redirect(finalRedirectUrl.toString());
+    const finalredirectUri = new URL(redirectUri);
+    finalredirectUri.searchParams.set('access_token', result?.accessToken ?? '');
+    finalredirectUri.searchParams.set('user_id', result?.user.id ?? '');
+    finalredirectUri.searchParams.set('email', result?.user.email ?? '');
+    finalredirectUri.searchParams.set('name', result?.user.name ?? '');
+    res.redirect(finalredirectUri.toString());
   } catch (error) {
     logger.error('Shared OAuth callback error', { error });
     next(error);
@@ -171,7 +171,7 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
     const { provider } = req.params;
     const { code, state, token } = req.query;
 
-    let redirectUrl = '/';
+    let redirectUri = '/';
 
     if (state) {
       try {
@@ -180,9 +180,9 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
           process.env.JWT_SECRET || 'default_secret'
         ) as {
           provider: string;
-          redirectUrl: string;
+          redirectUri: string;
         };
-        redirectUrl = stateData.redirectUrl || '/';
+        redirectUri = stateData.redirectUri || '/';
       } catch {
         // Invalid state
       }
@@ -223,20 +223,20 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
     }
 
     // Create URL with JWT token and user info (like the working example)
-    const finalRedirectUrl = new URL(redirectUrl);
-    finalRedirectUrl.searchParams.set('access_token', result?.accessToken ?? '');
-    finalRedirectUrl.searchParams.set('user_id', result?.user.id ?? '');
-    finalRedirectUrl.searchParams.set('email', result?.user.email ?? '');
-    finalRedirectUrl.searchParams.set('name', result?.user.name ?? '');
+    const finalredirectUri = new URL(redirectUri);
+    finalredirectUri.searchParams.set('access_token', result?.accessToken ?? '');
+    finalredirectUri.searchParams.set('user_id', result?.user.id ?? '');
+    finalredirectUri.searchParams.set('email', result?.user.email ?? '');
+    finalredirectUri.searchParams.set('name', result?.user.name ?? '');
 
     logger.info('OAuth callback successful, redirecting with token', {
-      redirectUrl: finalRedirectUrl.toString(),
+      redirectUri: finalredirectUri.toString(),
       hasAccessToken: !!result?.accessToken,
       userId: result?.user.id,
     });
 
     // Redirect directly to the app with token in URL
-    return res.redirect(finalRedirectUrl.toString());
+    return res.redirect(finalredirectUri.toString());
   } catch (error) {
     logger.error('OAuth callback error', {
       error: error instanceof Error ? error.message : error,
@@ -249,11 +249,11 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
 
     // Redirect to app with error message
     const { state } = req.query;
-    const redirectUrl = state
+    const redirectUri = state
       ? (() => {
           try {
             const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-            return stateData.redirectUrl || '/';
+            return stateData.redirectUri || '/';
           } catch {
             return '/';
           }
@@ -263,10 +263,10 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
     const errorMessage = error instanceof Error ? error.message : 'OAuth authentication failed';
 
     // Redirect with error in URL parameters
-    const errorRedirectUrl = new URL(redirectUrl);
-    errorRedirectUrl.searchParams.set('error', errorMessage);
+    const errorredirectUri = new URL(redirectUri);
+    errorredirectUri.searchParams.set('error', errorMessage);
 
-    return res.redirect(errorRedirectUrl.toString());
+    return res.redirect(errorredirectUri.toString());
   }
 });
 

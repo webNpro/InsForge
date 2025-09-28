@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { cn } from '@/lib/utils/utils';
+import { cn, getBackendUrl } from '@/lib/utils/utils';
 import { CodeBlock } from '@/components/CodeBlock';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/radix/Tabs';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -37,7 +37,7 @@ export function McpInstallation({
   };
 
   const mcpConfig = useMemo(() => {
-    return createMCPConfig(apiKey || '', activeTab, window.location.origin);
+    return createMCPConfig(apiKey || '', activeTab, getBackendUrl());
   }, [apiKey, activeTab]);
 
   return (
@@ -78,11 +78,7 @@ export function McpInstallation({
             {agent.id !== 'mcp' ? (
               <div className="bg-white dark:bg-neutral-700 px-6 py-8 flex flex-col items-start justify-start gap-4 rounded-xl border border-border-gray dark:border-neutral-700">
                 {agent.id === 'cursor' && (
-                  <CursorDeeplinkGenerator
-                    apiKey={apiKey}
-                    apiBaseUrl={import.meta.env.VITE_API_BASE_URL}
-                    os={activeTab}
-                  />
+                  <CursorDeeplinkGenerator apiKey={apiKey} os={activeTab} />
                 )}
                 {/* Alternative Installation */}
                 <p className="text-zinc-950 dark:text-neutral-300 text-sm">

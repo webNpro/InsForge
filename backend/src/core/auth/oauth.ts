@@ -185,13 +185,6 @@ export class OAuthConfigService {
         }
       }
 
-      // Set default redirect_uri if not provided
-      let redirectUri = input.redirectUri;
-      if (!redirectUri) {
-        const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
-        redirectUri = `${apiBaseUrl}/api/auth/oauth/${input.provider.toLowerCase()}/callback`;
-      }
-
       // Create new OAuth config
       const result = await client.query(
         `INSERT INTO _oauth_configs (provider, client_id, secret_id, redirect_uri, scopes, use_shared_key)
@@ -206,7 +199,7 @@ export class OAuthConfigService {
           input.provider.toLowerCase(),
           input.clientId || null,
           secretId,
-          redirectUri,
+          null, // Deprecating redirect_uri
           scopes,
           input.useSharedKey || false,
         ]

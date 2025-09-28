@@ -1,6 +1,6 @@
 import { CopyButton } from '@/components/CopyButton';
 import { type EdgeFunction } from '../services/functions.service';
-import { cn } from '@/lib/utils/utils';
+import { cn, getBackendUrl } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
 interface FunctionRowProps {
   function: EdgeFunction;
@@ -9,7 +9,7 @@ interface FunctionRowProps {
 }
 
 export function FunctionRow({ function: func, onClick, className }: FunctionRowProps) {
-  const functionUrl = `${window.location.origin}/functions/${func.slug}`;
+  const functionUrl = `${getBackendUrl()}/functions/${func.slug}`;
 
   return (
     <div
