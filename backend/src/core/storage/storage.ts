@@ -24,6 +24,7 @@ import logger from '@/utils/logger.js';
 import { ADMIN_ID } from '@/utils/constants';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
+import { escapeSqlLikePattern, escapeRegexPattern } from '@/utils/validations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +56,7 @@ interface StorageBackend {
 
 // Local filesystem storage implementation
 class LocalStorageBackend implements StorageBackend {
-  constructor(private baseDir: string) {}
+  constructor(private baseDir: string) { }
 
   async initialize(): Promise<void> {
     await fs.mkdir(this.baseDir, { recursive: true });
@@ -157,7 +158,7 @@ class S3StorageBackend implements StorageBackend {
     private s3Bucket: string,
     private appKey: string,
     private region: string = 'us-east-2'
-  ) {}
+  ) { }
 
   initialize(): void {
     // On EC2: Use IAM roles attached to the instance for S3 permissions
@@ -453,7 +454,7 @@ export class StorageService {
       .all(
         bucket,
         originalKey,
-        `${baseName.replace(/([%_\\])/g, '\\$1')} (%)${extension.replace(/([%_\\])/g, '\\$1')}`
+        `${escapeSqlLikePattern(baseName)} (%)${escapeSqlLikePattern(extension)}`
       );
 
     let finalKey = originalKey;
@@ -461,8 +462,9 @@ export class StorageService {
     if (existingFiles.length > 0) {
       // Extract counter numbers from existing files
       let incrementNumber = 0;
+      // This regex is used to match the counter number in the filename, extract the increment number
       const counterRegex = new RegExp(
-        `^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\((\\d+)\\)${extension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`
+        `^${escapeRegexPattern(baseName)} \\((\\d+)\\)${escapeRegexPattern(extension)}$`
       );
 
       for (const file of existingFiles as { key: string }[]) {

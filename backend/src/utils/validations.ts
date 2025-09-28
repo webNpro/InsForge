@@ -93,3 +93,37 @@ export function getIdentifierErrorMessage(identifier: string, type: string = 'id
   }
   return `Invalid ${type} name`;
 }
+
+/**
+ * Escapes special characters for SQL LIKE patterns.
+ * Prevents injection attacks by escaping %, _ and \ characters which have special meaning in SQL LIKE clauses.
+ * 
+ * How it works:
+ * - Matches any of: % (wildcard), _ (single char), or \ (escape char) 
+ * - Replaces with: \% \_ or \\ respectively
+ * - This allows literal matching of these characters in LIKE patterns
+ * 
+ * @param text - Text to escape for use in SQL LIKE pattern
+ * @returns Escaped text safe for SQL LIKE usage
+ * @example escapeSqlLikePattern("test_file%") → "test\_file\%"
+ */
+export function escapeSqlLikePattern(text: string): string {
+  return text.replace(/([%_\\])/g, '\\$1');
+}
+
+/**
+ * Escapes special regex metacharacters for literal matching in regular expressions.
+ * Prevents regex injection by escaping all characters that have special meaning in regex.
+ * 
+ * How it works:
+ * - Matches any regex metacharacter: . * + ? ^ $ { } ( ) | [ ] \
+ * - Replaces with escaped version (prefixed with \)
+ * - This allows creating regex patterns that match these characters literally
+ * 
+ * @param text - Text to escape for use in regex patterns  
+ * @returns Escaped text safe for regex literal matching
+ * @example escapeRegexPattern("test.file(1)") → "test\\.file\\(1\\)"
+ */
+export function escapeRegexPattern(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
