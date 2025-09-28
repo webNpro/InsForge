@@ -149,17 +149,20 @@ export class DatabaseManager {
     }
   }
 
-  async getUserTableCount(): Promise<number> {
+  async getUserTables(): Promise<string[]> {
     const client = await this.pool.connect();
     try {
       const result = await client.query(
-        `SELECT COUNT(*) as count 
-         FROM information_schema.tables 
-         WHERE table_schema = 'public' 
-         AND table_type = 'BASE TABLE'
-         AND table_name NOT LIKE '\\_%'`
+        `
+          SELECT table_name as name
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+          AND table_type = 'BASE TABLE'
+          AND (table_name NOT LIKE '\\_%')
+          ORDER BY table_name
+        `
       );
-      return parseInt(result.rows[0]?.count || '0', 10);
+      return result.rows.map((row: { name: string }) => row.name);
     } finally {
       client.release();
     }

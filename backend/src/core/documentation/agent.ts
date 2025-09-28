@@ -1,7 +1,8 @@
-import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { StorageBucketSchema, TableSchema } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { StorageService } from '../storage/storage';
+import { DatabaseTableService } from '../database/table';
+import { DatabaseManager } from '../database/manager';
 
 export class AgentAPIDocService {
   private static instance: AgentAPIDocService;
@@ -63,18 +64,12 @@ export class AgentAPIDocService {
   async generateAgentDocumentation(): Promise<Record<string, unknown>> {
     try {
       // Get fresh metadata from database controller
-      const dbAdvanceService = new DatabaseAdvanceService();
-      const storageService = StorageService.getInstance();
-      const databaseMetadata = await dbAdvanceService.getMetadata();
-      const storageMetadata = await storageService.getMetadata();
 
-      // Filter out system tables
-      const tables = databaseMetadata.tables.filter((table) => {
-        if (table.tableName.startsWith('_')) {
-          return false;
-        }
-        return true;
-      });
+      const storageService = StorageService.getInstance();
+      const storageMetadata = await storageService.getMetadata();
+      const tableService = new DatabaseTableService();
+      const dbManager = DatabaseManager.getInstance();
+      const allTables = await dbManager.getUserTables();
 
       // Generate table schemas with descriptions
       const tableSchemas: Record<
@@ -83,9 +78,10 @@ export class AgentAPIDocService {
       > = {};
       const tableList: string[] = [];
 
-      for (const table of tables) {
-        tableSchemas[`${table.tableName}RecordSchema`] = this.tableToRecordSchema(table);
-        tableList.push(table.tableName);
+      for (const table of allTables) {
+        const tableSchema = await tableService.getTableSchema(table);
+        tableSchemas[`${table}RecordSchema`] = this.tableToRecordSchema(tableSchema);
+        tableList.push(table);
       }
 
       // Get storage buckets

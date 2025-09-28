@@ -1,10 +1,26 @@
-import { Database, Circle } from 'lucide-react';
+import { Database, Circle, Key } from 'lucide-react';
 import { Handle, Position } from '@xyflow/react';
-import { TableSchema } from '@insforge/shared-schemas';
+
+// Define the table structure expected by this component
+export interface VisualizerTableColumnSchema {
+  columnName: string;
+  type: string;
+  isPrimaryKey?: boolean;
+  foreignKey?: {
+    referenceTable: string;
+    referenceColumn: string;
+  };
+}
+
+export interface VisualizerTableSchema {
+  tableName: string;
+  columns: VisualizerTableColumnSchema[];
+  recordCount?: number;
+}
 
 interface TableNodeProps {
   data: {
-    table: TableSchema;
+    table: VisualizerTableSchema;
     referencedColumns?: string[]; // List of column names that are referenced by other tables
   };
 }
@@ -99,6 +115,7 @@ export function TableNode({ data }: TableNodeProps) {
             <div className="flex items-center gap-2.5 flex-1">
               {getColumnIcon(referencedColumns.includes(column.columnName))}
               <span className="text-sm text-neutral-300">{column.columnName}</span>
+              {column.isPrimaryKey && <Key className="w-3 h-3 text-neutral-400" />}
             </div>
             <div className="flex items-center gap-2.5">
               <div className="px-1.5 py-0.5 bg-neutral-800 rounded flex items-center">

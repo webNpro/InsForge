@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { Skeleton } from '@/components/radix/Skeleton';
 import { Card, CardContent } from '@/components/radix/Card';
 import {
@@ -24,22 +23,8 @@ import { useUsers } from '@/features/auth';
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const {
-    data: metadata,
-    isLoading,
-    refetch: _refetchMetadata,
-  } = useQuery({
-    queryKey: ['dashboard-metadata'],
-    queryFn: () => metadataService.getFullMetadata(),
-  });
-
+  const { metadata, auth, tables, storage, isLoading } = useMetadata();
   const { totalUsers } = useUsers();
-
-  const { data: fullMetadata, isLoading: isLoadingFullMetadata } = useQuery({
-    queryKey: ['full-metadata'],
-    queryFn: () => metadataService.getFullMetadata(),
-  });
 
   const handleNavigateTo = (to: string, state?: { initialTab?: string }) => {
     const basePath = location.pathname.includes('/cloud')
@@ -128,12 +113,12 @@ export default function DashboardPage() {
                       </>
                     )}
                   </div>
-                  {isLoadingFullMetadata ? (
+                  {isLoading ? (
                     <Skeleton className="h-5 w-36 bg-gray-200 dark:bg-neutral-700" />
                   ) : (
                     <p className="text-base text-gray-500 dark:text-neutral-400">
                       {(() => {
-                        const authCount = metadata?.auth.oauths.length;
+                        const authCount = auth?.oauths.length || 0;
                         return `${authCount} OAuth ${authCount === 1 ? 'provider' : 'providers'} enabled`;
                       })()}
                     </p>
@@ -160,7 +145,7 @@ export default function DashboardPage() {
                     ) : (
                       <>
                         <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
-                          {(metadata?.database.totalSize || 0).toFixed(2)}
+                          {(metadata?.database?.totalSize || 0).toFixed(2)}
                         </span>
                         <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
                           GB
@@ -168,12 +153,11 @@ export default function DashboardPage() {
                       </>
                     )}
                   </div>
-                  {isLoadingFullMetadata ? (
+                  {isLoading ? (
                     <Skeleton className="h-5 w-16 bg-gray-200 dark:bg-neutral-700" />
                   ) : (
                     <p className="text-base text-gray-500 dark:text-neutral-400">
-                      {fullMetadata?.database?.tables?.length || 0}{' '}
-                      {fullMetadata?.database?.tables?.length === 1 ? 'Table' : 'Tables'}
+                      {tables.length || 0} {tables.length === 1 ? 'Table' : 'Tables'}
                     </p>
                   )}
                 </div>
@@ -198,7 +182,7 @@ export default function DashboardPage() {
                     ) : (
                       <>
                         <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
-                          {(metadata?.storage.totalSize || 0).toFixed(2)}
+                          {(storage?.totalSize || 0).toFixed(2)}
                         </span>
                         <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
                           GB
@@ -206,12 +190,12 @@ export default function DashboardPage() {
                       </>
                     )}
                   </div>
-                  {isLoadingFullMetadata ? (
+                  {isLoading ? (
                     <Skeleton className="h-5 w-20 bg-gray-200 dark:bg-neutral-700" />
                   ) : (
                     <p className="text-base text-gray-500 dark:text-neutral-400">
-                      {fullMetadata?.storage?.buckets?.length || 0}{' '}
-                      {fullMetadata?.storage?.buckets?.length === 1 ? 'Bucket' : 'Buckets'}
+                      {storage?.buckets?.length || 0}{' '}
+                      {storage?.buckets?.length === 1 ? 'Bucket' : 'Buckets'}
                     </p>
                   )}
                 </div>

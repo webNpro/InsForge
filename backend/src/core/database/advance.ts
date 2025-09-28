@@ -7,15 +7,10 @@ import {
   type ImportDatabaseResponse,
   type BulkUpsertResponse,
   type DatabaseMetadataSchema,
-  type TableSchema,
-  type ColumnSchema,
-  type OnDeleteActionSchema,
-  type OnUpdateActionSchema,
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
 import { parseSQLStatements } from '@/utils/sql-parser.js';
-import { convertSqlTypeToColumnType } from '@/utils/helpers.js';
 import { validateTableName } from '@/utils/validations.js';
 import format from 'pg-format';
 import { parse } from 'csv-parse/sync';
@@ -1001,140 +996,17 @@ export class DatabaseAdvanceService {
    * Get database metadata
    */
   async getMetadata(): Promise<DatabaseMetadataSchema> {
+    // Get all tables excluding system tables (those starting with _)
+    const allTables = await this.dbManager.getUserTables();
+    const dbMetadata = await this.exportDatabase(allTables, 'json', false, false, false, false);
+
+    const databaseSize = await this.getDatabaseSizeInGB();
+
+    // Get record counts for each table
+    const tablesSchemas = (dbMetadata.data as ExportDatabaseJsonData).tables;
     const db = this.dbManager.getDb();
 
-    // Get all tables excluding system tables (those starting with _)
-    // Also exclude Better Auth system tables, except for user table
-    const allTables = (await db
-      .prepare(
-        `
-      SELECT table_name as name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      AND table_type = 'BASE TABLE'
-      AND (table_name NOT LIKE '\\_%')
-      ORDER BY table_name
-    `
-      )
-      .all()) as { name: string }[];
-
-    const tableMetadata: TableSchema[] = [];
-
-    for (const table of allTables) {
-      // Get comprehensive column information with constraints in a single query
-      const columns = (await db
-        .prepare(
-          `
-        SELECT
-          c.column_name as name,
-          c.data_type as type,
-          c.is_nullable,
-          c.column_default as dflt_value,
-          c.ordinal_position,
-          CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END as is_primary_key,
-          CASE WHEN uk.column_name IS NOT NULL THEN true ELSE false END as is_unique
-        FROM information_schema.columns c
-        LEFT JOIN (
-          SELECT DISTINCT kcu.column_name
-          FROM information_schema.key_column_usage kcu
-          JOIN information_schema.table_constraints tc
-            ON kcu.constraint_name = tc.constraint_name
-            AND kcu.table_schema = tc.table_schema
-            AND kcu.table_name = tc.table_name
-          WHERE tc.table_schema = 'public'
-            AND tc.table_name = ?
-            AND tc.constraint_type = 'PRIMARY KEY'
-        ) pk ON c.column_name = pk.column_name
-        LEFT JOIN (
-          SELECT DISTINCT kcu.column_name
-          FROM information_schema.key_column_usage kcu
-          JOIN information_schema.table_constraints tc
-            ON kcu.constraint_name = tc.constraint_name
-            AND kcu.table_schema = tc.table_schema
-            AND kcu.table_name = tc.table_name
-          WHERE tc.table_schema = 'public'
-            AND tc.table_name = ?
-            AND tc.constraint_type = 'UNIQUE'
-        ) uk ON c.column_name = uk.column_name
-        WHERE c.table_schema = 'public'
-          AND c.table_name = ?
-        ORDER BY c.ordinal_position
-      `
-        )
-        .all(table.name, table.name, table.name)) as {
-        name: string;
-        type: string;
-        is_nullable: string;
-        dflt_value: string | null;
-        ordinal_position: number;
-        is_primary_key: boolean;
-        is_unique: boolean;
-      }[];
-
-      const columnMetadata: ColumnSchema[] = columns.map((col) => {
-        // Map PostgreSQL types to our type system
-        const type = convertSqlTypeToColumnType(col.type);
-
-        const column: ColumnSchema = {
-          columnName: col.name,
-          type: type,
-          isNullable: col.is_nullable === 'YES',
-          defaultValue: col.dflt_value || undefined,
-          isPrimaryKey: col.is_primary_key,
-          isUnique: col.is_unique,
-        };
-
-        return column;
-      });
-
-      // Get foreign key information
-      const foreignKeys = (await db
-        .prepare(
-          `
-        SELECT DISTINCT
-          kcu.column_name as from_column,
-          ccu.table_name AS foreign_table,
-          ccu.column_name AS foreign_column,
-          rc.delete_rule as on_delete,
-          rc.update_rule as on_update
-        FROM information_schema.table_constraints AS tc
-        JOIN information_schema.key_column_usage AS kcu
-          ON tc.constraint_name = kcu.constraint_name
-          AND tc.table_schema = kcu.table_schema
-          AND kcu.table_name = tc.table_name
-        JOIN information_schema.constraint_column_usage AS ccu
-          ON ccu.constraint_name = tc.constraint_name
-          AND ccu.table_schema = tc.table_schema
-        JOIN information_schema.referential_constraints AS rc
-          ON rc.constraint_name = tc.constraint_name
-          AND rc.constraint_schema = tc.table_schema
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_name = ?
-        AND tc.table_schema = 'public'
-      `
-        )
-        .all(table.name)) as {
-        from_column: string;
-        foreign_table: string;
-        foreign_column: string;
-        on_delete: string;
-        on_update: string;
-      }[];
-
-      // Map foreign keys to columns
-      for (const fk of foreignKeys) {
-        const column = columnMetadata.find((col) => col.columnName === fk.from_column);
-        if (column) {
-          column.foreignKey = {
-            referenceTable: fk.foreign_table,
-            referenceColumn: fk.foreign_column,
-            onDelete: fk.on_delete as OnDeleteActionSchema,
-            onUpdate: fk.on_update as OnUpdateActionSchema,
-          };
-        }
-      }
-
-      // Get record count
+    for (const tableName of allTables) {
       let recordCount = 0;
       try {
         // there is a race condition here, if the table is immeditely deleted, so added an extra check to see if the table exists
@@ -1149,34 +1021,31 @@ export class DatabaseAdvanceService {
           ) as exists
         `
           )
-          .get(table.name)) as { exists: boolean } | null;
+          .get(tableName)) as { exists: boolean } | null;
 
         if (tableExists?.exists) {
           const countResult = (await db
-            .prepare(`SELECT COUNT(*) as count FROM "${table.name}"`)
+            .prepare(`SELECT COUNT(*) as count FROM "${tableName}"`)
             .get()) as { count: number } | null;
           recordCount = countResult?.count || 0;
         }
       } catch (error) {
         // Handle any unexpected errors
         logger.warn('Could not get record count for table', {
-          table: table.name,
+          table: tableName,
           error: error instanceof Error ? error.message : String(error),
         });
         recordCount = 0;
       }
 
-      tableMetadata.push({
-        tableName: table.name,
-        columns: columnMetadata,
-        recordCount: recordCount,
-      });
+      // Only add recordCount if the table exists in tablesSchemas
+      if (tablesSchemas[tableName]) {
+        tablesSchemas[tableName].recordCount = recordCount;
+      }
     }
 
-    const databaseSize = await this.getDatabaseSizeInGB();
-
     return {
-      tables: tableMetadata,
+      tables: tablesSchemas,
       totalSize: databaseSize,
     };
   }

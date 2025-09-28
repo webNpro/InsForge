@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/utils';
 import { CodeBlock } from '@/components/CodeBlock';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/radix/Tabs';
@@ -13,7 +12,7 @@ import {
   type MCPAgent,
   type PlatformType,
 } from './mcp-helper';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { useApiKey } from '@/features/metadata/hooks/useMetadata';
 
 interface McpInstallerProps {
   className?: string;
@@ -31,11 +30,7 @@ export function McpInstallation({
   });
   const [activeTab, setActiveTab] = useState<PlatformType>('macos-linux');
 
-  const { data: apiKey } = useQuery({
-    queryKey: ['apiKey'],
-    queryFn: () => metadataService.fetchApiKey(),
-    staleTime: Infinity,
-  });
+  const { apiKey } = useApiKey();
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as PlatformType);

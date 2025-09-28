@@ -107,7 +107,7 @@ export async function seedBackend(): Promise<void> {
     const apiKey = await secretService.initializeApiKey();
 
     // Get database stats
-    const tableCount = await dbManager.getUserTableCount();
+    const tables = await dbManager.getUserTables();
 
     logger.info(`✅ Database connected to PostgreSQL`, {
       host: process.env.POSTGRES_HOST || 'localhost',
@@ -116,8 +116,8 @@ export async function seedBackend(): Promise<void> {
     });
     // Database connection info is already logged above
 
-    if (tableCount > 0) {
-      logger.info(`✅ Found ${tableCount} user tables`);
+    if (tables.length > 0) {
+      logger.info(`✅ Found ${tables.length} user tables`);
     }
 
     // seed AI configs for cloud environment

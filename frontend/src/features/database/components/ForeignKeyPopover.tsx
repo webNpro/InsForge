@@ -4,7 +4,7 @@ import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/radix/Dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { databaseService } from '@/features/database/services/database.service';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
@@ -63,15 +63,11 @@ export function ForeignKeyPopover({
   }, [open, initialValue]);
 
   // Get available tables
-  const { data: metadata } = useQuery({
-    queryKey: ['database-metadata'],
-    queryFn: () => metadataService.getDatabaseMetadata(),
-    enabled: open,
-  });
+  const { tables } = useMetadata({ enabled: open });
 
-  const availableTables = metadata?.tables
-    ? metadata.tables.filter((table) => mode === 'create' || table.tableName !== editTableName)
-    : [];
+  const availableTables = tables.filter(
+    (tableName) => mode === 'create' || tableName !== editTableName
+  );
 
   // Get columns for selected reference table
   const { data: referenceTableSchema } = useQuery({
@@ -206,9 +202,9 @@ export function ForeignKeyPopover({
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTables.map((table) => (
-                    <SelectItem key={table.tableName} value={table.tableName}>
-                      {table.tableName}
+                  {availableTables.map((tableName) => (
+                    <SelectItem key={tableName} value={tableName}>
+                      {tableName}
                     </SelectItem>
                   ))}
                 </SelectContent>

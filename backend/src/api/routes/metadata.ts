@@ -148,12 +148,6 @@ router.get('/:tableName', async (req: AuthRequest, res: Response, next: NextFunc
       includeViews
     );
 
-    // Trigger Socket.IO event to notify frontend that MCP is connected
-    if (req.query.mcp === 'true') {
-      const socketService = SocketService.getInstance();
-      //Lyu note: this is triggered everytime when a mcp calls get-metadata. Do we have a better solution for this?
-      socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED);
-    }
     // When format is 'json', the data contains the tables object
     const jsonData = schemaResponse.data as { tables: Record<string, unknown> };
     const metadata = jsonData.tables;

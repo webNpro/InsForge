@@ -4,9 +4,10 @@ import {
   extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
-import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { TableSchema, ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
+import { DatabaseTableService } from '../database/table';
+import { DatabaseManager } from '../database/manager';
 
 // Extend Zod with OpenAPI functionality
 extendZodWithOpenApi(z);
@@ -791,11 +792,6 @@ export class OpenAPIService {
    */
   async generateOpenAPIDocument() {
     try {
-      // Get fresh metadata from database controller
-      const dbAdvanceService = new DatabaseAdvanceService();
-      const databaseMetadata = await dbAdvanceService.getMetadata();
-      const metadata = { database: databaseMetadata };
-
       // Create new registry
       const registry = new OpenAPIRegistry();
 
@@ -820,13 +816,14 @@ export class OpenAPIService {
       // Register storage endpoints
       this.registerStorageEndpoints(registry);
 
+      const tableService = new DatabaseTableService();
+      const dbManager = DatabaseManager.getInstance();
+      const allTables = await dbManager.getUserTables();
+
       // Register endpoints for each table
-      for (const table of metadata.database.tables) {
-        // Skip system tables
-        if (table.tableName.startsWith('_')) {
-          continue;
-        }
-        this.registerTableEndpoints(registry, table);
+      for (const table of allTables) {
+        const tableSchema = await tableService.getTableSchema(table);
+        this.registerTableEndpoints(registry, tableSchema);
       }
 
       // Generate OpenAPI document

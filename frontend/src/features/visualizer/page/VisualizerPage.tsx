@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
-import { metadataService } from '@/features/metadata/services/metadata.service';
+import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { authService } from '@/features/auth/services/auth.service';
 import { SchemaVisualizer, VisualizerSkeleton } from '../components';
 import { Button } from '@/components/radix/Button';
@@ -19,16 +19,11 @@ const VisualizerPage = () => {
   const queryClient = useQueryClient();
 
   const {
-    data: metadata,
+    metadata,
     isLoading: metadataLoading,
     error: metadataError,
     refetch: refetchMetadata,
-  } = useQuery({
-    queryKey: ['metadata'],
-    queryFn: () => metadataService.getFullMetadata(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-  });
+  } = useMetadata();
 
   const {
     data: userStats,

@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { RefreshCw, Info } from 'lucide-react';
-import { metadataService } from '../services/metadata.service';
+import { useMetadata } from '../hooks/useMetadata';
 import { Skeleton } from '@/components/radix/Skeleton';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -13,15 +12,7 @@ import {
 import { JsonHighlight } from '@/components';
 
 export default function MetadataPage() {
-  const {
-    data: metadata,
-    isLoading,
-    error,
-    refetch: refetchMetadata,
-  } = useQuery({
-    queryKey: ['metadata'],
-    queryFn: () => metadataService.getFullMetadata(),
-  });
+  const { metadata, isLoading, error, refetch: refetchMetadata } = useMetadata();
 
   const handleRefresh = () => {
     void refetchMetadata();

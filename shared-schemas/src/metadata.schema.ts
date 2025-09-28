@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { storageBucketSchema } from './storage.schema';
-import { tableSchema } from './database.schema';
 import { oAuthConfigSchema } from './auth.schema';
+import { exportJsonDataSchema } from './database-api.schema';
 
 export const authMetadataSchema = z.object({
   oauths: z.array(oAuthConfigSchema),
 });
 
 export const databaseMetadataSchema = z.object({
-  tables: z.array(tableSchema),
+  tables: exportJsonDataSchema.shape.tables,
   totalSize: z.number(),
 });
 
