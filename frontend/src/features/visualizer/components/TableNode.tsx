@@ -2,7 +2,7 @@ import { Database, Circle, Key } from 'lucide-react';
 import { Handle, Position } from '@xyflow/react';
 
 // Define the table structure expected by this component
-interface TableColumn {
+export interface VisualizerTableColumnSchema {
   columnName: string;
   type: string;
   isPrimaryKey?: boolean;
@@ -12,15 +12,15 @@ interface TableColumn {
   };
 }
 
-interface Table {
+export interface VisualizerTableSchema {
   tableName: string;
-  columns: TableColumn[];
+  columns: VisualizerTableColumnSchema[];
   recordCount?: number;
 }
 
 interface TableNodeProps {
   data: {
-    table: Table;
+    table: VisualizerTableSchema;
     referencedColumns?: string[]; // List of column names that are referenced by other tables
   };
 }

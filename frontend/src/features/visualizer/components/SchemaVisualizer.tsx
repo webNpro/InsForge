@@ -12,7 +12,7 @@ import {
   ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { TableNode } from './TableNode';
+import { TableNode, VisualizerTableSchema, VisualizerTableColumnSchema } from './TableNode';
 import { AuthNode } from './AuthNode';
 import { BucketNode } from './BucketNode';
 import {
@@ -26,25 +26,8 @@ interface SchemaVisualizerProps {
   userCount?: number;
 }
 
-// Define types that match what TableNode expects
-type VisualizerColumn = {
-  columnName: string;
-  type: string;
-  isPrimaryKey?: boolean;
-  foreignKey?: {
-    referenceTable: string;
-    referenceColumn: string;
-  };
-};
-
-type VisualizerTable = {
-  tableName: string;
-  columns: VisualizerColumn[];
-  recordCount: number;
-};
-
 type TableNodeData = {
-  table: VisualizerTable;
+  table: VisualizerTableSchema;
   referencedColumns: string[];
 };
 
@@ -200,7 +183,7 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
   // Transform the new metadata structure to the visualizer format
   const tables = useMemo(() => {
     const tablesRecord = metadata.database.tables;
-    return Object.entries(tablesRecord).map(([tableName, tableData]): VisualizerTable => {
+    return Object.entries(tablesRecord).map(([tableName, tableData]): VisualizerTableSchema => {
       // Check for primary key columns from indexes
       const primaryKeyColumns = new Set<string>();
 
@@ -217,12 +200,11 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
       });
 
       // Transform columns from the new schema format
-      const columns: VisualizerColumn[] = tableData.schema.map((col) => {
-        const column: VisualizerColumn = {
+      const columns = tableData.schema.map((col) => {
+        const column: VisualizerTableColumnSchema = {
           columnName: col.columnName,
           type: col.dataType.toLowerCase().substring(0, 4), // Truncate type to first 4 characters
           isPrimaryKey: primaryKeyColumns.has(col.columnName),
-          foreignKey: undefined,
         };
 
         // Find foreign key info for this column
