@@ -16,6 +16,7 @@ import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
 import { useLinkModal } from '@/features/database/hooks/UseLinkModal';
 import { convertValueForColumn, cn, formatValueForDisplay } from '@/lib/utils/utils';
 import { TypeBadge } from '@/components/TypeBadge';
+import { isValid, parseISO } from 'date-fns';
 
 // Helper function to get appropriate placeholder text
 function getPlaceholderText(field: ColumnSchema): string {
@@ -62,6 +63,7 @@ function FormBooleanEditor({ value, nullable, onChange, hasForeignKey }: FormBoo
         nullable={nullable}
         onValueChange={handleValueChange}
         onCancel={handleCancel}
+        className="h-9 px-4 py-2 dark:bg-neutral-900 border"
       />
     );
   }
@@ -105,18 +107,6 @@ function FormDateEditor({
     setShowEditor(false);
   };
 
-  if (showEditor) {
-    return (
-      <DateCellEditor
-        value={value}
-        type={type}
-        nullable={field.isNullable}
-        onValueChange={handleValueChange}
-        onCancel={handleCancel}
-      />
-    );
-  }
-
   const formatDisplayValue = () => {
     if (!value || value === 'null') {
       return getPlaceholderText(field);
@@ -124,6 +114,28 @@ function FormDateEditor({
 
     return formatValueForDisplay(value, type);
   };
+
+  const formatValue = () => {
+    if (!value || value === 'null') {
+      return null;
+    }
+
+    const date = parseISO(value);
+    return isValid(date) ? value : null;
+  };
+
+  if (showEditor) {
+    return (
+      <DateCellEditor
+        value={formatValue()}
+        type={type}
+        nullable={field.isNullable}
+        onValueChange={handleValueChange}
+        onCancel={handleCancel}
+        className="h-9 px-4 py-2 dark:bg-neutral-900 border dark:border-neutral-700"
+      />
+    );
+  }
 
   return (
     <Button
@@ -201,6 +213,7 @@ function FormJsonEditor({ value, nullable, onChange, hasForeignKey }: FormJsonEd
         nullable={nullable}
         onValueChange={handleValueChange}
         onCancel={handleCancel}
+        className="h-9 px-4 py-2 dark:bg-neutral-900 border dark:border-neutral-700"
       />
     );
   }

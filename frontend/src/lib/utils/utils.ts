@@ -107,7 +107,7 @@ export function formatValueForDisplay(value: ConvertedValue, type?: ColumnType):
     case ColumnType.DATE: {
       const date = parse(String(value), 'yyyy-MM-dd', new Date());
       if (!isValid(date)) {
-        return 'Invalid date';
+        return String(value);
       }
       const displayValue = format(date, 'MMM dd, yyyy');
       return displayValue;
@@ -116,7 +116,7 @@ export function formatValueForDisplay(value: ConvertedValue, type?: ColumnType):
     case ColumnType.DATETIME: {
       const date = parseISO(String(value));
       if (!isValid(date)) {
-        return 'Invalid date time';
+        return String(value);
       }
       const displayValue = format(date, 'MMM dd, yyyy, hh:mm a');
       return displayValue;
