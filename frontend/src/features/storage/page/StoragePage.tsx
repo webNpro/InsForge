@@ -253,12 +253,12 @@ export default function StoragePage() {
           fileName: files[i].name, // Backend will auto-rename if needed
         });
         successCount++;
-      } catch (error: any) {
+      } catch (error) {
         // Handle individual file upload error
         const fileName = files[i].name;
 
         // Show individual file error (but don't stop the overall process)
-        const errorMessage = error.message || 'Upload failed';
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
         showToast(`Failed to upload "${fileName}": ${errorMessage}`, 'error');
       }
     }
