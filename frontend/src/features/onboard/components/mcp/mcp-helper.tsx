@@ -11,15 +11,13 @@ import ClaudeLogo from '@/assets/logos/claude_code.svg?react';
 import WindsurfLogo from '@/assets/logos/windsurf.svg?react';
 import ClineLogo from '@/assets/logos/cline.svg?react';
 import RooCodeLogo from '@/assets/logos/roo_code.svg';
+import { getBackendUrl } from '@/lib/utils/utils';
 // import CodexLogo from '@/assets/logos/openai.svg?react';
 
 export type PlatformType = 'macos-linux' | 'windows';
 
-// Helper to get the API base URL
-const apiBaseUrl = window.location.origin;
-
 export const GenerateInstallCommand = (agent: MCPAgent, apiKey: string) => {
-  return `npx @insforge/install --client ${agent.id} --env API_KEY=${apiKey} --env API_BASE_URL=${apiBaseUrl}`;
+  return `npx @insforge/install --client ${agent.id} --env API_KEY=${apiKey} --env API_BASE_URL=${getBackendUrl()}`;
 };
 
 export const MCP_AGENTS: MCPAgent[] = [

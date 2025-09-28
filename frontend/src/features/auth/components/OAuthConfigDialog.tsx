@@ -18,13 +18,11 @@ import { CopyButton } from '@/components/CopyButton';
 import { oAuthConfigSchema, OAuthConfigSchema } from '@insforge/shared-schemas';
 import { OAuthProviderInfo } from './AuthMethodTab';
 import { useOAuthConfig } from '@/features/auth/hooks/useOAuthConfig';
-import { isInsForgeCloudProject } from '@/lib/utils/utils';
+import { getBackendUrl, isInsForgeCloudProject } from '@/lib/utils/utils';
 
 const getCallbackUrl = (provider?: string) => {
   // Use backend API URL for OAuth callback
-  const isHttp = window.location.protocol === 'http:';
-  const baseUrl = isHttp ? 'http://localhost:7130' : window.location.origin;
-  return `${baseUrl}/api/auth/oauth/${provider}/callback`;
+  return `${getBackendUrl()}/api/auth/oauth/${provider}/callback`;
 };
 
 interface OAuthConfigDialogProps {

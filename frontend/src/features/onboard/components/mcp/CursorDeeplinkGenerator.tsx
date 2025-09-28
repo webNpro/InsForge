@@ -1,24 +1,23 @@
 import { useMemo } from 'react';
 import { createMCPServerConfig, type PlatformType } from './mcp-helper';
 import CursorLogo from '@/assets/logos/cursor.svg?react';
+import { getBackendUrl } from '@/lib/utils/utils';
 
 interface CursorDeeplinkGeneratorProps {
   apiKey?: string;
-  apiBaseUrl?: string;
   os?: PlatformType;
 }
 
 export function CursorDeeplinkGenerator({
   apiKey,
-  apiBaseUrl = 'http://localhost:7130',
   os = 'macos-linux',
 }: CursorDeeplinkGeneratorProps) {
   const deeplink = useMemo(() => {
-    const config = createMCPServerConfig(apiKey || '', os, apiBaseUrl);
+    const config = createMCPServerConfig(apiKey || '', os, getBackendUrl());
     const configString = JSON.stringify(config);
     const base64Config = btoa(configString);
     return `cursor://anysphere.cursor-deeplink/mcp/install?name=insforge&config=${encodeURIComponent(base64Config)}`;
-  }, [apiKey, apiBaseUrl, os]);
+  }, [apiKey, os]);
 
   const handleOpenInCursor = () => {
     window.open(deeplink, '_blank');

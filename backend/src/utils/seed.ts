@@ -89,6 +89,53 @@ async function seedDefaultOAuthConfigs(): Promise<void> {
   }
 }
 
+/**
+ * Seeds OAuth configurations from local environment variables
+ */
+async function seedLocalOAuthConfigs(): Promise<void> {
+  const oauthService = OAuthConfigService.getInstance();
+
+  try {
+    // Check if OAuth configs already exist
+    const existingConfigs = await oauthService.getAllConfigs();
+    const existingProviders = existingConfigs.map((config) => config.provider.toLowerCase());
+
+    // Seed Google OAuth config from environment variables if credentials exist
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (googleClientId && googleClientSecret && !existingProviders.includes('google')) {
+      await oauthService.createConfig({
+        provider: 'google',
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+        scopes: ['openid', 'email', 'profile'],
+        useSharedKey: false,
+      });
+      logger.info('✅ Google OAuth config loaded from environment variables');
+    }
+
+    // Seed GitHub OAuth config from environment variables if credentials exist
+    const githubClientId = process.env.GITHUB_CLIENT_ID;
+    const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (githubClientId && githubClientSecret && !existingProviders.includes('github')) {
+      await oauthService.createConfig({
+        provider: 'github',
+        clientId: githubClientId,
+        clientSecret: githubClientSecret,
+        scopes: ['user:email'],
+        useSharedKey: false,
+      });
+      logger.info('✅ GitHub OAuth config loaded from environment variables');
+    }
+  } catch (error) {
+    logger.warn('Failed to seed local OAuth configs', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 // Create api key, admin user, and default AI configs
 export async function seedBackend(): Promise<void> {
   const secretService = new SecretsService();
@@ -126,6 +173,8 @@ export async function seedBackend(): Promise<void> {
     // add default OAuth configs in Cloud hosting
     if (isCloudEnvironment()) {
       await seedDefaultOAuthConfigs();
+    } else {
+      await seedLocalOAuthConfigs();
     }
 
     // Initialize reserved secrets for edge functions
