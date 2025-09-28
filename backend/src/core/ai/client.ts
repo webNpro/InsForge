@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import jwt from 'jsonwebtoken';
 import { isCloudEnvironment } from '@/utils/environment';
+import { AppError } from '@/api/middleware/error';
+import { ERROR_CODES } from '@/types/error-constants';
 
 interface CloudCredentialsResponse {
   openrouter?: {
@@ -90,7 +92,11 @@ export class AIClientService {
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENROUTER_API_KEY not found in environment variables');
+      throw new AppError(
+        'OPENROUTER_API_KEY not found in environment variables',
+        500,
+        ERROR_CODES.AI_INVALID_API_KEY
+      );
     }
     return apiKey;
   }
@@ -165,7 +171,12 @@ export class AIClientService {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch key info: ${response.statusText}`);
+          throw new AppError(
+            `Invalid OpenRouter API Key`,
+            500,
+            ERROR_CODES.AI_INVALID_API_KEY,
+            'Check your OpenRouter key and try again.'
+          );
         }
 
         const keyInfo = (await response.json()) as OpenRouterKeyInfo;

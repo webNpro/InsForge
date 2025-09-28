@@ -72,5 +72,6 @@ export function useAIRemainingCredits(enabled = true) {
     enabled: enabled,
     staleTime: 30 * 1000, // Cache for 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute
+    retry: false,
   });
 }
