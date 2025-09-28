@@ -465,13 +465,7 @@ router.get('/credits', verifyAdmin, async (req: AuthRequest, res: Response, next
 
     successResponse(res, credits);
   } catch (error) {
-    next(
-      new AppError(
-        error instanceof Error ? error.message : 'Failed to fetch remaining credits',
-        500,
-        ERROR_CODES.INTERNAL_ERROR
-      )
-    );
+    next(error);
   }
 });
 

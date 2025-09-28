@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -10,6 +10,7 @@ import {
   UpdateAIConfigurationRequest,
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
+import { useToast } from '@/lib/hooks/useToast';
 import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
 import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
@@ -24,9 +25,19 @@ export default function AIPage() {
     deleteConfiguration,
   } = useAIConfigs();
 
-  const { data: credits } = useAIRemainingCredits();
+  const { data: credits, error: getAICreditsError } = useAIRemainingCredits();
 
   const { confirm, confirmDialogProps } = useConfirm();
+  const { showToast } = useToast();
+
+  // Handle AI credits error
+  useEffect(() => {
+    if (getAICreditsError) {
+      console.error('Failed to fetch AI credits:', getAICreditsError);
+      const errorMessage = getAICreditsError.message || 'Failed to load AI credits';
+      showToast(errorMessage, 'error');
+    }
+  }, [getAICreditsError, showToast]);
 
   // Format credits display
   const formatCredits = (remaining: number) => {
