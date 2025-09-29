@@ -14,7 +14,6 @@ import {
   TableFormSchema,
 } from '@/features/database/schema';
 import { useToast } from '@/lib/hooks/useToast';
-import { useTables } from '@/features/database/hooks/useTables';
 import { TableFormColumn } from './TableFormColumn';
 import { ForeignKeyPopover } from './ForeignKeyPopover';
 import { ColumnType, TableSchema, UpdateTableSchemaRequest } from '@insforge/shared-schemas';
@@ -53,8 +52,6 @@ export function TableForm({
   const [foreignKeys, setForeignKeys] = useState<TableFormForeignKeySchema[]>([]);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const { createTable: createTableMutate, updateTableSchema: updateTableSchemaMutate } =
-    useTables();
 
   const form = useForm({
     resolver: zodResolver(tableFormSchema),
