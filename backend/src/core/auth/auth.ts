@@ -239,19 +239,18 @@ export class AuthService {
       const { payload } = await verifyCloudToken(code);
 
       // If verification succeeds, extract user info and generate internal token
-      const adminId = payload['userId'] || ADMIN_ID;
       const email = payload['email'] || payload['sub'] || 'admin@insforge.local';
 
       // Generate internal access token
       const accessToken = this.generateToken({
-        sub: adminId as string,
+        sub: ADMIN_ID,
         email: email as string,
         role: 'project_admin',
       });
 
       return {
         user: {
-          id: adminId as string,
+          id: ADMIN_ID,
           email: email as string,
           name: 'Administrator',
           emailVerified: true,
