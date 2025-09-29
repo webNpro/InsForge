@@ -161,6 +161,8 @@ export function OAuthConfigDialog({
     return !clientId || !clientSecret;
   };
 
+  const isSharedKeysAvailable = isInsForgeCloudProject();
+
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[700px] dark:bg-neutral-800 dark:text-white p-0 gap-0">
@@ -180,25 +182,27 @@ export function OAuthConfigDialog({
             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
               <div className="space-y-6 p-6">
                 {/* Shared Keys Toggle */}
-                <div className="flex items-center justify-start gap-2">
-                  <Controller
-                    name="useSharedKey"
-                    control={form.control}
-                    render={({ field }) => {
-                      return (
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={(value) => {
-                            field.onChange(value);
-                          }}
-                        />
-                      );
-                    }}
-                  />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Shared Keys
-                  </span>
-                </div>
+                {isSharedKeysAvailable && (
+                  <div className="flex items-center justify-start gap-2">
+                    <Controller
+                      name="useSharedKey"
+                      control={form.control}
+                      render={({ field }) => {
+                        return (
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={(value) => {
+                              field.onChange(value);
+                            }}
+                          />
+                        );
+                      }}
+                    />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      Shared Keys
+                    </span>
+                  </div>
+                )}
 
                 {useSharedKey ? (
                   /* Shared Keys Enabled */
