@@ -67,7 +67,7 @@ export function AddOAuthDialog({
                   className={cn(
                     'flex items-center justify-start gap-3 rounded-[8px] border border-transparent p-3 transition-colors',
                     selectedId === p.id
-                      ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600'
+                      ? 'bg-zinc-50 hover:bg-zinc-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 border-border-gray dark:border-emerald-600'
                       : 'bg-white hover:bg-zinc-100 dark:bg-[#333333] dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700'
                   )}
                 >
