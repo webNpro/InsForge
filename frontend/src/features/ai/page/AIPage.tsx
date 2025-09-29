@@ -113,7 +113,7 @@ export default function AIPage() {
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold text-black dark:text-white">AI Integration</h1>
               {credits?.remaining && (
-                <span className="text-sm font-normal text-emerald-500 dark:text-emerald-400 mt-[2.5px]">
+                <span className="text-sm font-normal text-neutral-700 dark:text-emerald-300 mt-[2.5px]">
                   {formatCredits(credits.remaining)} credit{credits.remaining !== 1 ? 's' : ''} left
                 </span>
               )}

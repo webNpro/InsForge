@@ -63,7 +63,7 @@ export function SecretsContent() {
             </div>
             <Button
               onClick={() => void handleSaveNewSecret()}
-              className="bg-emerald-300 hover:bg-emerald-400 text-black px-3 py-2 w-20 h-9 rounded"
+              className="bg-black hover:bg-zinc-800 dark:bg-emerald-300 dark:hover:bg-emerald-400 dark:text-black text-white px-3 py-2 w-20 h-9 rounded"
               disabled={!newSecretKey.trim() || !newSecretValue.trim()}
             >
               Save
