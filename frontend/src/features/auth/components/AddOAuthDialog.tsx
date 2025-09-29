@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/radix/Button';
-import { Checkbox } from '@/components/Checkbox';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/radix/Dialog';
 import { OAuthProviderInfo } from './AuthMethodTab';
+import { cn } from '@/lib/utils/utils';
 
 interface AddOAuthDialogProps {
   providers: OAuthProviderInfo[];
@@ -64,11 +64,13 @@ export function AddOAuthDialog({
                 <button
                   key={p.id}
                   onClick={() => selectProvider(p.id)}
-                  className="flex items-center justify-start gap-6 rounded-[8px] p-3 bg-white hover:bg-zinc-100 dark:bg-[#333333] dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-colors"
+                  className={cn(
+                    'flex items-center justify-start gap-3 rounded-[8px] border border-transparent p-3 transition-colors',
+                    selectedId === p.id
+                      ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600'
+                      : 'bg-white hover:bg-zinc-100 dark:bg-[#333333] dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700'
+                  )}
                 >
-                  <div className="w-4 h-4" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox checked={selectedId === p.id} onChange={() => selectProvider(p.id)} />
-                  </div>
                   <div className="flex items-center gap-3">
                     {p.icon}
                     <p className="text-sm font-medium text-zinc-950 dark:text-white">{p.name}</p>
