@@ -354,7 +354,7 @@ console.log(otherUser.nickname); // Direct access to properties
 
 ### Edge Functions
 - **SDK Availability**: `createClient` is globally available - no import needed
-- **Token Handling**: Extract from `Authorization` header, use as `anonKey` parameter
+- **Token Handling**: Extract from `Authorization` header, use as `edgeFunctionToken` parameter
 - **Flexible Auth**: Can use user token or anon token (from `ACCESS_API_KEY` env var)
 - **Backend Validation**: Tokens are validated by backend on each SDK request
 - **Internal Networking**: Use `BACKEND_INTERNAL_URL` environment variable (defaults to `http://insforge:7130` for Docker container communication)
