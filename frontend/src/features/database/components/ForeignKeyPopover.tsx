@@ -3,7 +3,6 @@ import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/radix/Dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
-import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { useTables } from '@/features/database/hooks/useTables';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
@@ -38,7 +37,7 @@ export function ForeignKeyPopover({
   });
 
   const columns = form.watch('columns');
-  const { useTableSchema } = useTables();
+  const { tables, useTableSchema } = useTables();
 
   // Set initial values when editing
   useEffect(() => {
@@ -63,8 +62,6 @@ export function ForeignKeyPopover({
   }, [open, initialValue]);
 
   // Get available tables
-  const { tables } = useMetadata({ enabled: open });
-
   const availableTables = tables.filter(
     (tableName) => mode === 'create' || tableName !== editTableName
   );
