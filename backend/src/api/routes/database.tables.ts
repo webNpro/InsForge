@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { verifyAdmin, verifyUser, AuthRequest } from '@/api/middleware/auth.js';
+import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { DatabaseTableService } from '@/core/database/table.js';
 import { successResponse } from '@/utils/response.js';
 import { AppError } from '@/api/middleware/error.js';
@@ -17,7 +17,7 @@ const auditService = AuditService.getInstance();
 // router.use(verifyAdmin);
 
 // List all tables
-router.get('/', verifyUser, async (_req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/', verifyAdmin, async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const tables = await tableService.listTables();
     successResponse(res, tables);
@@ -64,6 +64,20 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response, next: Next
     next(error);
   }
 });
+
+// Get all table schemas
+router.get(
+  '/schemas',
+  verifyAdmin,
+  async (_req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const schemas = await tableService.getAllTableSchemas();
+      successResponse(res, schemas);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // Get table schema
 router.get(

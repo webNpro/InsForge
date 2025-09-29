@@ -94,7 +94,6 @@ export class DatabaseTableService {
         WHERE table_schema = 'public' 
         AND table_type = 'BASE TABLE'
         AND table_name NOT LIKE '\\_%'
-        AND table_name != 'jwks'
       `
       )
       .all();
@@ -250,6 +249,15 @@ export class DatabaseTableService {
       autoFields: ['id', 'created_at', 'updated_at'],
       nextActions: 'you can now use the table with the POST /api/database/tables/{table} endpoint',
     };
+  }
+
+  /**
+   * Get all table schemas
+   */
+  async getAllTableSchemas(): Promise<GetTableSchemaResponse[]> {
+    const tables = await this.listTables();
+    const schemas = await Promise.all(tables.map((table) => this.getTableSchema(table)));
+    return schemas;
   }
 
   /**

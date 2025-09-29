@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/radix/Button';
 import { Label } from '@/components/radix/Label';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/radix/Dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/radix/Select';
 import { useMetadata } from '@/features/metadata/hooks/useMetadata';
-import { databaseService } from '@/features/database/services/database.service';
+import { useTables } from '@/features/database/hooks/useTables';
 import { UseFormReturn } from 'react-hook-form';
 import { TableFormSchema, TableFormForeignKeySchema } from '../schema';
 import { ColumnSchema, OnDeleteActionSchema, OnUpdateActionSchema } from '@insforge/shared-schemas';
@@ -39,6 +38,7 @@ export function ForeignKeyPopover({
   });
 
   const columns = form.watch('columns');
+  const { useTableSchema } = useTables();
 
   // Set initial values when editing
   useEffect(() => {
@@ -70,16 +70,10 @@ export function ForeignKeyPopover({
   );
 
   // Get columns for selected reference table
-  const { data: referenceTableSchema } = useQuery({
-    queryKey: ['table-schema', newForeignKey.referenceTable],
-    queryFn: async () => {
-      if (!newForeignKey.referenceTable) {
-        return null;
-      }
-      return await databaseService.getTableSchema(newForeignKey.referenceTable);
-    },
-    enabled: !!newForeignKey.referenceTable && open,
-  });
+  const { data: referenceTableSchema } = useTableSchema(
+    newForeignKey.referenceTable || '',
+    !!newForeignKey.referenceTable && open
+  );
 
   // Get the type of the selected source column
   const getSourceFieldType = useMemo(() => {

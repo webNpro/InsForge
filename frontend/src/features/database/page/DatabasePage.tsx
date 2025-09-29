@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import RefreshIcon from '@/assets/icons/refresh.svg?react';
 import { databaseService } from '@/features/database/services/database.service';
-import { useMetadata } from '@/features/metadata/hooks/useMetadata';
+import { useTables } from '@/features/database/hooks/useTables';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { TableSidebar } from '@/features/database/components/TableSidebar';
@@ -57,6 +57,8 @@ function DatabasePageContent() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { modalState, closeModal } = useLinkModal();
+  const { tables, isLoadingTables, tablesError, deleteTable, useTableSchema, refetchTables } =
+    useTables();
 
   const { socket, isConnected } = useSocket();
 
@@ -96,8 +98,11 @@ function DatabasePageContent() {
     [showToast]
   );
 
-  // Fetch metadata
-  const { tables, isLoading, error: metadataError, refetch: refetchMetadata } = useMetadata();
+  // Fetch schema for selected table
+  const { data: schemaData } = useTableSchema(selectedTable || '', !!selectedTable);
+
+  // Fetch schema for editing table
+  const { data: editingTableSchema } = useTableSchema(editingTable || '', !!editingTable);
 
   // Fetch table data when selected
   const {
@@ -115,53 +120,53 @@ function DatabasePageContent() {
       JSON.stringify(sortColumns),
     ],
     queryFn: async () => {
-      if (!selectedTable) {
+      if (!selectedTable || !schemaData) {
         return null;
       }
 
       const offset = (currentPage - 1) * PAGE_SIZE;
 
       try {
-        const [schema, records] = await Promise.all([
-          databaseService.getTableSchema(selectedTable),
-          databaseService.getTableRecords(
-            selectedTable,
-            PAGE_SIZE,
-            offset,
-            searchQuery,
-            sortColumns
-          ),
-        ]);
+        const records = await databaseService.getTableRecords(
+          selectedTable,
+          PAGE_SIZE,
+          offset,
+          searchQuery,
+          sortColumns
+        );
 
         return {
           name: selectedTable,
-          schema,
+          schema: schemaData,
           records: records.records,
-          totalRecords: records.pagination.total ?? schema.recordCount,
+          totalRecords: records.pagination.total ?? schemaData.recordCount,
         };
       } catch (error) {
         // If sorting caused the error, retry without sorting
         if (sortColumns && sortColumns.length > 0) {
           setSortColumns([]);
 
-          const [schema, records] = await Promise.all([
-            databaseService.getTableSchema(selectedTable),
-            databaseService.getTableRecords(selectedTable, PAGE_SIZE, offset, searchQuery, []),
-          ]);
+          const records = await databaseService.getTableRecords(
+            selectedTable,
+            PAGE_SIZE,
+            offset,
+            searchQuery,
+            []
+          );
 
           showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
 
           return {
             name: selectedTable,
-            schema,
+            schema: schemaData,
             records: records.records,
-            totalRecords: records.pagination.total || schema.recordCount,
+            totalRecords: records.pagination.total || schemaData.recordCount,
           };
         }
         throw error;
       }
     },
-    enabled: !!selectedTable,
+    enabled: !!selectedTable && !!schemaData,
     placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
   });
 
@@ -196,7 +201,7 @@ function DatabasePageContent() {
 
   // Auto-select first table (excluding system tables)
   useEffect(() => {
-    if (!isLoading && tables) {
+    if (!isLoadingTables && tables) {
       if (pendingTableSelection && tables.includes(pendingTableSelection)) {
         setSelectedTable(pendingTableSelection);
         setPendingTableSelection(undefined);
@@ -212,7 +217,7 @@ function DatabasePageContent() {
         setSelectedTable(tables[0]);
       }
     }
-  }, [tables, pendingTableSelection, selectedTable, showTableForm, isLoading]);
+  }, [tables, pendingTableSelection, selectedTable, showTableForm, isLoadingTables]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -227,7 +232,7 @@ function DatabasePageContent() {
       if (selectedTable) {
         await refetchTableData();
       }
-      await refetchMetadata();
+      await refetchTables();
     } finally {
       setIsRefreshing(false);
     }
@@ -291,25 +296,12 @@ function DatabasePageContent() {
     const shouldDelete = await confirm(confirmOptions);
 
     if (shouldDelete) {
-      try {
-        // Update selectedTable BEFORE deleting to prevent queries on deleted table
-        if (selectedTable === tableName) {
-          setSelectedTable(null);
-        }
-
-        await databaseService.deleteTable(tableName);
-        showToast('Table deleted successfully', 'success');
-
-        // Invalidate all related queries for the deleted table
-        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-        void queryClient.invalidateQueries({ queryKey: ['tables'] });
-        void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
-        void queryClient.invalidateQueries({ queryKey: ['table-schema', tableName] });
-        void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to delete table';
-        showToast(errorMessage, 'error');
+      // Update selectedTable BEFORE deleting to prevent queries on deleted table
+      if (selectedTable === tableName) {
+        setSelectedTable(null);
       }
+
+      deleteTable(tableName);
     }
   };
 
@@ -359,7 +351,7 @@ function DatabasePageContent() {
         await Promise.all(ids.map((id) => databaseService.deleteRecord(selectedTable, id)));
         await Promise.all([
           refetchTableData(),
-          refetchMetadata(), // Also refresh metadata to update sidebar record counts
+          refetchTables(), // Also refresh tables to update sidebar record counts
         ]);
         setSelectedRows(new Set());
         showToast(`${ids.length} records deleted successfully`, 'success');
@@ -369,33 +361,7 @@ function DatabasePageContent() {
     }
   };
 
-  const error = metadataError || tableError;
-
-  // Fetch schema for selected table
-  const { data: schemaData } = useQuery({
-    queryKey: ['table-schema', selectedTable],
-    queryFn: async () => {
-      if (!selectedTable) {
-        return undefined;
-      }
-      return await databaseService.getTableSchema(selectedTable);
-    },
-    enabled: !!selectedTable,
-    staleTime: 30 * 1000, // 30 seconds
-  });
-
-  // Fetch schema for editing table
-  const { data: editingTableSchema } = useQuery({
-    queryKey: ['table-schema', editingTable],
-    queryFn: async () => {
-      if (!editingTable) {
-        return undefined;
-      }
-      const editingTableSchema = await databaseService.getTableSchema(editingTable);
-      return editingTableSchema;
-    },
-    enabled: !!editingTable,
-  });
+  const error = tablesError || tableError;
 
   // Calculate pagination
   const totalPages = Math.ceil((tableData?.totalRecords || 0) / PAGE_SIZE);
@@ -407,7 +373,7 @@ function DatabasePageContent() {
         tables={tables}
         selectedTable={selectedTable || undefined}
         onTableSelect={handleSelectTable}
-        loading={isLoading}
+        loading={isLoadingTables}
         onNewTable={handleCreateTable}
         onEditTable={handleEditTable}
         onDeleteTable={(tableName) => void handleDeleteTable(tableName)}
@@ -428,7 +394,7 @@ function DatabasePageContent() {
             editTable={editingTable ? editingTableSchema : undefined}
             setFormIsDirty={setIsTableFormDirty}
             onSuccess={(newTableName?: string) => {
-              void refetchMetadata();
+              void refetchTables();
               void refetchTableData();
               setShowTableForm(false);
               setPendingTableSelection(newTableName);
@@ -589,7 +555,7 @@ function DatabasePageContent() {
           schema={schemaData.columns}
           onSuccess={() => {
             void refetchTableData();
-            void refetchMetadata();
+            void refetchTables();
             // Also invalidate the schema cache to ensure fresh data
             void queryClient.invalidateQueries({ queryKey: ['table-schema', selectedTable] });
           }}

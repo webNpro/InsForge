@@ -870,7 +870,7 @@ export class StorageService {
         ...bucket,
         objectCount: bucketsObjectCountMap.get(bucket.name) ?? 0,
       })),
-      totalSize: storageSize,
+      totalSizeInGB: storageSize,
     };
   }
 

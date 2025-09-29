@@ -6,7 +6,6 @@ import {
   type ExportDatabaseJsonData,
   type ImportDatabaseResponse,
   type BulkUpsertResponse,
-  type DatabaseMetadataSchema,
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ERROR_CODES } from '@/types/error-constants';
@@ -989,86 +988,6 @@ export class DatabaseAdvanceService {
       throw new AppError(message, 400, ERROR_CODES.INVALID_INPUT);
     } finally {
       client.release();
-    }
-  }
-
-  /**
-   * Get database metadata
-   */
-  async getMetadata(): Promise<DatabaseMetadataSchema> {
-    // Get all tables excluding system tables (those starting with _)
-    const allTables = await this.dbManager.getUserTables();
-    const dbMetadata = await this.exportDatabase(allTables, 'json', false, false, false, false);
-
-    const databaseSize = await this.getDatabaseSizeInGB();
-
-    // Get record counts for each table
-    const tablesSchemas = (dbMetadata.data as ExportDatabaseJsonData).tables;
-    const db = this.dbManager.getDb();
-
-    for (const tableName of allTables) {
-      let recordCount = 0;
-      try {
-        // there is a race condition here, if the table is immeditely deleted, so added an extra check to see if the table exists
-        const tableExists = (await db
-          .prepare(
-            `
-          SELECT EXISTS (
-            SELECT 1 FROM pg_class
-            WHERE relname = ?
-            AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
-            AND relkind = 'r'
-          ) as exists
-        `
-          )
-          .get(tableName)) as { exists: boolean } | null;
-
-        if (tableExists?.exists) {
-          const countResult = (await db
-            .prepare(`SELECT COUNT(*) as count FROM "${tableName}"`)
-            .get()) as { count: number } | null;
-          recordCount = countResult?.count || 0;
-        }
-      } catch (error) {
-        // Handle any unexpected errors
-        logger.warn('Could not get record count for table', {
-          table: tableName,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        recordCount = 0;
-      }
-
-      // Only add recordCount if the table exists in tablesSchemas
-      if (tablesSchemas[tableName]) {
-        tablesSchemas[tableName].recordCount = recordCount;
-      }
-    }
-
-    return {
-      tables: tablesSchemas,
-      totalSize: databaseSize,
-    };
-  }
-
-  async getDatabaseSizeInGB(): Promise<number> {
-    try {
-      const db = this.dbManager.getDb();
-      // Query PostgreSQL for database size
-      const result = (await db
-        .prepare(
-          `
-        SELECT pg_database_size(current_database()) as size
-      `
-        )
-        .get()) as { size: number } | null;
-
-      // PostgreSQL returns size in bytes, convert to GB
-      return (result?.size || 0) / (1024 * 1024 * 1024);
-    } catch (error) {
-      logger.error('Error getting database size', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return 0;
     }
   }
 }

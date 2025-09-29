@@ -1,15 +1,20 @@
 import { z } from 'zod';
 import { storageBucketSchema } from './storage.schema';
 import { oAuthConfigSchema } from './auth.schema';
-import { exportJsonDataSchema } from './database-api.schema';
 
 export const authMetadataSchema = z.object({
   oauths: z.array(oAuthConfigSchema),
 });
 
 export const databaseMetadataSchema = z.object({
-  tables: exportJsonDataSchema.shape.tables,
-  totalSize: z.number(),
+  tables: z.array(
+    z.object({
+      tableName: z.string(),
+      recordCount: z.number(),
+    })
+  ),
+  totalSizeInGB: z.number(),
+  hint: z.string().optional(),
 });
 
 export const bucketMetadataSchema = storageBucketSchema.extend({
@@ -18,7 +23,7 @@ export const bucketMetadataSchema = storageBucketSchema.extend({
 
 export const storageMetadataSchema = z.object({
   buckets: z.array(bucketMetadataSchema),
-  totalSize: z.number(),
+  totalSizeInGB: z.number(),
 });
 
 export const edgeFunctionMetadataSchema = z.object({

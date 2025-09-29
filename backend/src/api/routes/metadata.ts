@@ -12,8 +12,13 @@ import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
 import { SecretsService } from '@/core/secrets/secrets';
+import { DatabaseManager } from '@/core/database/manager';
 
 const router = Router();
+const authService = AuthService.getInstance();
+const storageService = StorageService.getInstance();
+const functionsService = FunctionsService.getInstance();
+const dbManager = DatabaseManager.getInstance();
 const dbAdvanceService = new DatabaseAdvanceService();
 const aiConfigService = new AIConfigService();
 
@@ -23,14 +28,11 @@ router.use(verifyAdmin);
 router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Gather metadata from all modules
-    const authService = AuthService.getInstance();
-    const storageService = StorageService.getInstance();
-    const functionsService = FunctionsService.getInstance();
 
     // Fetch all metadata in parallel for better performance
     const [auth, database, storage, aiConfig, functions] = await Promise.all([
       authService.getMetadata(),
-      dbAdvanceService.getMetadata(),
+      dbManager.getMetadata(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
       functionsService.getMetadata(),
@@ -64,7 +66,6 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
 // Get auth metadata
 router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const authService = AuthService.getInstance();
     const authMetadata = await authService.getMetadata();
     successResponse(res, authMetadata);
   } catch (error) {
@@ -75,7 +76,7 @@ router.get('/auth', async (_req: AuthRequest, res: Response, next: NextFunction)
 // Get database metadata
 router.get('/database', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const databaseMetadata = await dbAdvanceService.getMetadata();
+    const databaseMetadata = await dbManager.getMetadata();
     successResponse(res, databaseMetadata);
   } catch (error) {
     next(error);
@@ -85,7 +86,6 @@ router.get('/database', async (_req: AuthRequest, res: Response, next: NextFunct
 // Get storage metadata
 router.get('/storage', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const storageService = StorageService.getInstance();
     const storageMetadata = await storageService.getMetadata();
     successResponse(res, storageMetadata);
   } catch (error) {
@@ -106,7 +106,6 @@ router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) =
 // Get functions metadata
 router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const functionsService = FunctionsService.getInstance();
     const functionsMetadata = await functionsService.getMetadata();
     successResponse(res, functionsMetadata);
   } catch (error) {
