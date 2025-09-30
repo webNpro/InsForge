@@ -19,7 +19,7 @@ export default function CloudLoginPage() {
   useEffect(() => {
     const authorizationCode = searchParams.get('authorizationCode');
 
-    if (authorizationCode) {
+    if (!isAuthenticated && authorizationCode) {
       setAuthError(null);
       // Exchange the authorization code for an access token
       loginWithAuthorizationCode(authorizationCode)
@@ -63,7 +63,7 @@ export default function CloudLoginPage() {
     } else {
       setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate]);
+  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, isAuthenticated]);
 
   // Show error state if authentication failed
   if (authError) {
