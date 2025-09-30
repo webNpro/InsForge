@@ -18,6 +18,12 @@ export class DatabaseService {
     return Array.isArray(data) ? data : [];
   }
 
+  getAllTableSchemas(): Promise<GetTableSchemaResponse[]> {
+    return apiClient.request('/database/tables/schemas', {
+      headers: apiClient.withAccessToken(),
+    });
+  }
+
   getTableSchema(tableName: string): Promise<GetTableSchemaResponse> {
     return apiClient.request(`/database/tables/${tableName}/schema`, {
       headers: apiClient.withAccessToken(),

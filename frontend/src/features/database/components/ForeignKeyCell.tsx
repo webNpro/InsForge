@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
 import { databaseService } from '@/features/database/services/database.service';
+import { useTables } from '@/features/database/hooks/useTables';
 import { ConvertedValue, DataGrid } from '@/components/datagrid';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
 import { formatValueForDisplay } from '@/lib/utils/utils';
@@ -26,6 +27,7 @@ interface ForeignKeyCellProps {
 
 export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyCellProps) {
   const [open, setOpen] = useState(false);
+  const { useTableSchema } = useTables();
 
   // Helper function to safely render any value type (including JSON objects)
   const renderValue = (val: ConvertedValue): string => {
@@ -63,11 +65,7 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
   const record = recordData;
 
   // Fetch schema for the referenced table
-  const { data: schema } = useQuery({
-    queryKey: ['schema', foreignKey.table],
-    queryFn: () => databaseService.getTableSchema(foreignKey.table),
-    enabled: open && !!value,
-  });
+  const { data: schema } = useTableSchema(foreignKey.table, open && !!value);
 
   // Convert schema to columns for the mini DataGrid
   const columns = useMemo(() => {

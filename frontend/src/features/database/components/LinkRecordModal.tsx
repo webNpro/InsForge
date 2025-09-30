@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
 import { databaseService } from '@/features/database/services/database.service';
+import { useTables } from '@/features/database/hooks/useTables';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import {
@@ -41,13 +42,10 @@ export function LinkRecordModal({
   const [selectedRecord, setSelectedRecord] = useState<DatabaseRecord | null>(null);
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const { useTableSchema } = useTables();
 
   // Fetch table schema
-  const { data: schema } = useQuery({
-    queryKey: ['table-schema', referenceTable],
-    queryFn: () => databaseService.getTableSchema(referenceTable),
-    enabled: open,
-  });
+  const { data: schema } = useTableSchema(referenceTable, open);
 
   // Fetch records from the reference table
   const { data: recordsData, isLoading } = useQuery({

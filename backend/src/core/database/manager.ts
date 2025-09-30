@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
+import { DatabaseMetadataSchema } from '@insforge/shared-schemas';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -163,6 +164,81 @@ export class DatabaseManager {
         `
       );
       return result.rows.map((row: { name: string }) => row.name);
+    } finally {
+      client.release();
+    }
+  }
+
+  async getMetadata(): Promise<DatabaseMetadataSchema> {
+    const client = await this.pool.connect();
+    try {
+      // Fetch all tables, database size, and record counts in parallel
+      const [allTables, databaseSize, countResults] = await Promise.all([
+        this.getUserTables(),
+        this.getDatabaseSizeInGB(),
+        // Get all counts in a single query using UNION ALL
+        (async () => {
+          try {
+            const tablesResult = await client.query(
+              `
+              SELECT table_name as name
+              FROM information_schema.tables
+              WHERE table_schema = 'public'
+              AND table_type = 'BASE TABLE'
+              AND (table_name NOT LIKE '\\_%')
+              ORDER BY table_name
+            `
+            );
+            const tableNames = tablesResult.rows.map((row: { name: string }) => row.name);
+
+            if (tableNames.length === 0) {
+              return [];
+            }
+
+            // Build a UNION ALL query to get all counts in one query
+            const unionQuery = tableNames
+              .map(
+                (tableName) =>
+                  `SELECT '${tableName.replace(/'/g, "''")}' as table_name, COUNT(*) as count FROM "${tableName}"`
+              )
+              .join(' UNION ALL ');
+
+            const result = await client.query(unionQuery);
+            return result.rows as { table_name: string; count: number }[];
+          } catch {
+            return [];
+          }
+        })(),
+      ]);
+
+      // Map the count results to a lookup object
+      const countMap = new Map(countResults.map((r) => [r.table_name, Number(r.count)]));
+
+      const tableMetadatas = allTables.map((tableName) => ({
+        tableName,
+        recordCount: countMap.get(tableName) || 0,
+      }));
+
+      return {
+        tables: tableMetadatas,
+        totalSizeInGB: databaseSize,
+        hint: 'To retrieve detailed schema information for a specific table, call the get-table-schema tool with the table name.',
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  async getDatabaseSizeInGB(): Promise<number> {
+    const client = await this.pool.connect();
+    try {
+      // Query PostgreSQL for database size
+      const result = await client.query(`SELECT pg_database_size(current_database()) as size`);
+
+      // PostgreSQL returns size in bytes, convert to GB
+      return (result.rows[0]?.size || 0) / (1024 * 1024 * 1024);
+    } catch {
+      return 0;
     } finally {
       client.release();
     }

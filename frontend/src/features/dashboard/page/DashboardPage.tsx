@@ -130,7 +130,7 @@ export default function DashboardPage() {
                     ) : (
                       <>
                         <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
-                          {(metadata?.database?.totalSize || 0).toFixed(2)}
+                          {(metadata?.database?.totalSizeInGB || 0).toFixed(2)}
                         </span>
                         <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
                           GB
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                     ) : (
                       <>
                         <span className="text-2xl font-normal text-gray-900 dark:text-white tracking-[-0.144px]">
-                          {(storage?.totalSize || 0).toFixed(2)}
+                          {(storage?.totalSizeInGB || 0).toFixed(2)}
                         </span>
                         <span className="text-sm font-normal text-gray-500 dark:text-neutral-400">
                           GB

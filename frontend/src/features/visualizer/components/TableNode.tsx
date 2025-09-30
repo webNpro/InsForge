@@ -1,26 +1,10 @@
 import { Database, Circle, Key } from 'lucide-react';
 import { Handle, Position } from '@xyflow/react';
-
-// Define the table structure expected by this component
-export interface VisualizerTableColumnSchema {
-  columnName: string;
-  type: string;
-  isPrimaryKey?: boolean;
-  foreignKey?: {
-    referenceTable: string;
-    referenceColumn: string;
-  };
-}
-
-export interface VisualizerTableSchema {
-  tableName: string;
-  columns: VisualizerTableColumnSchema[];
-  recordCount?: number;
-}
+import { TableSchema } from '@insforge/shared-schemas';
 
 interface TableNodeProps {
   data: {
-    table: VisualizerTableSchema;
+    table: TableSchema;
     referencedColumns?: string[]; // List of column names that are referenced by other tables
   };
 }

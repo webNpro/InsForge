@@ -12,13 +12,15 @@ import {
   ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { TableNode, VisualizerTableSchema, VisualizerTableColumnSchema } from './TableNode';
+import { TableNode } from './TableNode';
 import { AuthNode } from './AuthNode';
 import { BucketNode } from './BucketNode';
+import { useTables } from '@/features/database/hooks/useTables';
 import {
   AppMetadataSchema,
   StorageBucketSchema,
   AuthMetadataSchema,
+  GetTableSchemaResponse,
 } from '@insforge/shared-schemas';
 
 interface SchemaVisualizerProps {
@@ -27,7 +29,7 @@ interface SchemaVisualizerProps {
 }
 
 type TableNodeData = {
-  table: VisualizerTableSchema;
+  table: GetTableSchemaResponse;
   referencedColumns: string[];
 };
 
@@ -180,52 +182,11 @@ const getNodeColor = (node: Node<CustomNodeData>) => {
 };
 
 export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps) {
-  // Transform the new metadata structure to the visualizer format
-  const tables = useMemo(() => {
-    const tablesRecord = metadata.database.tables;
-    return Object.entries(tablesRecord).map(([tableName, tableData]): VisualizerTableSchema => {
-      // Check for primary key columns from indexes
-      const primaryKeyColumns = new Set<string>();
+  // Fetch all table schemas
+  const { allSchemas, isLoadingSchemas } = useTables();
 
-      tableData.indexes.forEach((index) => {
-        if (index.isPrimary) {
-          // Extract column names from index definition
-          const match = index.indexdef.match(/\(([^)]+)\)/);
-          if (match) {
-            match[1].split(',').forEach((col) => {
-              primaryKeyColumns.add(col.trim().replace(/"/g, ''));
-            });
-          }
-        }
-      });
-
-      // Transform columns from the new schema format
-      const columns = tableData.schema.map((col) => {
-        const column: VisualizerTableColumnSchema = {
-          columnName: col.columnName,
-          type: col.dataType.toLowerCase().substring(0, 4), // Truncate type to first 4 characters
-          isPrimaryKey: primaryKeyColumns.has(col.columnName),
-        };
-
-        // Find foreign key info for this column
-        const foreignKey = tableData.foreignKeys.find((fk) => fk.columnName === col.columnName);
-        if (foreignKey) {
-          column.foreignKey = {
-            referenceTable: foreignKey.foreignTableName,
-            referenceColumn: foreignKey.foreignColumnName,
-          };
-        }
-
-        return column;
-      });
-
-      return {
-        tableName,
-        columns,
-        recordCount: tableData.recordCount ?? 0, // Use actual record count from metadata
-      };
-    });
-  }, [metadata.database.tables]);
+  // Use the schemas from the hook instead of extracting from metadata
+  const tables = allSchemas;
 
   const initialNodes = useMemo(() => {
     // First, collect all referenced columns for each table
@@ -319,14 +280,25 @@ export function SchemaVisualizer({ metadata, userCount }: SchemaVisualizerProps)
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
   useEffect(() => {
-    setNodes(layoutedNodes);
-    setEdges(layoutedEdges);
-  }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
+    if (!isLoadingSchemas) {
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+    }
+  }, [layoutedNodes, layoutedEdges, isLoadingSchemas, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
+
+  // Don't render ReactFlow until data is loaded
+  if (isLoadingSchemas) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-white">
+        Loading schemas...
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full">
