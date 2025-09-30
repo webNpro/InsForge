@@ -28,6 +28,7 @@ import {
   SocketMessage,
   useSocket,
 } from '@/lib/contexts/SocketContext';
+import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 interface BucketFormState {
   mode: 'create' | 'edit';
@@ -419,22 +420,24 @@ export default function StoragePage() {
                             </TooltipContent>
                           </Tooltip>
                         )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="p-1 h-9 w-9"
-                              onClick={() => void handleRefresh()}
-                              disabled={isRefreshing}
-                            >
-                              <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" align="center">
-                            <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {!isInsForgeCloudProject() && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="p-1 h-9 w-9"
+                                onClick={() => void handleRefresh()}
+                                disabled={isRefreshing}
+                              >
+                                <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" align="center">
+                              <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TooltipProvider>
                     </div>
                   </div>
