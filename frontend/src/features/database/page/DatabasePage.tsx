@@ -23,7 +23,7 @@ import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
-import { convertValueForColumn } from '@/lib/utils/utils';
+import { convertValueForColumn, isInsForgeCloudProject } from '@/lib/utils/utils';
 import { LinkModalProvider, useLinkModal } from '@/features/database/hooks/UseLinkModal';
 import { LinkRecordModal } from '@/features/database/components/LinkRecordModal';
 import {
@@ -435,23 +435,24 @@ function DatabasePageContent() {
                               <p>Edit Table</p>
                             </TooltipContent>
                           </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="p-1 h-9 w-9"
-                                onClick={() => void handleRefresh()}
-                                disabled={isRefreshing}
-                              >
-                                <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" align="center">
-                              <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          {!isInsForgeCloudProject() && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="p-1 h-9 w-9"
+                                  onClick={() => void handleRefresh()}
+                                  disabled={isRefreshing}
+                                >
+                                  <RefreshIcon className="h-5 w-5 text-zinc-400 dark:text-neutral-400" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" align="center">
+                                <p>{isRefreshing ? 'Refreshing...' : 'Refresh'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </TooltipProvider>
                       </div>
                     </div>

@@ -555,14 +555,19 @@ export class StorageService {
     };
   }
 
-  async deleteObject(bucket: string, key: string, userId?: string): Promise<boolean> {
+  async deleteObject(
+    bucket: string,
+    key: string,
+    userId?: string,
+    isAdmin?: boolean
+  ): Promise<boolean> {
     this.validateBucketName(bucket);
     this.validateKey(key);
 
     const db = DatabaseManager.getInstance().getDb();
 
-    // Check permissions if userId is provided
-    if (userId && userId !== ADMIN_ID) {
+    // Check permissions
+    if (!isAdmin) {
       const file = (await db
         .prepare('SELECT uploaded_by FROM _storage WHERE bucket = ? AND key = ?')
         .get(bucket, key)) as { uploaded_by: string | null } | undefined;
@@ -572,7 +577,7 @@ export class StorageService {
       }
 
       // Check if user owns the file
-      if (file.uploaded_by !== userId) {
+      if (userId && file.uploaded_by !== userId) {
         throw new AppError(
           'Permission denied: You can only delete files you uploaded',
           403,

@@ -432,7 +432,12 @@ router.delete(
 
       // Delete specific object
       const storageService = StorageService.getInstance();
-      const deleted = await storageService.deleteObject(bucketName, objectKey, req.user?.id);
+      const deleted = await storageService.deleteObject(
+        bucketName,
+        objectKey,
+        req.user?.id,
+        req.user?.role === 'project_admin'
+      );
 
       if (!deleted) {
         throw new AppError('Object not found', 404, ERROR_CODES.NOT_FOUND);
