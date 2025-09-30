@@ -6,20 +6,14 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 export default function CloudLoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { loginWithAuthorizationCode, isAuthenticated } = useAuth();
+  const { loginWithAuthorizationCode } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      void navigate('/cloud/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   // Handle authorization token exchange
   useEffect(() => {
     const authorizationCode = searchParams.get('authorizationCode');
 
-    if (!isAuthenticated && authorizationCode) {
+    if (authorizationCode) {
       setAuthError(null);
       // Exchange the authorization code for an access token
       loginWithAuthorizationCode(authorizationCode)
@@ -34,6 +28,7 @@ export default function CloudLoginPage() {
                 '*'
               );
             }
+            void navigate('/cloud/dashboard', { replace: true });
           } else {
             setAuthError('The authorization code may have expired or already been used.');
             if (window.parent !== window) {
@@ -63,7 +58,7 @@ export default function CloudLoginPage() {
     } else {
       setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, isAuthenticated]);
+  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate]);
 
   // Show error state if authentication failed
   if (authError) {
