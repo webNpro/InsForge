@@ -262,25 +262,29 @@ Deno.serve({ port }, async (req: Request) => {
       const duration = Date.now() - startTime;
 
       // Log completed invocations only
-      console.log(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'info',
-        slug,
-        method: req.method,
-        status: response.status,
-        duration: `${duration}ms`,
-      }));
+      console.log(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          slug,
+          method: req.method,
+          status: response.status,
+          duration: `${duration}ms`,
+        })
+      );
 
       return response;
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        slug,
-        error: error instanceof Error ? error.message : String(error),
-        duration: `${duration}ms`,
-      }));
+      console.error(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          slug,
+          error: error instanceof Error ? error.message : String(error),
+          duration: `${duration}ms`,
+        })
+      );
       return new Response(JSON.stringify({ error: 'Function execution failed' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

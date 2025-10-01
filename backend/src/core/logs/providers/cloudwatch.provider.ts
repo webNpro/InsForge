@@ -35,9 +35,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
     // Create log group if it doesn't exist
     try {
-      await this.cwClient.send(
-        new CreateLogGroupCommand({ logGroupName: this.cwLogGroup })
-      );
+      await this.cwClient.send(new CreateLogGroupCommand({ logGroupName: this.cwLogGroup }));
       logger.info(`Created CloudWatch log group: ${this.cwLogGroup}`);
     } catch (error) {
       if (error instanceof ResourceAlreadyExistsException) {
