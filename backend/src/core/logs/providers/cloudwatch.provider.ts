@@ -10,6 +10,8 @@ import {
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
 import { BaseAnalyticsProvider } from './base.provider.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
 
 export class CloudWatchProvider extends BaseAnalyticsProvider {
   private cwClient: CloudWatchLogsClient | null = null;
@@ -57,7 +59,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
   async getLogSources(): Promise<LogSource[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const logGroup = this.cwLogGroup;
     const client = this.cwClient;
@@ -90,7 +96,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     tableName: string;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -278,7 +288,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
   async getLogSourceStats(): Promise<LogSourceStats[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -338,7 +352,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     total: number;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
