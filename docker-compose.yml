@@ -37,7 +37,7 @@ services:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      PGRST_JWT_SECRET: ${JWT_SECRET:-dev-secret-please-change-in-production}
       # Enable schema reloading via NOTIFY
       PGRST_DB_CHANNEL_ENABLED: true
       PGRST_DB_CHANNEL: pgrst
@@ -64,7 +64,7 @@ services:
       - PROJECT_ROOT=/app
       - API_BASE_URL=${API_BASE_URL:-}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-}
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-please-change-in-production}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-this-password}
@@ -135,7 +135,7 @@ services:
       - WORKER_TIMEOUT_MS=${WORKER_TIMEOUT_MS:-30000}
       # Encryption keys for decrypting function secrets
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-please-change-in-production}
     volumes:
       - ./functions:/app/functions
       - deno_cache:/deno-dir
