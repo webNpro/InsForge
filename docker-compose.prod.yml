@@ -35,7 +35,7 @@ services:
       PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
     ports:
       - "5430:3000"
     depends_on:
@@ -121,7 +121,7 @@ services:
       - WORKER_TIMEOUT_MS=${WORKER_TIMEOUT_MS:-30000}
       # Encryption keys for decrypting function secrets
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
     volumes:
       - ./functions:/app/functions
       - deno_cache:/deno-dir
