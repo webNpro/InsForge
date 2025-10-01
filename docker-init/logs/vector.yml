@@ -206,7 +206,7 @@ sinks:
     inputs:
       - insforge_logs
     region: ${AWS_REGION}
-    group_name: /insforge/${PROJECT_ID}
+    group_name: /insforge/local
     stream_name: ${HOSTNAME_OVERRIDE}-insforge-vector
     encoding:
       codec: json
@@ -215,7 +215,7 @@ sinks:
     inputs:
       - rest_logs
     region: ${AWS_REGION}
-    group_name: /insforge/${PROJECT_ID}
+    group_name: /insforge/local
     stream_name: ${HOSTNAME_OVERRIDE}-postgrest-vector
     encoding:
       codec: json
@@ -224,7 +224,7 @@ sinks:
     inputs:
       - deno_logs
     region: ${AWS_REGION}
-    group_name: /insforge/${PROJECT_ID}
+    group_name: /insforge/local
     stream_name: ${HOSTNAME_OVERRIDE}-function-vector
     encoding:
       codec: json
@@ -233,7 +233,7 @@ sinks:
     inputs:
       - db_logs
     region: ${AWS_REGION}
-    group_name: /insforge/${PROJECT_ID}
+    group_name: /insforge/local
     stream_name: ${HOSTNAME_OVERRIDE}-postgres-vector
     encoding:
       codec: json
