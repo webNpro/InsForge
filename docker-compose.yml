@@ -95,8 +95,6 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      # Vector log ingestion
-      - VECTOR_INGEST_TOKEN=${VECTOR_INGEST_TOKEN:-insforge-internal-logs}
     volumes:
       - ./package.json:/app/package.json
       - ./backend:/app/backend
