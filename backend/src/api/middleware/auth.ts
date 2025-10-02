@@ -3,7 +3,7 @@ import { AuthService } from '@/core/auth/auth.js';
 import { AppError } from './error.js';
 import { ERROR_CODES, NEXT_ACTION } from '@/types/error-constants.js';
 import { verifyCloudToken } from '@/utils/cloud-token.js';
-import { SecretsService } from '@/core/secrets/secrets.js';
+import { SecretService } from '@/core/secrets/secrets.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -17,7 +17,7 @@ export interface AuthRequest extends Request {
 }
 
 const authService = AuthService.getInstance();
-const secretService = new SecretsService();
+const secretService = new SecretService();
 
 // Helper function to extract Bearer token
 function extractBearerToken(authHeader: string | undefined): string | null {

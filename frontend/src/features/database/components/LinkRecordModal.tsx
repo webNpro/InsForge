@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
@@ -23,21 +23,21 @@ import { ColumnType } from '@insforge/shared-schemas';
 const PAGE_SIZE = 50;
 
 interface LinkRecordModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   referenceTable: string;
   referenceColumn: string;
   onSelectRecord: (record: DatabaseRecord) => void;
   currentValue?: string | null;
+  children: (openModal: () => void) => ReactNode;
 }
 
 export function LinkRecordModal({
-  open,
-  onOpenChange,
   referenceTable,
   referenceColumn,
   onSelectRecord,
+  currentValue,
+  children,
 }: LinkRecordModalProps) {
+  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<DatabaseRecord | null>(null);
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
@@ -191,16 +191,18 @@ export function LinkRecordModal({
   const handleConfirmSelection = () => {
     if (selectedRecord) {
       onSelectRecord(selectedRecord);
-      onOpenChange(false);
+      setOpen(false);
     }
   };
 
   const handleCancel = () => {
-    onOpenChange(false);
+    setOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      {children(() => setOpen(true))}
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-4xl h-[calc(100vh-48px)] p-0 gap-0 flex flex-col">
         <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700 flex-shrink-0 flex flex-col gap-1">
           <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
@@ -282,5 +284,6 @@ export function LinkRecordModal({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

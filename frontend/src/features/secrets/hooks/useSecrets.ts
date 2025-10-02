@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  secretsService,
+  secretService,
   type Secret,
   type CreateSecretInput,
-} from '@/features/secrets/services/secrets.service';
+} from '@/features/secrets/services/secret.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 
@@ -22,7 +22,7 @@ export function useSecrets() {
     refetch,
   } = useQuery({
     queryKey: ['secrets'],
-    queryFn: () => secretsService.listSecrets(),
+    queryFn: () => secretService.listSecrets(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
@@ -31,7 +31,7 @@ export function useSecrets() {
 
   // Create secret mutation
   const createSecretMutation = useMutation({
-    mutationFn: (input: CreateSecretInput) => secretsService.createSecret(input),
+    mutationFn: (input: CreateSecretInput) => secretService.createSecret(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['secrets'] });
       showToast('Secret created successfully', 'success');
@@ -45,7 +45,7 @@ export function useSecrets() {
 
   // Delete secret mutation
   const deleteSecretMutation = useMutation({
-    mutationFn: (key: string) => secretsService.deleteSecret(key),
+    mutationFn: (key: string) => secretService.deleteSecret(key),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['secrets'] });
       showToast('Secret deleted successfully', 'success');

@@ -10,12 +10,12 @@ import { validateTableName } from '@/utils/validations.js';
 import { DatabaseRecord } from '@/types/database.js';
 import { successResponse } from '@/utils/response.js';
 import logger from '@/utils/logger.js';
-import { SecretsService } from '@/core/secrets/secrets.js';
+import { SecretService } from '@/core/secrets/secrets.js';
 import { AuthService } from '@/core/auth/auth.js';
 
 const router = Router();
 const authService = AuthService.getInstance();
-const secretService = new SecretsService();
+const secretService = new SecretService();
 const postgrestUrl = process.env.POSTGREST_BASE_URL || 'http://localhost:5430';
 
 // Create a dedicated HTTP agent with connection pooling for PostgREST

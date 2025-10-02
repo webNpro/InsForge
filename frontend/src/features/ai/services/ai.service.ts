@@ -10,7 +10,7 @@ import {
   ListAIUsageResponse,
 } from '@insforge/shared-schemas';
 
-export class AiService {
+export class AIService {
   getModels(): Promise<ListModelsResponse> {
     return apiClient.request('/ai/models', {
       headers: apiClient.withAccessToken(),
@@ -145,4 +145,4 @@ export class AiService {
   }
 }
 
-export const aiService = new AiService();
+export const aiService = new AIService();

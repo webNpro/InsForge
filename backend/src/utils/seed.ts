@@ -2,7 +2,7 @@ import { DatabaseManager } from '@/core/database/manager.js';
 import { AIConfigService } from '@/core/ai/config.js';
 import { isCloudEnvironment } from '@/utils/environment.js';
 import logger from '@/utils/logger.js';
-import { SecretsService } from '@/core/secrets/secrets';
+import { SecretService } from '@/core/secrets/secrets';
 import { OAuthConfigService } from '@/core/auth/oauth.js';
 
 /**
@@ -138,7 +138,7 @@ async function seedLocalOAuthConfigs(): Promise<void> {
 
 // Create api key, admin user, and default AI configs
 export async function seedBackend(): Promise<void> {
-  const secretService = new SecretsService();
+  const secretService = new SecretService();
   const dbManager = DatabaseManager.getInstance();
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';

@@ -24,8 +24,6 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn, isInsForgeCloudProject } from '@/lib/utils/utils';
-import { LinkModalProvider, useLinkModal } from '@/features/database/hooks/UseLinkModal';
-import { LinkRecordModal } from '@/features/database/components/LinkRecordModal';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -56,7 +54,6 @@ function DatabasePageContent() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const { modalState, closeModal } = useLinkModal();
   const { tables, isLoadingTables, tablesError, deleteTable, useTableSchema, refetchTables } =
     useTables();
 
@@ -565,29 +562,10 @@ function DatabasePageContent() {
 
       {/* Confirm Dialog */}
       <ConfirmDialog {...confirmDialogProps} />
-
-      {/* Global Link Record Modal */}
-      {modalState.isOpen && modalState.referenceTable && modalState.referenceColumn && (
-        <LinkRecordModal
-          open={modalState.isOpen}
-          onOpenChange={closeModal}
-          referenceTable={modalState.referenceTable}
-          referenceColumn={modalState.referenceColumn}
-          currentValue={modalState.currentValue}
-          onSelectRecord={(record) => {
-            modalState.onSelectRecord?.(record);
-            closeModal();
-          }}
-        />
-      )}
     </div>
   );
 }
 
 export default function DatabasePage() {
-  return (
-    <LinkModalProvider>
-      <DatabasePageContent />
-    </LinkModalProvider>
-  );
+  return <DatabasePageContent />;
 }
