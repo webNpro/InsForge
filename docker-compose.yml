@@ -13,7 +13,6 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./docker-init/db/db-init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./docker-init/db/jwt.sql:/docker-entrypoint-initdb.d/02-jwt.sql
-      - ./docker-init/db/logs.sql:/docker-entrypoint-initdb.d/03-logs.sql
       - ./docker-init/db/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"
@@ -147,6 +146,43 @@ services:
         deno run --allow-net --allow-env --allow-read=./functions/worker-template.js --watch functions/server.ts
       "
     restart: unless-stopped
+    networks:
+      - insforge-network
+
+  # Vector.dev for log collection and shipping
+  # Only runs when AWS credentials are configured
+  vector:
+    container_name: insforge-vector
+    image: timberio/vector:0.28.1-alpine
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./docker-init/logs/vector.yml:/etc/vector/vector.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7135/health"]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-}
+      - PROJECT_ID=${PROJECT_ID:-}
+      - HOSTNAME_OVERRIDE=${HOSTNAME_OVERRIDE:-}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ -z "$$AWS_ACCESS_KEY_ID" ] || [ -z "$$AWS_SECRET_ACCESS_KEY" ]; then
+          echo 'AWS credentials not configured - Vector will not start'
+          echo 'Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to enable CloudWatch logging'
+          exit 0
+        else
+          echo 'AWS credentials found - Starting Vector with CloudWatch sinks'
+          /usr/local/bin/vector --config /etc/vector/vector.yml
+        fi
     networks:
       - insforge-network
 

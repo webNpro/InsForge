@@ -1,7 +1,5 @@
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
-import { isCloudEnvironment } from '@/utils/environment.js';
-import { LocalDBProvider } from './providers/localdb.provider.js';
 import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
 import { AnalyticsProvider } from './providers/base.provider.js';
 
@@ -19,22 +17,9 @@ export class AnalyticsManager {
   }
 
   async initialize(): Promise<void> {
-    // Decide provider based on explicit override or cloud environment
-    const explicitProvider = (process.env.ANALYTICS_PROVIDER || '').toLowerCase();
-    const shouldUseCloudwatch =
-      explicitProvider === 'cloudwatch' ||
-      (!explicitProvider && isCloudEnvironment() && !!process.env.CLOUDWATCH_LOG_GROUP);
-
-    logger.info(
-      `Using analytics provider: ${shouldUseCloudwatch ? 'CloudWatch' : 'LocalDB/Postgres'}`
-    );
-
-    if (shouldUseCloudwatch) {
-      this.provider = new CloudWatchProvider();
-    } else {
-      this.provider = new LocalDBProvider();
-    }
-
+    // Always use CloudWatch provider for analytics logs
+    logger.info('Using analytics provider: CloudWatch');
+    this.provider = new CloudWatchProvider();
     await this.provider.initialize();
   }
 

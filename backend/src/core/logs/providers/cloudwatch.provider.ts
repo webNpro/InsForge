@@ -4,23 +4,23 @@ import {
   FilterLogEventsCommand,
   StartQueryCommand,
   GetQueryResultsCommand,
+  CreateLogGroupCommand,
+  ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
 import { BaseAnalyticsProvider } from './base.provider.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
 
 export class CloudWatchProvider extends BaseAnalyticsProvider {
   private cwClient: CloudWatchLogsClient | null = null;
   private cwLogGroup: string | null = null;
   private cwRegion: string | null = null;
 
-  initialize(): Promise<void> {
+  async initialize(): Promise<void> {
     this.cwRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-2';
-    this.cwLogGroup = process.env.CLOUDWATCH_LOG_GROUP || null;
-
-    if (!this.cwLogGroup) {
-      throw new Error('CLOUDWATCH_LOG_GROUP is required when using CloudWatch analytics');
-    }
+    this.cwLogGroup = process.env.CLOUDWATCH_LOG_GROUP || '/insforge/local';
 
     const cloudwatchOpts: {
       region: string;
@@ -34,8 +34,18 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     }
 
     this.cwClient = new CloudWatchLogsClient({ ...cloudwatchOpts });
-    logger.info(`Using analytics provider: ${this.cwLogGroup ? 'CloudWatch' : 'LocalDB/Postgres'}`);
-    return Promise.resolve();
+
+    // Create log group if it doesn't exist
+    try {
+      await this.cwClient.send(new CreateLogGroupCommand({ logGroupName: this.cwLogGroup }));
+      logger.info(`Created CloudWatch log group: ${this.cwLogGroup}`);
+    } catch (error) {
+      if (error instanceof ResourceAlreadyExistsException) {
+        logger.info(`CloudWatch log group already exists: ${this.cwLogGroup}`);
+      } else {
+        logger.warn(`Could not create CloudWatch log group: ${error}`);
+      }
+    }
   }
 
   private getSuffixMapping(): Record<string, string> {
@@ -49,7 +59,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
   async getLogSources(): Promise<LogSource[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const logGroup = this.cwLogGroup;
     const client = this.cwClient;
@@ -82,7 +96,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     tableName: string;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -270,7 +288,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
   async getLogSourceStats(): Promise<LogSourceStats[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -297,16 +319,13 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
 
           // Use CloudWatch Insights to efficiently get the latest timestamp
           try {
-            const end = Date.now();
-            const start = end - 24 * 60 * 60 * 1000; // Last 24 hours
-
             const insights = `fields @timestamp | filter @logStream like /${suffix}/ | sort @timestamp desc | limit 1`;
 
             const startQuery = await client.send(
               new StartQueryCommand({
                 logGroupName: logGroup,
-                startTime: Math.floor(start / 1000),
-                endTime: Math.floor(end / 1000),
+                startTime: Math.floor(startMs / 1000),
+                endTime: Math.floor(endMs / 1000),
                 queryString: insights,
                 limit: 1,
               })
@@ -413,7 +432,11 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     total: number;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new Error('CloudWatch not initialized');
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;

@@ -396,13 +396,10 @@ export class StorageService {
 
   private constructor() {
     const s3Bucket = process.env.AWS_S3_BUCKET;
-    const appKey = process.env.APP_KEY;
+    const appKey = process.env.APP_KEY || 'local';
 
     if (s3Bucket) {
       // Use S3 backend
-      if (!appKey) {
-        throw new Error('APP_KEY is required when using S3 storage');
-      }
       this.backend = new S3StorageBackend(s3Bucket, appKey, process.env.AWS_REGION || 'us-east-2');
     } else {
       // Use local filesystem backend
