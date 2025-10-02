@@ -312,23 +312,103 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
       let lastActivity = '';
 
       if (sourceStreams.length > 0) {
-        // Use stream metadata for last activity (most reliable and fastest)
-        const last = streams
-          .filter((s) => (s.logStreamName || '').includes(suffix))
-          .reduce<number | null>((acc, s) => {
-            // Use lastEventTimestamp first (actual last log), fall back to lastIngestionTime
-            const t = s.lastEventTimestamp ?? s.lastIngestionTime ?? s.creationTime ?? null;
-            if (t === null) {
-              return acc;
-            }
-            if (acc === null) {
-              return t;
-            }
-            return Math.max(acc, t);
-          }, null);
+        try {
+          // Use EXACTLY the same approach as getLogsBySource to get consistent results
+          const endMs = Date.now();
+          const startMs = endMs - 24 * 60 * 60 * 1000; // Look back 24 hours (same as getLogsBySource)
 
-        if (last) {
-          lastActivity = new Date(last).toISOString();
+          // Use CloudWatch Insights to efficiently get the latest timestamp
+          try {
+            const insights = `fields @timestamp | filter @logStream like /${suffix}/ | sort @timestamp desc | limit 1`;
+
+            const startQuery = await client.send(
+              new StartQueryCommand({
+                logGroupName: logGroup,
+                startTime: Math.floor(startMs / 1000),
+                endTime: Math.floor(endMs / 1000),
+                queryString: insights,
+                limit: 1,
+              })
+            );
+
+            const qid = startQuery.queryId || '';
+            const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+            let results;
+
+            // Wait for query to complete (shorter timeout for stats)
+            for (let i = 0; i < 10; i++) {
+              const r = await client.send(new GetQueryResultsCommand({ queryId: qid }));
+              if (r.status === 'Complete' || r.status === 'Failed' || r.status === 'Cancelled') {
+                results = r.results || [];
+                break;
+              }
+              await sleep(200);
+            }
+
+            if (results && results.length > 0) {
+              const row = results[0];
+              const timestampField = row.find((field) => field.field === '@timestamp');
+              if (timestampField && timestampField.value) {
+                // CloudWatch Insights returns timestamp as string, try different parsing methods
+                let timestamp: number;
+                const value = timestampField.value;
+
+                // Try parsing as milliseconds first
+                timestamp = parseInt(value);
+                if (isNaN(timestamp) || timestamp < 1000000000000) {
+                  // Check if it's a reasonable timestamp (after 2001)
+                  // If that fails, try parsing as ISO string
+                  timestamp = Date.parse(value);
+                }
+
+                if (!isNaN(timestamp) && timestamp > 1000000000000) {
+                  // Ensure it's a valid recent timestamp
+                  lastActivity = new Date(timestamp).toISOString();
+                }
+              }
+            }
+          } catch (error) {
+            // Fallback to FilterLogEvents with limited pagination
+            logger.warn(`CloudWatch Insights failed for stats, using fallback for ${src.name}`, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+
+            const fle = await client.send(
+              new FilterLogEventsCommand({
+                logGroupName: logGroup,
+                logStreamNames: sourceStreams.length > 0 ? sourceStreams.slice(0, 100) : undefined,
+                startTime: startMs,
+                endTime: endMs,
+                limit: 1000, // Reasonable limit for fallback
+              })
+            );
+
+            const events = fle.events || [];
+            if (events.length > 0) {
+              const latestEvent = events[events.length - 1];
+              if (latestEvent.timestamp) {
+                lastActivity = new Date(latestEvent.timestamp).toISOString();
+              }
+            }
+          }
+        } catch {
+          // Fallback to stream lastIngestionTime if filtering fails
+          const last = streams
+            .filter((s) => (s.logStreamName || '').includes(suffix))
+            .reduce<number | null>((acc, s) => {
+              const t = s.lastIngestionTime ?? s.creationTime ?? null;
+              if (t === null) {
+                return acc;
+              }
+              if (acc === null) {
+                return t;
+              }
+              return Math.max(acc, t);
+            }, null);
+
+          if (last) {
+            lastActivity = new Date(last).toISOString();
+          }
         }
       }
 
