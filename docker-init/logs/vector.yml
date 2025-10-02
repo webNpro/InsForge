@@ -7,7 +7,6 @@ sources:
     type: docker_logs
     exclude_containers:
       - insforge-vector
-      - insforge-analytics
     include_containers:
       - insforge
       - insforge-deno
