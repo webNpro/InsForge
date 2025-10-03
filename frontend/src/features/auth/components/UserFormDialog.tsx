@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import { authService } from '@/features/auth/services/auth.service';
 import { Button, Input, Label, Alert, AlertDescription } from '@/components';
 import {
   Dialog,
@@ -63,7 +62,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
   const [showValidation, setShowValidation] = useState(false);
 
   const { showToast } = useToast();
-  const { refetch } = useUsers();
+  const { refetch, register } = useUsers();
 
   const isEditing = !!user;
 
@@ -126,7 +125,11 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
         userData.id = user.id;
       }
 
-      await authService.register(userData.email, userData.password || '', userData.name);
+      await register({
+        email: userData.email,
+        password: userData.password || '',
+        name: userData.name,
+      });
       void refetch();
       onOpenChange(false);
       showToast('User created successfully', 'success');

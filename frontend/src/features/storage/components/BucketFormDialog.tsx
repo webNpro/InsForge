@@ -49,7 +49,7 @@ export function BucketFormDialog({
     }
   }, [open, mode, initialBucketName, initialIsPublic]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (mode === 'create') {
@@ -92,7 +92,7 @@ export function BucketFormDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-[480px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
-        <form onSubmit={handleSubmit} className="flex flex-col">
+        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
           <DialogHeader className="px-6 py-3 flex flex-col gap-1 justify-start border-b border-zinc-200 dark:border-neutral-700">
             <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
               {mode === 'create' ? 'Create New Bucket' : 'Edit Bucket'}

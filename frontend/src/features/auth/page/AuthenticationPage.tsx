@@ -7,7 +7,6 @@ import { Tooltip, TooltipContent, TooltipProvider } from '@/components/radix/Too
 import { UserFormDialog } from '@/features/auth/components/UserFormDialog';
 import { AuthMethodTab } from '@/features/auth/components/AuthMethodTab';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { authService } from '@/features/auth/services/auth.service';
 import { useToast } from '@/lib/hooks/useToast';
 import { cn } from '@/lib/utils/utils';
 import { useUsers } from '@/features/auth/hooks/useUsers';
@@ -23,7 +22,7 @@ export default function AuthenticationPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const { showToast } = useToast();
-  const { refetch } = useUsers();
+  const { refetch, deleteUsers } = useUsers();
 
   const handleBulkDelete = async () => {
     if (selectedRows.size === 0) {
@@ -32,7 +31,7 @@ export default function AuthenticationPage() {
 
     try {
       const userIds = Array.from(selectedRows);
-      await authService.deleteUsers(userIds);
+      await deleteUsers(userIds);
       void refetch();
       setSelectedRows(new Set());
       showToast(

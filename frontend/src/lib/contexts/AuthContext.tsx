@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { authService } from '@/features/auth/services/auth.service';
 import { apiClient } from '@/lib/api/client';
+import { userService } from '@/features/auth/services/user.service';
 
 export interface User {
   id: string;
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const currentUser = await authService.getCurrentUser();
+      const currentUser = await userService.getCurrentUser();
       setUser(currentUser);
       setIsAuthenticated(true);
       return currentUser;
@@ -77,54 +77,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const invalidateAuthQueries = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['apiKey'] }),
+      queryClient.invalidateQueries({ queryKey: ['metadata'] }),
+      queryClient.invalidateQueries({ queryKey: ['users'] }),
+      queryClient.invalidateQueries({ queryKey: ['tables'] }),
+    ]);
+  }, [queryClient]);
+
   const loginWithPassword = useCallback(
     async (email: string, password: string): Promise<boolean> => {
       try {
         setError(null);
-        await authService.loginWithPassword(email, password);
-        const currentUser = await checkAuthStatus();
-        if (currentUser) {
-          // Invalidate queries that depend on authentication
-          void queryClient.invalidateQueries({ queryKey: ['apiKey'] });
-          void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-          void queryClient.invalidateQueries({ queryKey: ['users'] });
-          void queryClient.invalidateQueries({ queryKey: ['tables'] });
-          return true;
-        }
-        return false;
+        const data = await apiClient.request('/auth/admin/sessions', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
+
+        apiClient.setToken(data.accessToken);
+        setUser(data.user);
+        setIsAuthenticated(true);
+
+        await invalidateAuthQueries();
+        return true;
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Login failed'));
         return false;
       }
     },
-    [checkAuthStatus, queryClient]
+    [invalidateAuthQueries]
   );
 
   const loginWithAuthorizationCode = useCallback(
-    async (token: string): Promise<boolean> => {
+    async (code: string): Promise<boolean> => {
       try {
         setError(null);
-        await authService.loginWithAuthorizationCode(token);
-        const currentUser = await checkAuthStatus();
-        if (currentUser) {
-          // Invalidate queries that depend on authentication
-          void queryClient.invalidateQueries({ queryKey: ['apiKey'] });
-          void queryClient.invalidateQueries({ queryKey: ['metadata'] });
-          void queryClient.invalidateQueries({ queryKey: ['users'] });
-          void queryClient.invalidateQueries({ queryKey: ['tables'] });
-          return true;
-        }
-        return false;
+        const data = await apiClient.request('/auth/admin/sessions/exchange', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        });
+
+        apiClient.setToken(data.accessToken);
+        setUser(data.user);
+        setIsAuthenticated(true);
+
+        await invalidateAuthQueries();
+        return true;
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Authorization code exchange failed'));
         return false;
       }
     },
-    [checkAuthStatus, queryClient]
+    [invalidateAuthQueries]
   );
 
   const logout = useCallback(() => {
-    void authService.logout();
+    apiClient.clearToken();
     setUser(null);
     setIsAuthenticated(false);
     setError(null);
@@ -138,9 +147,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     void checkAuthStatus();
   }, [checkAuthStatus]);
-
-  // Removed periodic auth refresh - it was causing unnecessary unmounts
-  // Auth status is checked naturally when API calls are made
 
   const value: AuthContextType = {
     user,

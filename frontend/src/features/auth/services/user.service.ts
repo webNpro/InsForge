@@ -1,52 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import { UserSchema } from '@insforge/shared-schemas';
 
-export class AuthService {
-  async loginWithPassword(email: string, password: string) {
-    const data = await apiClient.request('/auth/admin/sessions', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-
-    // Set token in apiClient
-    if (data.accessToken) {
-      apiClient.setToken(data.accessToken);
-    }
-
-    // Return unified format
-    return {
-      accessToken: data.accessToken,
-      user: data.user,
-    };
-  }
-
-  async loginWithAuthorizationCode(code: string) {
-    const data = await apiClient.request('/auth/admin/sessions/exchange', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-
-    // Set token in apiClient
-    if (data.accessToken) {
-      apiClient.setToken(data.accessToken);
-    }
-
-    // Return unified format
-    return {
-      accessToken: data.accessToken,
-      user: data.user,
-    };
-  }
-
-  async getCurrentUser() {
-    const response = await apiClient.request('/auth/sessions/current');
-    return response.user;
-  }
-
-  logout() {
-    apiClient.clearToken();
-  }
-
+export class UserService {
   /**
    * Get users list
    * @param queryParams - Query parameters for pagination
@@ -86,6 +41,11 @@ export class AuthService {
     return await apiClient.request(`/auth/users/${id}`);
   }
 
+  async getCurrentUser() {
+    const response = await apiClient.request('/auth/sessions/current');
+    return response.user;
+  }
+
   async register(email: string, password: string, name?: string) {
     const response = await apiClient.request('/auth/users', {
       method: 'POST',
@@ -101,12 +61,6 @@ export class AuthService {
       body: JSON.stringify({ userIds }),
     });
   }
-
-  async generateAnonToken(): Promise<{ accessToken: string; message: string }> {
-    return apiClient.request('/auth/tokens/anon', {
-      method: 'POST',
-    });
-  }
 }
 
-export const authService = new AuthService();
+export const userService = new UserService();

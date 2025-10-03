@@ -133,9 +133,7 @@ export default function StoragePage() {
 
     if (shouldDelete) {
       try {
-        await Promise.all(
-          fileKeys.map((key) => deleteObject({ bucket: selectedBucket, key }))
-        );
+        await Promise.all(fileKeys.map((key) => deleteObject({ bucket: selectedBucket, key })));
         setSelectedFiles(new Set());
       } catch {
         showToast('Failed to delete some files', 'error');
