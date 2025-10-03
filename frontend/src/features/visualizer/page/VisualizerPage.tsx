@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { useMetadata } from '@/features/metadata/hooks/useMetadata';
-import { authService } from '@/features/auth/services/auth.service';
+import { useUsers } from '@/features/auth/hooks/useUsers';
 import { SchemaVisualizer, VisualizerSkeleton } from '../components';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
@@ -26,18 +26,10 @@ const VisualizerPage = () => {
   } = useMetadata();
 
   const {
-    data: userStats,
+    totalUsers,
     isLoading: userStatsLoading,
     refetch: refetchUserStats,
-  } = useQuery({
-    queryKey: ['user-stats-visualizer'],
-    queryFn: async () => {
-      const response = await authService.getUsers();
-      return { userCount: response.pagination.total };
-    },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  } = useUsers({ enabled: true });
 
   const isLoading = metadataLoading || userStatsLoading;
   const error = metadataError;
@@ -118,7 +110,7 @@ const VisualizerPage = () => {
 
       {/* Schema Visualizer */}
       <div className="relative z-10 w-full h-screen">
-        <SchemaVisualizer metadata={metadata} userCount={userStats?.userCount} />
+        <SchemaVisualizer metadata={metadata} userCount={totalUsers} />
       </div>
     </div>
   );

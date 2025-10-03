@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, type DragEvent } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Upload } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import RefreshIcon from '@/assets/icons/refresh.svg?react';
-import { storageService } from '@/features/storage/services/storage.service';
+import { useStorage } from '@/features/storage/hooks/useStorage';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { StorageSidebar } from '@/features/storage/components/StorageSidebar';
@@ -59,92 +59,23 @@ export default function StoragePage() {
 
   const { socket, isConnected } = useSocket();
 
-  // Fetch buckets
   const {
-    data: buckets = [],
-    isLoading,
-    error: bucketsError,
-    refetch: refetchBuckets,
-  } = useQuery({
-    queryKey: ['storage', 'buckets'],
-    queryFn: () => storageService.listBuckets(),
-  });
+    buckets,
+    isLoadingBuckets: isLoading,
+    bucketsError,
+    refetchBuckets,
+    useBucketStats,
+    uploadObject,
+    deleteObject,
+    deleteBucket,
+  } = useStorage();
 
-  // Fetch bucket statistics
-  const { data: bucketStats } = useQuery({
-    queryKey: ['storage', 'bucket-stats', buckets],
-    queryFn: async () => {
-      const stats: Record<
-        string,
-        { fileCount: number; totalSize: number; public: boolean; createdAt?: string }
-      > = {};
-      const currentBuckets = buckets;
-      const promises = currentBuckets.map(async (bucket) => {
-        try {
-          const result = await storageService.listObjects(bucket.name, { limit: 1000 });
-          const objects = result.objects;
-          const totalSize = objects.reduce((sum, file) => sum + file.size, 0);
-          return {
-            bucketName: bucket.name,
-            stats: {
-              fileCount: result.pagination.total,
-              totalSize: totalSize,
-              public: bucket.public,
-              createdAt: bucket.createdAt,
-            },
-          };
-        } catch (error) {
-          if (error) {
-            console.error(error);
-            return null;
-          }
-          return {
-            bucketName: bucket.name,
-            stats: {
-              fileCount: 0,
-              totalSize: 0,
-              public: bucket.public,
-              createdAt: bucket.createdAt,
-            },
-          };
-        }
-      });
-      const results = await Promise.all(promises);
-      results.forEach((result) => {
-        if (result) {
-          stats[result.bucketName] = result.stats;
-        }
-      });
-      return stats;
-    },
-    enabled: buckets.length > 0,
-    staleTime: 30000, // Cache for 30 seconds
-  });
+  const { data: bucketStats } = useBucketStats();
 
   // Build bucket info map
   const bucketInfo = React.useMemo(() => {
     return bucketStats || {};
   }, [bucketStats]);
-
-  // Upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: async ({
-      bucket,
-      file,
-      fileName,
-    }: {
-      bucket: string;
-      file: File;
-      fileName?: string;
-    }) => {
-      const key = fileName || file.name;
-      return await storageService.uploadObject(bucket, key, file);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['storage'] });
-    },
-    // Remove global onError handler - errors are now handled individually in uploadFiles
-  });
 
   useEffect(() => {
     if (!socket || !isConnected) {
@@ -202,15 +133,12 @@ export default function StoragePage() {
 
     if (shouldDelete) {
       try {
-        await Promise.all(fileKeys.map((key) => storageService.deleteObject(selectedBucket, key)));
-        void queryClient.invalidateQueries({ queryKey: ['storage'] });
+        await Promise.all(fileKeys.map((key) => deleteObject({ bucket: selectedBucket, key })));
         setSelectedFiles(new Set());
-        showToast(`${fileKeys.length} files deleted successfully`, 'success');
       } catch {
         showToast('Failed to delete some files', 'error');
       }
     }
-    void queryClient.invalidateQueries({ queryKey: ['storage'] });
   };
 
   const uploadFiles = async (files: FileList | File[] | null) => {
@@ -247,10 +175,10 @@ export default function StoragePage() {
       updateUploadProgress(toastId, progress);
 
       try {
-        await uploadMutation.mutateAsync({
+        await uploadObject({
           bucket: selectedBucket,
+          objectKey: files[i].name,
           file: files[i],
-          fileName: files[i].name, // Backend will auto-rename if needed
         });
         successCount++;
       } catch (error) {
@@ -283,7 +211,7 @@ export default function StoragePage() {
     showToast,
     showUploadToast,
     updateUploadProgress,
-    uploadMutation,
+    uploadObject,
   ]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,11 +230,7 @@ export default function StoragePage() {
 
     if (shouldDelete) {
       try {
-        await storageService.deleteBucket(bucketName);
-
-        // Refresh buckets list
-        await refetchBuckets();
-        showToast('Bucket deleted successfully', 'success');
+        await deleteBucket(bucketName);
 
         // If the deleted bucket was selected, select the first available bucket
         if (selectedBucket === bucketName) {

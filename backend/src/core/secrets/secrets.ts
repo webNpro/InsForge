@@ -29,7 +29,7 @@ export interface UpdateSecretInput {
   expiresAt?: Date | null;
 }
 
-export class SecretsService {
+export class SecretService {
   private pool: Pool | null = null;
 
   constructor() {

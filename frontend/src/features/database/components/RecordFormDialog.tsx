@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import {
   Dialog,
@@ -13,14 +13,12 @@ import {
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { ScrollArea } from '@/components/radix/ScrollArea';
-import { databaseService } from '@/features/database/services/database.service';
+import { useRecords } from '@/features/database/hooks/useRecords';
 import { buildDynamicSchema, getInitialValues } from '@/features/database';
 import { RecordFormField } from '@/features/database/components/RecordFormField';
 import { cn } from '@/lib/utils/utils';
-import { useToast } from '@/lib/hooks/useToast';
 import { ColumnSchema } from '@insforge/shared-schemas';
 import { SYSTEM_FIELDS } from '../helpers';
-import { ConvertedValue } from '@/components/datagrid/datagridTypes';
 
 interface RecordFormDialogProps {
   open: boolean;
@@ -39,7 +37,7 @@ export function RecordFormDialog({
 }: RecordFormDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { createRecord, isCreating } = useRecords(tableName);
 
   const displayFields = useMemo(() => {
     const filteredFields = schema.filter((field) => !SYSTEM_FIELDS.includes(field.columnName));
@@ -72,31 +70,21 @@ export function RecordFormDialog({
     }
   }, [open]);
 
-  const createRecordMutation = useMutation({
-    mutationFn: (data: { [key: string]: ConvertedValue }) => {
-      return databaseService.createRecord(tableName, data);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['records', tableName] });
-      void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
-      onOpenChange(false);
-      form.reset();
-      setError(null);
-      if (onSuccess) {
-        onSuccess();
-      }
-      showToast('Record created successfully', 'success');
-    },
-    onError: (err: Error) => {
-      setError(err.message || 'Failed to create record');
-    },
-  });
-
   const handleSubmit = form.handleSubmit(
     async (data) => {
       try {
-        await createRecordMutation.mutateAsync(data);
+        await createRecord(data);
+        void queryClient.invalidateQueries({ queryKey: ['records', tableName] });
+        void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
+        onOpenChange(false);
+        form.reset();
+        setError(null);
+        if (onSuccess) {
+          onSuccess();
+        }
       } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create record';
+        setError(errorMessage);
         console.error('Form submission error:', err);
       }
     },
@@ -148,13 +136,13 @@ export function RecordFormDialog({
             </Button>
             <Button
               type="submit"
-              disabled={createRecordMutation.isPending}
+              disabled={isCreating}
               className={cn(
                 'h-10 px-4 bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400',
-                createRecordMutation.isPending && 'opacity-40'
+                isCreating && 'opacity-40'
               )}
             >
-              {createRecordMutation.isPending ? 'Saving...' : 'Add Record'}
+              {isCreating ? 'Saving...' : 'Add Record'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { SecretsService } from '@/core/secrets/secrets.js';
+import { SecretService } from '@/core/secrets/secrets.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import logger from '@/utils/logger.js';
@@ -26,10 +26,10 @@ export interface UpdateOAuthConfigInput {
 export class OAuthConfigService {
   private static instance: OAuthConfigService;
   private pool: Pool | null = null;
-  private secretsService: SecretsService;
+  private secretService: SecretService;
 
   private constructor() {
-    this.secretsService = new SecretsService();
+    this.secretService = new SecretService();
     logger.info('OAuthService initialized');
   }
 
@@ -125,7 +125,7 @@ export class OAuthConfigService {
       }
 
       const config = result.rows[0];
-      const clientSecret = await this.secretsService.getSecretById(config.secretId);
+      const clientSecret = await this.secretService.getSecretById(config.secretId);
       if (!clientSecret) {
         logger.warn('OAuth config exists but secret not found', { provider });
         return null;
@@ -167,7 +167,7 @@ export class OAuthConfigService {
       // Only create secret if clientSecret is provided and not using shared key
       if (input.clientSecret && !input.useSharedKey) {
         // Create new secret
-        const secret = await this.secretsService.createSecret({
+        const secret = await this.secretService.createSecret({
           key: `${input.provider.toUpperCase()}_CLIENT_SECRET`,
           value: input.clientSecret,
         });
@@ -245,12 +245,12 @@ export class OAuthConfigService {
       if (input.clientSecret !== undefined) {
         if (existingConfig.secretId) {
           // Update existing secret
-          await this.secretsService.updateSecret(existingConfig.secretId, {
+          await this.secretService.updateSecret(existingConfig.secretId, {
             value: input.clientSecret,
           });
         } else {
           // Create new secret if it doesn't exist
-          const secret = await this.secretsService.createSecret({
+          const secret = await this.secretService.createSecret({
             key: `${provider.toUpperCase()}_CLIENT_SECRET`,
             value: input.clientSecret,
           });

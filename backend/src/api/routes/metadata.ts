@@ -3,7 +3,7 @@ import { DatabaseAdvanceService } from '@/core/database/advance.js';
 import { AuthService } from '@/core/auth/auth.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { AIConfigService } from '@/core/ai/config.js';
-import { FunctionsService } from '@/core/functions/functions.js';
+import { FunctionService } from '@/core/functions/functions.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
@@ -11,13 +11,13 @@ import { ServerEvents } from '@/core/socket/types';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
-import { SecretsService } from '@/core/secrets/secrets';
+import { SecretService } from '@/core/secrets/secrets';
 import { DatabaseManager } from '@/core/database/manager';
 
 const router = Router();
 const authService = AuthService.getInstance();
 const storageService = StorageService.getInstance();
-const functionsService = FunctionsService.getInstance();
+const functionService = FunctionService.getInstance();
 const dbManager = DatabaseManager.getInstance();
 const dbAdvanceService = new DatabaseAdvanceService();
 const aiConfigService = new AIConfigService();
@@ -35,7 +35,7 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
       dbManager.getMetadata(),
       storageService.getMetadata(),
       aiConfigService.getMetadata(),
-      functionsService.getMetadata(),
+      functionService.getMetadata(),
     ]);
 
     // Get version from package.json or default
@@ -106,7 +106,7 @@ router.get('/ai', async (_req: AuthRequest, res: Response, next: NextFunction) =
 // Get functions metadata
 router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const functionsMetadata = await functionsService.getMetadata();
+    const functionsMetadata = await functionService.getMetadata();
     successResponse(res, functionsMetadata);
   } catch (error) {
     next(error);
@@ -116,7 +116,7 @@ router.get('/functions', async (_req: AuthRequest, res: Response, next: NextFunc
 // Get API key (admin only)
 router.get('/api-key', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const sercretService = new SecretsService();
+    const sercretService = new SecretService();
     const apiKey = await sercretService.getSecretByKey('API_KEY');
 
     successResponse(res, { apiKey: apiKey });

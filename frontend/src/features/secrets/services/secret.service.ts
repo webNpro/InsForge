@@ -25,7 +25,7 @@ export interface SecretValueResponse {
   value: string;
 }
 
-export class SecretsService {
+export class SecretService {
   async listSecrets(): Promise<Secret[]> {
     const data = (await apiClient.request('/secrets', {
       headers: apiClient.withAccessToken(),
@@ -54,4 +54,4 @@ export class SecretsService {
   }
 }
 
-export const secretsService = new SecretsService();
+export const secretService = new SecretService();

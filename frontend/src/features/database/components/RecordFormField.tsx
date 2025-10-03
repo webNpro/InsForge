@@ -13,8 +13,8 @@ import {
   type UserInputValue,
 } from '@/components/datagrid';
 import { ColumnSchema, ColumnType } from '@insforge/shared-schemas';
-import { useLinkModal } from '@/features/database/hooks/UseLinkModal';
 import { convertValueForColumn, cn, formatValueForDisplay } from '@/lib/utils/utils';
+import { LinkRecordModal } from '@/features/database/components/LinkRecordModal';
 import { TypeBadge } from '@/components/TypeBadge';
 import { isValid, parseISO } from 'date-fns';
 
@@ -278,12 +278,13 @@ interface FieldWithLinkProps {
 }
 
 function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
-  const { openModal } = useLinkModal();
-
   if (!field.foreignKey) {
     // Regular field without foreign key
     return <>{children}</>;
   }
+
+  // Store foreignKey in a const to help TypeScript narrow the type
+  const foreignKey = field.foreignKey;
 
   // Field with foreign key linking capability - integrated design
   return (
@@ -322,43 +323,40 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (field.foreignKey) {
-                          openModal({
-                            referenceTable: field.foreignKey.referenceTable,
-                            referenceColumn: field.foreignKey.referenceColumn,
-                            currentValue: formField.value ? String(formField.value) : null,
-                            onSelectRecord: (record: DatabaseRecord) => {
-                              if (field.foreignKey) {
-                                const referenceValue = record[field.foreignKey.referenceColumn];
-                                const result = convertValueForColumn(
-                                  field.type,
-                                  String(referenceValue || '')
-                                );
-                                if (result.success) {
-                                  formField.onChange(result.value);
-                                } else {
-                                  // Fallback to string if conversion fails
-                                  formField.onChange(String(referenceValue || ''));
-                                }
-                              }
-                            },
-                          });
+                    <LinkRecordModal
+                      referenceTable={foreignKey.referenceTable}
+                      referenceColumn={foreignKey.referenceColumn}
+                      onSelectRecord={(record: DatabaseRecord) => {
+                        const referenceValue = record[foreignKey.referenceColumn];
+                        const result = convertValueForColumn(
+                          field.type,
+                          String(referenceValue || '')
+                        );
+                        if (result.success) {
+                          formField.onChange(result.value);
+                        } else {
+                          // Fallback to string if conversion fails
+                          formField.onChange(String(referenceValue || ''));
                         }
                       }}
-                      className="rounded-l-none h-9 w-9 p-2 flex-shrink-0 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-700 border-l border-zinc-200 dark:border-neutral-700"
-                      title={
-                        hasLinkedValue
-                          ? `Change linked ${field.foreignKey?.referenceTable} record`
-                          : `Link to ${field.foreignKey?.referenceTable} record`
-                      }
                     >
-                      <Link2 className="h-5 w-5" />
-                    </Button>
+                      {(openModal) => (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={openModal}
+                          className="rounded-l-none h-9 w-9 p-2 flex-shrink-0 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-700 border-l border-zinc-200 dark:border-neutral-700"
+                          title={
+                            hasLinkedValue
+                              ? `Change linked ${foreignKey.referenceTable} record`
+                              : `Link to ${foreignKey.referenceTable} record`
+                          }
+                        >
+                          <Link2 className="h-5 w-5" />
+                        </Button>
+                      )}
+                    </LinkRecordModal>
                   </div>
                 </div>
 
@@ -366,7 +364,7 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 <div className="text-xs text-medium text-black dark:text-neutral-400 flex items-center gap-1.5">
                   <span>Has a Foreign Key relation to</span>
                   <TypeBadge
-                    type={`${field.foreignKey?.referenceTable}.${field.foreignKey?.referenceColumn}`}
+                    type={`${foreignKey.referenceTable}.${foreignKey.referenceColumn}`}
                     className="dark:bg-neutral-700"
                   />
                 </div>

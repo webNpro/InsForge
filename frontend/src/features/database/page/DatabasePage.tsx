@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
 import RefreshIcon from '@/assets/icons/refresh.svg?react';
-import { databaseService } from '@/features/database/services/database.service';
 import { useTables } from '@/features/database/hooks/useTables';
+import { useRecords } from '@/features/database/hooks/useRecords';
 import { Button } from '@/components/radix/Button';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { TableSidebar } from '@/features/database/components/TableSidebar';
@@ -24,8 +24,6 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn, isInsForgeCloudProject } from '@/lib/utils/utils';
-import { LinkModalProvider, useLinkModal } from '@/features/database/hooks/UseLinkModal';
-import { LinkRecordModal } from '@/features/database/components/LinkRecordModal';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -56,9 +54,10 @@ function DatabasePageContent() {
   const { confirm, confirmDialogProps } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const { modalState, closeModal } = useLinkModal();
   const { tables, isLoadingTables, tablesError, deleteTable, useTableSchema, refetchTables } =
     useTables();
+
+  const recordsHook = useRecords(selectedTable || '');
 
   const { socket, isConnected } = useSocket();
 
@@ -104,71 +103,35 @@ function DatabasePageContent() {
   // Fetch schema for editing table
   const { data: editingTableSchema } = useTableSchema(editingTable || '', !!editingTable);
 
-  // Fetch table data when selected
+  // Fetch table records using the hook
+  const offset = (currentPage - 1) * PAGE_SIZE;
   const {
-    data: tableData,
-    isLoading: isLoadingTable,
-    error: tableError,
-    refetch: refetchTableData,
-  } = useQuery({
-    queryKey: [
-      'table',
-      selectedTable,
-      currentPage,
-      PAGE_SIZE,
-      searchQuery,
-      JSON.stringify(sortColumns),
-    ],
-    queryFn: async () => {
-      if (!selectedTable || !schemaData) {
-        return null;
-      }
+    data: recordsData,
+    isLoading: isLoadingRecords,
+    error: recordsError,
+    refetch: refetchRecords,
+  } = recordsHook.useTableRecords(
+    PAGE_SIZE,
+    offset,
+    searchQuery,
+    sortColumns,
+    !!selectedTable && !!schemaData
+  );
 
-      const offset = (currentPage - 1) * PAGE_SIZE;
-
-      try {
-        const records = await databaseService.getTableRecords(
-          selectedTable,
-          PAGE_SIZE,
-          offset,
-          searchQuery,
-          sortColumns
-        );
-
-        return {
+  // Combine schema and records data
+  const tableData =
+    selectedTable && schemaData && recordsData
+      ? {
           name: selectedTable,
           schema: schemaData,
-          records: records.records,
-          totalRecords: records.pagination.total ?? schemaData.recordCount,
-        };
-      } catch (error) {
-        // If sorting caused the error, retry without sorting
-        if (sortColumns && sortColumns.length > 0) {
-          setSortColumns([]);
-
-          const records = await databaseService.getTableRecords(
-            selectedTable,
-            PAGE_SIZE,
-            offset,
-            searchQuery,
-            []
-          );
-
-          showToast('Sorting not supported for this table. Showing unsorted results.', 'info');
-
-          return {
-            name: selectedTable,
-            schema: schemaData,
-            records: records.records,
-            totalRecords: records.pagination.total || schemaData.recordCount,
-          };
+          records: recordsData.records,
+          totalRecords: recordsData.pagination.total ?? schemaData.recordCount,
         }
-        throw error;
-      }
-    },
-    enabled: !!selectedTable && !!schemaData,
-    placeholderData: (previousData) => previousData, // Keep previous data while loading new sorted data
-  });
+      : null;
+
+  const isLoadingTable = isLoadingRecords;
+  const tableError = recordsError;
+  const refetchTableData = refetchRecords;
 
   useEffect(() => {
     if (!socket || !isConnected) {
@@ -323,9 +286,8 @@ function DatabasePageContent() {
           return;
         }
         const updates = { [columnKey]: conversionResult.value };
-        await databaseService.updateRecord(selectedTable, rowId, updates);
+        await recordsHook.updateRecord({ id: rowId, data: updates });
         await refetchTableData();
-        showToast('Record updated successfully', 'success');
       }
     } catch (error) {
       showToast('Failed to update record', 'error');
@@ -348,13 +310,12 @@ function DatabasePageContent() {
 
     if (shouldDelete) {
       try {
-        await Promise.all(ids.map((id) => databaseService.deleteRecord(selectedTable, id)));
+        await Promise.all(ids.map((id) => recordsHook.deleteRecord(id)));
         await Promise.all([
           refetchTableData(),
           refetchTables(), // Also refresh tables to update sidebar record counts
         ]);
         setSelectedRows(new Set());
-        showToast(`${ids.length} records deleted successfully`, 'success');
       } catch {
         showToast('Failed to delete some records', 'error');
       }
@@ -565,29 +526,10 @@ function DatabasePageContent() {
 
       {/* Confirm Dialog */}
       <ConfirmDialog {...confirmDialogProps} />
-
-      {/* Global Link Record Modal */}
-      {modalState.isOpen && modalState.referenceTable && modalState.referenceColumn && (
-        <LinkRecordModal
-          open={modalState.isOpen}
-          onOpenChange={closeModal}
-          referenceTable={modalState.referenceTable}
-          referenceColumn={modalState.referenceColumn}
-          currentValue={modalState.currentValue}
-          onSelectRecord={(record) => {
-            modalState.onSelectRecord?.(record);
-            closeModal();
-          }}
-        />
-      )}
     </div>
   );
 }
 
 export default function DatabasePage() {
-  return (
-    <LinkModalProvider>
-      <DatabasePageContent />
-    </LinkModalProvider>
-  );
+  return <DatabasePageContent />;
 }

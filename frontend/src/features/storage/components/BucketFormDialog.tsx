@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { storageService } from '@/features/storage/services/storage.service';
+import { useStorage } from '@/features/storage/hooks/useStorage';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,6 @@ import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Label } from '@/components/radix/Label';
 import { Switch } from '@/components/radix/Switch';
-import { useToast } from '@/lib/hooks/useToast';
 
 interface BucketFormDialogProps {
   open: boolean;
@@ -35,7 +33,8 @@ export function BucketFormDialog({
   const [bucketName, setBucketName] = useState(initialBucketName);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [error, setError] = useState('');
-  const { showToast } = useToast();
+
+  const { createBucket, editBucket, isCreatingBucket, isEditingBucket } = useStorage();
 
   useEffect(() => {
     if (open) {
@@ -50,33 +49,7 @@ export function BucketFormDialog({
     }
   }, [open, mode, initialBucketName, initialIsPublic]);
 
-  const createBucketMutation = useMutation({
-    mutationFn: ({ name, isPublic }: { name: string; isPublic: boolean }) =>
-      storageService.createBucket(name, isPublic),
-    onSuccess: () => {
-      onSuccess(bucketName);
-      showToast('Bucket created successfully', 'success');
-      handleClose();
-    },
-    onError: (error: Error) => {
-      setError(error.message || 'Failed to create bucket');
-    },
-  });
-
-  const editBucketMutation = useMutation({
-    mutationFn: ({ name, isPublic }: { name: string; isPublic: boolean }) =>
-      storageService.editBucket(name, { isPublic: isPublic }),
-    onSuccess: () => {
-      onSuccess();
-      showToast('Bucket updated successfully', 'success');
-      handleClose();
-    },
-    onError: (error: Error) => {
-      setError(error.message || 'Failed to update bucket');
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (mode === 'create') {
@@ -84,9 +57,21 @@ export function BucketFormDialog({
         setError('Bucket name is required');
         return;
       }
-      createBucketMutation.mutate({ name: bucketName.trim(), isPublic });
+      try {
+        await createBucket({ bucketName: bucketName.trim(), isPublic });
+        onSuccess(bucketName);
+        handleClose();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to create bucket');
+      }
     } else {
-      editBucketMutation.mutate({ name: bucketName, isPublic });
+      try {
+        await editBucket({ bucketName, config: { isPublic } });
+        onSuccess();
+        handleClose();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to update bucket');
+      }
     }
   };
 
@@ -94,8 +79,7 @@ export function BucketFormDialog({
     onOpenChange(false);
   };
 
-  const isLoading =
-    mode === 'create' ? createBucketMutation.isPending : editBucketMutation.isPending;
+  const isLoading = mode === 'create' ? isCreatingBucket : isEditingBucket;
   const submitButtonText =
     mode === 'create'
       ? isLoading
@@ -108,7 +92,7 @@ export function BucketFormDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-[480px] p-0 border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)]">
-        <form onSubmit={handleSubmit} className="flex flex-col">
+        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
           <DialogHeader className="px-6 py-3 flex flex-col gap-1 justify-start border-b border-zinc-200 dark:border-neutral-700">
             <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
               {mode === 'create' ? 'Create New Bucket' : 'Edit Bucket'}

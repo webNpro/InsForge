@@ -1,12 +1,12 @@
 import { Router, Response, NextFunction } from 'express';
-import { SecretsService } from '@/core/secrets/secrets.js';
+import { SecretService } from '@/core/secrets/secrets.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
 
 const router = Router();
-const secretsService = new SecretsService();
+const secretService = new SecretService();
 const auditService = AuditService.getInstance();
 
 /**
@@ -15,7 +15,7 @@ const auditService = AuditService.getInstance();
  */
 router.get('/', verifyAdmin, async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const secrets = await secretsService.listSecrets();
+    const secrets = await secretService.listSecrets();
     res.json({ secrets });
   } catch (error) {
     next(error);
@@ -29,7 +29,7 @@ router.get('/', verifyAdmin, async (_req: AuthRequest, res: Response, next: Next
 router.get('/:key', verifyAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { key } = req.params;
-    const value = await secretsService.getSecretByKey(key);
+    const value = await secretService.getSecretByKey(key);
 
     if (value === null) {
       throw new AppError(`Secret not found: ${key}`, 404, ERROR_CODES.NOT_FOUND);
@@ -73,12 +73,12 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response, next: Next
     }
 
     // Check if secret already exists
-    const existing = await secretsService.getSecretByKey(key);
+    const existing = await secretService.getSecretByKey(key);
     if (existing !== null) {
       throw new AppError(`Secret already exists: ${key}`, 409, ERROR_CODES.INVALID_INPUT);
     }
 
-    const result = await secretsService.createSecret({
+    const result = await secretService.createSecret({
       key,
       value,
       isReserved: isReserved || false,
@@ -114,14 +114,14 @@ router.put('/:key', verifyAdmin, async (req: AuthRequest, res: Response, next: N
     const { value, isActive, isReserved, expiresAt } = req.body;
 
     // Get existing secret
-    const secrets = await secretsService.listSecrets();
+    const secrets = await secretService.listSecrets();
     const secret = secrets.find((s) => s.key === key);
 
     if (!secret) {
       throw new AppError(`Secret not found: ${key}`, 404, ERROR_CODES.NOT_FOUND);
     }
 
-    const success = await secretsService.updateSecret(secret.id, {
+    const success = await secretService.updateSecret(secret.id, {
       value,
       isActive,
       isReserved,
@@ -159,7 +159,7 @@ router.delete('/:key', verifyAdmin, async (req: AuthRequest, res: Response, next
     const { key } = req.params;
 
     // Get existing secret
-    const secrets = await secretsService.listSecrets();
+    const secrets = await secretService.listSecrets();
     const secret = secrets.find((s) => s.key === key);
 
     if (!secret) {
@@ -172,7 +172,7 @@ router.delete('/:key', verifyAdmin, async (req: AuthRequest, res: Response, next
     }
 
     // Mark as inactive instead of hard delete
-    const success = await secretsService.updateSecret(secret.id, { isActive: false });
+    const success = await secretService.updateSecret(secret.id, { isActive: false });
 
     if (!success) {
       throw new AppError(`Failed to delete secret: ${key}`, 500, ERROR_CODES.INTERNAL_ERROR);

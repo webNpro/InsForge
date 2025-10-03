@@ -1,5 +1,5 @@
 import { CopyButton } from '@/components/CopyButton';
-import { type EdgeFunction } from '../services/functions.service';
+import { type EdgeFunction } from '../services/function.service';
 import { cn, getBackendUrl } from '@/lib/utils/utils';
 import { format, formatDistance } from 'date-fns';
 interface FunctionRowProps {
