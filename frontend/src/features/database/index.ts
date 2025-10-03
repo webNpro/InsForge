@@ -6,7 +6,12 @@ export { TableForm } from './components/TableForm';
 export { RecordFormDialog } from './components/RecordFormDialog';
 
 // Services
-export { databaseService } from './services/database.service';
+export { tableService } from './services/table.service';
+export { recordService } from './services/record.service';
+
+// Hooks
+export { useTables } from './hooks/useTables';
+export { useRecords } from './hooks/useRecords';
 
 // Helpers
 export { buildDynamicSchema, getInitialValues } from './helpers';

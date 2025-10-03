@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { functionsService, type EdgeFunction } from '../services/functions.service';
+import { functionService, type EdgeFunction } from '../services/function.service';
 import { useToast } from '@/lib/hooks/useToast';
 
 export function useFunctions() {
@@ -16,7 +16,7 @@ export function useFunctions() {
     refetch,
   } = useQuery({
     queryKey: ['functions'],
-    queryFn: () => functionsService.listFunctions(),
+    queryFn: () => functionService.listFunctions(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
@@ -28,7 +28,7 @@ export function useFunctions() {
   const selectFunction = useCallback(
     async (func: EdgeFunction) => {
       try {
-        const data = await functionsService.getFunctionBySlug(func.slug);
+        const data = await functionService.getFunctionBySlug(func.slug);
         setSelectedFunction(data);
       } catch (error) {
         console.error('Failed to fetch function details:', error);
@@ -47,7 +47,7 @@ export function useFunctions() {
 
   // Delete function mutation (for future use)
   const deleteFunctionMutation = useMutation({
-    mutationFn: (slug: string) => functionsService.deleteFunction(slug),
+    mutationFn: (slug: string) => functionService.deleteFunction(slug),
     onSuccess: (_, slug) => {
       void queryClient.invalidateQueries({ queryKey: ['functions'] });
       showToast('Function deleted successfully', 'success');

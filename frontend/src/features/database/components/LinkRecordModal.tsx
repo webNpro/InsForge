@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
-import { databaseService } from '@/features/database/services/database.service';
 import { useTables } from '@/features/database/hooks/useTables';
+import { useRecords } from '@/features/database/hooks/useRecords';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, DataGrid, TypeBadge } from '@/components';
 import {
@@ -26,7 +25,6 @@ interface LinkRecordModalProps {
   referenceTable: string;
   referenceColumn: string;
   onSelectRecord: (record: DatabaseRecord) => void;
-  currentValue?: string | null;
   children: (openModal: () => void) => ReactNode;
 }
 
@@ -34,7 +32,6 @@ export function LinkRecordModal({
   referenceTable,
   referenceColumn,
   onSelectRecord,
-  currentValue,
   children,
 }: LinkRecordModalProps) {
   const [open, setOpen] = useState(false);
@@ -43,41 +40,29 @@ export function LinkRecordModal({
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const { useTableSchema } = useTables();
+  const recordsHook = useRecords(referenceTable);
 
   // Fetch table schema
   const { data: schema } = useTableSchema(referenceTable, open);
 
   // Fetch records from the reference table
-  const { data: recordsData, isLoading } = useQuery({
-    queryKey: [
-      'table',
-      referenceTable,
-      currentPage,
-      PAGE_SIZE,
-      searchQuery,
-      JSON.stringify(sortColumns),
-    ],
-    queryFn: async () => {
-      const offset = (currentPage - 1) * PAGE_SIZE;
-      const [schema, records] = await Promise.all([
-        databaseService.getTableSchema(referenceTable),
-        databaseService.getTableRecords(
-          referenceTable,
-          PAGE_SIZE,
-          offset,
-          searchQuery || undefined,
-          sortColumns
-        ),
-      ]);
+  const offset = (currentPage - 1) * PAGE_SIZE;
+  const { data: recordsResponse, isLoading } = recordsHook.useTableRecords(
+    PAGE_SIZE,
+    offset,
+    searchQuery || undefined,
+    sortColumns,
+    open
+  );
 
-      return {
-        schema,
-        records: records.records,
-        totalRecords: records.pagination.total || schema.recordCount,
-      };
-    },
-    enabled: open,
-  });
+  const recordsData =
+    schema && recordsResponse
+      ? {
+          schema,
+          records: recordsResponse.records,
+          totalRecords: recordsResponse.pagination.total || schema.recordCount,
+        }
+      : undefined;
 
   // Reset page when search query changes
   useEffect(() => {
@@ -203,87 +188,87 @@ export function LinkRecordModal({
     <>
       {children(() => setOpen(true))}
       <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-4xl h-[calc(100vh-48px)] p-0 gap-0 flex flex-col">
-        <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700 flex-shrink-0 flex flex-col gap-1">
-          <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
-            Link Record
-          </DialogTitle>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-zinc-500 dark:text-neutral-400">
-              Select a record to reference from
-            </span>
-            <TypeBadge
-              type={`${referenceTable}.${referenceColumn}`}
-              className="dark:bg-neutral-700"
+        <DialogContent className="max-w-4xl h-[calc(100vh-48px)] p-0 gap-0 flex flex-col">
+          <DialogHeader className="px-6 py-3 border-b border-zinc-200 dark:border-neutral-700 flex-shrink-0 flex flex-col gap-1">
+            <DialogTitle className="text-lg font-semibold text-zinc-950 dark:text-white">
+              Link Record
+            </DialogTitle>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-zinc-500 dark:text-neutral-400">
+                Select a record to reference from
+              </span>
+              <TypeBadge
+                type={`${referenceTable}.${referenceColumn}`}
+                className="dark:bg-neutral-700"
+              />
+            </div>
+          </DialogHeader>
+
+          {/* Search Bar */}
+          <div className="p-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search records..."
+              className="w-60 dark:text-white dark:bg-neutral-900 dark:border-neutral-700"
+              debounceTime={300}
             />
           </div>
-        </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="p-3">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search records..."
-            className="w-60 dark:text-white dark:bg-neutral-900 dark:border-neutral-700"
-            debounceTime={300}
-          />
-        </div>
-
-        {/* Records DataGrid */}
-        <div className="flex-1 overflow-hidden">
-          <DataGrid
-            data={records}
-            columns={columns}
-            loading={isLoading && !records.length}
-            selectedRows={selectedRows}
-            onSelectedRowsChange={(newSelectedRows) => {
-              // Handle selection changes from cell clicks
-              const selectedId = Array.from(newSelectedRows)[0];
-              if (selectedId) {
-                const record = records.find((r: DatabaseRecord) => String(r.id) === selectedId);
-                if (record) {
-                  setSelectedRecord(record);
+          {/* Records DataGrid */}
+          <div className="flex-1 overflow-hidden">
+            <DataGrid
+              data={records}
+              columns={columns}
+              loading={isLoading && !records.length}
+              selectedRows={selectedRows}
+              onSelectedRowsChange={(newSelectedRows) => {
+                // Handle selection changes from cell clicks
+                const selectedId = Array.from(newSelectedRows)[0];
+                if (selectedId) {
+                  const record = records.find((r: DatabaseRecord) => String(r.id) === selectedId);
+                  if (record) {
+                    setSelectedRecord(record);
+                  }
+                } else {
+                  setSelectedRecord(null);
                 }
-              } else {
-                setSelectedRecord(null);
+              }}
+              sortColumns={sortColumns}
+              onSortColumnsChange={setSortColumns}
+              onCellClick={handleCellClick}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={PAGE_SIZE}
+              totalRecords={totalRecords}
+              onPageChange={setCurrentPage}
+              showSelection={false}
+              showPagination={true}
+              emptyStateTitle={
+                searchQuery ? 'No records match your search criteria' : 'No records found'
               }
-            }}
-            sortColumns={sortColumns}
-            onSortColumnsChange={setSortColumns}
-            onCellClick={handleCellClick}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={PAGE_SIZE}
-            totalRecords={totalRecords}
-            onPageChange={setCurrentPage}
-            showSelection={false}
-            showPagination={true}
-            emptyStateTitle={
-              searchQuery ? 'No records match your search criteria' : 'No records found'
-            }
-          />
-        </div>
+            />
+          </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-200 dark:border-neutral-700 flex justify-end gap-3 flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            className="dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmSelection}
-            disabled={!selectedRecord}
-            className="bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
-          >
-            Add Record
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-zinc-200 dark:border-neutral-700 flex justify-end gap-3 flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              className="dark:bg-neutral-600 dark:text-white dark:border-transparent dark:hover:bg-neutral-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmSelection}
+              disabled={!selectedRecord}
+              className="bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
+            >
+              Add Record
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

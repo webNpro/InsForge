@@ -326,7 +326,6 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                     <LinkRecordModal
                       referenceTable={foreignKey.referenceTable}
                       referenceColumn={foreignKey.referenceColumn}
-                      currentValue={formField.value ? String(formField.value) : null}
                       onSelectRecord={(record: DatabaseRecord) => {
                         const referenceValue = record[foreignKey.referenceColumn];
                         const result = convertValueForColumn(

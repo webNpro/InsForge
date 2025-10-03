@@ -3,7 +3,7 @@ import { Download, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/radix/Dialog';
 import { Button } from '@/components/radix/Button';
 import { LoadingState } from '@/components';
-import { storageService } from '@/features/storage/services/storage.service';
+import { useStorage } from '@/features/storage/hooks/useStorage';
 import { StorageFileSchema } from '@insforge/shared-schemas';
 import { TypeBadge } from '@/components/TypeBadge';
 
@@ -18,6 +18,8 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { getDownloadUrl } = useStorage();
 
   // Reset state when file changes
   useEffect(() => {
@@ -37,7 +39,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
       try {
         const fileBucket = file.bucket || bucket;
-        const url = storageService.getDownloadUrl(fileBucket, file.key);
+        const url = getDownloadUrl(fileBucket, file.key);
         setPreviewUrl(url);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load preview';
@@ -48,7 +50,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
     };
 
     void loadPreview();
-  }, [file, open, bucket]);
+  }, [file, open, bucket, getDownloadUrl]);
 
   const handleDownload = () => {
     if (!file || !previewUrl) {

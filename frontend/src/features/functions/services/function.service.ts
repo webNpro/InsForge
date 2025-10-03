@@ -19,7 +19,7 @@ export interface FunctionsResponse {
   };
 }
 
-export class FunctionsService {
+export class FunctionService {
   async listFunctions(): Promise<FunctionsResponse> {
     const data = await apiClient.request('/functions', {
       headers: apiClient.withAccessToken(),
@@ -45,4 +45,4 @@ export class FunctionsService {
   }
 }
 
-export const functionsService = new FunctionsService();
+export const functionService = new FunctionService();

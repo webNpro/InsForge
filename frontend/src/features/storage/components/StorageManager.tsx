@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Folder } from 'lucide-react';
-import { storageService } from '@/features/storage/services/storage.service';
+import { useStorage } from '@/features/storage/hooks/useStorage';
 import { StorageFileSchema } from '@insforge/shared-schemas';
 import { LoadingState, ErrorState, EmptyState } from '@/components';
 import { StorageDataGrid } from './StorageDataGrid';
@@ -28,7 +27,6 @@ export function StorageManager({
   onSelectedFilesChange,
   isRefreshing = false,
 }: StorageManagerProps) {
-  const queryClient = useQueryClient();
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [previewFile, setPreviewFile] = useState<StorageFileSchema | null>(null);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -45,40 +43,27 @@ export function StorageManager({
     setCurrentPage(1);
   }, [searchQuery, bucketName]);
 
+  const { useListObjects, deleteObject, downloadObject } = useStorage();
+
   // Fetch objects in selected bucket
   const {
     data: objectsData,
     isLoading: objectsLoading,
     error: objectsError,
-  } = useQuery({
-    queryKey: ['storage', 'objects', bucketName, currentPage, pageSize, searchQuery],
-    queryFn: () =>
-      storageService.listObjects(
-        bucketName,
-        {
-          limit: pageSize,
-          offset: (currentPage - 1) * pageSize,
-        },
-        searchQuery
-      ),
-    enabled: !!bucketName,
-    placeholderData: (previousData) => previousData, // Keep previous data while loading
-  });
+  } = useListObjects(
+    bucketName,
+    {
+      limit: pageSize,
+      offset: (currentPage - 1) * pageSize,
+    },
+    searchQuery
+  );
 
   // Calculate pagination from backend response
   const totalPages = useMemo(() => {
     const total = objectsData?.pagination.total || fileCount;
     return Math.ceil(total / pageSize);
   }, [objectsData?.pagination.total, fileCount, pageSize]);
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: ({ bucket, key }: { bucket: string; key: string }) =>
-      storageService.deleteObject(bucket, key),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['storage'] });
-    },
-  });
 
   // No need for client-side filtering - backend handles search
   // Just apply sorting
@@ -115,7 +100,7 @@ export function StorageManager({
     async (file: StorageFileSchema) => {
       setDownloadingFiles((prev) => new Set(prev).add(file.key));
       try {
-        const blob = await storageService.downloadObject(bucketName, file.key);
+        const blob = await downloadObject(bucketName, file.key);
 
         // Create download link
         const url = window.URL.createObjectURL(blob);
@@ -137,7 +122,7 @@ export function StorageManager({
         });
       }
     },
-    [bucketName, showToast]
+    [bucketName, downloadObject, showToast]
   );
 
   const handlePreview = useCallback((file: StorageFileSchema) => {
@@ -157,10 +142,10 @@ export function StorageManager({
       const shouldDelete = await confirm(confirmOptions);
 
       if (shouldDelete) {
-        deleteMutation.mutate({ bucket: bucketName, key: file.key });
+        deleteObject({ bucket: bucketName, key: file.key });
       }
     },
-    [bucketName, confirm, deleteMutation]
+    [bucketName, confirm, deleteObject]
   );
 
   const isDownloading = useCallback(

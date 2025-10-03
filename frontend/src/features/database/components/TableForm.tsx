@@ -6,7 +6,7 @@ import { AlertCircle, Plus, X, Link, MoveRight } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
-import { databaseService } from '@/features/database/services/database.service';
+import { tableService } from '@/features/database/services/table.service';
 import {
   TableFormColumnSchema,
   TableFormForeignKeySchema,
@@ -220,7 +220,7 @@ export function TableForm({
         };
       });
 
-      return databaseService.createTable(data.tableName, columns);
+      return tableService.createTable(data.tableName, columns);
     },
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });
@@ -350,7 +350,7 @@ export function TableForm({
         operations.renameTable = { newTableName: data.tableName };
       }
 
-      return databaseService.updateTableSchema(editTable.tableName, operations);
+      return tableService.updateTableSchema(editTable.tableName, operations);
     },
     onSuccess: (_, data) => {
       void queryClient.invalidateQueries({ queryKey: ['database-metadata'] });

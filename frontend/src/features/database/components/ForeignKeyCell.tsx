@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Link2, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { TypeBadge } from '@/components/TypeBadge';
@@ -10,8 +9,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
-import { databaseService } from '@/features/database/services/database.service';
 import { useTables } from '@/features/database/hooks/useTables';
+import { useRecords } from '@/features/database/hooks/useRecords';
 import { ConvertedValue, DataGrid } from '@/components/datagrid';
 import { convertSchemaToColumns } from '@/features/database/components/DatabaseDataGrid';
 import { formatValueForDisplay } from '@/lib/utils/utils';
@@ -28,6 +27,7 @@ interface ForeignKeyCellProps {
 export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyCellProps) {
   const [open, setOpen] = useState(false);
   const { useTableSchema } = useTables();
+  const recordsHook = useRecords(foreignKey.table);
 
   // Helper function to safely render any value type (including JSON objects)
   const renderValue = (val: ConvertedValue): string => {
@@ -35,32 +35,12 @@ export function ForeignKeyCell({ value, foreignKey, onJumpToTable }: ForeignKeyC
   };
 
   // Fetch the referenced record when popover opens
+  const searchValue = value ? renderValue(value) : '';
   const {
     data: recordData,
     isLoading: _isLoading,
     error,
-  } = useQuery({
-    queryKey: ['table', foreignKey.table, foreignKey.column, value],
-    queryFn: async () => {
-      if (!value) {
-        return null;
-      }
-
-      try {
-        const searchValue = renderValue(value);
-        const record = await databaseService.getRecordByForeignKeyValue(
-          foreignKey.table,
-          foreignKey.column,
-          searchValue
-        );
-        return record;
-      } catch (error) {
-        console.error('Failed to fetch foreign key record:', error);
-        throw error;
-      }
-    },
-    enabled: open && !!value,
-  });
+  } = recordsHook.useRecordByForeignKey(foreignKey.column, searchValue, open && !!value);
 
   const record = recordData;
 

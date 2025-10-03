@@ -1,67 +1,9 @@
 import { ConvertedValue } from '@/components/datagrid/datagridTypes';
 import { apiClient } from '@/lib/api/client';
-import {
-  ColumnSchema,
-  GetTableSchemaResponse,
-  CreateTableRequest,
-  UpdateTableSchemaResponse,
-  UpdateTableSchemaRequest,
-} from '@insforge/shared-schemas';
+import { ColumnSchema } from '@insforge/shared-schemas';
+import { tableService } from './table.service';
 
-export class DatabaseService {
-  // Table operations
-  async listTables(): Promise<string[]> {
-    const data = await apiClient.request('/database/tables', {
-      headers: apiClient.withAccessToken(),
-    });
-    // data is already unwrapped by request method and should be an array
-    return Array.isArray(data) ? data : [];
-  }
-
-  getAllTableSchemas(): Promise<GetTableSchemaResponse[]> {
-    return apiClient.request('/database/tables/schemas', {
-      headers: apiClient.withAccessToken(),
-    });
-  }
-
-  getTableSchema(tableName: string): Promise<GetTableSchemaResponse> {
-    return apiClient.request(`/database/tables/${tableName}/schema`, {
-      headers: apiClient.withAccessToken(),
-    });
-  }
-
-  createTable(tableName: string, columns: ColumnSchema[]) {
-    const body: CreateTableRequest = { tableName: tableName, columns, rlsEnabled: true };
-    return apiClient.request('/database/tables', {
-      method: 'POST',
-      headers: apiClient.withAccessToken({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(body),
-    });
-  }
-
-  deleteTable(tableName: string) {
-    return apiClient.request(`/database/tables/${tableName}`, {
-      method: 'DELETE',
-      headers: apiClient.withAccessToken(),
-    });
-  }
-
-  updateTableSchema(
-    tableName: string,
-    operations: UpdateTableSchemaRequest
-  ): Promise<UpdateTableSchemaResponse | void> {
-    return apiClient.request(`/database/tables/${tableName}/schema`, {
-      method: 'PATCH',
-      headers: apiClient.withAccessToken({
-        'Content-Type': 'application/json',
-      }),
-      body: JSON.stringify(operations),
-    });
-  }
-
-  // Record operations
+export class RecordService {
   /**
    * Data fetching method with built-in search, sorting, and pagination for UI components.
    *
@@ -88,7 +30,7 @@ export class DatabaseService {
       const searchValue = searchQuery.trim();
 
       // Get table schema to identify text columns
-      const schema = await this.getTableSchema(tableName);
+      const schema = await tableService.getTableSchema(tableName);
       const textColumns = schema.columns
         .filter((col: ColumnSchema) => {
           const type = col.type.toLowerCase();
@@ -219,4 +161,4 @@ export class DatabaseService {
   }
 }
 
-export const databaseService = new DatabaseService();
+export const recordService = new RecordService();

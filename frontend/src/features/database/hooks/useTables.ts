@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { databaseService } from '../services/database.service';
+import { tableService } from '../services/table.service';
 import { useToast } from '@/lib/hooks/useToast';
 import {
   ColumnSchema,
@@ -19,7 +19,7 @@ export function useTables() {
     refetch: refetchTables,
   } = useQuery({
     queryKey: ['tables'],
-    queryFn: () => databaseService.listTables(),
+    queryFn: () => tableService.listTables(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
@@ -31,7 +31,7 @@ export function useTables() {
     refetch: refetchAllSchemas,
   } = useQuery({
     queryKey: ['tables', 'schemas'],
-    queryFn: () => databaseService.getAllTableSchemas(),
+    queryFn: () => tableService.getAllTableSchemas(),
     staleTime: 2 * 60 * 1000,
   });
 
@@ -39,7 +39,7 @@ export function useTables() {
   const useTableSchema = (tableName: string, enabled = true) => {
     return useQuery({
       queryKey: ['tables', tableName, 'schema'],
-      queryFn: () => databaseService.getTableSchema(tableName),
+      queryFn: () => tableService.getTableSchema(tableName),
       enabled: enabled && !!tableName,
       staleTime: 2 * 60 * 1000,
     });
@@ -48,7 +48,7 @@ export function useTables() {
   // Mutation to create a table
   const createTableMutation = useMutation({
     mutationFn: ({ tableName, columns }: { tableName: string; columns: ColumnSchema[] }) =>
-      databaseService.createTable(tableName, columns),
+      tableService.createTable(tableName, columns),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
       void queryClient.invalidateQueries({ queryKey: ['tables', 'schemas'] });
@@ -62,7 +62,7 @@ export function useTables() {
 
   // Mutation to delete a table
   const deleteTableMutation = useMutation({
-    mutationFn: (tableName: string) => databaseService.deleteTable(tableName),
+    mutationFn: (tableName: string) => tableService.deleteTable(tableName),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tables'] });
       void queryClient.invalidateQueries({ queryKey: ['tables', 'schemas'] });
@@ -82,7 +82,7 @@ export function useTables() {
     }: {
       tableName: string;
       operations: UpdateTableSchemaRequest;
-    }) => databaseService.updateTableSchema(tableName, operations),
+    }) => tableService.updateTableSchema(tableName, operations),
     onSuccess: (_, { tableName }) => {
       void queryClient.invalidateQueries({ queryKey: ['tables', 'schemas'] });
       void queryClient.invalidateQueries({ queryKey: ['tables', tableName, 'schema'] });

@@ -17,19 +17,19 @@ export interface FunctionWithRuntime {
   };
 }
 
-export class FunctionsService {
-  private static instance: FunctionsService;
+export class FunctionService {
+  private static instance: FunctionService;
   private db;
 
   private constructor() {
     this.db = DatabaseManager.getInstance();
   }
 
-  static getInstance(): FunctionsService {
-    if (!FunctionsService.instance) {
-      FunctionsService.instance = new FunctionsService();
+  static getInstance(): FunctionService {
+    if (!FunctionService.instance) {
+      FunctionService.instance = new FunctionService();
     }
-    return FunctionsService.instance;
+    return FunctionService.instance;
   }
 
   /**

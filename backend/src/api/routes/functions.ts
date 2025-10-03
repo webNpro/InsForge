@@ -1,13 +1,13 @@
 import { Router, Response } from 'express';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
-import { FunctionsService } from '@/core/functions/functions.js';
+import { FunctionService } from '@/core/functions/functions.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AppError } from '@/api/middleware/error.js';
 import logger from '@/utils/logger.js';
 import { functionUploadRequestSchema, functionUpdateRequestSchema } from '@insforge/shared-schemas';
 
 const router = Router();
-const functionsService = FunctionsService.getInstance();
+const functionService = FunctionService.getInstance();
 const auditService = AuditService.getInstance();
 
 /**
@@ -16,7 +16,7 @@ const auditService = AuditService.getInstance();
  */
 router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const result = await functionsService.listFunctions();
+    const result = await functionService.listFunctions();
     res.json(result);
   } catch {
     res.status(500).json({ error: 'Failed to list functions' });
@@ -30,7 +30,7 @@ router.get('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
 router.get('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { slug } = req.params;
-    const func = await functionsService.getFunction(slug);
+    const func = await functionService.getFunction(slug);
 
     if (!func) {
       return res.status(404).json({ error: 'Function not found' });
@@ -56,7 +56,7 @@ router.post('/', verifyAdmin, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const created = await functionsService.createFunction(validation.data);
+    const created = await functionService.createFunction(validation.data);
 
     // Log audit event
     logger.info(`Function ${created.name} (${created.slug}) created by ${req.user?.email}`);
@@ -108,7 +108,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updated = await functionsService.updateFunction(slug, validation.data);
+    const updated = await functionService.updateFunction(slug, validation.data);
 
     if (!updated) {
       return res.status(404).json({ error: 'Function not found' });
@@ -153,7 +153,7 @@ router.put('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
 router.delete('/:slug', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { slug } = req.params;
-    const deleted = await functionsService.deleteFunction(slug);
+    const deleted = await functionService.deleteFunction(slug);
 
     if (!deleted) {
       return res.status(404).json({ error: 'Function not found' });
