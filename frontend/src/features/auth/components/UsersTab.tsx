@@ -3,6 +3,7 @@ import { useUsers } from '@/features/auth/hooks/useUsers';
 import { UsersDataGrid } from './UsersDataGrid';
 import { SortColumn } from 'react-data-grid';
 import { UserSchema } from '@insforge/shared-schemas';
+import { ConnectCTA } from '@/components/ConnectCTA';
 
 interface UsersTabProps {
   searchQuery?: string;
@@ -89,6 +90,13 @@ export function UsersTab({
     });
   }, [users, sortColumns]);
 
+  const emptyState = (
+    <div className="text-sm text-black dark:text-white">
+      {externalSearchQuery ? 'No users match your search criteria' : 'No users found'}.{' '}
+      <ConnectCTA />
+    </div>
+  );
+
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -104,9 +112,7 @@ export function UsersTab({
           pageSize={pageSize}
           totalRecords={totalUsers}
           onPageChange={setCurrentPage}
-          emptyStateTitle={
-            externalSearchQuery ? 'No users match your search criteria' : 'No users found'
-          }
+          emptyState={emptyState}
         />
       </div>
     </div>

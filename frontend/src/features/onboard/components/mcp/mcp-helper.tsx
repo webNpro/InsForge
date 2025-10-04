@@ -22,11 +22,6 @@ export const GenerateInstallCommand = (agent: MCPAgent, apiKey: string) => {
 
 export const MCP_AGENTS: MCPAgent[] = [
   {
-    id: 'trae',
-    displayName: 'Trae',
-    logo: <TraeLogo className="w-6 h-6" />,
-  },
-  {
     id: 'cursor',
     displayName: 'Cursor',
     logo: <CursorLogo className="w-6 h-6" />,
@@ -37,14 +32,19 @@ export const MCP_AGENTS: MCPAgent[] = [
     logo: <ClaudeLogo className="w-6 h-6" />,
   },
   {
-    id: 'windsurf',
-    displayName: 'Windsurf',
-    logo: <WindsurfLogo className="w-6 h-6 dark:text-white" />,
+    id: 'trae',
+    displayName: 'Trae',
+    logo: <TraeLogo className="w-5 h-5" />,
   },
   {
     id: 'cline',
     displayName: 'Cline',
     logo: <ClineLogo className="w-6 h-6 dark:text-white" />,
+  },
+  {
+    id: 'windsurf',
+    displayName: 'Windsurf',
+    logo: <WindsurfLogo className="w-6 h-6 dark:text-white" />,
   },
   {
     id: 'roocode',

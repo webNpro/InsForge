@@ -1,4 +1,5 @@
 import { Database } from 'lucide-react';
+import { ConnectCTA } from '@/components/ConnectCTA';
 
 interface TableEmptyStateProps {
   searchTerm: string;
@@ -6,14 +7,14 @@ interface TableEmptyStateProps {
 
 export function TableEmptyState({ searchTerm }: TableEmptyStateProps) {
   return (
-    <div className="text-center py-8">
-      <Database className="mx-auto h-8 w-8 text-muted-foreground mb-2.5" />
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col items-center justify-center py-4 text-center">
+      <Database className="h-10 w-10 text-gray-400 dark:text-neutral-600 mb-3" />
+      <p className="text-sm text-gray-600 dark:text-neutral-400 font-medium">
         {searchTerm ? 'No tables found' : 'No tables yet'}
       </p>
       {!searchTerm && (
-        <p className="text-xs text-muted-foreground mt-2.5">
-          Create your first table to get started
+        <p className="text-xs text-gray-500 dark:text-neutral-400 font-medium mt-1 mx-10">
+          <ConnectCTA fallback="Create your first table to get started" />
         </p>
       )}
     </div>

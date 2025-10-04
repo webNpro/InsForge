@@ -8,7 +8,6 @@ import {
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
 import { CircularStepper } from '@/components/Stepper';
-import { useOnboardStep, STEP_DESCRIPTIONS } from '@/lib/contexts/OnboardStepContext';
 
 interface OnboardButtonProps {
   isCollapsed: boolean;
@@ -16,13 +15,8 @@ interface OnboardButtonProps {
 
 export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
   const location = useLocation();
-  const { currentStep, totalSteps } = useOnboardStep();
 
   const isActive = location.pathname === '/dashboard/onboard';
-
-  // Limit displayed step to totalSteps for the sidebar
-  const displayStep = Math.min(currentStep, totalSteps);
-  const currentDescription = STEP_DESCRIPTIONS[displayStep - 1];
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -39,12 +33,7 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
                   : 'border-zinc-200 dark:border-neutral-700 hover:bg-zinc-50 dark:hover:bg-neutral-600 hover:border-zinc-300 dark:text-white'
               )}
             >
-              <CircularStepper
-                currentStep={displayStep}
-                totalSteps={totalSteps}
-                size={40}
-                isActive={isActive}
-              />
+              <CircularStepper currentStep={1} totalSteps={3} size={40} isActive={isActive} />
               {!isCollapsed && (
                 <div className="absolute left-16.5 flex flex-col items-start">
                   <span
@@ -55,16 +44,6 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
                   >
                     Get Started
                   </span>
-                  <span
-                    className={cn(
-                      'text-xs transition-colors duration-200',
-                      isActive
-                        ? 'text-text-gray dark:text-zinc-800'
-                        : 'text-zinc-500 dark:text-white'
-                    )}
-                  >
-                    {currentDescription}
-                  </span>
                 </div>
               )}
             </Button>
@@ -74,7 +53,6 @@ export function OnboardButton({ isCollapsed }: OnboardButtonProps) {
           <TooltipContent side="right">
             <div className="text-center">
               <p className="font-semibold">Get Started</p>
-              <p className="text-xs text-text-gray dark:text-neutural-600">{currentDescription}</p>
             </div>
           </TooltipContent>
         )}

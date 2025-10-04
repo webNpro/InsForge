@@ -33,9 +33,7 @@ export interface DataGridProps<TRow extends DataGridRowType = DataGridRow> {
   pageSize?: number;
   totalRecords?: number;
   onPageChange?: (page: number) => void;
-  emptyStateTitle?: string;
-  emptyStateActionText?: string;
-  onEmptyStateAction?: () => void;
+  emptyState?: React.ReactNode;
   rowKeyGetter?: (row: TRow) => string;
   className?: string;
   showSelection?: boolean;
@@ -60,9 +58,7 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
   pageSize,
   totalRecords,
   onPageChange,
-  emptyStateTitle = 'No data available',
-  emptyStateActionText,
-  onEmptyStateAction,
+  emptyState,
   rowKeyGetter,
   className,
   showSelection = false,
@@ -218,23 +214,13 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
           rowHeight={36}
           enableVirtualization={true}
           renderers={{
-            noRowsFallback: (
+            noRowsFallback: emptyState ? (
               <div className="absolute inset-x-0 top-0 mt-13 py-8 flex items-center justify-center bg-white dark:bg-neutral-800">
-                <div className="flex flex-col gap-1 items-center">
-                  <div className="flex flex-row gap-2.5 items-center">
-                    <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {emptyStateTitle}
-                    </div>
-                    {emptyStateActionText && onEmptyStateAction && (
-                      <button
-                        onClick={onEmptyStateAction}
-                        className="inline-flex items-center text-sm font-medium text-chart-blue-dark focus:outline-none focus:ring-0 dark:text-zinc-400"
-                      >
-                        {emptyStateActionText}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                {emptyState}
+              </div>
+            ) : (
+              <div className="absolute inset-x-0 top-0 mt-13 py-8 flex items-center justify-center bg-white dark:bg-neutral-800">
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">No data to display</div>
               </div>
             ),
           }}

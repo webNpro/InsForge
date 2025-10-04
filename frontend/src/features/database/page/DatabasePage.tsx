@@ -22,6 +22,7 @@ import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGrid';
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
+import { ConnectCTA } from '@/components/ConnectCTA';
 import { SortColumn } from 'react-data-grid';
 import { convertValueForColumn, isInsForgeCloudProject } from '@/lib/utils/utils';
 import {
@@ -494,12 +495,17 @@ function DatabasePageContent() {
                   onSortColumnsChange={handleSortColumnsChange}
                   onCellEdit={handleRecordUpdate}
                   onJumpToTable={setSelectedTable}
-                  searchQuery={searchQuery}
                   currentPage={currentPage}
                   totalPages={totalPages}
                   pageSize={PAGE_SIZE}
                   totalRecords={tableData?.totalRecords || 0}
                   onPageChange={setCurrentPage}
+                  emptyState={
+                    <div className="text-sm text-black dark:text-white">
+                      {searchQuery ? 'No records match your search criteria' : 'No records found'}.{' '}
+                      <ConnectCTA />
+                    </div>
+                  }
                 />
               )}
             </div>

@@ -255,7 +255,6 @@ export interface DatabaseDataGridProps extends Omit<DataGridProps<DatabaseDataGr
   schema?: TableSchema;
   onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>;
   onJumpToTable?: (tableName: string) => void;
-  searchQuery?: string;
 }
 
 // Specialized DataGrid for database tables
@@ -263,7 +262,6 @@ export function DatabaseDataGrid({
   schema,
   onCellEdit,
   onJumpToTable,
-  searchQuery,
   ...props
 }: DatabaseDataGridProps) {
   const columns = useMemo(() => {
@@ -274,7 +272,6 @@ export function DatabaseDataGrid({
     <DataGrid<DatabaseDataGridRow>
       {...props}
       columns={columns}
-      emptyStateTitle={searchQuery ? 'No records match your search criteria' : undefined}
       showSelection={true}
       showPagination={true}
     />

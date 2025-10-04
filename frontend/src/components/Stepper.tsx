@@ -137,3 +137,56 @@ export function LinearStepper({
     </div>
   );
 }
+
+interface VerticalStepperProps {
+  currentStep: number;
+  stepLabels: readonly string[];
+  className?: string;
+}
+
+export function VerticalStepper({ currentStep, stepLabels, className }: VerticalStepperProps) {
+  return (
+    <div className={cn('flex flex-col gap-0', className)}>
+      {stepLabels.map((label, index) => {
+        const stepNumber = index + 1;
+        const isCurrent = stepNumber === currentStep;
+        const isLast = index === stepLabels.length - 1;
+
+        return (
+          <div key={stepNumber} className="flex flex-row items-start gap-3">
+            {/* Step indicator column */}
+            <div className="flex flex-col items-center">
+              {/* Circle with number */}
+              <div
+                className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
+                  isCurrent
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-black'
+                    : 'bg-zinc-200 dark:bg-neutral-700 text-zinc-500 dark:text-neutral-400'
+                )}
+              >
+                {stepNumber}
+              </div>
+              {/* Connecting line */}
+              {!isLast && <div className="w-0.5 h-20 bg-zinc-200 dark:bg-neutral-700" />}
+            </div>
+
+            {/* Step label */}
+            <div className={cn('pt-2', !isLast && 'pb-20')}>
+              <span
+                className={cn(
+                  'text-base font-medium transition-colors',
+                  isCurrent
+                    ? 'text-zinc-950 dark:text-white'
+                    : 'text-zinc-500 dark:text-neutral-400'
+                )}
+              >
+                {label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

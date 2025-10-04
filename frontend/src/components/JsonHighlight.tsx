@@ -1,11 +1,14 @@
 import { CopyButton } from './CopyButton';
+import { cn } from '@/lib/utils/utils';
 
 interface JsonHighlightProps {
   json: string;
+  textColor?: string;
+  className?: string;
 }
 
-export function JsonHighlight({ json }: JsonHighlightProps) {
-  const highlightJson = (str: string) => {
+export function JsonHighlight({ json, textColor, className }: JsonHighlightProps) {
+  const highlightJson = (str: string, textColor?: string) => {
     // Tokenize JSON string
     const tokens = str.split(/("(?:[^"\\]|\\.)*")|(\s+)|([:,{}[\]])/g).filter(Boolean);
 
@@ -23,13 +26,13 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
 
         if (isKey) {
           return (
-            <span key={index} className="text-blue-600 dark:text-blue-400">
+            <span key={index} className={cn('text-blue-600 dark:text-blue-400', textColor)}>
               {token}
             </span>
           );
         } else {
           return (
-            <span key={index} className="text-green-600 dark:text-green-400">
+            <span key={index} className={cn('text-green-600 dark:text-green-400', textColor)}>
               {token}
             </span>
           );
@@ -39,23 +42,35 @@ export function JsonHighlight({ json }: JsonHighlightProps) {
       // Punctuation
       if (/^[:,{}[\]]$/.test(token)) {
         return (
-          <span key={index} className="text-gray-600 dark:text-gray-400">
+          <span key={index} className={cn('text-gray-600 dark:text-gray-400', textColor)}>
             {token}
           </span>
         );
       }
 
       // Whitespace and other
-      return <span key={index}>{token}</span>;
+      return (
+        <span key={index} className={textColor}>
+          {token}
+        </span>
+      );
     });
   };
 
   return (
     <div className="relative">
-      <pre className="font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 dark:bg-neutral-900 dark:text-white rounded-md py-4 px-6 pr-16">
-        {highlightJson(json)}
+      <pre
+        className={cn(
+          'font-mono text-sm leading-6 whitespace-pre overflow-x-auto bg-gray-50 dark:bg-neutral-900 dark:text-white rounded-md py-4 px-6 pr-16',
+          className
+        )}
+      >
+        {highlightJson(json, textColor)}
       </pre>
-      <CopyButton text={json} className="absolute top-4 right-4" />
+      <CopyButton
+        text={json}
+        className="absolute top-3.5 right-3.5 dark:bg-neutral-800 dark:hover:bg-neutral-800 dark:data-[copied=true]:bg-transparent dark:data-[copied=true]:hover:bg-transparent pl-2"
+      />
     </div>
   );
 }
