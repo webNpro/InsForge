@@ -27,6 +27,9 @@ export default function OnBoardPage() {
 
   // Navigate to dashboard on successful connection
   useEffect(() => {
+    if (!socket) {
+      return;
+    }
     const handleMcpConnected = () => {
       setShowSuccess(true);
       // Mark onboarding as completed using the existing hook
@@ -39,10 +42,10 @@ export default function OnBoardPage() {
       }, 1000);
     };
 
-    socket?.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
+    socket.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
 
     return () => {
-      socket?.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
+      socket.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
     };
   }, [socket, navigate]);
 
