@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
+import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 interface ConnectCTAProps {
   className?: string;
@@ -16,7 +17,7 @@ export function ConnectCTA({ className, fallback }: ConnectCTAProps) {
   }
 
   const handleConnect = () => {
-    void navigate('/dashboard');
+    void navigate(isInsForgeCloudProject() ? '/cloud/dashboard' : '/dashboard');
   };
 
   return (
