@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://insforge.com">
+  <a href="https://insforge.dev">
     <img src="assets/banner.png" alt="Insforge Logo">
   </a>
   
