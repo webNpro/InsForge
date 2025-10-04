@@ -17,7 +17,7 @@ export function ConnectCTA({ className, fallback }: ConnectCTAProps) {
   }
 
   const handleConnect = () => {
-    void navigate(isInsForgeCloudProject() ? '/cloud/dashboard' : '/dashboard');
+    void navigate(isInsForgeCloudProject() ? '/cloud/onboard' : '/onboard');
   };
 
   return (
