@@ -29,7 +29,7 @@ export default function OnBoardPage() {
     if (!socket) {
       return;
     }
-    const handleMcpDeteted = (_data: { tool_name: string; real_time: string }) => {
+    const handleMcpDetected = (_data: { tool_name: string; real_time: string }) => {
       setMcpDetected(true);
       // Navigate to dashboard after a short delay to show success message
       setTimeout(() => {
@@ -39,10 +39,10 @@ export default function OnBoardPage() {
       }, 1000);
     };
 
-    socket.on(ServerEvents.MCP_CONNECTED, handleMcpDeteted);
+    socket.on(ServerEvents.MCP_CONNECTED, handleMcpDetected);
 
     return () => {
-      socket.off(ServerEvents.MCP_CONNECTED, handleMcpDeteted);
+      socket.off(ServerEvents.MCP_CONNECTED, handleMcpDetected);
     };
   }, [socket, navigate]);
 
