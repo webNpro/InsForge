@@ -26,9 +26,9 @@ interface McpUsageContextValue {
   isLoading: boolean;
 }
 
-interface McpConnectedPayload {
+export interface McpConnectedPayload {
   tool_name: string;
-  real_time: string;
+  created_at: string;
 }
 
 // ============================================================================
@@ -122,7 +122,7 @@ export function McpUsageProvider({ children }: McpUsageProviderProps) {
       const newRecord: McpUsageRecord = {
         tool_name: data.payload.tool_name,
         success: true,
-        created_at: data.payload.real_time,
+        created_at: data.payload.created_at,
       };
 
       // Update local state
@@ -135,7 +135,7 @@ export function McpUsageProvider({ children }: McpUsageProviderProps) {
             type: 'MCP_CONNECTION_STATUS',
             connected: true,
             tool_name: data.payload.tool_name,
-            timestamp: data.payload.real_time,
+            timestamp: data.payload.created_at,
           },
           '*'
         );

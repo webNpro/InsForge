@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { verifyCloudBackend, verifyAdmin } from '@/api/middleware/auth.js';
+import { verifyCloudBackend, verifyApiKey, verifyAdmin } from '@/api/middleware/auth.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { ServerEvents } from '@/core/socket/types.js';
 
 export const usageRouter = Router();
 
 // Create MCP tool usage record
-usageRouter.post('/mcp', verifyAdmin, async (req, res, next) => {
+usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
   try {
     const { tool_name, success = true } = req.body;
 
@@ -21,23 +21,23 @@ usageRouter.post('/mcp', verifyAdmin, async (req, res, next) => {
     const dbManager = DatabaseManager.getInstance();
     const db = dbManager.getDb();
 
-    // Insert MCP usage record directly
-    await db
+    // Insert MCP usage record and get the created_at timestamp from database
+    const result = await db
       .prepare(
         `
       INSERT INTO _mcp_usage (tool_name, success) 
       VALUES ($1, $2)
+      RETURNING created_at
     `
       )
-      .run(tool_name, success);
+      .get(tool_name, success);
 
     // Broadcast MCP tool usage to frontend via socket
     const socketService = SocketService.getInstance();
-    const realTime = new Date();
 
     socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED, {
       tool_name,
-      real_time: realTime.toISOString(),
+      created_at: result.created_at,
     });
 
     res.json({ success: true });

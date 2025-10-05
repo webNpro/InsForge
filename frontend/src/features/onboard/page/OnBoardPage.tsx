@@ -6,6 +6,7 @@ import LoaderIcon from '@/assets/icons/loader.svg?react';
 import ConnectedIcon from '@/assets/icons/connected.svg?react';
 import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
+import type{ McpConnectedPayload } from '@/features/usage/contexts/McpUsageContext';
 
 const STEP_DESCRIPTIONS = [
   'Install Node.js',
@@ -29,7 +30,7 @@ export default function OnBoardPage() {
     if (!socket) {
       return;
     }
-    const handleMcpDetected = (_data: { tool_name: string; real_time: string }) => {
+    const handleMcpDetected = (_data: McpConnectedPayload) => {
       setMcpDetected(true);
       // Navigate to dashboard after a short delay to show success message
       setTimeout(() => {
