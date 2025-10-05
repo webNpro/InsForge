@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { verifyApiKey, verifyCloudBackend } from '@/api/middleware/auth.js';
+import { verifyCloudBackend, verifyAdmin } from '@/api/middleware/auth.js';
+import { SocketService } from '@/core/socket/socket.js';
+import { ServerEvents } from '@/core/socket/types.js';
 
 export const usageRouter = Router();
 
 // Create MCP tool usage record
-usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
+usageRouter.post('/mcp', verifyAdmin, async (req, res, next) => {
   try {
     const { tool_name, success = true } = req.body;
 
@@ -29,7 +31,43 @@ usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
       )
       .run(tool_name, success);
 
+    // Broadcast MCP tool usage to frontend via socket
+    const socketService = SocketService.getInstance();
+    const realTime = new Date();
+
+    socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED, {
+      tool_name,
+      real_time: realTime.toISOString(),
+    });
+
     res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get MCP usage records
+usageRouter.get('/mcp', verifyAdmin, async (req, res, next) => {
+  try {
+    const { limit = 5, success = true } = req.query;
+
+    const dbManager = DatabaseManager.getInstance();
+    const db = dbManager.getDb();
+
+    // Get MCP usage records with limit
+    const records = await db
+      .prepare(
+        `
+      SELECT tool_name, success, created_at 
+      FROM _mcp_usage 
+      WHERE success = $1 
+      ORDER BY created_at DESC 
+      LIMIT $2
+    `
+      )
+      .all(success === 'true', parseInt(limit as string));
+
+    res.json({ records });
   } catch (error) {
     next(error);
   }

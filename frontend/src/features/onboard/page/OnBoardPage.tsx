@@ -30,7 +30,7 @@ export default function OnBoardPage() {
     if (!socket) {
       return;
     }
-    const handleMcpConnected = () => {
+    const handleMcpConnected = (_data: { tool_name: string; real_time: string }) => {
       setShowSuccess(true);
       // Mark onboarding as completed using the existing hook
       markOnboardingAsCompleted();

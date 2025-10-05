@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import { cn } from '@/lib/utils/utils';
 import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
+import { useOnboardingStatus } from '@/features/usage';
 
 interface CloudLayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { socket } = useSocket();
+  const { data: hasCompletedOnboarding } = useOnboardingStatus();
 
   useEffect(() => {
     const handleCloudMessage = (event: MessageEvent) => {
@@ -24,6 +26,12 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
         const message = event.data as RouterMessage;
 
         if (message.type === 'ROUTE_CHANGE' && message.path) {
+          // Check if navigating to dashboard and onboarding not completed
+          if (message.path === '/cloud/dashboard' && !hasCompletedOnboarding) {
+            // Redirect to onboarding page
+            void navigate('/cloud/onboard', { replace: true });
+            return;
+          }
           // Navigate to the corresponding cloud route
           void navigate(message.path);
         } else if (message.type === 'REFRESH') {
@@ -41,7 +49,7 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
     return () => {
       window.removeEventListener('message', handleCloudMessage);
     };
-  }, [navigate]);
+  }, [navigate, hasCompletedOnboarding]);
 
   useEffect(() => {
     // Only send messages if we're in an iframe (not the main window)
@@ -63,11 +71,13 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
       return;
     }
 
-    const handleMcpConnected = () => {
+    const handleMcpConnected = (data: { tool_name: string; real_time: string }) => {
       window.parent.postMessage(
         {
           type: 'MCP_CONNECTION_STATUS',
           connected: true,
+          tool_name: data.tool_name,
+          real_time: data.real_time,
         },
         '*'
       );
