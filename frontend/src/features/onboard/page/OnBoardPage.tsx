@@ -61,7 +61,9 @@ export default function OnBoardPage() {
           ) : (
             <div className="flex items-center gap-2">
               <ConnectedIcon className="w-6 h-6 text-zinc-950 dark:text-green-500" />
-              <p className="text-base text-neutral-700 dark:text-neutral-300">Successfully Connected! Redirecting to Dashboard...</p>
+              <p className="text-base text-neutral-700 dark:text-neutral-300">
+                Successfully Connected! Redirecting to Dashboard...
+              </p>
             </div>
           )}
           <h1 className="text-xl font-semibold text-black dark:text-white">
