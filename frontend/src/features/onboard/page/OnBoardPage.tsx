@@ -6,7 +6,7 @@ import LoaderIcon from '@/assets/icons/loader.svg?react';
 import ConnectedIcon from '@/assets/icons/connected.svg?react';
 import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
-import type{ McpConnectedPayload } from '@/features/usage/contexts/McpUsageContext';
+import type { McpConnectedPayload } from '@/features/usage/contexts/McpUsageContext';
 
 const STEP_DESCRIPTIONS = [
   'Install Node.js',
