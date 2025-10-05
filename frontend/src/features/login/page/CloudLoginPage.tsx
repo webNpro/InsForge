@@ -2,13 +2,13 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LockIcon } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useOnboardingStatus } from '@/features/usage';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 export default function CloudLoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loginWithAuthorizationCode } = useAuth();
-  const { data: hasCompletedOnboarding } = useOnboardingStatus();
+  const { hasCompletedOnboarding } = useMcpUsage();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle authorization token exchange

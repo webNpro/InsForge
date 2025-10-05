@@ -1,13 +1,12 @@
 import { format } from 'date-fns';
-import { useMcpUsage } from '../hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/usage/contexts/McpUsageContext';
 
 interface McpCallRecordTableProps {
-  limit?: number;
   className?: string;
 }
 
-export function McpCallRecordTable({ limit = 5, className }: McpCallRecordTableProps) {
-  const { data: records, isLoading, error } = useMcpUsage(limit, true);
+export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
+  const { records, isLoading } = useMcpUsage();
 
   const formatRecordDescription = (toolName: string) => {
     // Convert tool names to more user-friendly descriptions
@@ -32,14 +31,6 @@ export function McpCallRecordTable({ limit = 5, className }: McpCallRecordTableP
     return format(date, 'MMM dd, yyyy h:mm a');
   };
 
-  if (error) {
-    return (
-      <div className={`bg-neutral-900 rounded-lg p-4 ${className}`}>
-        <div className="text-red-400 text-sm">Failed to load MCP call records</div>
-      </div>
-    );
-  }
-
   return (
     <div className={`rounded-[8px] overflow-hidden ${className}`}>
       {/* Table Header */}
@@ -54,9 +45,9 @@ export function McpCallRecordTable({ limit = 5, className }: McpCallRecordTableP
           <div className="h-9 flex items-center justify-center text-neutral-400">
             Loading records...
           </div>
-        ) : records && records.length > 0 ? (
+        ) : records.length > 0 ? (
           <div className="divide-y divide-neutral-700">
-            {records.map((record, index) => (
+            {records.slice(0, 5).map((record, index) => (
               <div
                 key={`${record.tool_name}-${index}-${record.created_at}`}
                 className="bg-[#333333] h-9 flex items-center justify-between text-white"

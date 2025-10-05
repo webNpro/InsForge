@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
           {/* MCP Call Record Table */}
           <div className="w-full">
-            <McpCallRecordTable limit={5} />
+            <McpCallRecordTable />
           </div>
         </div>
       </div>

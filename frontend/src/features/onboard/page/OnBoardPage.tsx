@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardStep } from '../types';
 import { StepContent } from '../components/StepContent';
 import LoaderIcon from '@/assets/icons/loader.svg?react';
-import CheckedIcon from '@/assets/icons/checked.svg?react';
+import ConnectedIcon from '@/assets/icons/connected.svg?react';
 import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
-import { markOnboardingAsCompleted } from '@/lib/hooks/useOnboardingCompletion';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 const STEP_DESCRIPTIONS = [
@@ -21,7 +20,7 @@ const STEPS = [
 ] as const;
 
 export default function OnBoardPage() {
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [mcpDetected, setMcpDetected] = useState(false);
   const navigate = useNavigate();
   const { socket } = useSocket();
 
@@ -30,10 +29,8 @@ export default function OnBoardPage() {
     if (!socket) {
       return;
     }
-    const handleMcpConnected = (_data: { tool_name: string; real_time: string }) => {
-      setShowSuccess(true);
-      // Mark onboarding as completed using the existing hook
-      markOnboardingAsCompleted();
+    const handleMcpDeteted = (_data: { tool_name: string; real_time: string }) => {
+      setMcpDetected(true);
       // Navigate to dashboard after a short delay to show success message
       setTimeout(() => {
         // Determine the correct dashboard route based on environment
@@ -42,10 +39,10 @@ export default function OnBoardPage() {
       }, 1000);
     };
 
-    socket.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
+    socket.on(ServerEvents.MCP_CONNECTED, handleMcpDeteted);
 
     return () => {
-      socket.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
+      socket.off(ServerEvents.MCP_CONNECTED, handleMcpDeteted);
     };
   }, [socket, navigate]);
 
@@ -54,17 +51,17 @@ export default function OnBoardPage() {
       {/* Fixed Header */}
       <div className="flex-shrink-0">
         <div className="max-w-[1200px] mx-auto px-6 pt-12 pb-6 flex flex-col items-start justify-center gap-3">
-          {!showSuccess ? (
+          {!mcpDetected ? (
             <div className="flex items-center justify-start gap-2">
               <LoaderIcon className="dark:text-emerald-400 text-zinc-950 animate-spin" />
-              <p className="text-base text-neutral-800 dark:text-neutral-300">
+              <p className="text-base text-neutral-700 dark:text-neutral-300">
                 Waiting for Connection
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckedIcon className="w-6 h-6" />
-              <p className="text-base">Connection Succeeded! Redirecting to Dashboard...</p>
+            <div className="flex items-center gap-2">
+              <ConnectedIcon className="w-6 h-6 text-zinc-950 dark:text-green-500" />
+              <p className="text-base text-neutral-700 dark:text-neutral-300">Successfully Connected! Redirecting to Dashboard...</p>
             </div>
           )}
           <h1 className="text-xl font-semibold text-black dark:text-white">

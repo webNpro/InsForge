@@ -14,9 +14,8 @@ export class UsageService {
   /**
    * Get MCP usage records
    */
-  async getMcpUsage(limit: number = 5, success: boolean = true): Promise<McpUsageRecord[]> {
+  async getMcpUsage(success: boolean = true): Promise<McpUsageRecord[]> {
     const params = new URLSearchParams({
-      limit: limit.toString(),
       success: success.toString(),
     });
 
@@ -25,19 +24,6 @@ export class UsageService {
     })) as McpUsageResponse;
 
     return data.records || [];
-  }
-
-  /**
-   * Check if user has completed onboarding based on MCP usage
-   */
-  async hasCompletedOnboarding(): Promise<boolean> {
-    try {
-      const records = await this.getMcpUsage(1, true);
-      return records.length > 0;
-    } catch (error) {
-      console.error('Failed to check onboarding status:', error);
-      return false;
-    }
   }
 }
 

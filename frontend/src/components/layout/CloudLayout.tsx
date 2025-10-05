@@ -2,8 +2,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import { cn } from '@/lib/utils/utils';
-import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
-import { useOnboardingStatus } from '@/features/usage';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 interface CloudLayoutProps {
   children: React.ReactNode;
@@ -17,8 +16,7 @@ interface RouterMessage {
 export default function CloudLayout({ children }: CloudLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { socket } = useSocket();
-  const { data: hasCompletedOnboarding } = useOnboardingStatus();
+  const { hasCompletedOnboarding } = useMcpUsage();
 
   useEffect(() => {
     const handleCloudMessage = (event: MessageEvent) => {
@@ -64,31 +62,6 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
       );
     }
   }, [location.pathname]);
-
-  // Listen for MCP connection events and forward to parent
-  useEffect(() => {
-    if (!socket || window.parent === window) {
-      return;
-    }
-
-    const handleMcpConnected = (data: { tool_name: string; real_time: string }) => {
-      window.parent.postMessage(
-        {
-          type: 'MCP_CONNECTION_STATUS',
-          connected: true,
-          tool_name: data.tool_name,
-          real_time: data.real_time,
-        },
-        '*'
-      );
-    };
-
-    socket.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
-
-    return () => {
-      socket.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
-    };
-  }, [socket]);
 
   return (
     <ThemeProvider forcedTheme="dark">

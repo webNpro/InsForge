@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 interface ConnectCTAProps {
@@ -9,8 +9,8 @@ interface ConnectCTAProps {
 
 export function ConnectCTA({ className, fallback }: ConnectCTAProps) {
   const navigate = useNavigate();
-  const { isCompleted } = useOnboardingCompletion();
-  const shouldShow = !isCompleted;
+  const { hasCompletedOnboarding } = useMcpUsage();
+  const shouldShow = !hasCompletedOnboarding;
 
   if (!shouldShow) {
     return fallback;
