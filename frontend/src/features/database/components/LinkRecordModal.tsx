@@ -244,8 +244,12 @@ export function LinkRecordModal({
               onPageChange={setCurrentPage}
               showSelection={false}
               showPagination={true}
-              emptyStateTitle={
-                searchQuery ? 'No records match your search criteria' : 'No records found'
+              emptyState={
+                <div className="flex flex-col items-center justify-center h-full">
+                  <p className="text-neutral-500 dark:text-neutral-400 select-none">
+                    {searchQuery ? 'No records match your search criteria' : 'No records found'}
+                  </p>
+                </div>
               }
             />
           </div>
