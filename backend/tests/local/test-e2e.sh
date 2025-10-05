@@ -196,7 +196,7 @@ test_endpoint "Upload file" "$response" "201"
 
 # 12. Test Download File
 print_info "12. Testing Download File"
-response=$(curl -s -w "\n%{http_code}" "$TEST_API_BASE/storage/buckets/$TEST_BUCKET/objects/test-file.txt" \
+response=$(curl -s -L -w "\n%{http_code}" "$TEST_API_BASE/storage/buckets/$TEST_BUCKET/objects/test-file.txt" \
   -H "Authorization: Bearer $API_KEY" \
   -o /tmp/test-download.txt)
 test_endpoint "Download file" "$response" "200"
