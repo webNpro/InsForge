@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSocket, ServerEvents } from '@/lib/contexts/SocketContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import { usageService, McpUsageRecord } from '@/features/usage/services/usage.service';
 
 // ============================================================================
@@ -54,16 +55,19 @@ export function McpUsageProvider({ children }: McpUsageProviderProps) {
   // State
   const [records, setRecords] = useState<McpUsageRecord[]>([]);
   const { socket, isConnected } = useSocket();
+  const { isAuthenticated } = useAuth();
 
   // Refs
   const hasNotifiedInitialStatus = useRef(false);
 
   /**
    * Initial fetch - Get all MCP records from backend
+   * Only runs when user is authenticated to prevent 401 errors
    */
   const { data, isLoading } = useQuery<McpUsageRecord[]>({
-    queryKey: ['mcp-usage-global'],
+    queryKey: ['mcp-usage'],
     queryFn: () => usageService.getMcpUsage(),
+    enabled: isAuthenticated,
     staleTime: Infinity,
     refetchInterval: false,
     refetchOnWindowFocus: false,
