@@ -20,6 +20,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { getSignedUrl as getCloudFrontSignedUrl } from '@aws-sdk/cloudfront-signer';
 import logger from '@/utils/logger.js';
 import { ADMIN_ID } from '@/utils/constants';
 import { AppError } from '@/api/middleware/error';
@@ -337,8 +338,56 @@ class S3StorageBackend implements StorageBackend {
     }
 
     const s3Key = this.getS3Key(bucket, key);
+    // Public files get longer expiration (7 days), private files get shorter (1 hour default)
+    const actualExpiresIn = isPublic ? 604800 : expiresIn; // 604800 = 7 days
+    const cloudFrontUrl = process.env.AWS_CLOUDFRONT_URL;
 
     try {
+      // If CloudFront URL is configured, use CloudFront for downloads
+      if (cloudFrontUrl) {
+        const cloudFrontKeyPairId = process.env.AWS_CLOUDFRONT_KEY_PAIR_ID;
+        const cloudFrontPrivateKey = process.env.AWS_CLOUDFRONT_PRIVATE_KEY;
+
+        if (!cloudFrontKeyPairId || !cloudFrontPrivateKey) {
+          logger.warn(
+            'CloudFront URL configured but missing key pair ID or private key, falling back to S3'
+          );
+        } else {
+          try {
+            // Generate CloudFront signed URL
+            const cloudFrontObjectUrl = `${cloudFrontUrl.replace(/\/$/, '')}/${s3Key}`;
+
+            // Convert escaped newlines to actual newlines in the private key
+            const formattedPrivateKey = cloudFrontPrivateKey.replace(/\\n/g, '\n');
+
+            // dateLessThan can be string | number | Date - using Date object directly
+            const dateLessThan = new Date(Date.now() + actualExpiresIn * 1000);
+
+            const signedUrl = getCloudFrontSignedUrl({
+              url: cloudFrontObjectUrl,
+              keyPairId: cloudFrontKeyPairId,
+              privateKey: formattedPrivateKey,
+              dateLessThan,
+            });
+
+            logger.info('CloudFront signed URL generated successfully.');
+
+            return {
+              method: 'presigned',
+              url: signedUrl,
+              expiresAt: dateLessThan,
+            };
+          } catch (cfError) {
+            logger.error('Failed to generate CloudFront signed URL, falling back to S3', {
+              error: cfError instanceof Error ? cfError.message : String(cfError),
+              bucket,
+              key,
+            });
+            // Fall through to S3 signed URL generation
+          }
+        }
+      }
+
       // Note: isPublic here refers to the application-level setting,
       // not the actual S3 bucket policy. In a multi-tenant setup,
       // we're using a single S3 bucket with folder-based isolation,
@@ -351,8 +400,6 @@ class S3StorageBackend implements StorageBackend {
         Key: s3Key,
       });
 
-      // Public files get longer expiration (7 days), private files get shorter (1 hour default)
-      const actualExpiresIn = isPublic ? 604800 : expiresIn; // 604800 = 7 days
       const url = await getSignedUrl(this.s3Client, command, { expiresIn: actualExpiresIn });
 
       return {
