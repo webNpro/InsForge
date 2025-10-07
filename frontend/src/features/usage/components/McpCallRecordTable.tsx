@@ -1,12 +1,12 @@
 import { format } from 'date-fns';
-import { useMcpUsage } from '@/features/usage/contexts/McpUsageContext';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 interface McpCallRecordTableProps {
   className?: string;
 }
 
 export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
-  const { records, isLoading } = useMcpUsage();
+  const { records } = useMcpUsage();
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -27,11 +27,7 @@ export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
 
       {/* Table Body */}
       <div>
-        {isLoading ? (
-          <div className="h-9 flex items-center justify-center text-neutral-400">
-            Loading records...
-          </div>
-        ) : records.length > 0 ? (
+        {records.length > 0 ? (
           <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
             {records.slice(0, 5).map((record, index) => (
               <div

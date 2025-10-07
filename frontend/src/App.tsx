@@ -3,7 +3,6 @@ import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { AppRoutes } from '@/lib/routing/AppRoutes';
 import { ToastProvider } from '@/lib/hooks/useToast';
 import { SocketProvider } from '@/lib/contexts/SocketContext';
-import { McpUsageProvider } from '@/features/usage/contexts/McpUsageContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,11 +19,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
-          <McpUsageProvider>
-            <ToastProvider>
-              <AppRoutes />
-            </ToastProvider>
-          </McpUsageProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
