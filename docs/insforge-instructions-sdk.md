@@ -233,14 +233,23 @@ if (error) {
 Before ANY operation, call `get-backend-metadata` to get the current backend state. 
 
 ```javascript
-// Upload file with auto-generated key
+// Upload file with auto-generated key, then store URL in database
 const { data, error } = await client.storage
   .from('images')
   .uploadAuto(fileObject);
+// Returns: { url: "/api/storage/buckets/images/objects/file-1234567890-abc123.jpg", ... }
 
-// data.url = "http://localhost:7130/api/storage/buckets/images/objects/file-timestamp-random.jpg"
+if (error) return; // Handle upload error
 
-// Or upload with specific key
+// Store the returned URL in database
+await client.database
+  .from('posts')
+  .insert([{
+    user_id: userId,
+    image_url: data.url  // Critical: Store URL, not the file
+  }]);
+
+// Upload with specific key
 const { data, error } = await client.storage
   .from('images')
   .upload('custom-name.jpg', fileObject);
@@ -250,10 +259,6 @@ const { data: blob, error } = await client.storage
   .from('images')
   .download('file.jpg');
 
-// Get public URL (no API call)
-const url = client.storage
-  .from('images')
-  .getPublicUrl('file.jpg');
 ```
 
 ## AI Operations
