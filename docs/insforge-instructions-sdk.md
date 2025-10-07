@@ -230,34 +230,46 @@ if (error) {
 
 ## Storage Operations
 
-Before ANY operation, call `get-backend-metadata` to get the current backend state. 
+Before ANY operation, call `get-backend-metadata` to get the current backend state.
 
 ```javascript
-// Upload file with auto-generated key, then store URL in database
+// 1. Upload file
 const { data, error } = await client.storage
   .from('images')
-  .uploadAuto(fileObject);
-// Returns: { url: "/api/storage/buckets/images/objects/file-1234567890-abc123.jpg", ... }
+  .upload('profile.jpg', fileObject);
 
-if (error) return; // Handle upload error
+if (error) return;
 
-// Store the returned URL in database
+// 2. Response includes url and key
+// {
+//   url: "http://localhost:7130/api/storage/buckets/images/objects/profile%20(1).jpg",
+//   key: "profile (1).jpg"  // May differ from requested name if conflict!
+// }
+
+// 3. Store URL in database
 await client.database
   .from('posts')
   .insert([{
     user_id: userId,
-    image_url: data.url  // Critical: Store URL, not the file
+    image_url: data.url  // ✅ Always use returned URL
+  }])
+  .select()
+  .single();
+
+// 4. Display image
+<img src={post.image_url} alt="Post" />
+
+// Optional: If you need programmatic download, store the key too
+await client.database
+  .from('posts')
+  .insert([{
+    user_id: userId,
+    image_url: data.url,  // For display
+    image_key: data.key   // For download
   }]);
 
-// Upload with specific key
-const { data, error } = await client.storage
-  .from('images')
-  .upload('custom-name.jpg', fileObject);
-
-// Download file
-const { data: blob, error } = await client.storage
-  .from('images')
-  .download('file.jpg');
+// Then download file as blob
+const { data: blob } = await client.storage.from('images').download(post.image_key);
 
 ```
 
