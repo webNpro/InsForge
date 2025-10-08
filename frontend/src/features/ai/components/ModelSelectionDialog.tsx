@@ -12,7 +12,6 @@ import { useAIConfigs } from '../hooks/useAIConfigs';
 import { useToast } from '@/lib/hooks/useToast';
 import { ModalityFilterSidebar } from './ModalityFilterSidebar';
 import { ModelSelectionGrid } from './ModelSelectionGrid';
-import { filterModelsByModalities } from '../helpers';
 
 interface ModelSelectionDialogProps {
   open: boolean;
@@ -21,7 +20,7 @@ interface ModelSelectionDialogProps {
 }
 
 export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSelectionDialogProps) {
-  const { allConfiguredModels, configurations } = useAIConfigs();
+  const { allConfiguredModels, configurations, getFilteredModels } = useAIConfigs();
   const { showToast } = useToast();
 
   const [selectedInputModalities, setSelectedInputModalities] = useState<ModalitySchema[]>([]);
@@ -44,25 +43,15 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
     setIsFormValid(!!selectedModelId);
   }, [selectedModelId]);
 
-  // Get filtered models
+  // Use the existing filtered models logic from useAIConfigs
   const filteredModels = useMemo(() => {
-    const shouldFilter = selectedInputModalities.length > 0 || selectedOutputModalities.length > 0;
-
-    if (!shouldFilter) {
-      return allConfiguredModels;
-    }
-
-    return filterModelsByModalities(
-      allConfiguredModels,
-      selectedInputModalities,
-      selectedOutputModalities
-    );
-  }, [allConfiguredModels, selectedInputModalities, selectedOutputModalities]);
+    return getFilteredModels(selectedInputModalities, selectedOutputModalities);
+  }, [getFilteredModels, selectedInputModalities, selectedOutputModalities]);
 
   // Reset model selection when modalities change
   useEffect(() => {
     if (selectedModelId) {
-      const stillAvailable = filteredModels.some((model) => model.id === selectedModelId);
+      const stillAvailable = filteredModels.some((model) => model.value === selectedModelId);
       if (!stillAvailable) {
         setSelectedModelId('');
       }

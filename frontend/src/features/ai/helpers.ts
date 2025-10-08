@@ -13,11 +13,18 @@ type ModelPricing = {
 };
 
 export interface ModelOption {
+  id: string;
   value: string;
-  label: string;
-  company: string;
-  priceLevel: number;
+  companyId: string;
+  modelName: string;
+  providerName: string;
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
+  inputModality: ModalitySchema[];
+  outputModality: ModalitySchema[];
+  priceLevel: number;
+  usageStats?: {
+    totalRequests: number;
+  };
 }
 
 import { Type, Image } from 'lucide-react';

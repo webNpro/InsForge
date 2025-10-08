@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@/components/radix/Button';
 import {
   Tooltip,
@@ -16,26 +15,12 @@ import { MoreHorizontal, Pencil, Trash2, DollarSign } from 'lucide-react';
 import {
   //   formatTokenCount,
   getModalityIcon,
-  calculatePriceLevel,
+  ModelOption,
 } from '../helpers';
-import { AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 import { cn } from '@/lib/utils/utils';
 
-interface AIConfigExtended extends AIConfigurationWithUsageSchema {
-  companyId: string;
-  modelName: string;
-  providerName: string;
-  logo?: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
-  pricing?: {
-    prompt: string;
-    completion: string;
-    image?: string;
-    request?: string;
-  };
-}
-
 interface AIModelCardProps {
-  config: AIConfigExtended;
+  config: ModelOption;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   mode?: 'configured' | 'selectable';
@@ -195,31 +180,22 @@ export function AIModelCard({
           )}
 
           {/* Show price level in selectable mode */}
-          {isSelectableMode &&
-            config.pricing &&
-            (() => {
-              const priceLevel = calculatePriceLevel(config.pricing);
-
-              return (
-                <div className="flex items-center justify-between">
-                  <span className="text-black dark:text-white">Credit Usage</span>
-                  <div className="flex items-center">
-                    {priceLevel > 0 ? (
-                      Array.from({ length: priceLevel }).map((_, i) => (
-                        <div className="w-5 h-5 flex items-center justify-center">
-                          <DollarSign
-                            key={i}
-                            className="w-4 h-4 text-neutral-500 dark:text-neutral-400"
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-sm text-neutral-500 dark:text-neutral-400">Free</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+          {isSelectableMode && (
+            <div className="flex items-center justify-between">
+              <span className="text-black dark:text-white">Credit Usage</span>
+              <div className="flex items-center">
+                {config.priceLevel > 0 ? (
+                  Array.from({ length: config.priceLevel }).map((_, i) => (
+                    <div key={i} className="w-5 h-5 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Free</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </TooltipProvider>

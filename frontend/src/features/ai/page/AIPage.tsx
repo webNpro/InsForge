@@ -15,7 +15,12 @@ import { ModelSelectionDialog } from '@/features/ai/components/ModelSelectionDia
 import { SystemPromptDialog } from '@/features/ai/components/SystemPromptDialog';
 import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
-import { getFriendlyModelName, getProviderDisplayName, getProviderLogo } from '../helpers';
+import {
+  getFriendlyModelName,
+  getProviderDisplayName,
+  getProviderLogo,
+  ModelOption,
+} from '../helpers';
 
 export default function AIPage() {
   const {
@@ -136,21 +141,28 @@ export default function AIPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {configurations.map((config) => {
                 const companyId = config.modelId.split('/')[0];
-                const providerName = getProviderDisplayName(companyId);
-                const modelName = getFriendlyModelName(config.modelId);
-                const providerLogo = getProviderLogo(companyId);
-                const extendedConfig = {
-                  ...config,
-                  companyId: companyId,
-                  modelName: modelName,
-                  providerName: providerName,
-                  logo: providerLogo,
+
+                // Convert configuration to ModelOption format
+                const modelOption: ModelOption = {
+                  id: config.id,
+                  value: config.modelId,
+                  companyId,
+                  modelName: getFriendlyModelName(config.modelId),
+                  providerName: getProviderDisplayName(companyId),
+                  logo: getProviderLogo(companyId),
+                  inputModality: config.inputModality,
+                  outputModality: config.outputModality,
+                  priceLevel: 0, // configured models don't show price level
+                  usageStats: {
+                    totalRequests: config.usageStats?.totalRequests || 0,
+                  },
                 };
 
                 return (
                   <AIModelCard
                     key={config.id}
-                    config={extendedConfig}
+                    config={modelOption}
+                    mode="configured"
                     onEdit={handleEdit}
                     onDelete={() => void handleDelete(config.id)}
                   />

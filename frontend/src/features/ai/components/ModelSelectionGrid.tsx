@@ -1,9 +1,8 @@
-import { OpenRouterModel, ModalitySchema } from '@insforge/shared-schemas';
 import { AIModelCard } from './AIConfigCard';
-import { getProviderLogo } from '../helpers';
+import { ModelOption } from '../helpers';
 
 interface ModelSelectionGridProps {
-  models: OpenRouterModel[];
+  models: ModelOption[];
   selectedModelId: string;
   onSelectModel: (modelId: string) => void;
   configuredModelIds: string[];
@@ -31,8 +30,8 @@ export function ModelSelectionGrid({
   }
 
   const sortedModels = [...models].sort((a, b) => {
-    const aConfigured = configuredModelIds.includes(a.id);
-    const bConfigured = configuredModelIds.includes(b.id);
+    const aConfigured = configuredModelIds.includes(a.value);
+    const bConfigured = configuredModelIds.includes(b.value);
     if (aConfigured === bConfigured) {
       return 0;
     }
@@ -42,41 +41,17 @@ export function ModelSelectionGrid({
   return (
     <div className="flex-1 grid grid-cols-3 gap-5 auto-rows-fr">
       {sortedModels.map((model) => {
-        const companyId = model.id.split('/')[0];
-        const isConfigured = configuredModelIds.includes(model.id);
-        const isSelected = selectedModelId === model.id;
-
-        // Transform OpenRouterModel to AIConfigExtended format for the card
-        const supportedModalities: ModalitySchema[] = ['text', 'image'];
-        const inputModality = (model.architecture?.inputModalities || ['text']).filter(
-          (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
-        );
-        const outputModality = (model.architecture?.outputModalities || ['text']).filter(
-          (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
-        );
-
-        const cardConfig = {
-          id: model.id,
-          modelId: model.id,
-          inputModality,
-          outputModality,
-          provider: 'openrouter' as const,
-          systemPrompt: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          logo: getProviderLogo(companyId),
-          pricing: model.pricing,
-          usageStats: undefined,
-        };
+        const isConfigured = configuredModelIds.includes(model.value);
+        const isSelected = selectedModelId === model.value;
 
         return (
           <AIModelCard
-            key={model.id}
-            config={cardConfig}
+            key={model.value}
+            config={model}
             mode="selectable"
             isSelected={isSelected}
             isDisabled={isConfigured}
-            onSelect={() => !isConfigured && onSelectModel(model.id)}
+            onSelect={() => !isConfigured && onSelectModel(model.value)}
           />
         );
       })}
