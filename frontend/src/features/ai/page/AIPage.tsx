@@ -11,7 +11,8 @@ import {
 } from '@insforge/shared-schemas';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
-import { AIConfigDialog } from '@/features/ai/components/AIConfigDialog';
+import { ModelSelectionDialog } from '@/features/ai/components/ModelSelectionDialog';
+import { SystemPromptDialog } from '@/features/ai/components/SystemPromptDialog';
 import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
 import { getProviderLogo } from '../helpers';
@@ -47,16 +48,15 @@ export default function AIPage() {
     return remaining.toFixed(2);
   };
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [modelSelectionOpen, setModelSelectionOpen] = useState(false);
+  const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<AIConfigurationWithUsageSchema | undefined>();
 
   const handleEdit = (id: string) => {
     const config = configurations.find((c) => c.id === id);
     if (config) {
       setEditingConfig(config);
-      setDialogMode('edit');
-      setDialogOpen(true);
+      setSystemPromptOpen(true);
     }
   };
 
@@ -75,37 +75,32 @@ export default function AIPage() {
   };
 
   const handleCreate = () => {
-    setEditingConfig(undefined);
-    setDialogMode('create');
-    setDialogOpen(true);
+    setModelSelectionOpen(true);
   };
 
-  const handleDialogSuccess = (
-    configData: CreateAIConfigurationRequest | UpdateAIConfigurationRequest
-  ) => {
-    if (dialogMode === 'create') {
-      const createData = configData as CreateAIConfigurationRequest;
-      createConfiguration({
-        inputModality: createData.inputModality,
-        outputModality: createData.outputModality,
-        provider: createData.provider,
-        modelId: createData.modelId,
-        systemPrompt: createData.systemPrompt,
-      });
-    } else if (editingConfig) {
-      const updateData = configData as UpdateAIConfigurationRequest;
+  const handleModelSelectionSuccess = (configData: CreateAIConfigurationRequest) => {
+    createConfiguration({
+      inputModality: configData.inputModality,
+      outputModality: configData.outputModality,
+      provider: configData.provider,
+      modelId: configData.modelId,
+      systemPrompt: configData.systemPrompt,
+    });
+  };
+
+  const handleSystemPromptSuccess = (configData: UpdateAIConfigurationRequest) => {
+    if (editingConfig) {
       updateConfiguration({
         id: editingConfig.id,
         data: {
-          systemPrompt: updateData.systemPrompt || null,
+          systemPrompt: configData.systemPrompt || null,
         },
       });
     }
-    setDialogOpen(false);
   };
 
   return (
-    <div className="flex h-full bg-bg-gray dark:bg-neutral-800 pt-8 pb-6">
+    <div className="flex h-full bg-white dark:bg-neutral-800 pt-8 pb-6">
       <div className="max-w-[1080px] mx-auto flex-1 flex flex-col gap-6 overflow-hidden">
         {/* Header Section */}
         <div className="w-full flex items-start justify-between">
@@ -162,13 +157,19 @@ export default function AIPage() {
         </div>
       </div>
 
-      {/* AI Configuration Dialog */}
-      <AIConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        mode={dialogMode}
-        editingConfig={editingConfig}
-        onSuccess={handleDialogSuccess}
+      {/* Model Selection Dialog */}
+      <ModelSelectionDialog
+        open={modelSelectionOpen}
+        onOpenChange={setModelSelectionOpen}
+        onSuccess={handleModelSelectionSuccess}
+      />
+
+      {/* System Prompt Dialog */}
+      <SystemPromptDialog
+        open={systemPromptOpen}
+        onOpenChange={setSystemPromptOpen}
+        initialSystemPrompt={editingConfig?.systemPrompt}
+        onSuccess={handleSystemPromptSuccess}
       />
 
       {/* Confirm Dialog */}
