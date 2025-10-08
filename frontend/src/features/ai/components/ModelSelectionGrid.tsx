@@ -18,10 +18,10 @@ export function ModelSelectionGrid({
     return (
       <div className="flex-1 flex items-center justify-center min-h-[300px]">
         <div className="text-center">
-          <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+          <p className="text-neutral-500 dark:text-neutral-400 text-base">
             No models match the selected filters.
           </p>
-          <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-2">
+          <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-2">
             Try adjusting your input/output modality filters.
           </p>
         </div>

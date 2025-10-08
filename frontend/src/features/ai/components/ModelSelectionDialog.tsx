@@ -26,7 +26,6 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
   const [selectedInputModalities, setSelectedInputModalities] = useState<ModalitySchema[]>([]);
   const [selectedOutputModalities, setSelectedOutputModalities] = useState<ModalitySchema[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
-  const [isFormValid, setIsFormValid] = useState(false);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -34,14 +33,8 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
       setSelectedInputModalities([]);
       setSelectedOutputModalities([]);
       setSelectedModelId('');
-      setIsFormValid(false);
     }
   }, [open]);
-
-  // Update form validation
-  useEffect(() => {
-    setIsFormValid(!!selectedModelId);
-  }, [selectedModelId]);
 
   // Use the existing filtered models logic from useAIConfigs
   const filteredModels = useMemo(() => {
@@ -65,11 +58,6 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedModelId) {
-      showToast('Please select a model', 'error');
-      return;
-    }
 
     const selectedModel = allConfiguredModels.find((model) => model.id === selectedModelId);
 
@@ -153,7 +141,7 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
           <Button
             type="submit"
             form="model-selection-form"
-            disabled={!isFormValid}
+            disabled={!selectedModelId}
             className="h-9 px-3 py-2 rounded-sm text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
           >
             Add Integration

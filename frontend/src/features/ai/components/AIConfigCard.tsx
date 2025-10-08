@@ -171,16 +171,7 @@ export function AIModelCard({
             </div>
           </div>
 
-          {/* Only show request count in configured mode */}
-          {mode === 'configured' && (
-            <div className="flex items-center justify-between text-sm text-black dark:text-white">
-              <span>Requests</span>
-              <span>{config.usageStats?.totalRequests || 0}</span>
-            </div>
-          )}
-
-          {/* Show price level in selectable mode */}
-          {isSelectableMode && (
+          {isSelectableMode ? (
             <div className="flex items-center justify-between">
               <span className="text-black dark:text-white">Credit Usage</span>
               <div className="flex items-center">
@@ -194,6 +185,11 @@ export function AIModelCard({
                   <span className="text-sm text-neutral-500 dark:text-neutral-400">Free</span>
                 )}
               </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-sm text-black dark:text-white">
+              <span>Requests</span>
+              <span>{config.usageStats?.totalRequests || 0}</span>
             </div>
           )}
         </div>
