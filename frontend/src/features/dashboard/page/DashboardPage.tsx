@@ -3,7 +3,7 @@ import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { useUsers } from '@/features/auth';
 import { Users, Database, HardDrive } from 'lucide-react';
 import { ConnectionSuccessBanner, StatsCard } from '../components';
-import { McpCallRecordTable } from '@/features/usage';
+import { McpCallRecordTable } from '@/features/dashboard/components';
 
 export default function DashboardPage() {
   const location = useLocation();

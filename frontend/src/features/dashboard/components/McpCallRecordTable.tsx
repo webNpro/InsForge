@@ -14,11 +14,9 @@ export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
   };
 
   return (
-    <div
-      className={`rounded-[8px] overflow-hidden border border-neutral-200 dark:border-neutral-700 shadow-sm ${className}`}
-    >
+    <div className={`rounded-[8px] overflow-hidden shadow-sm ${className}`}>
       {/* Table Header */}
-      <div className="bg-white dark:bg-neutral-900 h-9 flex items-center justify-between text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-transparent">
+      <div className="bg-[#f9fafb] dark:bg-neutral-900 h-9 flex items-center justify-between text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-transparent">
         <p className="flex-1 py-1 px-3 text-left">MCP Call</p>
         <p className="w-54 py-1 px-3 border-l border-neutral-200 dark:border-neutral-700 text-left">
           Time
@@ -42,7 +40,7 @@ export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
             ))}
           </div>
         ) : (
-          <div className="h-9 flex items-center justify-center text-neutral-500 dark:text-neutral-400 select-none">
+          <div className="h-9 flex items-center justify-center text-neutral-500 dark:text-neutral-400 select-none bg-white dark:bg-[#333333]">
             No MCP call records found
           </div>
         )}
