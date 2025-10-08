@@ -10,9 +10,8 @@ interface ConnectCTAProps {
 export function ConnectCTA({ className, fallback }: ConnectCTAProps) {
   const navigate = useNavigate();
   const { hasCompletedOnboarding } = useMcpUsage();
-  const shouldShow = !hasCompletedOnboarding;
 
-  if (!shouldShow) {
+  if (hasCompletedOnboarding) {
     return fallback;
   }
 

@@ -49,7 +49,7 @@ usageRouter.post('/mcp', verifyApiKey, async (req, res, next) => {
 // Get MCP usage records
 usageRouter.get('/mcp', verifyAdmin, async (req, res, next) => {
   try {
-    const { limit = 5, success = true } = req.query;
+    const { limit = '5', success = 'true' } = req.query;
 
     const dbManager = DatabaseManager.getInstance();
     const db = dbManager.getDb();

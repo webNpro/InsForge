@@ -68,7 +68,7 @@ export function useMcpUsage() {
     const latestRecord = records[0];
     window.parent.postMessage(
       {
-        type: 'ONBOARDING_COMPLETED',
+        type: 'MCP_CONNECTION_STATUS',
         connected: true,
         tool_name: latestRecord.tool_name,
         timestamp: latestRecord.created_at,

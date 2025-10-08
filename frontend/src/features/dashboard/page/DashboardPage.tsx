@@ -3,7 +3,7 @@ import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { useUsers } from '@/features/auth';
 import { Users, Database, HardDrive } from 'lucide-react';
 import { ConnectionSuccessBanner, StatsCard } from '../components';
-import { McpCallRecordTable } from '@/features/dashboard/components';
+import { McpUsageTable } from '@/features/dashboard/components';
 
 export default function DashboardPage() {
   const location = useLocation();
@@ -59,14 +59,14 @@ export default function DashboardPage() {
 
           <div className="flex items-center justify-between w-full">
             <p className="text-xl font-semibold text-gray-900 dark:text-white tracking-[-0.1px]">
-              MCP Call Record
+              MCP Call Records
             </p>
             {/* <button className="text-sm text-gray-500 dark:text-gray-400">View More</button> */}
           </div>
 
           {/* MCP Call Record Table */}
           <div className="w-full">
-            <McpCallRecordTable />
+            <McpUsageTable />
           </div>
         </div>
       </div>

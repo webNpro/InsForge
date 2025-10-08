@@ -30,20 +30,18 @@ export default function OnBoardPage() {
     if (!socket) {
       return;
     }
-    const handleMcpDetected = (_data: McpConnectedPayload) => {
+    const handleMcpCallDetected = (_data: McpConnectedPayload) => {
       setMcpDetected(true);
-      // Navigate to dashboard after a short delay to show success message
-      setTimeout(() => {
-        // Determine the correct dashboard route based on environment
-        const dashboardRoute = isInsForgeCloudProject() ? '/cloud/dashboard' : '/dashboard';
-        void navigate(dashboardRoute, { state: { showSuccessBanner: true } });
-      }, 1000);
+      // Navigate to dashboard to show success message
+      // Determine the correct dashboard route based on environment
+      const dashboardRoute = isInsForgeCloudProject() ? '/cloud/dashboard' : '/dashboard';
+      void navigate(dashboardRoute, { state: { showSuccessBanner: true } });
     };
 
-    socket.on(ServerEvents.MCP_CONNECTED, handleMcpDetected);
+    socket.on(ServerEvents.MCP_CONNECTED, handleMcpCallDetected);
 
     return () => {
-      socket.off(ServerEvents.MCP_CONNECTED, handleMcpDetected);
+      socket.off(ServerEvents.MCP_CONNECTED, handleMcpCallDetected);
     };
   }, [socket, navigate]);
 

@@ -1,11 +1,7 @@
 import { format } from 'date-fns';
 import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
-interface McpCallRecordTableProps {
-  className?: string;
-}
-
-export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
+export function McpUsageTable() {
   const { records } = useMcpUsage();
 
   const formatTime = (dateString: string) => {
@@ -14,7 +10,7 @@ export function McpCallRecordTable({ className }: McpCallRecordTableProps) {
   };
 
   return (
-    <div className={`rounded-[8px] overflow-hidden shadow-sm ${className}`}>
+    <div className={`rounded-[8px] overflow-hidden shadow-sm`}>
       {/* Table Header */}
       <div className="bg-[#f9fafb] dark:bg-neutral-900 h-9 flex items-center justify-between text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-transparent">
         <p className="flex-1 py-1 px-3 text-left">MCP Call</p>

@@ -11,7 +11,7 @@ import {
   GenerateInstallCommand,
   type MCPAgent,
   type PlatformType,
-} from './mcp-helper';
+} from './helpers';
 import { useApiKey } from '@/features/metadata/hooks/useMetadata';
 
 interface McpInstallerProps {
