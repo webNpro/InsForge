@@ -15,7 +15,7 @@ import { ModelSelectionDialog } from '@/features/ai/components/ModelSelectionDia
 import { SystemPromptDialog } from '@/features/ai/components/SystemPromptDialog';
 import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
-import { getProviderLogo } from '../helpers';
+import { getFriendlyModelName, getProviderDisplayName, getProviderLogo } from '../helpers';
 
 export default function AIPage() {
   const {
@@ -135,9 +135,15 @@ export default function AIPage() {
           ) : configurations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {configurations.map((config) => {
-                const providerLogo = getProviderLogo(config.modelId.split('/')[0]);
+                const companyId = config.modelId.split('/')[0];
+                const providerName = getProviderDisplayName(companyId);
+                const modelName = getFriendlyModelName(config.modelId);
+                const providerLogo = getProviderLogo(companyId);
                 const extendedConfig = {
                   ...config,
+                  companyId: companyId,
+                  modelName: modelName,
+                  providerName: providerName,
                   logo: providerLogo,
                 };
 

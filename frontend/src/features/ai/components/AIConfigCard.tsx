@@ -15,8 +15,6 @@ import {
 import { MoreHorizontal, Pencil, Trash2, DollarSign } from 'lucide-react';
 import {
   //   formatTokenCount,
-  getProviderDisplayName,
-  getFriendlyModelName,
   getModalityIcon,
   calculatePriceLevel,
 } from '../helpers';
@@ -24,6 +22,9 @@ import { AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 import { cn } from '@/lib/utils/utils';
 
 interface AIConfigExtended extends AIConfigurationWithUsageSchema {
+  companyId: string;
+  modelName: string;
+  providerName: string;
   logo?: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
   pricing?: {
     prompt: string;
@@ -52,16 +53,6 @@ export function AIModelCard({
   onSelect,
   isDisabled = false,
 }: AIModelCardProps) {
-  // Extract provider info
-  const companyId = config.modelId.split('/')[0];
-  const providerName = getProviderDisplayName(companyId);
-
-  // Get friendly model name from modelId
-  const modelName = getFriendlyModelName(config.modelId);
-
-  const inputModality = config.inputModality;
-  const outputModality = config.outputModality;
-
   const isSelectableMode = mode === 'selectable';
 
   const handleCardClick = () => {
@@ -132,7 +123,7 @@ export function AIModelCard({
                 <config.logo className="w-10 h-10 dark:text-white" />
               ) : (
                 <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
-                  {companyId.charAt(0).toUpperCase()}
+                  {config.companyId.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
@@ -141,12 +132,12 @@ export function AIModelCard({
             <div>
               <p
                 className="font-medium text-sm text-zinc-950 dark:text-zinc-50 line-clamp-1 mr-3"
-                title={modelName}
+                title={config.modelName}
               >
-                {modelName}
+                {config.modelName}
               </p>
               <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                {providerName}
+                {config.providerName}
               </p>
             </div>
             <div className="w-8" />
@@ -160,7 +151,7 @@ export function AIModelCard({
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Input</span>
             <div className="flex items-center gap-2">
-              {inputModality.map((modality) => {
+              {config.inputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
@@ -179,7 +170,7 @@ export function AIModelCard({
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Output</span>
             <div className="flex items-center gap-2">
-              {outputModality.map((modality) => {
+              {config.outputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
