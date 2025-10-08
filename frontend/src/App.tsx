@@ -3,7 +3,6 @@ import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { AppRoutes } from '@/lib/routing/AppRoutes';
 import { ToastProvider } from '@/lib/hooks/useToast';
 import { SocketProvider } from '@/lib/contexts/SocketContext';
-import { OnboardStepProvider } from '@/lib/contexts/OnboardStepContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,9 +20,7 @@ function App() {
       <AuthProvider>
         <SocketProvider>
           <ToastProvider>
-            <OnboardStepProvider>
-              <AppRoutes />
-            </OnboardStepProvider>
+            <AppRoutes />
           </ToastProvider>
         </SocketProvider>
       </AuthProvider>

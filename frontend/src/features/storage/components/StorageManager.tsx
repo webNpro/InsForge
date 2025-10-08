@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import { useToast } from '@/lib/hooks/useToast';
 import { SortColumn } from 'react-data-grid';
+import { ConnectCTA } from '@/components/ConnectCTA';
 
 interface StorageManagerProps {
   bucketName: string;
@@ -202,7 +203,12 @@ export function StorageManager({
           onDownload={(file) => void handleDownload(file)}
           onDelete={(file) => void handleDelete(file)}
           isDownloading={isDownloading}
-          emptyStateTitle={searchQuery ? 'No files match your search criteria' : 'No files found'}
+          emptyState={
+            <div className="text-sm text-zinc-500 dark:text-zinc-400">
+              {searchQuery ? 'No files match your search criteria' : 'No files found'}.{' '}
+              <ConnectCTA />
+            </div>
+          }
         />
       </div>
 

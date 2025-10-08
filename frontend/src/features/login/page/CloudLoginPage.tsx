@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LockIcon } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 export default function CloudLoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loginWithAuthorizationCode } = useAuth();
+  const { hasCompletedOnboarding } = useMcpUsage();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle authorization token exchange
@@ -28,7 +30,9 @@ export default function CloudLoginPage() {
                 '*'
               );
             }
-            void navigate('/cloud/dashboard', { replace: true });
+            // Determine the correct redirect path based on onboarding completion status
+            const redirectPath = hasCompletedOnboarding ? '/cloud/dashboard' : '/cloud/onboard';
+            void navigate(redirectPath, { replace: true });
           } else {
             setAuthError('The authorization code may have expired or already been used.');
             if (window.parent !== window) {
@@ -58,7 +62,7 @@ export default function CloudLoginPage() {
     } else {
       setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate]);
+  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, hasCompletedOnboarding]);
 
   // Show error state if authentication failed
   if (authError) {

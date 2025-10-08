@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import { cn } from '@/lib/utils/utils';
-import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 interface CloudLayoutProps {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ interface RouterMessage {
 export default function CloudLayout({ children }: CloudLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { socket } = useSocket();
+  const { hasCompletedOnboarding } = useMcpUsage();
 
   useEffect(() => {
     const handleCloudMessage = (event: MessageEvent) => {
@@ -24,6 +24,12 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
         const message = event.data as RouterMessage;
 
         if (message.type === 'ROUTE_CHANGE' && message.path) {
+          // Check if navigating to dashboard and onboarding not completed
+          if (message.path === '/cloud/dashboard' && !hasCompletedOnboarding) {
+            // Redirect to onboarding page
+            void navigate('/cloud/onboard', { replace: true });
+            return;
+          }
           // Navigate to the corresponding cloud route
           void navigate(message.path);
         } else if (message.type === 'REFRESH') {
@@ -41,7 +47,7 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
     return () => {
       window.removeEventListener('message', handleCloudMessage);
     };
-  }, [navigate]);
+  }, [navigate, hasCompletedOnboarding]);
 
   useEffect(() => {
     // Only send messages if we're in an iframe (not the main window)
@@ -56,29 +62,6 @@ export default function CloudLayout({ children }: CloudLayoutProps) {
       );
     }
   }, [location.pathname]);
-
-  // Listen for MCP connection events and forward to parent
-  useEffect(() => {
-    if (!socket || window.parent === window) {
-      return;
-    }
-
-    const handleMcpConnected = () => {
-      window.parent.postMessage(
-        {
-          type: 'MCP_CONNECTION_STATUS',
-          connected: true,
-        },
-        '*'
-      );
-    };
-
-    socket.on(ServerEvents.MCP_CONNECTED, handleMcpConnected);
-
-    return () => {
-      socket.off(ServerEvents.MCP_CONNECTED, handleMcpConnected);
-    };
-  }, [socket]);
 
   return (
     <ThemeProvider forcedTheme="dark">

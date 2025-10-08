@@ -12,6 +12,7 @@ import {
   Sparkles,
   Code2,
   Activity,
+  Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
 import { Button } from '@/components/radix/Button';
@@ -22,8 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
-import { OnboardButton } from '@/features/onboard/components/OnboardButton';
-import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
   onLogout: () => void;
@@ -64,19 +64,26 @@ export default function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const location = useLocation();
-  const { isCompleted } = useOnboardingCompletion();
+  const { hasCompletedOnboarding } = useMcpUsage();
 
   // Add reinstall navigation item when onboarding is completed
-  const dynamicNavigation = isCompleted
+  const dynamicNavigation = hasCompletedOnboarding
     ? [
         ...navigation,
         {
           name: 'Reinstall',
-          href: '/dashboard/onboard?step=1',
+          href: '/dashboard/onboard',
           icon: RotateCw,
         },
       ]
-    : navigation;
+    : [
+        {
+          name: 'Get Started',
+          href: '/dashboard/onboard',
+          icon: Link2,
+        },
+        ...navigation,
+      ];
 
   const NavItem = ({ item, onClick }: { item: NavigationProps; onClick?: () => void }) => {
     const isActive = location.pathname === item.href.split('?')[0];
@@ -129,11 +136,6 @@ export default function AppSidebar({
         props.className
       )}
     >
-      {!isCompleted && (
-        <div className={`py-3 ${isCollapsed ? 'pl-1 pr-[3px]' : 'pl-3 pr-[11px]'} overflow-hidden`}>
-          <OnboardButton isCollapsed={isCollapsed} />
-        </div>
-      )}
       {/* Navigation */}
       <ScrollArea className="flex-1 pl-3 pr-[11px] py-4">
         <nav className="space-y-2">

@@ -11,7 +11,7 @@ import {
   GenerateInstallCommand,
   type MCPAgent,
   type PlatformType,
-} from './mcp-helper';
+} from './helpers';
 import { useApiKey } from '@/features/metadata/hooks/useMetadata';
 
 interface McpInstallerProps {
@@ -54,7 +54,7 @@ export function McpInstallation({
       >
         <TabsList
           className={cn(
-            'grid w-full grid-cols-7 bg-neutral-200 dark:bg-neutral-900 p-1 rounded-lg h-fit mb-2',
+            'grid w-full grid-cols-7 bg-neutral-200 dark:bg-[#333333] p-1 rounded-[8px] h-fit mb-2',
             TabListClassName
           )}
         >
@@ -62,11 +62,13 @@ export function McpInstallation({
             <TabsTrigger
               key={agent.id}
               value={agent.id}
-              className="rounded-sm px-4 py-2 text-sm font-normal transition-all duration-200 flex flex-row items-center justify-start gap-1
+              className="rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 flex flex-row items-center justify-center gap-1
                 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
-                data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-gray-900"
+                data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 hover:data-[state=inactive]:text-gray-900 dark:hover:data-[state=inactive]:text-white"
             >
-              {agent.logo}
+              {agent.logo && (
+                <div className="flex items-center justify-center w-6 h-6">{agent.logo}</div>
+              )}
               {agent.displayName}
             </TabsTrigger>
           ))}
@@ -76,7 +78,7 @@ export function McpInstallation({
         {MCP_AGENTS.map((agent) => (
           <TabsContent key={agent.id} value={agent.id} className="mt-0">
             {agent.id !== 'mcp' ? (
-              <div className="bg-white dark:bg-neutral-700 px-6 py-8 flex flex-col items-start justify-start gap-4 rounded-xl border border-border-gray dark:border-neutral-700">
+              <div className="bg-white dark:bg-[#333333] p-6 flex flex-col items-start justify-start gap-4 rounded-[8px] border border-border-gray dark:border-[#333333]">
                 {agent.id === 'cursor' && (
                   <CursorDeeplinkGenerator apiKey={apiKey} os={activeTab} />
                 )}
@@ -88,11 +90,12 @@ export function McpInstallation({
                 {/* Command Block */}
                 <CodeBlock
                   code={GenerateInstallCommand(agent, apiKey || '')}
-                  className="bg-slate-50 dark:bg-neutral-800 w-full font-normal text-blue-800 dark:text-blue-400"
+                  className="bg-slate-50 dark:bg-neutral-700 w-full font-normal text-blue-800 dark:text-white"
+                  buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800 dark:data-[copied=true]:bg-transparent dark:data-[copied=true]:hover:bg-transparent pl-2"
                 />
               </div>
             ) : (
-              <div className="px-6 py-8 bg-white dark:bg-neutral-800 overflow-hidden rounded-xl border border-border-gray dark:border-neutral-700">
+              <div className="p-6 bg-white dark:bg-[#333333] overflow-hidden rounded-[8px] border border-border-gray dark:border-[#333333]">
                 <p className="text-zinc-950 dark:text-white text-sm mb-3">
                   Copy the configuration below and add it to your AI assistant.
                 </p>
@@ -100,20 +103,20 @@ export function McpInstallation({
                 {/* OS Tabs */}
                 <div className="flex items-center justify-between">
                   <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className="grid w-60 grid-cols-2 bg-gray-100 dark:bg-neutral-900 p-1.5 rounded-lg h-fit">
+                    <TabsList className="grid w-69 grid-cols-2 bg-gray-100 dark:bg-[#404040] p-1 rounded-[8px] h-12">
                       <TabsTrigger
                         value="macos-linux"
-                        className="h-7 rounded-sm px-3 py-1 text-sm font-medium transition-all duration-200
-                          data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
-                          data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-gray-900"
+                        className="h-9 rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 flex flex-row items-center justify-center gap-1
+                        data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-600 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
+                        data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-white hover:data-[state=inactive]:text-gray-900"
                       >
                         MacOS/Linux
                       </TabsTrigger>
                       <TabsTrigger
                         value="windows"
-                        className="h-7 rounded-sm px-3 py-1 text-sm font-medium transition-all duration-200
-                          data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
-                          data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:text-gray-900"
+                        className="h-9 rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 flex flex-row items-center justify-center gap-1
+                        data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-600 dark:data-[state=active]:text-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm
+                        data-[state=inactive]:text-gray-600 dark:data-[state=inactive]:text-white hover:data-[state=inactive]:text-gray-900"
                       >
                         Windows
                       </TabsTrigger>
@@ -122,7 +125,7 @@ export function McpInstallation({
                 </div>
 
                 {/* Configuration content */}
-                <div className="mt-1">
+                <div className="mt-4">
                   {!apiKey && (
                     <Alert className="border-yellow-200 bg-yellow-50 mb-4">
                       <AlertDescription className="text-yellow-800">
@@ -132,7 +135,11 @@ export function McpInstallation({
                     </Alert>
                   )}
 
-                  <JsonHighlight json={JSON.stringify(mcpConfig, null, 2)} />
+                  <JsonHighlight
+                    json={JSON.stringify(mcpConfig, null, 2)}
+                    textColor="dark:text-white"
+                    className="dark:bg-neutral-700"
+                  />
                 </div>
               </div>
             )}

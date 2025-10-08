@@ -23,20 +23,20 @@ import { Input } from '@/components/radix/Input';
 import { ButtonWithLoading } from '@/components/ButtonWithLoading';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
+import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 import { loginFormSchema, LoginFormData } from '@/lib/utils/validation-schemas';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loginWithPassword, isAuthenticated } = useAuth();
-  const { isCompleted } = useOnboardingCompletion();
+  const { hasCompletedOnboarding } = useMcpUsage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Determine where to redirect based on onboarding completion status
   const getRedirectPath = useCallback(() => {
-    return isCompleted ? '/dashboard' : '/dashboard/onboard';
-  }, [isCompleted]);
+    return hasCompletedOnboarding ? '/dashboard' : '/dashboard/onboard';
+  }, [hasCompletedOnboarding]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),

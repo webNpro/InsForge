@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { createMCPServerConfig, type PlatformType } from './mcp-helper';
+import { createMCPServerConfig, type PlatformType } from './helpers';
 import CursorLogo from '@/assets/logos/cursor.svg?react';
 import { getBackendUrl } from '@/lib/utils/utils';
 
@@ -26,7 +26,7 @@ export function CursorDeeplinkGenerator({
   return (
     <button
       onClick={handleOpenInCursor}
-      className="bg-black py-2 px-4 flex items-center justify-center gap-2.5 rounded-md text-white text-sm font-medium"
+      className="h-10 bg-black dark:bg-neutral-800 py-2 px-4 flex items-center justify-center gap-2.5 rounded-md text-white text-sm font-medium"
     >
       <CursorLogo className="h-6 w-6" />
       <span>Add to Cursor</span>

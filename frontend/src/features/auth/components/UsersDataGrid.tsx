@@ -160,21 +160,13 @@ export function createUsersColumns(): DataGridColumn<UserDataGridRow>[] {
 export type UsersDataGridProps = Omit<DataGridProps<UserDataGridRow>, 'columns'>;
 
 // Specialized DataGrid for users
-export function UsersDataGrid({
-  emptyStateTitle = 'No users available',
-  emptyStateActionText,
-  onEmptyStateAction,
-  ...props
-}: UsersDataGridProps) {
+export function UsersDataGrid(props: UsersDataGridProps) {
   const columns = useMemo(() => createUsersColumns(), []);
 
   return (
     <DataGrid<UserDataGridRow>
       {...props}
       columns={columns}
-      emptyStateTitle={emptyStateTitle}
-      emptyStateActionText={emptyStateActionText}
-      onEmptyStateAction={onEmptyStateAction}
       showSelection={true}
       showPagination={true}
       showTypeBadge={false}

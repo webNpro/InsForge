@@ -36,6 +36,7 @@ export function AppRoutes() {
                 <Route path="/analytics" element={<AnalyticsLogsPage />} />
                 <Route path="/functions" element={<FunctionsPage />} />
                 <Route path="/ai" element={<AIPage />} />
+                <Route path="/onboard" element={<OnBoardPage />} />
                 <Route path="*" element={<Navigate to="/cloud/dashboard" replace />} />
               </Routes>
             </CloudLayout>

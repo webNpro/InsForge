@@ -1,103 +1,105 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/radix/Button';
-import { useOnboardStep, STEP_DESCRIPTIONS } from '@/lib/contexts/OnboardStepContext';
-import { type OnboardStep } from '../types';
-import { LinearStepper } from '@/components/Stepper';
+import { useNavigate } from 'react-router-dom';
+import { OnboardStep } from '../types';
 import { StepContent } from '../components/StepContent';
-import { CompletionCard } from '../components/CompletionCard';
+import LoaderIcon from '@/assets/icons/loader.svg?react';
+import ConnectedIcon from '@/assets/icons/connected.svg?react';
+import { ServerEvents, useSocket } from '@/lib/contexts/SocketContext';
+import { isInsForgeCloudProject } from '@/lib/utils/utils';
+import type { McpConnectedPayload } from '@/features/usage/hooks/useMcpUsage';
+
+const STEP_DESCRIPTIONS = [
+  'Install Node.js',
+  'Install InsForge MCP',
+  'Test the Connection',
+] as const;
+
+const STEPS = [
+  { id: OnboardStep.INSTALL_NODEJS, title: STEP_DESCRIPTIONS[0] },
+  { id: OnboardStep.INSTALL_MCP, title: STEP_DESCRIPTIONS[1] },
+  { id: OnboardStep.TEST_CONNECTION, title: STEP_DESCRIPTIONS[2] },
+] as const;
 
 export default function OnBoardPage() {
+  const [mcpDetected, setMcpDetected] = useState(false);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { currentStep, updateStep, totalSteps } = useOnboardStep();
-  const [isCompleted, setIsCompleted] = useState(false);
+  const { socket } = useSocket();
 
-  // Handle reinstall with step parameter
+  // Navigate to dashboard on successful connection
   useEffect(() => {
-    const stepParam = searchParams.get('step');
-    if (stepParam === '1') {
-      updateStep(1);
-      setIsCompleted(false);
-      setSearchParams({});
+    if (!socket) {
+      return;
     }
-  }, [searchParams, setSearchParams, updateStep]);
+    const handleMcpCallDetected = (_data: McpConnectedPayload) => {
+      setMcpDetected(true);
+      // Navigate to dashboard to show success message
+      // Determine the correct dashboard route based on environment
+      const dashboardRoute = isInsForgeCloudProject() ? '/cloud/dashboard' : '/dashboard';
+      void navigate(dashboardRoute, { state: { showSuccessBanner: true } });
+    };
 
-  const handleDismiss = async () => {
-    await navigate('/dashboard');
-  };
+    socket.on(ServerEvents.MCP_CONNECTED, handleMcpCallDetected);
 
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      updateStep((currentStep + 1) as OnboardStep);
-    } else if (currentStep === totalSteps) {
-      setIsCompleted(true);
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      updateStep((currentStep - 1) as OnboardStep);
-    }
-  };
+    return () => {
+      socket.off(ServerEvents.MCP_CONNECTED, handleMcpCallDetected);
+    };
+  }, [socket, navigate]);
 
   return (
-    <div className="min-h-screen bg-bg-gray dark:bg-neutral-900">
-      <div className="container max-w-[1080px] mx-auto px-6 py-12">
-        {/* Header with Linear Stepper */}
-        <div className="mb-12 space-y-3">
-          <h1 className="text-2xl font-bold text-black dark:text-white">Get Started</h1>
-          <LinearStepper
-            currentStep={currentStep}
-            totalSteps={totalSteps}
-            stepLabels={STEP_DESCRIPTIONS}
-            isCompleted={isCompleted}
-          />
+    <div className="h-full flex flex-col bg-bg-gray dark:bg-neutral-800">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0">
+        <div className="max-w-[1200px] mx-auto px-6 pt-12 pb-6 flex flex-col items-start justify-center gap-3">
+          {!mcpDetected ? (
+            <div className="flex items-center justify-start gap-2">
+              <LoaderIcon className="dark:text-emerald-400 text-zinc-950 animate-spin" />
+              <p className="text-base text-neutral-700 dark:text-neutral-300">
+                Waiting for Connection
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <ConnectedIcon className="w-6 h-6 text-zinc-950 dark:text-green-500" />
+              <p className="text-base text-neutral-700 dark:text-neutral-300">
+                Successfully Connected! Redirecting to Dashboard...
+              </p>
+            </div>
+          )}
+          <h1 className="text-xl font-semibold text-black dark:text-white">
+            Get Started by Connecting to Your Coding Agent
+          </h1>
         </div>
+        <div className="w-full border-t border-neutral-200 dark:border-neutral-700 h-px" />
+      </div>
 
-        {/* Main Content Card */}
-        {isCompleted ? (
-          <CompletionCard />
-        ) : (
-          <div className="space-y-3">
-            <p className="text-black dark:text-white text-lg font-semibold">
-              {STEP_DESCRIPTIONS[currentStep - 1]}
-            </p>
-            <StepContent step={currentStep} />
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1128px] mx-auto py-10 mb-32 flex flex-row gap-6">
+          {/* Left: Vertical Stepper line */}
+          <div className="flex-shrink-0 pt-1">
+            <div className="w-px flex-1 h-full bg-neutral-400 dark:bg-neutral-600 mx-3" />
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-between items-center">
-              {/* Dismiss Button - Left */}
-              <Button
-                variant="outline"
-                onClick={() => void handleDismiss()}
-                className="h-10 w-30 py-2 text-zinc-950 dark:text-white dark:border-neutral-700 dark:bg-neutral-700"
-              >
-                Dismiss
-              </Button>
+          {/* Right: All Step Contents */}
+          <div className="flex-1">
+            <div className="space-y-16">
+              {STEPS.map((step, index) => (
+                <div key={step.id} id={`step-${step.id}`} className="relative">
+                  {/* Step number circle */}
+                  <div className="absolute top-0.5 -left-9 -translate-x-1/2 w-6 h-6 bg-white dark:bg-zinc-800 border border-black dark:border-white text-black dark:text-white rounded-full flex items-center justify-center">
+                    <span className="text-sm text-center w-full select-none">{index + 1}</span>
+                  </div>
 
-              {/* Navigation Buttons - Right */}
-              <div className="flex space-x-4">
-                {currentStep > 1 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => void handleBack()}
-                    className="h-10 w-30 text-zinc-950 dark:text-white dark:border-neutral-700 dark:bg-neutral-700"
-                  >
-                    Back
-                  </Button>
-                )}
-                <Button
-                  variant="default"
-                  onClick={() => void handleNext()}
-                  className="h-10 w-30 dark:bg-emerald-300 dark:text-black dark:hover:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {currentStep === totalSteps ? 'Complete' : 'Next'}
-                </Button>
-              </div>
+                  {/* Step title and content */}
+                  <h2 className="text-xl font-semibold text-zinc-950 dark:text-white mb-3">
+                    {step.title}
+                  </h2>
+                  <StepContent step={step.id} />
+                </div>
+              ))}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

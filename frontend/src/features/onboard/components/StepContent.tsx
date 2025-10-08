@@ -1,7 +1,6 @@
 import { OnboardStep } from '../types';
 import { CodeBlock } from '@/components/CodeBlock';
 import { McpInstallation } from '@/features/onboard/components/mcp';
-import { TestConnectionStep } from './TestConnectionStep';
 
 interface StepContentProps {
   step: OnboardStep;
@@ -11,7 +10,7 @@ export function StepContent({ step }: StepContentProps) {
   switch (step) {
     case OnboardStep.INSTALL_NODEJS:
       return (
-        <div className="border border-transparent dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6 space-y-4">
+        <div className="border border-neutral-200 dark:border-[#333333] rounded-[8px] bg-white dark:bg-[#333333] p-6 space-y-4">
           <div>
             <p className="text-zinc-950 dark:text-white text-sm mb-4">
               Install{' '}
@@ -42,42 +41,35 @@ export function StepContent({ step }: StepContentProps) {
             <CodeBlock
               code="node --version"
               className="dark:bg-neutral-700 dark:text-white"
-              buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800"
+              buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800 dark:data-[copied=true]:bg-transparent dark:data-[copied=true]:hover:bg-transparent"
             />
             <CodeBlock
               code="npm --version"
               className="dark:bg-neutral-700 dark:text-white"
-              buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800"
+              buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800 dark:data-[copied=true]:bg-transparent dark:data-[copied=true]:hover:bg-transparent"
             />
           </div>
         </div>
       );
 
     case OnboardStep.INSTALL_MCP:
-      return <McpInstallation TabListClassName="dark:bg-neutral-800" />;
+      return <McpInstallation TabListClassName="dark:bg-[#333333]" />;
 
     case OnboardStep.TEST_CONNECTION:
-      return <TestConnectionStep />;
-
-    case OnboardStep.FINAL_SETUP:
       return (
-        <div className="space-y-6 border border-transparent dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-800 py-8 px-6">
+        <div className="space-y-6 border border-neutral-200 dark:border-[#333333] rounded-[8px] bg-white dark:bg-[#333333] p-6">
           <div>
             <p className="text-zinc-950 dark:text-white text-sm mb-4">
-              Whenever you start a new chat session, init your AI agents with the InsForge init
-              prompt:
+              Copy the prompt below and send it to your agent. The moment we detect that first call,
+              the connection is complete.
             </p>
           </div>
 
           <CodeBlock
-            code="Learn how to use InsForge"
+            code="I'm using InsForge as my backend platform, what is my current backend structure?"
             className="bg-slate-50 dark:bg-neutral-700 dark:text-white"
-            buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800"
+            buttonClassName="dark:bg-neutral-800 dark:hover:bg-neutral-800 dark:data-[copied=true]:bg-transparent dark:data-[copied=true]:hover:bg-transparent"
           />
-
-          <div>
-            <p className="text-zinc-950 dark:text-white text-sm">Then you can start building!</p>
-          </div>
         </div>
       );
 

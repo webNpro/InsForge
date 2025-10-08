@@ -4,10 +4,8 @@ import { AuthService } from '@/core/auth/auth.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { AIConfigService } from '@/core/ai/config.js';
 import { FunctionService } from '@/core/functions/functions.js';
-import { SocketService } from '@/core/socket/socket.js';
 import { verifyAdmin, AuthRequest } from '@/api/middleware/auth.js';
 import { successResponse } from '@/utils/response.js';
-import { ServerEvents } from '@/core/socket/types';
 import { ERROR_CODES } from '@/types/error-constants.js';
 import { AppError } from '@/api/middleware/error.js';
 import type { AppMetadataSchema } from '@insforge/shared-schemas';
@@ -49,13 +47,6 @@ router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
       aiIntegration: aiConfig,
       version,
     };
-
-    // Trigger Socket.IO event to notify frontend that MCP is connected
-    if (req.query.mcp === 'true') {
-      const socketService = SocketService.getInstance();
-      //Lyu note: this is triggered everytime when a mcp calls get-metadata. Do we have a better solution for this?
-      socketService.broadcastToRoom('role:project_admin', ServerEvents.MCP_CONNECTED);
-    }
 
     successResponse(res, metadata);
   } catch (error) {
