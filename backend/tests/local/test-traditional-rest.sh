@@ -100,7 +100,7 @@ if echo "$auth_response" | grep -q '"accessToken"'; then
     # Test authenticated endpoints
     print_info "6. Testing Database Tables List (Authenticated)"
     response=$(curl -s "$API_BASE/database/tables" \
-        -H "Authorization: Bearer $AUTH_TOKEN")
+        -H "Authorization: Bearer $ADMIN_TOKEN")
     test_response_format "Direct array response" "$response" '^\['
     test_response_format "No wrapper object" "$response" '"data":\[' "true"
     

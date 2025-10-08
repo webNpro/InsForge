@@ -145,7 +145,7 @@ fi
 # Step 5: Test accessing PUBLIC file WITHOUT API key
 print_info "5️⃣  Testing PUBLIC file access WITHOUT API key..."
 echo "   Accessing: ${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${TEST_FILE}"
-HTTP_CODE=$(curl -s -o /tmp/public-response.txt -w "%{http_code}" "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${TEST_FILE}")
+HTTP_CODE=$(curl -s -L -o /tmp/public-response.txt -w "%{http_code}" "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${TEST_FILE}")
 if [ "$HTTP_CODE" -eq 200 ]; then
     print_success "Public file accessible without API key! (Status: ${HTTP_CODE})"
     echo "   📄 Content: $(cat /tmp/public-response.txt)"
@@ -165,7 +165,7 @@ fi
 
 # Step 7: Test accessing PRIVATE file WITH API key
 print_info "7️⃣  Testing PRIVATE file access WITH API key..."
-HTTP_CODE=$(curl -s -o /tmp/private-auth-response.txt -w "%{http_code}" \
+HTTP_CODE=$(curl -s -L -o /tmp/private-auth-response.txt -w "%{http_code}" \
   -H "Authorization: Bearer ${api_key}" \
   "${API_BASE_URL}/storage/buckets/${PRIVATE_BUCKET}/objects/${TEST_FILE}")
 if [ "$HTTP_CODE" -eq 200 ]; then
@@ -211,7 +211,7 @@ if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
         generated_key=$(echo "$body" | jq -r '.key')
         echo "   📝 Generated key: $generated_key"
         # Test downloading the file with generated key
-        HTTP_CODE=$(curl -s -o /tmp/post-download.txt -w "%{http_code}" "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${generated_key}")
+        HTTP_CODE=$(curl -s -L -o /tmp/post-download.txt -w "%{http_code}" "${API_BASE_URL}/storage/buckets/${PUBLIC_BUCKET}/objects/${generated_key}")
         if [ "$HTTP_CODE" -eq 200 ]; then
             print_success "Downloaded file with generated key!"
             echo "   📄 Content: $(cat /tmp/post-download.txt)"
