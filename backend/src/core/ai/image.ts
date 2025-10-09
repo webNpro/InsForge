@@ -87,9 +87,9 @@ export class ImageService {
           request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
         )) as OpenAI.Chat.ChatCompletion;
       } catch (error) {
-        // Check if error is a 402 insufficient credits error in cloud environment
-        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
-          logger.info('Received 402 insufficient credits, renewing API key...');
+        // Check if error is a 403 insufficient credits error in cloud environment
+        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
+          logger.info('Received 403 insufficient credits, renewing API key...');
           // Renew the API key
           await this.aiCredentialsService.renewCloudApiKey();
           // Retry the request with new credentials
