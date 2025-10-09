@@ -132,15 +132,14 @@ export const filterModelsByModalities = (
     return [];
   }
 
-  return models
-    .filter((model) => {
-      const inputModalities = new Set(model.architecture?.inputModalities || []);
-      const outputModalities = new Set(model.architecture?.outputModalities || []);
-      return (
-        selectedInputModalities.every((m) => inputModalities.has(m)) &&
-        selectedOutputModalities.every((m) => outputModalities.has(m))
-      );
-    })
+  return models.filter((model) => {
+    const inputModalities = new Set(model.architecture?.inputModalities || []);
+    const outputModalities = new Set(model.architecture?.outputModalities || []);
+    return (
+      selectedInputModalities.every((m) => inputModalities.has(m)) &&
+      selectedOutputModalities.every((m) => outputModalities.has(m))
+    );
+  });
 };
 
 // Helper function to get friendly model name from model ID
