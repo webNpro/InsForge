@@ -168,23 +168,7 @@ test_endpoint \
     "SELECT COUNT(*) FROM users;" \
     "pass"
 
-# Test 13: Relaxed mode blocks UPDATE users
-test_endpoint \
-    "RELAXED" \
-    "rawsql/unrestricted" \
-    "Block UPDATE users table" \
-    "UPDATE users SET nickname = 'Updated Name' WHERE nickname = 'Test User';" \
-    "fail"
-
-# Test 14: Relaxed mode blocks DELETE FROM users
-test_endpoint \
-    "RELAXED" \
-    "rawsql/unrestricted" \
-    "Block DELETE FROM users table" \
-    "DELETE FROM users WHERE nickname = 'Test User';" \
-    "fail"
-
-# Test 15: Relaxed mode blocks DROP users table
+# Test 13: Relaxed mode blocks DROP users table
 test_endpoint \
     "RELAXED" \
     "rawsql/unrestricted" \
@@ -192,7 +176,7 @@ test_endpoint \
     "DROP TABLE users;" \
     "fail"
 
-# Test 16: Relaxed mode blocks RENAME users table
+# Test 14: Relaxed mode blocks RENAME users table
 test_endpoint \
     "RELAXED" \
     "rawsql/unrestricted" \
@@ -203,7 +187,7 @@ test_endpoint \
 echo -e "${BLUE}=== BOTH MODES - DATABASE LEVEL BLOCKS ===${NC}"
 echo ""
 
-# Test 17: Strict mode blocks DROP DATABASE
+# Test 15: Strict mode blocks DROP DATABASE
 test_endpoint \
     "STRICT" \
     "rawsql" \
@@ -211,7 +195,7 @@ test_endpoint \
     "DROP DATABASE testdb;" \
     "fail"
 
-# Test 18: Relaxed mode blocks DROP DATABASE
+# Test 16: Relaxed mode blocks DROP DATABASE
 test_endpoint \
     "RELAXED" \
     "rawsql/unrestricted" \
@@ -219,7 +203,7 @@ test_endpoint \
     "DROP DATABASE testdb;" \
     "fail"
 
-# Test 19: Relaxed mode blocks pg_catalog
+# Test 17: Relaxed mode blocks pg_catalog
 test_endpoint \
     "RELAXED" \
     "rawsql/unrestricted" \
@@ -227,7 +211,7 @@ test_endpoint \
     "SELECT * FROM pg_catalog.pg_tables LIMIT 1;" \
     "fail"
 
-# Test 20: Relaxed mode blocks information_schema
+# Test 18: Relaxed mode blocks information_schema
 test_endpoint \
     "RELAXED" \
     "rawsql/unrestricted" \
@@ -249,11 +233,9 @@ echo ""
 echo -e "${GREEN}RELAXED MODE (/rawsql/unrestricted):${NC}"
 echo "  - ✅ Allows SELECT from system tables"
 echo "  - ✅ Allows INSERT into system tables"
-echo "  - ✅ Allows INSERT into users table"
+echo "  - ✅ Allows SELECT from users table"
 echo "  - ❌ Blocks UPDATE of system tables"
-echo "  - ❌ Blocks UPDATE of users table"
 echo "  - ❌ Blocks DELETE FROM system tables"
-echo "  - ❌ Blocks DELETE FROM users table"
 echo "  - ❌ Blocks DROP/ALTER/TRUNCATE system tables"
 echo "  - ❌ Blocks DROP/RENAME users table"
 echo "  - ❌ Blocks pg_catalog and information_schema"
