@@ -90,18 +90,18 @@ export class ChatService {
 
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
-
+      const request: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
+        model: options.model,
+        messages: formattedMessages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 4096,
+        top_p: options.topP,
+        stream: false,
+      };
       let response: OpenAI.Chat.ChatCompletion;
 
       try {
-        response = await client.chat.completions.create({
-          model: options.model,
-          messages: formattedMessages,
-          temperature: options.temperature ?? 0.7,
-          max_tokens: options.maxTokens ?? 4096,
-          top_p: options.topP,
-          stream: false,
-        });
+        response = await client.chat.completions.create(request);
       } catch (error) {
         // Check if error is a 402 insufficient credits error in cloud environment
         if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
@@ -110,14 +110,7 @@ export class ChatService {
           await this.aiCredentialsService.renewCloudApiKey();
           // Retry the request with new credentials
           client = await this.aiCredentialsService.getClient();
-          response = await client.chat.completions.create({
-            model: options.model,
-            messages: formattedMessages,
-            temperature: options.temperature ?? 0.7,
-            max_tokens: options.maxTokens ?? 4096,
-            top_p: options.topP,
-            stream: false,
-          });
+          response = await client.chat.completions.create(request);
         } else {
           throw error;
         }
@@ -179,17 +172,19 @@ export class ChatService {
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
+      const request: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
+        model: options.model,
+        messages: formattedMessages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 4096,
+        top_p: options.topP,
+        stream: true,
+      };
+
       let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
 
       try {
-        stream = await client.chat.completions.create({
-          model: options.model,
-          messages: formattedMessages,
-          temperature: options.temperature ?? 0.7,
-          max_tokens: options.maxTokens ?? 4096,
-          top_p: options.topP,
-          stream: true,
-        });
+        stream = await client.chat.completions.create(request);
       } catch (error) {
         // Check if error is a 402 insufficient credits error in cloud environment
         if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
@@ -198,14 +193,7 @@ export class ChatService {
           await this.aiCredentialsService.renewCloudApiKey();
           // Retry the request with new credentials
           client = await this.aiCredentialsService.getClient();
-          stream = await client.chat.completions.create({
-            model: options.model,
-            messages: formattedMessages,
-            temperature: options.temperature ?? 0.7,
-            max_tokens: options.maxTokens ?? 4096,
-            top_p: options.topP,
-            stream: true,
-          });
+          stream = await client.chat.completions.create(request);
         } else {
           throw error;
         }
