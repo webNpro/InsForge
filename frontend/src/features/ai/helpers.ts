@@ -141,7 +141,6 @@ export const filterModelsByModalities = (
         selectedOutputModalities.every((m) => outputModalities.has(m))
       );
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
 };
 
 // Helper function to get friendly model name from model ID
