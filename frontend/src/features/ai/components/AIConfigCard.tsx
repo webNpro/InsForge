@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@/components/radix/Button';
 import {
   Tooltip,
@@ -12,65 +11,93 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/radix/DropdownMenu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, DollarSign } from 'lucide-react';
 import {
   //   formatTokenCount,
-  getProviderDisplayName,
-  getFriendlyModelName,
   getModalityIcon,
+  ModelOption,
 } from '../helpers';
-import { AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
-
-interface AIConfigExtended extends AIConfigurationWithUsageSchema {
-  logo?: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
-}
+import { cn } from '@/lib/utils/utils';
 
 interface AIModelCardProps {
-  config: AIConfigExtended;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  config: ModelOption;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  mode?: 'configured' | 'selectable';
+  isSelected?: boolean;
+  onSelect?: () => void;
+  isDisabled?: boolean;
 }
 
-export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
-  // Extract provider info
-  const companyId = config.modelId.split('/')[0];
-  const providerName = getProviderDisplayName(companyId);
+export function AIModelCard({
+  config,
+  onEdit,
+  onDelete,
+  mode = 'configured',
+  isSelected = false,
+  onSelect,
+  isDisabled = false,
+}: AIModelCardProps) {
+  const isSelectableMode = mode === 'selectable';
 
-  // Get friendly model name from modelId
-  const modelName = getFriendlyModelName(config.modelId);
-
-  const inputModality = config.inputModality;
-  const outputModality = config.outputModality;
+  const handleCardClick = () => {
+    if (isSelectableMode && !isDisabled && onSelect) {
+      onSelect();
+    }
+  };
 
   return (
     <TooltipProvider>
-      <div className="relative py-5 px-4 bg-white dark:bg-[#333333] rounded-[8px] border border-neutral-200 dark:border-neutral-700 transition-all duration-200">
-        {/* More button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 p-1 hover:bg-gray-100 dark:hover:bg-neutral-700 absolute top-3 right-3"
-            >
-              <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-neutral-400" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="flex flex-row gap-3 px-3 py-2 cursor-pointer"
-              onClick={() => onEdit(config.id)}
-            >
-              <Pencil className="w-4 h-4" /> System Prompt
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onDelete(config.id)}
-              className="text-red-600 dark:text-red-400 flex flex-row gap-3 px-3 py-2 cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div
+        className={cn(
+          'relative py-5 px-4 bg-white dark:bg-[#333333] rounded-[8px] transition-all duration-200',
+          isSelectableMode && !isDisabled && 'cursor-pointer',
+          isSelectableMode && isSelected
+            ? 'border-2 border-zinc-700 dark:border-emerald-300'
+            : 'border border-neutral-200 dark:border-neutral-700',
+          isSelectableMode &&
+            !isDisabled &&
+            !isSelected &&
+            'hover:shadow-md hover:bg-neutral-100 dark:hover:bg-neutral-700',
+          isDisabled && 'opacity-50 cursor-not-allowed'
+        )}
+        onClick={handleCardClick}
+      >
+        {/* Configured mode: More button */}
+        {mode === 'configured' && onEdit && onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 p-1 hover:bg-gray-300 dark:hover:bg-neutral-700 absolute top-3 right-3"
+              >
+                <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-neutral-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="flex flex-row gap-3 px-3 py-2 cursor-pointer"
+                onClick={() => onEdit(config.id)}
+              >
+                <Pencil className="w-4 h-4" /> System Prompt
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDelete(config.id)}
+                className="text-red-600 dark:text-red-400 flex flex-row gap-3 px-3 py-2 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Selectable mode: Added badge */}
+        {isSelectableMode && isDisabled && (
+          <div className="absolute top-3 right-3 px-2 py-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 rounded">
+            Added
+          </div>
+        )}
 
         {/* Header with logo */}
         <div className="flex items-start justify-between mb-4">
@@ -81,7 +108,7 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
                 <config.logo className="w-10 h-10 dark:text-white" />
               ) : (
                 <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
-                  {companyId.charAt(0).toUpperCase()}
+                  {config.companyId.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
@@ -90,25 +117,26 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
             <div>
               <p
                 className="font-medium text-sm text-zinc-950 dark:text-zinc-50 line-clamp-1 mr-3"
-                title={modelName}
+                title={config.modelName}
               >
-                {modelName}
+                {config.modelName}
               </p>
               <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                {providerName}
+                {config.providerName}
               </p>
             </div>
+            <div className="w-8" />
           </div>
         </div>
 
-        <div className="h-[1px] bg-neutral-200 dark:bg-neutral-700 my-3" />
+        <div className="h-px bg-neutral-200 dark:bg-neutral-700 my-3" />
 
         {/* Modality indicators */}
         <div className="flex flex-col gap-3 items-stretch">
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Input</span>
             <div className="flex items-center gap-2">
-              {inputModality.map((modality) => {
+              {config.inputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
@@ -127,7 +155,7 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Output</span>
             <div className="flex items-center gap-2">
-              {outputModality.map((modality) => {
+              {config.outputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
@@ -143,10 +171,27 @@ export function AIModelCard({ config, onEdit, onDelete }: AIModelCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm text-black dark:text-white">
-            <span>Requests</span>
-            <span>{config.usageStats?.totalRequests || 0}</span>
-          </div>
+          {isSelectableMode ? (
+            <div className="flex items-center justify-between">
+              <span className="text-black dark:text-white">Credit Usage</span>
+              <div className="flex items-center">
+                {config.priceLevel > 0 ? (
+                  Array.from({ length: config.priceLevel }).map((_, i) => (
+                    <div key={i} className="w-5 h-5 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-neutral-500 dark:text-neutral-400">Free</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-sm text-black dark:text-white">
+              <span>Requests</span>
+              <span>{config.usageStats?.totalRequests || 0}</span>
+            </div>
+          )}
         </div>
       </div>
     </TooltipProvider>

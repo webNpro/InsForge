@@ -129,23 +129,33 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   // Helper function to get filtered and processed models
   const getFilteredModels = useCallback(
     (inputModality: ModalitySchema[], outputModality: ModalitySchema[]): ModelOption[] => {
-      const filteredRawModels = filterModelsByModalities(
-        allConfiguredModels,
-        inputModality,
-        outputModality
-      );
+      // If both modality arrays are empty, return all models
+      const shouldFilter = inputModality.length > 0 || outputModality.length > 0;
+
+      const filteredRawModels = shouldFilter
+        ? filterModelsByModalities(allConfiguredModels, inputModality, outputModality)
+        : allConfiguredModels;
 
       return filteredRawModels.map((model) => {
         const companyId = model.id.split('/')[0];
-        const priceInfo = calculatePriceLevel(model.pricing);
+        const priceLevel = calculatePriceLevel(model.pricing);
+        const supportedModalities: ModalitySchema[] = ['text', 'image'];
 
         return {
+          id: model.id,
           value: model.id,
-          label: model.name,
-          company: getProviderDisplayName(companyId),
-          priceLevel: priceInfo.level,
-          priceColor: priceInfo.color,
+          companyId,
+          modelName: model.name.split(':')[1],
+          providerName: getProviderDisplayName(companyId),
           logo: getProviderLogo(companyId),
+          inputModality: (model.architecture?.inputModalities || ['text']).filter(
+            (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
+          ),
+          outputModality: (model.architecture?.outputModalities || ['text']).filter(
+            (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
+          ),
+          priceLevel,
+          usageStats: undefined, // selectable models don't have usage stats
         };
       });
     },

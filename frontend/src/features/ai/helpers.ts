@@ -12,15 +12,19 @@ type ModelPricing = {
   inputCacheWrite?: string;
 };
 
-export type ModelPriceLevel = 'FREE' | '$' | '$$' | '$$$';
-
 export interface ModelOption {
+  id: string;
   value: string;
-  label: string;
-  company: string;
-  priceLevel: ModelPriceLevel;
-  priceColor: string;
+  companyId: string;
+  modelName: string;
+  providerName: string;
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
+  inputModality: ModalitySchema[];
+  outputModality: ModalitySchema[];
+  priceLevel: number;
+  usageStats?: {
+    totalRequests: number;
+  };
 }
 
 import { Type, Image } from 'lucide-react';
@@ -90,16 +94,14 @@ export const getProviderLogo = (
 };
 
 // Calculate price level based on pricing data
-export const calculatePriceLevel = (
-  pricing: ModelPricing | undefined | null
-): { level: ModelPriceLevel; color: string } => {
+export const calculatePriceLevel = (pricing: ModelPricing | undefined | null): number => {
   if (!pricing) {
-    return { level: 'FREE', color: 'text-green-400' };
+    return 0;
   }
 
   // Check if it's free
   if (pricing.prompt === '0' && pricing.completion === '0') {
-    return { level: 'FREE', color: 'text-green-400' };
+    return 0;
   }
 
   // Calculate average cost per 1M tokens (prompt + completion)
@@ -112,12 +114,12 @@ export const calculatePriceLevel = (
 
   // Adjusted thresholds based on actual pricing data and user feedback
   if (avgCostPer1M <= 3) {
-    return { level: '$', color: 'text-green-400' };
+    return 1;
   } // ≤$3/1M tokens (Haiku, Gemini Flash, etc.)
   if (avgCostPer1M <= 15) {
-    return { level: '$$', color: 'text-amber-400' };
+    return 2;
   } // ≤$15/1M tokens (GPT-4o, Claude Sonnet, etc.)
-  return { level: '$$$', color: 'text-red-400' }; // >$15/1M tokens (Claude Opus, etc.)
+  return 3; // >$15/1M tokens (Claude Opus, etc.)
 };
 
 // Helper function to filter AI models based on selected modalities
@@ -130,16 +132,14 @@ export const filterModelsByModalities = (
     return [];
   }
 
-  return models
-    .filter((model) => {
-      const inputModalities = new Set(model.architecture?.inputModalities || []);
-      const outputModalities = new Set(model.architecture?.outputModalities || []);
-      return (
-        selectedInputModalities.every((m) => inputModalities.has(m)) &&
-        selectedOutputModalities.every((m) => outputModalities.has(m))
-      );
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return models.filter((model) => {
+    const inputModalities = new Set(model.architecture?.inputModalities || []);
+    const outputModalities = new Set(model.architecture?.outputModalities || []);
+    return (
+      selectedInputModalities.every((m) => inputModalities.has(m)) &&
+      selectedOutputModalities.every((m) => outputModalities.has(m))
+    );
+  });
 };
 
 // Helper function to get friendly model name from model ID
