@@ -18,10 +18,14 @@ const dbAdvanceService = new DatabaseAdvanceService();
 const auditService = AuditService.getInstance();
 
 /**
- * Execute raw SQL query
- * POST /api/database/advance/rawsql
+ * Execute raw SQL query with relaxed sanitization (Power User Mode)
+ * POST /api/database/advance/rawsql/unrestricted
+ *
+ * ⚠️ This endpoint has relaxed restrictions compared to /rawsql
+ * - Allows SELECT and INSERT into system tables and users table
+ * - Blocks UPDATE/DELETE/DROP/ALTER on system tables and users table
  */
-router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
+router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     // Validate request body
     const validation = rawSQLRequestSchema.safeParse(req.body);
@@ -34,24 +38,30 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     const { query, params = [] } = validation.data;
-    const response = await dbAdvanceService.executeRawSQL(query, params);
 
-    // Log audit for raw SQL execution
+    // Sanitize query with relaxed mode
+    const sanitizedQuery = dbAdvanceService.sanitizeQuery(query, 'relaxed');
+
+    // Execute SQL
+    const response = await dbAdvanceService.executeRawSQL(sanitizedQuery, params);
+
+    // Log audit for relaxed raw SQL execution
     await auditService.log({
       actor: req.user?.email || 'api-key',
-      action: 'EXECUTE_RAW_SQL',
+      action: 'EXECUTE_RAW_SQL_RELAXED',
       module: 'DATABASE',
       details: {
         query: query.substring(0, 300), // Limit query length in audit log
         paramCount: params.length,
         rowsAffected: response.rowCount,
+        mode: 'relaxed',
       },
       ip_address: req.ip,
     });
 
     res.json(response);
   } catch (error: unknown) {
-    logger.warn('Raw SQL execution error:', error);
+    logger.warn('Relaxed raw SQL execution error:', error);
 
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
@@ -70,16 +80,10 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
 });
 
 /**
- * Execute raw SQL query WITHOUT sanitization (Power User Mode)
- * POST /api/database/advance/rawsql/unrestricted
- *
- * ⚠️ DANGER: This endpoint executes SQL directly without any safety checks
- * - No protection against dangerous operations
- * - Can DROP DATABASE, modify system tables, etc.
- * - Use with extreme caution
- * - Requires admin authentication
+ * Execute raw SQL query with strict sanitization
+ * POST /api/database/advance/rawsql
  */
-router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: Response) => {
+router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
     // Validate request body
     const validation = rawSQLRequestSchema.safeParse(req.body);
@@ -93,26 +97,29 @@ router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: R
 
     const { query, params = [] } = validation.data;
 
-    // Execute unrestricted SQL
-    const response = await dbAdvanceService.executeUnrestrictedRawSQL(query, params);
+    // Sanitize query with strict mode
+    const sanitizedQuery = dbAdvanceService.sanitizeQuery(query, 'strict');
 
-    // Log audit for unrestricted raw SQL execution
+    // Execute SQL
+    const response = await dbAdvanceService.executeRawSQL(sanitizedQuery, params);
+
+    // Log audit for strict raw SQL execution
     await auditService.log({
       actor: req.user?.email || 'api-key',
-      action: 'EXECUTE_UNRESTRICTED_RAW_SQL',
+      action: 'EXECUTE_RAW_SQL',
       module: 'DATABASE',
       details: {
         query: query.substring(0, 300), // Limit query length in audit log
         paramCount: params.length,
         rowsAffected: response.rowCount,
-        warning: 'UNRESTRICTED_EXECUTION',
+        mode: 'strict',
       },
       ip_address: req.ip,
     });
 
     res.json(response);
   } catch (error: unknown) {
-    logger.warn('Unrestricted raw SQL execution error:', error);
+    logger.warn('Raw SQL execution error:', error);
 
     if (error instanceof AppError) {
       res.status(error.statusCode).json({
