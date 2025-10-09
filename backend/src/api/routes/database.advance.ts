@@ -23,7 +23,6 @@ const auditService = AuditService.getInstance();
  *
  * ⚠️ This endpoint has relaxed restrictions compared to /rawsql
  * - Allows SELECT and INSERT into system tables and users table
- * - Blocks UPDATE/DELETE/DROP/ALTER on system tables and users table
  */
 router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: Response) => {
   try {
