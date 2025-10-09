@@ -17,7 +17,6 @@ interface CloudCredentialsResponse {
 interface CloudCredentials {
   apiKey: string;
   limitRemaining?: number;
-  expiredAt?: Date | null;
 }
 
 interface OpenRouterKeyInfo {
@@ -80,10 +79,7 @@ export class AIClientService {
    */
   async getApiKey(): Promise<string> {
     if (isCloudEnvironment()) {
-      if (
-        this.cloudCredentials &&
-        (!this.cloudCredentials.expiredAt || new Date() <= this.cloudCredentials.expiredAt)
-      ) {
+      if (this.cloudCredentials) {
         return this.cloudCredentials.apiKey;
       } else {
         return await this.fetchCloudApiKey();
@@ -213,7 +209,7 @@ export class AIClientService {
 
       // Fetch API key from cloud service with sign token as query parameter
       const response = await fetch(
-        `https://api.insforge.dev/ai/v1/credentials/${projectId}?sign=${token}`
+        `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}?sign=${token}`
       );
 
       if (!response.ok) {
@@ -231,11 +227,67 @@ export class AIClientService {
       this.cloudCredentials = {
         apiKey: data.openrouter.api_key,
         limitRemaining: data.openrouter.limit_remaining,
-        expiredAt: data.openrouter.expired_at ? new Date(data.openrouter.expired_at) : null,
       };
       return data.openrouter.api_key;
     } catch (error) {
       console.error('Failed to fetch cloud API key:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Renew API key from cloud service when credits are exhausted
+   */
+  async renewCloudApiKey(): Promise<string> {
+    try {
+      const projectId = process.env.PROJECT_ID;
+      if (!projectId) {
+        throw new Error('PROJECT_ID not found in environment variables');
+      }
+
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET not found in environment variables');
+      }
+
+      // Sign a token for authentication
+      const token = jwt.sign({ projectId }, jwtSecret, { expiresIn: '1h' });
+
+      // Renew API key from cloud service with sign token in request body
+      const response = await fetch(
+        `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}/renew`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sign: token }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to renew cloud API key: ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as CloudCredentialsResponse;
+
+      // Extract API key from the openrouter object in response
+      if (!data.openrouter?.api_key) {
+        throw new Error('Invalid response: missing openrouter API Key');
+      }
+
+      // Store credentials with metadata
+      this.cloudCredentials = {
+        apiKey: data.openrouter.api_key,
+        limitRemaining: data.openrouter.limit_remaining,
+      };
+
+      // Recreate client with new API key
+      this.openRouterClient = this.createClient(data.openrouter.api_key);
+
+      return data.openrouter.api_key;
+    } catch (error) {
+      console.error('Failed to renew cloud API key:', error);
       throw error;
     }
   }

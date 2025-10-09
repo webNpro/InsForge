@@ -10,6 +10,7 @@ import type {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { OpenRouterImageMessage } from '@/types/ai';
+import { isCloudEnvironment } from '@/utils/environment';
 
 export class ImageService {
   private static aiUsageService = new AIUsageService();
@@ -37,7 +38,7 @@ export class ImageService {
    */
   static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
     // Get the client (handles validation and initialization automatically)
-    const client = await this.aiCredentialsService.getClient();
+    let client = await this.aiCredentialsService.getClient();
 
     // Validate model and get config
     const aiConfig = await ImageService.validateAndGetConfig(options.model);
@@ -77,11 +78,29 @@ export class ImageService {
         modalities: ['text', 'image'],
       };
 
-      // Use OpenRouter's standard chat completions API
-      // Cast the extended request to the base OpenAI type for the SDK call
-      const response = (await client.chat.completions.create(
-        request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
-      )) as OpenAI.Chat.ChatCompletion;
+      let response: OpenAI.Chat.ChatCompletion;
+
+      try {
+        // Use OpenRouter's standard chat completions API
+        // Cast the extended request to the base OpenAI type for the SDK call
+        response = (await client.chat.completions.create(
+          request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+        )) as OpenAI.Chat.ChatCompletion;
+      } catch (error) {
+        // Check if error is a 402 insufficient credits error in cloud environment
+        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
+          logger.info('Received 402 insufficient credits, renewing API key...');
+          // Renew the API key
+          await this.aiCredentialsService.renewCloudApiKey();
+          // Retry the request with new credentials
+          client = await this.aiCredentialsService.getClient();
+          response = (await client.chat.completions.create(
+            request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+          )) as OpenAI.Chat.ChatCompletion;
+        } else {
+          throw error;
+        }
+      }
 
       // Initialize the result
       const result: ImageGenerationResponse = {

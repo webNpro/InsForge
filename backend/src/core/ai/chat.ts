@@ -9,6 +9,7 @@ import type {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ChatCompletionOptions } from '@/types/ai';
+import { isCloudEnvironment } from '@/utils/environment';
 
 export class ChatService {
   private aiUsageService = new AIUsageService();
@@ -82,7 +83,7 @@ export class ChatService {
   ): Promise<ChatCompletionResponse> {
     try {
       // Get the client (handles validation and initialization automatically)
-      const client = await this.aiCredentialsService.getClient();
+      let client = await this.aiCredentialsService.getClient();
 
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
@@ -90,14 +91,37 @@ export class ChatService {
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
-      const response = await client.chat.completions.create({
-        model: options.model,
-        messages: formattedMessages,
-        temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 4096,
-        top_p: options.topP,
-        stream: false,
-      });
+      let response: OpenAI.Chat.ChatCompletion;
+
+      try {
+        response = await client.chat.completions.create({
+          model: options.model,
+          messages: formattedMessages,
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.maxTokens ?? 4096,
+          top_p: options.topP,
+          stream: false,
+        });
+      } catch (error) {
+        // Check if error is a 402 insufficient credits error in cloud environment
+        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
+          logger.info('Received 402 insufficient credits, renewing API key...');
+          // Renew the API key
+          await this.aiCredentialsService.renewCloudApiKey();
+          // Retry the request with new credentials
+          client = await this.aiCredentialsService.getClient();
+          response = await client.chat.completions.create({
+            model: options.model,
+            messages: formattedMessages,
+            temperature: options.temperature ?? 0.7,
+            max_tokens: options.maxTokens ?? 4096,
+            top_p: options.topP,
+            stream: false,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       // Extract token usage if available
       const tokenUsage = response.usage
@@ -147,7 +171,7 @@ export class ChatService {
   }> {
     try {
       // Get the client (handles validation and initialization automatically)
-      const client = await this.aiCredentialsService.getClient();
+      let client = await this.aiCredentialsService.getClient();
 
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
@@ -155,14 +179,37 @@ export class ChatService {
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
-      const stream = await client.chat.completions.create({
-        model: options.model,
-        messages: formattedMessages,
-        temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 4096,
-        top_p: options.topP,
-        stream: true,
-      });
+      let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
+
+      try {
+        stream = await client.chat.completions.create({
+          model: options.model,
+          messages: formattedMessages,
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.maxTokens ?? 4096,
+          top_p: options.topP,
+          stream: true,
+        });
+      } catch (error) {
+        // Check if error is a 402 insufficient credits error in cloud environment
+        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 402) {
+          logger.info('Received 402 insufficient credits, renewing API key...');
+          // Renew the API key
+          await this.aiCredentialsService.renewCloudApiKey();
+          // Retry the request with new credentials
+          client = await this.aiCredentialsService.getClient();
+          stream = await client.chat.completions.create({
+            model: options.model,
+            messages: formattedMessages,
+            temperature: options.temperature ?? 0.7,
+            max_tokens: options.maxTokens ?? 4096,
+            top_p: options.topP,
+            stream: true,
+          });
+        } else {
+          throw error;
+        }
+      }
 
       const tokenUsage = {
         promptTokens: 0,
