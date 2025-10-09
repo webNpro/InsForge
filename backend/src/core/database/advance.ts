@@ -52,56 +52,74 @@ export class DatabaseAdvanceService {
     return { rows, totalRows, wasTruncated };
   }
 
-  private sanitizeQuery(query: string): string {
-    // Basic SQL injection prevention - check for dangerous patterns
-    const dangerousPatterns = [
-      /DROP\s+DATABASE/i,
-      /CREATE\s+DATABASE/i,
-      /ALTER\s+DATABASE/i,
-      /pg_catalog/i,
-      /information_schema/i,
-    ];
+  /**
+   * Unified query sanitization with different safety modes
+   * @param query - SQL query to sanitize
+   * @param mode - 'strict' (default endpoint) or 'relaxed' (power user endpoint)
+   *
+   * BOTH MODES block:
+   * - DROP DATABASE, CREATE DATABASE, ALTER DATABASE (database-level operations)
+   *
+   * STRICT MODE additionally blocks:
+   * - pg_catalog and information_schema queries
+   * - System tables (starting with _)
+   * - DROP/RENAME of users table
+   *
+   * RELAXED MODE allows:
+   * - SELECT from any table (pg_catalog, information_schema, system tables)
+   * - INSERT, UPDATE into system tables
+   * - DROP TABLE, DROP SCHEMA, etc. (everything except database-level)
+   */
+  private sanitizeQuery(query: string, mode: 'strict' | 'relaxed' = 'strict'): string {
+    // BOTH MODES: Block database-level operations
+    const databaseLevelPatterns = [/DROP\s+DATABASE/i, /CREATE\s+DATABASE/i, /ALTER\s+DATABASE/i];
 
-    for (const pattern of dangerousPatterns) {
+    for (const pattern of databaseLevelPatterns) {
       if (pattern.test(query)) {
-        throw new AppError('Query contains restricted operations', 403, ERROR_CODES.FORBIDDEN);
+        throw new AppError('Database-level operations are not allowed', 403, ERROR_CODES.FORBIDDEN);
       }
     }
 
-    // Check for system table operations (tables starting with underscore)
-    // This pattern checks each statement in multi-statement queries, including schema-qualified names
-    const systemTablePattern =
-      /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
-    if (systemTablePattern.test(query)) {
-      throw new AppError(
-        'Cannot modify or create system tables (tables starting with underscore)',
-        403,
-        ERROR_CODES.FORBIDDEN
-      );
-    }
+    // STRICT MODE ONLY: Additional restrictions
+    if (mode === 'strict') {
+      // Block pg_catalog and information_schema queries
+      if (/pg_catalog/i.test(query) || /information_schema/i.test(query)) {
+        throw new AppError('System catalog queries are not allowed', 403, ERROR_CODES.FORBIDDEN);
+      }
 
-    // Check for RENAME TO system table
-    const renameToSystemTablePattern = /RENAME\s+TO\s+(?:\w+\.)?["']?_\w+/im;
-    if (renameToSystemTablePattern.test(query)) {
-      throw new AppError(
-        'Cannot rename tables to system table names (tables starting with underscore)',
-        403,
-        ERROR_CODES.FORBIDDEN
-      );
-    }
+      // Block system table operations (tables starting with underscore)
+      const systemTablePattern =
+        /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
+      if (systemTablePattern.test(query)) {
+        throw new AppError(
+          'Cannot modify system tables (tables starting with underscore)',
+          403,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
 
-    // Check for DROP or RENAME operations on 'users' table
-    const usersTablePattern =
-      /(?:^|\n|;)\s*(?:DROP\s+(?:TABLE\s+)?(?:IF\s+EXISTS\s+)?(?:\w+\.)?["']?users["']?|ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:\w+\.)?["']?users["']?\s+RENAME\s+TO)/im;
-    if (usersTablePattern.test(query)) {
-      throw new AppError('Cannot drop or rename the users table', 403, ERROR_CODES.FORBIDDEN);
+      // Block RENAME TO system table
+      if (/RENAME\s+TO\s+(?:\w+\.)?["']?_\w+/im.test(query)) {
+        throw new AppError(
+          'Cannot rename tables to system table names (tables starting with underscore)',
+          403,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
+
+      // Block DROP or RENAME operations on 'users' table
+      const usersTablePattern =
+        /(?:^|\n|;)\s*(?:DROP\s+(?:TABLE\s+)?(?:IF\s+EXISTS\s+)?(?:\w+\.)?["']?users["']?|ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:\w+\.)?["']?users["']?\s+RENAME\s+TO)/im;
+      if (usersTablePattern.test(query)) {
+        throw new AppError('Cannot drop or rename the users table', 403, ERROR_CODES.FORBIDDEN);
+      }
     }
 
     return query;
   }
 
   async executeRawSQL(input_query: string, params: unknown[] = []): Promise<RawSQLResponse> {
-    const query = this.sanitizeQuery(input_query);
+    const query = this.sanitizeQuery(input_query, 'strict');
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 
@@ -116,6 +134,43 @@ export class DatabaseAdvanceService {
       if (/CREATE|ALTER|DROP/i.test(query)) {
         await client.query(`NOTIFY pgrst, 'reload schema';`);
         // Metadata is now updated on-demand
+      }
+
+      const response: RawSQLResponse = {
+        rows: result.rows || [],
+        rowCount: result.rowCount,
+        fields: result.fields?.map((field: { name: string; dataTypeID: number }) => ({
+          name: field.name,
+          dataTypeID: field.dataTypeID,
+        })),
+      };
+
+      return response;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Execute raw SQL query with relaxed sanitization (Power User Mode)
+   * Allows: SELECT from any table (pg_catalog, information_schema, system tables), INSERT, UPDATE, CREATE
+   * Blocks: DROP, RENAME, TRUNCATE
+   */
+  async executeUnrestrictedRawSQL(query: string, params: unknown[] = []): Promise<RawSQLResponse> {
+    const sanitizedQuery = this.sanitizeQuery(query, 'relaxed');
+    const pool = this.dbManager.getPool();
+    const client = await pool.connect();
+
+    try {
+      // Execute query with timeout
+      const result = (await Promise.race([
+        client.query(sanitizedQuery, params),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 30000)),
+      ])) as { rows: unknown[]; rowCount: number; fields?: { name: string; dataTypeID: number }[] };
+
+      // Refresh schema cache if it was a DDL operation
+      if (/CREATE|ALTER|DROP/i.test(sanitizedQuery)) {
+        await client.query(`NOTIFY pgrst, 'reload schema';`);
       }
 
       const response: RawSQLResponse = {

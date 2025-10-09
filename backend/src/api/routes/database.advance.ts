@@ -70,6 +70,67 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * Execute raw SQL query WITHOUT sanitization (Power User Mode)
+ * POST /api/database/advance/rawsql/unrestricted
+ *
+ * ⚠️ DANGER: This endpoint executes SQL directly without any safety checks
+ * - No protection against dangerous operations
+ * - Can DROP DATABASE, modify system tables, etc.
+ * - Use with extreme caution
+ * - Requires admin authentication
+ */
+router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    // Validate request body
+    const validation = rawSQLRequestSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new AppError(
+        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+
+    const { query, params = [] } = validation.data;
+
+    // Execute unrestricted SQL
+    const response = await dbAdvanceService.executeUnrestrictedRawSQL(query, params);
+
+    // Log audit for unrestricted raw SQL execution
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'EXECUTE_UNRESTRICTED_RAW_SQL',
+      module: 'DATABASE',
+      details: {
+        query: query.substring(0, 300), // Limit query length in audit log
+        paramCount: params.length,
+        rowsAffected: response.rowCount,
+        warning: 'UNRESTRICTED_EXECUTION',
+      },
+      ip_address: req.ip,
+    });
+
+    res.json(response);
+  } catch (error: unknown) {
+    logger.warn('Unrestricted raw SQL execution error:', error);
+
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        error: 'SQL_EXECUTION_ERROR',
+        message: error.message,
+        statusCode: error.statusCode,
+      });
+    } else {
+      res.status(400).json({
+        error: 'SQL_EXECUTION_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to execute SQL query',
+        statusCode: 400,
+      });
+    }
+  }
+});
+
+/**
  * Export database data
  * POST /api/database/advance/export
  */
