@@ -52,8 +52,25 @@ export class DatabaseAdvanceService {
     return { rows, totalRows, wasTruncated };
   }
 
-  private sanitizeQuery(query: string): string {
-    // Basic SQL injection prevention - check for dangerous patterns
+  /**
+   * Sanitize query with strict or relaxed mode
+   *
+   * BOTH MODES block:
+   * - DROP DATABASE, CREATE DATABASE, ALTER DATABASE
+   * - pg_catalog and information_schema access
+   *
+   * STRICT MODE blocks:
+   * - ALL operations on system tables (tables starting with _)
+   * - DROP or RENAME operations on users table
+   *
+   * RELAXED MODE allows:
+   * - SELECT and INSERT into system tables and users table
+   * RELAXED MODE blocks:
+   * - UPDATE/DELETE/DROP/CREATE/ALTER system tables
+   * - UPDATE/DELETE/DROP/RENAME users table
+   */
+  sanitizeQuery(query: string, mode: 'strict' | 'relaxed' = 'strict'): string {
+    // Both modes: Block database-level operations
     const dangerousPatterns = [
       /DROP\s+DATABASE/i,
       /CREATE\s+DATABASE/i,
@@ -66,18 +83,6 @@ export class DatabaseAdvanceService {
       if (pattern.test(query)) {
         throw new AppError('Query contains restricted operations', 403, ERROR_CODES.FORBIDDEN);
       }
-    }
-
-    // Check for system table operations (tables starting with underscore)
-    // This pattern checks each statement in multi-statement queries, including schema-qualified names
-    const systemTablePattern =
-      /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
-    if (systemTablePattern.test(query)) {
-      throw new AppError(
-        'Cannot modify or create system tables (tables starting with underscore)',
-        403,
-        ERROR_CODES.FORBIDDEN
-      );
     }
 
     // Check for RENAME TO system table
@@ -97,11 +102,36 @@ export class DatabaseAdvanceService {
       throw new AppError('Cannot drop or rename the users table', 403, ERROR_CODES.FORBIDDEN);
     }
 
+    if (mode === 'strict') {
+      // Check for system table operations (tables starting with underscore)
+      // This pattern checks each statement in multi-statement queries, including schema-qualified names
+      const systemTablePattern =
+        /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
+      if (systemTablePattern.test(query)) {
+        throw new AppError(
+          'Cannot modify or create system tables (tables starting with underscore)',
+          403,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
+    } else {
+      // Relaxed mode: Allow only SELECT and INSERT into system tables and users table
+      // Block UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE
+      const systemTableDestructivePattern =
+        /(?:^|\n|;)\s*(?:CREATE|ALTER|DROP|TRUNCATE|UPDATE|DELETE\s+FROM)\s+(?:TABLE\s+)?(?:IF\s+(?:NOT\s+)?EXISTS\s+)?(?:\w+\.)?["']?_\w+/im;
+      if (systemTableDestructivePattern.test(query)) {
+        throw new AppError(
+          'Cannot UPDATE/DELETE/DROP/CREATE/ALTER system tables (tables starting with underscore)',
+          403,
+          ERROR_CODES.FORBIDDEN
+        );
+      }
+    }
+
     return query;
   }
 
-  async executeRawSQL(input_query: string, params: unknown[] = []): Promise<RawSQLResponse> {
-    const query = this.sanitizeQuery(input_query);
+  async executeRawSQL(query: string, params: unknown[] = []): Promise<RawSQLResponse> {
     const pool = this.dbManager.getPool();
     const client = await pool.connect();
 

@@ -18,7 +18,68 @@ const dbAdvanceService = new DatabaseAdvanceService();
 const auditService = AuditService.getInstance();
 
 /**
- * Execute raw SQL query
+ * Execute raw SQL query with relaxed sanitization (Power User Mode)
+ * POST /api/database/advance/rawsql/unrestricted
+ *
+ * ⚠️ This endpoint has relaxed restrictions compared to /rawsql
+ * - Allows SELECT and INSERT into system tables and users table
+ */
+router.post('/rawsql/unrestricted', verifyAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    // Validate request body
+    const validation = rawSQLRequestSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new AppError(
+        validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+        400,
+        ERROR_CODES.INVALID_INPUT
+      );
+    }
+
+    const { query, params = [] } = validation.data;
+
+    // Sanitize query with relaxed mode
+    const sanitizedQuery = dbAdvanceService.sanitizeQuery(query, 'relaxed');
+
+    // Execute SQL
+    const response = await dbAdvanceService.executeRawSQL(sanitizedQuery, params);
+
+    // Log audit for relaxed raw SQL execution
+    await auditService.log({
+      actor: req.user?.email || 'api-key',
+      action: 'EXECUTE_RAW_SQL_RELAXED',
+      module: 'DATABASE',
+      details: {
+        query: query.substring(0, 300), // Limit query length in audit log
+        paramCount: params.length,
+        rowsAffected: response.rowCount,
+        mode: 'relaxed',
+      },
+      ip_address: req.ip,
+    });
+
+    res.json(response);
+  } catch (error: unknown) {
+    logger.warn('Relaxed raw SQL execution error:', error);
+
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        error: 'SQL_EXECUTION_ERROR',
+        message: error.message,
+        statusCode: error.statusCode,
+      });
+    } else {
+      res.status(400).json({
+        error: 'SQL_EXECUTION_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to execute SQL query',
+        statusCode: 400,
+      });
+    }
+  }
+});
+
+/**
+ * Execute raw SQL query with strict sanitization
  * POST /api/database/advance/rawsql
  */
 router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
@@ -34,9 +95,14 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
     }
 
     const { query, params = [] } = validation.data;
-    const response = await dbAdvanceService.executeRawSQL(query, params);
 
-    // Log audit for raw SQL execution
+    // Sanitize query with strict mode
+    const sanitizedQuery = dbAdvanceService.sanitizeQuery(query, 'strict');
+
+    // Execute SQL
+    const response = await dbAdvanceService.executeRawSQL(sanitizedQuery, params);
+
+    // Log audit for strict raw SQL execution
     await auditService.log({
       actor: req.user?.email || 'api-key',
       action: 'EXECUTE_RAW_SQL',
@@ -45,6 +111,7 @@ router.post('/rawsql', verifyAdmin, async (req: AuthRequest, res: Response) => {
         query: query.substring(0, 300), // Limit query length in audit log
         paramCount: params.length,
         rowsAffected: response.rowCount,
+        mode: 'strict',
       },
       ip_address: req.ip,
     });
