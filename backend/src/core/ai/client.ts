@@ -30,15 +30,13 @@ interface OpenRouterKeyInfo {
 
 interface OpenRouterLimitation {
   label: string;
-  limit: number | null;
-  usage: number;
-  is_provisioning_key: boolean;
-  limit_remaining: number | null;
-  is_free_tier: boolean;
-  rate_limit: {
-    requests: number;
-    interval: string;
-    note: string;
+  credit_limit: number | null;
+  credit_used: number;
+  credit_remaining: number | null;
+  rate_limit?: {
+    requests?: number;
+    interval?: string;
+    note?: string;
   };
 }
 
@@ -153,9 +151,9 @@ export class AIClientService {
         const keyInfo = result.data;
 
         return {
-          usage: keyInfo.usage,
-          limit: keyInfo.limit,
-          remaining: keyInfo.limit_remaining,
+          usage: keyInfo.credit_used,
+          limit: keyInfo.credit_limit,
+          remaining: keyInfo.credit_remaining,
         };
       } else {
         // Use OpenRouter API for local environment
