@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,14 +29,9 @@ import { loginFormSchema, LoginFormData } from '@/lib/utils/validation-schemas';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loginWithPassword, isAuthenticated } = useAuth();
-  const { hasCompletedOnboarding, refetch } = useMcpUsage();
+  const { hasCompletedOnboarding, isLoading: isMcpUsageLoading } = useMcpUsage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Determine where to redirect based on onboarding completion status
-  const getRedirectPath = useCallback(() => {
-    return hasCompletedOnboarding ? '/dashboard' : '/dashboard/onboard';
-  }, [hasCompletedOnboarding]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
@@ -53,11 +48,7 @@ export default function LoginPage() {
     try {
       const success = await loginWithPassword(data.email, data.password);
 
-      if (success) {
-        // Wait for MCP usage data to be fetched before navigating
-        await refetch();
-        void navigate(getRedirectPath(), { replace: true });
-      } else {
+      if (!success) {
         throw new Error('Invalid email or password');
       }
     } catch (error) {
@@ -69,10 +60,11 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      void navigate(getRedirectPath(), { replace: true });
+    if (isAuthenticated && !isMcpUsageLoading) {
+      const redirectPath = hasCompletedOnboarding ? '/dashboard' : '/dashboard/onboard';
+      void navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, navigate, getRedirectPath]);
+  }, [hasCompletedOnboarding, isAuthenticated, isMcpUsageLoading, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
