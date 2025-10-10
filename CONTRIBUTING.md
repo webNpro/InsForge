@@ -23,7 +23,7 @@ The InsForge monorepo is organized as follows:
 - `/backend` - Core backend service with Express.js, PostgreSQL, and Better Auth integration
 - `/frontend` - React-based admin dashboard for managing databases, users, and storage
 - `/shared-schemas` - Zod schemas and TypeScript types shared between frontend and backend
-- `/docs` - MCP documemtation
+- `/docs` - MCP documentation
 - `/functions` - Serverless edge functions for custom business logic
 - `docker-compose.yml` - Docker config file to start the project
 
