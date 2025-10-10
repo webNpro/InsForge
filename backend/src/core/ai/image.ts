@@ -15,7 +15,7 @@ import { isCloudEnvironment } from '@/utils/environment';
 export class ImageService {
   private static aiUsageService = new AIUsageService();
   private static aiConfigService = new AIConfigService();
-  private static aiCredentialsService = AIClientService.getInstance();
+  private static aiClientService = AIClientService.getInstance();
 
   /**
    * Validate model and get config
@@ -38,7 +38,7 @@ export class ImageService {
    */
   static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
     // Get the client (handles validation and initialization automatically)
-    let client = await this.aiCredentialsService.getClient();
+    const client = await this.aiClientService.getClient();
 
     // Validate model and get config
     const aiConfig = await ImageService.validateAndGetConfig(options.model);
@@ -90,10 +90,9 @@ export class ImageService {
         // Check if error is a 403 insufficient credits error in cloud environment
         if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
           logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key
-          await this.aiCredentialsService.renewCloudApiKey();
-          // Retry the request with new credentials
-          client = await this.aiCredentialsService.getClient();
+          // Renew the API key (adds credits to existing key and waits for propagation)
+          await this.aiClientService.renewCloudApiKey();
+          // Retry the request
           response = (await client.chat.completions.create(
             request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
           )) as OpenAI.Chat.ChatCompletion;

@@ -14,7 +14,7 @@ import { isCloudEnvironment } from '@/utils/environment';
 export class ChatService {
   private aiUsageService = new AIUsageService();
   private aiConfigService = new AIConfigService();
-  private aiCredentialsService = AIClientService.getInstance();
+  private aiClientService = AIClientService.getInstance();
 
   /**
    * Format messages for OpenAI API with multimodal support
@@ -83,7 +83,7 @@ export class ChatService {
   ): Promise<ChatCompletionResponse> {
     try {
       // Get the client (handles validation and initialization automatically)
-      let client = await this.aiCredentialsService.getClient();
+      const client = await this.aiClientService.getClient();
 
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
@@ -106,10 +106,9 @@ export class ChatService {
         // Check if error is a 403 insufficient credits error in cloud environment
         if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
           logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key
-          await this.aiCredentialsService.renewCloudApiKey();
-          // Retry the request with new credentials
-          client = await this.aiCredentialsService.getClient();
+          // Renew the API key (adds credits to existing key and waits for propagation)
+          await this.aiClientService.renewCloudApiKey();
+          // Retry the request
           response = await client.chat.completions.create(request);
         } else {
           throw error;
@@ -164,7 +163,7 @@ export class ChatService {
   }> {
     try {
       // Get the client (handles validation and initialization automatically)
-      let client = await this.aiCredentialsService.getClient();
+      const client = await this.aiClientService.getClient();
 
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
@@ -189,10 +188,9 @@ export class ChatService {
         // Check if error is a 403 insufficient credits error in cloud environment
         if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
           logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key
-          await this.aiCredentialsService.renewCloudApiKey();
-          // Retry the request with new credentials
-          client = await this.aiCredentialsService.getClient();
+          // Renew the API key (adds credits to existing key and waits for propagation)
+          await this.aiClientService.renewCloudApiKey();
+          // Retry the request
           stream = await client.chat.completions.create(request);
         } else {
           throw error;
