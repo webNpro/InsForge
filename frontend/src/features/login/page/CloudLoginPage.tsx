@@ -6,9 +6,9 @@ import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
 
 export default function CloudLoginPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { loginWithAuthorizationCode } = useAuth();
-  const { hasCompletedOnboarding } = useMcpUsage();
+  const [searchParams] = useSearchParams();
+  const { loginWithAuthorizationCode, isAuthenticated } = useAuth();
+  const { hasCompletedOnboarding, isLoading: isMcpUsageLoading } = useMcpUsage();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle authorization token exchange
@@ -30,9 +30,6 @@ export default function CloudLoginPage() {
                 '*'
               );
             }
-            // Determine the correct redirect path based on onboarding completion status
-            const redirectPath = hasCompletedOnboarding ? '/cloud/dashboard' : '/cloud/onboard';
-            void navigate(redirectPath, { replace: true });
           } else {
             setAuthError('The authorization code may have expired or already been used.');
             if (window.parent !== window) {
@@ -62,7 +59,14 @@ export default function CloudLoginPage() {
     } else {
       setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, hasCompletedOnboarding]);
+  }, [loginWithAuthorizationCode, searchParams]);
+
+  useEffect(() => {
+    if (isAuthenticated && !isMcpUsageLoading) {
+      const redirectPath = hasCompletedOnboarding ? '/cloud/dashboard' : '/cloud/onboard';
+      void navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, navigate, hasCompletedOnboarding, isMcpUsageLoading]);
 
   // Show error state if authentication failed
   if (authError) {
