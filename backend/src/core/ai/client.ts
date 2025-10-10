@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { isCloudEnvironment } from '@/utils/environment';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
+import logger from '@/utils/logger.js';
 
 interface CloudCredentialsResponse {
   openrouter?: {
@@ -17,7 +18,6 @@ interface CloudCredentialsResponse {
 interface CloudCredentials {
   apiKey: string;
   limitRemaining?: number;
-  expiredAt?: Date | null;
 }
 
 interface OpenRouterKeyInfo {
@@ -31,15 +31,13 @@ interface OpenRouterKeyInfo {
 
 interface OpenRouterLimitation {
   label: string;
-  limit: number | null;
-  usage: number;
-  is_provisioning_key: boolean;
-  limit_remaining: number | null;
-  is_free_tier: boolean;
-  rate_limit: {
-    requests: number;
-    interval: string;
-    note: string;
+  credit_limit: number | null;
+  credit_used: number;
+  credit_remaining: number | null;
+  rate_limit?: {
+    requests?: number;
+    interval?: string;
+    note?: string;
   };
 }
 
@@ -48,6 +46,7 @@ export class AIClientService {
   private cloudCredentials: CloudCredentials | undefined;
   private openRouterClient: OpenAI | null = null;
   private currentApiKey: string | undefined;
+  private renewalPromise: Promise<string> | null = null;
 
   private constructor() {}
 
@@ -80,10 +79,7 @@ export class AIClientService {
    */
   async getApiKey(): Promise<string> {
     if (isCloudEnvironment()) {
-      if (
-        this.cloudCredentials &&
-        (!this.cloudCredentials.expiredAt || new Date() <= this.cloudCredentials.expiredAt)
-      ) {
+      if (this.cloudCredentials) {
         return this.cloudCredentials.apiKey;
       } else {
         return await this.fetchCloudApiKey();
@@ -157,9 +153,9 @@ export class AIClientService {
         const keyInfo = result.data;
 
         return {
-          usage: keyInfo.usage,
-          limit: keyInfo.limit,
-          remaining: keyInfo.limit_remaining,
+          usage: keyInfo.credit_used,
+          limit: keyInfo.credit_limit,
+          remaining: keyInfo.credit_remaining,
         };
       } else {
         // Use OpenRouter API for local environment
@@ -213,7 +209,7 @@ export class AIClientService {
 
       // Fetch API key from cloud service with sign token as query parameter
       const response = await fetch(
-        `https://api.insforge.dev/ai/v1/credentials/${projectId}?sign=${token}`
+        `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}?sign=${token}`
       );
 
       if (!response.ok) {
@@ -231,11 +227,127 @@ export class AIClientService {
       this.cloudCredentials = {
         apiKey: data.openrouter.api_key,
         limitRemaining: data.openrouter.limit_remaining,
-        expiredAt: data.openrouter.expired_at ? new Date(data.openrouter.expired_at) : null,
       };
       return data.openrouter.api_key;
     } catch (error) {
       console.error('Failed to fetch cloud API key:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Renew API key from cloud service when credits are exhausted
+   * Uses promise memoization to prevent duplicate renewal requests
+   */
+  async renewCloudApiKey(): Promise<string> {
+    // If renewal is already in progress, wait for it
+    if (this.renewalPromise) {
+      logger.info('Renewal already in progress, waiting for completion...');
+      return this.renewalPromise;
+    }
+
+    // Start new renewal and store the promise
+    this.renewalPromise = (async () => {
+      try {
+        const projectId = process.env.PROJECT_ID;
+        if (!projectId) {
+          throw new Error('PROJECT_ID not found in environment variables');
+        }
+
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET not found in environment variables');
+        }
+
+        // Sign a token for authentication
+        const token = jwt.sign({ projectId }, jwtSecret, { expiresIn: '1h' });
+
+        // Renew API key from cloud service with sign token in request body
+        const response = await fetch(
+          `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}/renew`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sign: token }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to renew cloud API key: ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as CloudCredentialsResponse;
+
+        // Extract API key from the openrouter object in response
+        if (!data.openrouter?.api_key) {
+          throw new Error('Invalid response: missing openrouter API Key');
+        }
+
+        // Store credentials with metadata
+        this.cloudCredentials = {
+          apiKey: data.openrouter.api_key,
+          limitRemaining: data.openrouter.limit_remaining,
+        };
+
+        logger.info('Successfully renewed cloud API key');
+
+        // Wait for OpenRouter to propagate the updated credits
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        return data.openrouter.api_key;
+      } catch (error) {
+        console.error('Failed to renew cloud API key:', error);
+        throw error;
+      } finally {
+        // Clear the promise after completion (success or failure)
+        this.renewalPromise = null;
+      }
+    })();
+
+    return this.renewalPromise;
+  }
+
+  /**
+   * Send a request to OpenRouter with automatic renewal and retry logic
+   * Handles 403 insufficient credits errors by renewing the API key and retrying
+   * @param request - Function that takes an OpenAI client and returns a Promise
+   * @returns The result of the request
+   */
+  async sendRequest<T>(request: (client: OpenAI) => Promise<T>): Promise<T> {
+    const client = await this.getClient();
+
+    try {
+      return await request(client);
+    } catch (error) {
+      // Check if error is a 403 insufficient credits error in cloud environment
+      if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
+        logger.info('Received 403 insufficient credits, renewing API key...');
+        await this.renewCloudApiKey();
+
+        // Retry with exponential backoff (3 attempts)
+        const maxRetries = 3;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+            logger.info(
+              `Retrying request after renewal (attempt ${attempt}/${maxRetries}), waiting ${backoffMs}ms...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+            const result = await request(client);
+            logger.info('Request succeeded after API key renewal');
+            return result;
+          } catch (retryError) {
+            if (attempt === maxRetries) {
+              logger.error(`All ${maxRetries} retry attempts failed after API key renewal`);
+              throw retryError;
+            }
+          }
+        }
+      }
       throw error;
     }
   }

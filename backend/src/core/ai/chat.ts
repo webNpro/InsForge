@@ -13,7 +13,7 @@ import { ChatCompletionOptions } from '@/types/ai';
 export class ChatService {
   private aiUsageService = new AIUsageService();
   private aiConfigService = new AIConfigService();
-  private aiCredentialsService = AIClientService.getInstance();
+  private aiClientService = AIClientService.getInstance();
 
   /**
    * Format messages for OpenAI API with multimodal support
@@ -81,23 +81,24 @@ export class ChatService {
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
     try {
-      // Get the client (handles validation and initialization automatically)
-      const client = await this.aiCredentialsService.getClient();
-
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
-
-      const response = await client.chat.completions.create({
+      const request: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
         model: options.model,
         messages: formattedMessages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 4096,
         top_p: options.topP,
         stream: false,
-      });
+      };
+
+      // Send request with automatic renewal and retry logic
+      const response = await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(request)
+      );
 
       // Extract token usage if available
       const tokenUsage = response.usage
@@ -146,23 +147,25 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      // Get the client (handles validation and initialization automatically)
-      const client = await this.aiCredentialsService.getClient();
-
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
       // Apply system prompt from config if available
       const formattedMessages = this.formatMessages(messages, aiConfig?.systemPrompt);
 
-      const stream = await client.chat.completions.create({
+      const request: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
         model: options.model,
         messages: formattedMessages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens ?? 4096,
         top_p: options.topP,
         stream: true,
-      });
+      };
+
+      // Send request with automatic renewal and retry logic
+      const stream = await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(request)
+      );
 
       const tokenUsage = {
         promptTokens: 0,

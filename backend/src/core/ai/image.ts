@@ -14,7 +14,7 @@ import { OpenRouterImageMessage } from '@/types/ai';
 export class ImageService {
   private static aiUsageService = new AIUsageService();
   private static aiConfigService = new AIConfigService();
-  private static aiCredentialsService = AIClientService.getInstance();
+  private static aiClientService = AIClientService.getInstance();
 
   /**
    * Validate model and get config
@@ -36,9 +36,6 @@ export class ImageService {
    * @param options - Image generation options
    */
   static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
-    // Get the client (handles validation and initialization automatically)
-    const client = await this.aiCredentialsService.getClient();
-
     // Validate model and get config
     const aiConfig = await ImageService.validateAndGetConfig(options.model);
 
@@ -77,10 +74,11 @@ export class ImageService {
         modalities: ['text', 'image'],
       };
 
-      // Use OpenRouter's standard chat completions API
-      // Cast the extended request to the base OpenAI type for the SDK call
-      const response = (await client.chat.completions.create(
-        request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+      // Send request with automatic renewal and retry logic
+      const response = (await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(
+          request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
+        )
       )) as OpenAI.Chat.ChatCompletion;
 
       // Initialize the result
