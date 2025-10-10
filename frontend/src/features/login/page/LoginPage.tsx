@@ -29,7 +29,7 @@ import { loginFormSchema, LoginFormData } from '@/lib/utils/validation-schemas';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loginWithPassword, isAuthenticated } = useAuth();
-  const { hasCompletedOnboarding } = useMcpUsage();
+  const { hasCompletedOnboarding, refetch } = useMcpUsage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -54,6 +54,8 @@ export default function LoginPage() {
       const success = await loginWithPassword(data.email, data.password);
 
       if (success) {
+        // Wait for MCP usage data to be fetched before navigating
+        await refetch();
         void navigate(getRedirectPath(), { replace: true });
       } else {
         throw new Error('Invalid email or password');

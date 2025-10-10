@@ -14,7 +14,7 @@ export function McpUsageTable() {
       {/* Table Header */}
       <div className="bg-[#f9fafb] dark:bg-neutral-900 h-9 flex items-center justify-between text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-transparent">
         <p className="flex-1 py-1 px-3 text-left">MCP Call</p>
-        <p className="w-54 py-1 px-3 border-l border-neutral-200 dark:border-neutral-700 text-left">
+        <p className="w-54 py-2 px-3 border-l border-neutral-200 dark:border-neutral-700 text-left">
           Time
         </p>
       </div>
@@ -29,7 +29,7 @@ export function McpUsageTable() {
                 className="bg-neutral-50 dark:bg-[#333333] h-9 flex items-center justify-between text-neutral-500 dark:text-white"
               >
                 <p className="flex-1 py-1 px-3 text-left">{record.tool_name}</p>
-                <p className="w-54 py-1 px-3 border-l border-neutral-200 dark:border-neutral-700 text-left">
+                <p className="w-54 py-2 px-3 border-l border-neutral-200 dark:border-neutral-700 text-left">
                   {formatTime(record.created_at)}
                 </p>
               </div>

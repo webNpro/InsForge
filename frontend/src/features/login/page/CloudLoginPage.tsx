@@ -8,7 +8,7 @@ export default function CloudLoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loginWithAuthorizationCode } = useAuth();
-  const { hasCompletedOnboarding } = useMcpUsage();
+  const { hasCompletedOnboarding, refetch } = useMcpUsage();
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle authorization token exchange
@@ -19,7 +19,7 @@ export default function CloudLoginPage() {
       setAuthError(null);
       // Exchange the authorization code for an access token
       loginWithAuthorizationCode(authorizationCode)
-        .then((success) => {
+        .then(async (success) => {
           if (success) {
             // Notify parent of success
             if (window.parent !== window) {
@@ -30,6 +30,8 @@ export default function CloudLoginPage() {
                 '*'
               );
             }
+            // Wait for MCP usage data to be fetched before navigating
+            await refetch();
             // Determine the correct redirect path based on onboarding completion status
             const redirectPath = hasCompletedOnboarding ? '/cloud/dashboard' : '/cloud/onboard';
             void navigate(redirectPath, { replace: true });
@@ -62,7 +64,14 @@ export default function CloudLoginPage() {
     } else {
       setAuthError('No authorization code provided.');
     }
-  }, [searchParams, setSearchParams, loginWithAuthorizationCode, navigate, hasCompletedOnboarding]);
+  }, [
+    searchParams,
+    setSearchParams,
+    loginWithAuthorizationCode,
+    navigate,
+    hasCompletedOnboarding,
+    refetch,
+  ]);
 
   // Show error state if authentication failed
   if (authError) {
