@@ -1,5 +1,5 @@
 name: ✨ Feature Request
-description: Suggest an idea or enhancement for this project
+description: Suggest an idea or enhancement
 title: "[Feature]: "
 labels: ["enhancement", "needs-triage"]
 assignees: []
@@ -7,73 +7,20 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting a new feature! Please provide as much detail as possible.
-        
-        **Note**: This template is for feature requests only. For bug reports, please use the Bug Report template.
-
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Pre-submission Checklist
-      description: Please complete these checks before submitting
-      options:
-        - label: I have searched existing issues and confirmed this feature hasn't been requested
-          required: true
-        - label: I have read the contributing guidelines
-          required: true
-        - label: This is a legitimate feature request and not spam or promotional content
-          required: true
+        Have an idea? Share it! We'd love to hear what you're thinking.
 
   - type: textarea
-    id: problem-description
+    id: feature-description
     attributes:
-      label: Problem Description
-      description: Is your feature request related to a problem? Please describe.
-      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+      label: What feature do you want?
+      description: Describe your idea
+      placeholder: I'd like to be able to...
     validations:
       required: true
 
   - type: textarea
-    id: proposed-solution
+    id: why
     attributes:
-      label: Proposed Solution
-      description: Describe the solution you'd like
-      placeholder: A clear and concise description of what you want to happen
-    validations:
-      required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives Considered
-      description: Describe alternatives you've considered
-      placeholder: A clear and concise description of any alternative solutions or features you've considered
-
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      description: How important is this feature to you?
-      options:
-        - Low - Nice to have
-        - Medium - Would be helpful
-        - High - Important for my use case
-        - Critical - Blocking my usage
-    validations:
-      required: true
-
-  - type: textarea
-    id: use-cases
-    attributes:
-      label: Use Cases
-      description: Describe specific use cases for this feature
-      placeholder: |
-        1. As a [user type], I want [goal] so that [benefit]
-        2. When [situation], I need [functionality] because [reason]
-
-  - type: textarea
-    id: additional-context
-    attributes:
-      label: Additional Context
-      description: Add any other context, mockups, or examples about the feature request here
-      placeholder: Any additional information, screenshots, mockups, or examples that would help
+      label: Why do you need this?
+      description: What problem does it solve?
+      placeholder: This would help me...
