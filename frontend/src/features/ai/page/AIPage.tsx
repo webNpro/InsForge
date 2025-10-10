@@ -119,7 +119,7 @@ export default function AIPage() {
               )}
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Copy prompt to your agent and the AI Model below will be integrated automatically.
+              Your models are ready — build LLM-powered features or add more integrations.
             </p>
           </div>
           <Button

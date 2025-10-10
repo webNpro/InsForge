@@ -14,6 +14,44 @@ export interface ListModelsResponse {
   image: ModelProviderInfo[];
 }
 
+// Define provider priority order: OpenAI -> Anthropic -> Google -> Amazon -> Others
+const PROVIDER_ORDER: Record<string, number> = {
+  openai: 1,
+  anthropic: 2,
+  google: 3,
+  amazon: 4,
+};
+
+/**
+ * Get the priority order for a provider based on its company ID
+ * Returns a lower number for higher priority providers
+ */
+function getProviderOrder(companyId: string): number {
+  return PROVIDER_ORDER[companyId.toLowerCase()] || 999;
+}
+
+/**
+ * Sort models by provider order (OpenAI -> Anthropic -> Google -> Amazon -> Others)
+ * and then by model name within each provider
+ */
+function sortModels(models: OpenRouterModel[]): OpenRouterModel[] {
+  return models.sort((a, b) => {
+    const aCompanyId = a.id.split('/')[0] || '';
+    const bCompanyId = b.id.split('/')[0] || '';
+
+    const aProviderOrder = getProviderOrder(aCompanyId);
+    const bProviderOrder = getProviderOrder(bCompanyId);
+
+    // Sort by provider order first
+    if (aProviderOrder !== bProviderOrder) {
+      return aProviderOrder - bProviderOrder;
+    }
+
+    // Then sort by model name within the same provider
+    return a.name.localeCompare(b.name);
+  });
+}
+
 export class AIModelService {
   /**
    * Get all available AI models
@@ -102,14 +140,14 @@ export class AIModelService {
         {
           provider: 'openrouter',
           configured: true,
-          models: textModels,
+          models: sortModels(textModels),
         },
       ],
       image: [
         {
           provider: 'openrouter',
           configured: true,
-          models: imageModels,
+          models: sortModels(imageModels),
         },
       ],
     };

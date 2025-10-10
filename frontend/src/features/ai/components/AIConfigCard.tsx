@@ -54,7 +54,7 @@ export function AIModelCard({
           isSelectableMode && !isDisabled && 'cursor-pointer',
           isSelectableMode && isSelected
             ? 'border-2 border-zinc-700 dark:border-emerald-300'
-            : 'border border-neutral-200 dark:border-neutral-700',
+            : 'border-2 border-neutral-200 dark:border-neutral-700',
           isSelectableMode &&
             !isDisabled &&
             !isSelected &&
@@ -70,9 +70,9 @@ export function AIModelCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 p-1 hover:bg-gray-300 dark:hover:bg-neutral-700 absolute top-3 right-3"
+                className="h-7 w-7 p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 absolute top-3 right-3"
               >
-                <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-neutral-400" />
+                <MoreHorizontal className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -103,29 +103,31 @@ export function AIModelCard({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             {/* Provider Logo */}
-            <div className="w-10 h-10">
-              {config.logo ? (
-                <config.logo className="w-10 h-10 dark:text-white" />
-              ) : (
-                <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
-                  {config.companyId.charAt(0).toUpperCase()}
+            <Tooltip key={config.providerName}>
+              <TooltipTrigger asChild>
+                <div className="w-10 h-10">
+                  {config.logo ? (
+                    <config.logo className="w-10 h-10 dark:text-white" />
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
+                      {config.companyId.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
+                <p className="capitalize">{config.providerName}</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Model Info */}
-            <div>
-              <p
-                className="font-medium text-sm text-zinc-950 dark:text-zinc-50 line-clamp-1 mr-3"
-                title={config.modelName}
-              >
-                {config.modelName}
-              </p>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                {config.providerName}
-              </p>
-            </div>
-            <div className="w-8" />
+            <p
+              className="font-medium text-sm text-zinc-950 dark:text-zinc-50 max-h-10 line-clamp-2"
+              title={config.modelName ? config.modelName : config.providerName}
+            >
+              {config.modelName ? config.modelName : config.providerName}
+            </p>
+            {(!isSelectableMode || (isSelectableMode && isDisabled)) && <div className="w-6" />}
           </div>
         </div>
 
