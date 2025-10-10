@@ -10,7 +10,6 @@ import type {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { OpenRouterImageMessage } from '@/types/ai';
-import { isCloudEnvironment } from '@/utils/environment';
 
 export class ImageService {
   private static aiUsageService = new AIUsageService();
@@ -37,9 +36,6 @@ export class ImageService {
    * @param options - Image generation options
    */
   static async generate(options: ImageGenerationRequest): Promise<ImageGenerationResponse> {
-    // Get the client (handles validation and initialization automatically)
-    const client = await this.aiClientService.getClient();
-
     // Validate model and get config
     const aiConfig = await ImageService.validateAndGetConfig(options.model);
 
@@ -78,28 +74,12 @@ export class ImageService {
         modalities: ['text', 'image'],
       };
 
-      let response: OpenAI.Chat.ChatCompletion;
-
-      try {
-        // Use OpenRouter's standard chat completions API
-        // Cast the extended request to the base OpenAI type for the SDK call
-        response = (await client.chat.completions.create(
+      // Send request with automatic renewal and retry logic
+      const response = (await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(
           request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
-        )) as OpenAI.Chat.ChatCompletion;
-      } catch (error) {
-        // Check if error is a 403 insufficient credits error in cloud environment
-        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
-          logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key (adds credits to existing key and waits for propagation)
-          await this.aiClientService.renewCloudApiKey();
-          // Retry the request
-          response = (await client.chat.completions.create(
-            request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming
-          )) as OpenAI.Chat.ChatCompletion;
-        } else {
-          throw error;
-        }
-      }
+        )
+      )) as OpenAI.Chat.ChatCompletion;
 
       // Initialize the result
       const result: ImageGenerationResponse = {

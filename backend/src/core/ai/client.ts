@@ -308,4 +308,47 @@ export class AIClientService {
 
     return this.renewalPromise;
   }
+
+  /**
+   * Send a request to OpenRouter with automatic renewal and retry logic
+   * Handles 403 insufficient credits errors by renewing the API key and retrying
+   * @param request - Function that takes an OpenAI client and returns a Promise
+   * @returns The result of the request
+   */
+  async sendRequest<T>(request: (client: OpenAI) => Promise<T>): Promise<T> {
+    const client = await this.getClient();
+
+    try {
+      return await request(client);
+    } catch (error) {
+      // Check if error is a 403 insufficient credits error in cloud environment
+      if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
+        logger.info('Received 403 insufficient credits, renewing API key...');
+        await this.renewCloudApiKey();
+
+        // Retry with exponential backoff (3 attempts)
+        const maxRetries = 3;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+            logger.info(
+              `Retrying request after renewal (attempt ${attempt}/${maxRetries}), waiting ${backoffMs}ms...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+            const result = await request(client);
+            logger.info('Request succeeded after API key renewal');
+            return result;
+          } catch (retryError) {
+            if (attempt === maxRetries) {
+              logger.error(`All ${maxRetries} retry attempts failed after API key renewal`);
+              throw retryError;
+            }
+          }
+        }
+      }
+      throw error;
+    }
+  }
 }

@@ -9,7 +9,6 @@ import type {
 } from '@insforge/shared-schemas';
 import logger from '@/utils/logger.js';
 import { ChatCompletionOptions } from '@/types/ai';
-import { isCloudEnvironment } from '@/utils/environment';
 
 export class ChatService {
   private aiUsageService = new AIUsageService();
@@ -82,9 +81,6 @@ export class ChatService {
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
     try {
-      // Get the client (handles validation and initialization automatically)
-      const client = await this.aiClientService.getClient();
-
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
@@ -98,22 +94,11 @@ export class ChatService {
         top_p: options.topP,
         stream: false,
       };
-      let response: OpenAI.Chat.ChatCompletion;
 
-      try {
-        response = await client.chat.completions.create(request);
-      } catch (error) {
-        // Check if error is a 403 insufficient credits error in cloud environment
-        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
-          logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key (adds credits to existing key and waits for propagation)
-          await this.aiClientService.renewCloudApiKey();
-          // Retry the request
-          response = await client.chat.completions.create(request);
-        } else {
-          throw error;
-        }
-      }
+      // Send request with automatic renewal and retry logic
+      const response = await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(request)
+      );
 
       // Extract token usage if available
       const tokenUsage = response.usage
@@ -162,9 +147,6 @@ export class ChatService {
     tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
   }> {
     try {
-      // Get the client (handles validation and initialization automatically)
-      const client = await this.aiClientService.getClient();
-
       // Validate model and get config
       const aiConfig = await this.validateAndGetConfig(options.model);
 
@@ -180,22 +162,10 @@ export class ChatService {
         stream: true,
       };
 
-      let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
-
-      try {
-        stream = await client.chat.completions.create(request);
-      } catch (error) {
-        // Check if error is a 403 insufficient credits error in cloud environment
-        if (isCloudEnvironment() && error instanceof OpenAI.APIError && error.status === 403) {
-          logger.info('Received 403 insufficient credits, renewing API key...');
-          // Renew the API key (adds credits to existing key and waits for propagation)
-          await this.aiClientService.renewCloudApiKey();
-          // Retry the request
-          stream = await client.chat.completions.create(request);
-        } else {
-          throw error;
-        }
-      }
+      // Send request with automatic renewal and retry logic
+      const stream = await this.aiClientService.sendRequest((client) =>
+        client.chat.completions.create(request)
+      );
 
       const tokenUsage = {
         promptTokens: 0,
