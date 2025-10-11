@@ -67,7 +67,7 @@ Visit InsForge Dashboard (default: http://localhost:7131), log in, and follow th
         <em>Sign in to InsForge</em>
       </td>
       <td align="center">
-        <img src="assets/mcpInstallv2.png" alt="MCP Configuration"">
+        <img src="assets/mcpInstallv2.png" alt="MCP Configuration">
         <br>
         <em>Configure MCP connection</em>
       </td>
