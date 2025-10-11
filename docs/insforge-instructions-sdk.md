@@ -324,6 +324,16 @@ const response = await client.ai.images.generate({
 // Access response - OpenAI format
 console.log(response.data[0].b64_json);  // Base64 encoded image string (OpenAI format)
 console.log(response.data[0].content);   // AI's text response about the image or prompt
+
+const base64Image = response.data[0].b64_json;
+const buffer = Buffer.from(base64Image, 'base64');
+const blob = new Blob([buffer], { type: 'image/png' });
+
+// Upload to Insforge storage
+const fileName = `image-${Date.now()}.png`;
+const { data: uploadData, error: uploadError } = await client.storage
+  .from('chat-images')
+  .upload(fileName, blob);
 ```
 
 ## Complete Example
