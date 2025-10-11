@@ -377,7 +377,7 @@ console.log(otherUser.nickname); // Direct access to properties
 - **Internal Networking**: Use `BACKEND_INTERNAL_URL` environment variable (defaults to `http://insforge:7130` for Docker container communication)
 
 ### Edge Functions Invocation (SDK)
-- **Simple API**: `client.functions.invoke(slug, options)
+- **Simple API**: `client.functions.invoke(slug, options)`
 - **Auto-authentication**: SDK automatically includes auth token from logged-in user
 - **Flexible body**: Accepts any JSON-serializable data
 - **HTTP methods**: Supports GET, POST, PUT, PATCH, DELETE (default: POST)
