@@ -20,8 +20,8 @@ export function StatsCard({
   isLoading,
 }: StatsCardProps) {
   return (
-    <Card className="flex-1 bg-white dark:bg-[#333333] rounded-lg border border-gray-200 dark:border-neutral-700 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] h-[280px]">
-      <CardContent className="p-8 h-full flex flex-col justify-between">
+    <Card className="flex-1 bg-white dark:bg-[#333333] rounded-lg border border-gray-200 dark:border-neutral-700 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1)] h-full">
+      <CardContent className="p-8 h-full flex flex-col justify-between gap-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 h-7">
             <Icon className="w-5 h-5 text-gray-700 dark:text-white" />

@@ -16,7 +16,7 @@ export function ModelSelectionGrid({
 }: ModelSelectionGridProps) {
   if (models.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[300px]">
+      <div className="flex-1 flex items-center justify-center min-h-[300px] mr-6">
         <div className="text-center">
           <p className="text-neutral-500 dark:text-neutral-400 text-base">
             No models match the selected filters.
@@ -32,6 +32,7 @@ export function ModelSelectionGrid({
   const sortedModels = [...models].sort((a, b) => {
     const aConfigured = configuredModelIds.includes(a.value);
     const bConfigured = configuredModelIds.includes(b.value);
+
     if (aConfigured === bConfigured) {
       return 0;
     }
@@ -39,7 +40,7 @@ export function ModelSelectionGrid({
   });
 
   return (
-    <div className="flex-1 grid grid-cols-3 gap-5 auto-rows-fr">
+    <div className="flex-1 grid grid-cols-3 gap-5 auto-rows-fr mr-6">
       {sortedModels.map((model) => {
         const isConfigured = configuredModelIds.includes(model.value);
         const isSelected = selectedModelId === model.value;

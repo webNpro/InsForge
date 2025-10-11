@@ -111,7 +111,7 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
           onSubmit={handleFormSubmit}
           className="flex flex-col flex-1 overflow-hidden"
         >
-          <div className="flex gap-5 p-6 flex-1 overflow-hidden">
+          <div className="flex gap-5 py-6 pl-6 flex-1 overflow-hidden">
             <ModalityFilterSidebar
               inputModalities={selectedInputModalities}
               outputModalities={selectedOutputModalities}
