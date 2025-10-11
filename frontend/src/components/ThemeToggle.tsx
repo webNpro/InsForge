@@ -17,7 +17,7 @@ export function ThemeToggle() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="h-9 w-9 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-700"
           aria-label="Toggle theme"
         >
           {resolvedTheme === 'light' ? (
