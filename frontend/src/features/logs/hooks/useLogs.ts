@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsService, AnalyticsLogRecord } from '../services/log.service';
+import { logService } from '../services/log.service';
+import type { LogSchema } from '@insforge/shared-schemas';
 
 const PAGE_SIZE = 100;
 
@@ -11,7 +12,7 @@ export function useLogs(source: string) {
     'warning',
     'informational',
   ]);
-  const [loadedLogs, setLoadedLogs] = useState<AnalyticsLogRecord[]>([]);
+  const [loadedLogs, setLoadedLogs] = useState<LogSchema[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,11 +26,10 @@ export function useLogs(source: string) {
   } = useQuery({
     queryKey: ['logs-content', source],
     queryFn: async () => {
-      const data = await analyticsService.getLogsBySource(source, PAGE_SIZE);
+      const data = await logService.getLogsBySource(source, PAGE_SIZE);
       return {
         logs: data.logs || [],
         total: data.total || 0,
-        tableName: data.tableName,
       };
     },
     enabled: !!source,
@@ -59,7 +59,7 @@ export function useLogs(source: string) {
     setIsLoadingMore(true);
     try {
       const oldestTimestamp = loadedLogs.length > 0 ? loadedLogs[0]?.timestamp : undefined;
-      const data = await analyticsService.getLogsBySource(source, PAGE_SIZE, oldestTimestamp);
+      const data = await logService.getLogsBySource(source, PAGE_SIZE, oldestTimestamp);
 
       if (data.logs && data.logs.length > 0) {
         setLoadedLogs((prev) => [...data.logs, ...prev]);
@@ -75,8 +75,8 @@ export function useLogs(source: string) {
   }, [source, loadedLogs, hasMore, isLoadingMore]);
 
   // Get severity from log
-  const getSeverity = useCallback((log: AnalyticsLogRecord): string => {
-    const message = log.event_message.toLowerCase();
+  const getSeverity = useCallback((log: LogSchema): string => {
+    const message = log.eventMessage.toLowerCase();
     if (message.includes('error') || log.body?.error) {
       return 'error';
     }
@@ -91,7 +91,7 @@ export function useLogs(source: string) {
     return loadedLogs.filter((log) => {
       const matchesSearch =
         !searchQuery ||
-        log.event_message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.eventMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
         JSON.stringify(log.body).toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesSeverity =

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsService, LogSource } from '../services/log.service';
+import { logService } from '../services/log.service';
+import type { LogSource } from '@insforge/shared-schemas';
 
 export function useLogSources() {
   const [selectedSource, setSelectedSource] = useState<string | null>(() => {
@@ -15,7 +16,7 @@ export function useLogSources() {
     refetch,
   } = useQuery({
     queryKey: ['log-sources'],
-    queryFn: () => analyticsService.getLogSources(),
+    queryFn: () => logService.getLogSources(),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
@@ -27,7 +28,7 @@ export function useLogSources() {
     refetch: refetchStats,
   } = useQuery({
     queryKey: ['log-source-stats'],
-    queryFn: () => analyticsService.getLogSourceStats(),
+    queryFn: () => logService.getLogSourceStats(),
     staleTime: 30 * 1000, // Cache for 30 seconds
   });
 

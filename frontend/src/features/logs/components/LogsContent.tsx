@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/radix/Button';
 import { Checkbox } from '@/components/Checkbox';
 import { LogsTable, LogsTableColumn } from './LogsTable';
-import { AnalyticsLogRecord } from '../services/log.service';
+import { LogSchema } from '@insforge/shared-schemas';
 import { McpUsageRecord } from '../services/usage.service';
 
 interface LogsContentProps {
@@ -174,7 +174,7 @@ export function LogsContent({ source }: LogsContentProps) {
   const renderLogMessage = useCallback(
     (log: (typeof paginatedLogs)[number]) => (
       <p className="text-sm text-white font-normal leading-6 break-all w-full">
-        {log.event_message}
+        {log.eventMessage}
       </p>
     ),
     []
@@ -193,7 +193,7 @@ export function LogsContent({ source }: LogsContentProps) {
   );
 
   const logsColumns = useMemo(
-    (): LogsTableColumn<AnalyticsLogRecord>[] => [
+    (): LogsTableColumn<LogSchema>[] => [
       {
         key: 'event_message',
         label: 'Logs',
@@ -296,7 +296,7 @@ export function LogsContent({ source }: LogsContentProps) {
           </div>
         ) : (
           <>
-            <LogsTable<AnalyticsLogRecord>
+            <LogsTable<LogSchema>
               columns={logsColumns}
               data={sortedLogs}
               isLoading={logsLoading}

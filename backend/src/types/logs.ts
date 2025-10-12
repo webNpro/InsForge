@@ -17,14 +17,14 @@ export interface AuditLogQuery {
   offset?: number;
 }
 
-// Types for Logflare analytics logs
+// Types for system logs (CloudWatch)
 export interface LogSource {
   id: number;
   name: string;
   token: string;
 }
 
-export interface AnalyticsLogRecord {
+export interface LogRecord {
   id: string;
   event_message: string;
   timestamp: string;
@@ -32,9 +32,9 @@ export interface AnalyticsLogRecord {
   body: Record<string, any>;
 }
 
-export interface AnalyticsLogResponse {
+export interface LogsResponse {
   source: string;
-  logs: AnalyticsLogRecord[];
+  logs: LogRecord[];
   total: number;
   page: number;
   pageSize: number;

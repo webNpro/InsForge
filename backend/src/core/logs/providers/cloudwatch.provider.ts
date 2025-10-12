@@ -7,13 +7,13 @@ import {
   CreateLogGroupCommand,
   ResourceAlreadyExistsException,
 } from '@aws-sdk/client-cloudwatch-logs';
-import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
-import { BaseAnalyticsProvider } from './base.provider.js';
+import { BaseLogProvider } from './base.provider.js';
 import { AppError } from '@/api/middleware/error.js';
 import { ERROR_CODES } from '@/types/error-constants.js';
+import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
-export class CloudWatchProvider extends BaseAnalyticsProvider {
+export class CloudWatchProvider extends BaseLogProvider {
   private cwClient: CloudWatchLogsClient | null = null;
   private cwLogGroup: string | null = null;
   private cwRegion: string | null = null;
@@ -57,7 +57,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     };
   }
 
-  async getLogSources(): Promise<LogSource[]> {
+  async getLogSources(): Promise<LogSourceSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
       throw new AppError(
         'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
@@ -73,13 +73,13 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     const result = await client.send(cmd);
     const streams = result.logStreams || [];
 
-    const available: LogSource[] = [];
+    const available: LogSourceSchema[] = [];
     let idCounter = 1;
 
     for (const [displayName, suffix] of Object.entries(suffixMapping)) {
       const have = streams.some((s) => (s.logStreamName || '').includes(suffix));
       if (have) {
-        available.push({ id: idCounter++, name: displayName, token: suffix });
+        available.push({ id: String(idCounter++), name: displayName, token: suffix });
       }
     }
 
@@ -91,7 +91,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     limit: number = 100,
     beforeTimestamp?: string
   ): Promise<{
-    logs: AnalyticsLogRecord[];
+    logs: LogSchema[];
     total: number;
     tableName: string;
   }> {
@@ -256,7 +256,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
       }
     }
     // Keep CloudWatch's default order (oldest first, newest last)
-    const logs: AnalyticsLogRecord[] = events.map((e) => {
+    const logs: LogSchema[] = events.map((e) => {
       const message = e.message || '';
       let parsed: Record<string, unknown> = {};
       try {
@@ -269,7 +269,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
         id: e.eventId || `${e.logStreamName || ''}-${e.timestamp || ''}`,
         // CloudWatch timestamp is in milliseconds
         timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
-        event_message:
+        eventMessage:
           typeof parsed === 'object' && parsed && (parsed as Record<string, unknown>).msg
             ? String((parsed as Record<string, unknown>).msg)
             : typeof message === 'string'
@@ -286,7 +286,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     };
   }
 
-  async getLogSourceStats(): Promise<LogSourceStats[]> {
+  async getLogSourceStats(): Promise<LogStatsSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
       throw new AppError(
         'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
@@ -297,7 +297,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
     const sources = await this.getLogSources();
-    const stats: LogSourceStats[] = [];
+    const stats: LogStatsSchema[] = [];
     const suffixMapping = this.getSuffixMapping();
 
     const dls = await client.send(new DescribeLogStreamsCommand({ logGroupName: logGroup }));
@@ -428,7 +428,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     limit: number = 100,
     _offset = 0 // CloudWatch doesn't support offset-based pagination
   ): Promise<{
-    logs: (AnalyticsLogRecord & { source: string })[];
+    logs: (LogSchema & { source: string })[];
     total: number;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
@@ -485,7 +485,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
     const toObj = (row: Array<{ field?: string; value?: string }>) =>
       Object.fromEntries(row.map((c) => [c.field || '', c.value || '']));
 
-    const mapped: (AnalyticsLogRecord & { source: string })[] = rows.map((r) => {
+    const mapped: (LogSchema & { source: string })[] = rows.map((r) => {
       const o = toObj(r);
       const msg = o['@message'] || '';
       let parsed: Record<string, unknown> = {};
@@ -510,7 +510,7 @@ export class CloudWatchProvider extends BaseAnalyticsProvider {
         timestamp: o['@timestamp']
           ? new Date(parseInt(o['@timestamp'])).toISOString()
           : new Date().toISOString(),
-        event_message:
+        eventMessage:
           typeof parsed === 'object' && (parsed as Record<string, unknown>).msg
             ? String((parsed as Record<string, unknown>).msg)
             : typeof msg === 'string'

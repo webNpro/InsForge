@@ -1,55 +1,55 @@
-import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
 import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
-import { AnalyticsProvider } from './providers/base.provider.js';
+import { LogProvider } from './providers/base.provider.js';
+import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
-export class AnalyticsManager {
-  private static instance: AnalyticsManager;
-  private provider!: AnalyticsProvider;
+export class LogService {
+  private static instance: LogService;
+  private provider!: LogProvider;
 
   private constructor() {}
 
-  static getInstance(): AnalyticsManager {
-    if (!AnalyticsManager.instance) {
-      AnalyticsManager.instance = new AnalyticsManager();
+  static getInstance(): LogService {
+    if (!LogService.instance) {
+      LogService.instance = new LogService();
     }
-    return AnalyticsManager.instance;
+    return LogService.instance;
   }
 
   async initialize(): Promise<void> {
-    // Always use CloudWatch provider for analytics logs
-    logger.info('Using analytics provider: CloudWatch');
+    // Always use CloudWatch provider for system logs
+    logger.info('Using log provider: CloudWatch');
     this.provider = new CloudWatchProvider();
     await this.provider.initialize();
   }
 
-  async getLogSources(): Promise<LogSource[]> {
+  getLogSources(): Promise<LogSourceSchema[]> {
     return this.provider.getLogSources();
   }
 
-  async getLogsBySource(
+  getLogsBySource(
     sourceName: string,
     limit: number = 100,
     beforeTimestamp?: string
   ): Promise<{
-    logs: AnalyticsLogRecord[];
+    logs: LogSchema[];
     total: number;
     tableName: string;
   }> {
     return this.provider.getLogsBySource(sourceName, limit, beforeTimestamp);
   }
 
-  async getLogSourceStats(): Promise<LogSourceStats[]> {
+  getLogSourceStats(): Promise<LogStatsSchema[]> {
     return this.provider.getLogSourceStats();
   }
 
-  async searchLogs(
+  searchLogs(
     query: string,
     sourceName?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<{
-    logs: (AnalyticsLogRecord & { source: string })[];
+    logs: (LogSchema & { source: string })[];
     total: number;
   }> {
     return this.provider.searchLogs(query, sourceName, limit, offset);
