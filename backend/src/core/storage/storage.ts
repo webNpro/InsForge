@@ -480,15 +480,13 @@ export class StorageService {
     }
   }
 
-  async putObject(
-    bucket: string,
-    originalKey: string,
-    file: Express.Multer.File,
-    userId?: string
-  ): Promise<StorageFileSchema> {
-    this.validateBucketName(bucket);
-    this.validateKey(originalKey);
-
+  /**
+   * Generate the next available key for a file, using (1), (2), (3) pattern if duplicates exist
+   * @param bucket - The bucket name
+   * @param originalKey - The original filename
+   * @returns The next available key
+   */
+  private async generateNextAvailableKey(bucket: string, originalKey: string): Promise<string> {
     const db = DatabaseManager.getInstance().getDb();
 
     // Parse filename and extension for potential auto-renaming
@@ -501,8 +499,8 @@ export class StorageService {
     const existingFiles = await db
       .prepare(
         `
-        SELECT key FROM _storage 
-        WHERE bucket = ? 
+        SELECT key FROM _storage
+        WHERE bucket = ?
         AND (key = ? OR key LIKE ?)
       `
       )
@@ -536,6 +534,23 @@ export class StorageService {
       // Generate the next available filename
       finalKey = `${baseName} (${incrementNumber + 1})${extension}`;
     }
+
+    return finalKey;
+  }
+
+  async putObject(
+    bucket: string,
+    originalKey: string,
+    file: Express.Multer.File,
+    userId?: string
+  ): Promise<StorageFileSchema> {
+    this.validateBucketName(bucket);
+    this.validateKey(originalKey);
+
+    const db = DatabaseManager.getInstance().getDb();
+
+    // Generate next available key using (1), (2), (3) pattern if duplicates exist
+    const finalKey = await this.generateNextAvailableKey(bucket, originalKey);
 
     // Save file using backend
     await this.backend.putObject(bucket, finalKey, file);
@@ -793,15 +808,6 @@ export class StorageService {
   }
 
   // New methods for universal upload/download strategies
-  private generateUniqueKey(filename: string): string {
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    const ext = path.extname(filename);
-    const baseName = path.basename(filename, ext);
-    const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '-').substring(0, 32);
-    return `${sanitizedBaseName}-${timestamp}-${randomStr}${ext}`;
-  }
-
   async getUploadStrategy(
     bucket: string,
     metadata: {
@@ -822,7 +828,8 @@ export class StorageService {
       throw new Error(`Bucket "${bucket}" does not exist`);
     }
 
-    const key = this.generateUniqueKey(metadata.filename);
+    // Generate next available key using (1), (2), (3) pattern if duplicates exist
+    const key = await this.generateNextAvailableKey(bucket, metadata.filename);
     return this.backend.getUploadStrategy(bucket, key, metadata);
   }
 
