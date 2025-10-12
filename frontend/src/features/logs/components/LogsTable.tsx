@@ -1,20 +1,15 @@
-import { SortDesc, SortAsc } from 'lucide-react';
 import { ReactNode } from 'react';
 
 export interface LogsTableColumn<T = Record<string, unknown>> {
   key: string;
   label: string;
   width?: string;
-  sortable?: boolean;
   render?: (row: T) => ReactNode;
 }
 
 export interface LogsTableProps<T = Record<string, unknown>> {
   columns: LogsTableColumn<T>[];
   data: T[];
-  sortColumn?: string;
-  sortDirection?: 'asc' | 'desc';
-  onSort?: (columnKey: string) => void;
   isLoading?: boolean;
   emptyMessage?: string;
 }
@@ -22,8 +17,6 @@ export interface LogsTableProps<T = Record<string, unknown>> {
 export function LogsTable<T = Record<string, unknown>>({
   columns,
   data,
-  sortDirection = 'desc',
-  onSort,
   isLoading,
   emptyMessage = 'No data available',
 }: LogsTableProps<T>) {
@@ -50,19 +43,6 @@ export function LogsTable<T = Record<string, unknown>>({
               <p className="text-sm text-neutral-400 font-normal leading-6 whitespace-nowrap">
                 {column.label}
               </p>
-              {column.sortable && (
-                <button
-                  onClick={() => onSort?.(column.key)}
-                  className="p-1 rounded hover:bg-neutral-800 transition-colors"
-                  aria-label={`Sort by ${column.label}`}
-                >
-                  {sortDirection === 'asc' ? (
-                    <SortAsc className="h-4 w-4 text-neutral-400" />
-                  ) : (
-                    <SortDesc className="h-4 w-4 text-neutral-400" />
-                  )}
-                </button>
-              )}
             </div>
           ))}
         </div>

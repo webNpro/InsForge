@@ -4,6 +4,7 @@ import { logService } from '../services/log.service';
 import type { LogSchema } from '@insforge/shared-schemas';
 
 const PAGE_SIZE = 100;
+const FETCH_SIZE = 500;
 
 export function useLogs(source: string) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +27,7 @@ export function useLogs(source: string) {
   } = useQuery({
     queryKey: ['logs-content', source],
     queryFn: async () => {
-      const data = await logService.getLogsBySource(source, PAGE_SIZE);
+      const data = await logService.getLogsBySource(source, FETCH_SIZE);
       return {
         logs: data.logs || [],
         total: data.total || 0,
@@ -39,8 +40,9 @@ export function useLogs(source: string) {
   // Update loaded logs when data changes
   useEffect(() => {
     if (initialLogsData?.logs !== undefined) {
-      setLoadedLogs(initialLogsData.logs);
-      setHasMore(initialLogsData.logs.length === PAGE_SIZE);
+      // Reverse logs to show most recent first (backend returns oldest first)
+      setLoadedLogs([...initialLogsData.logs].reverse());
+      setHasMore(initialLogsData.logs.length === FETCH_SIZE);
       setIsLoadingMore(false);
     }
   }, [initialLogsData]);
@@ -58,12 +60,15 @@ export function useLogs(source: string) {
 
     setIsLoadingMore(true);
     try {
-      const oldestTimestamp = loadedLogs.length > 0 ? loadedLogs[0]?.timestamp : undefined;
-      const data = await logService.getLogsBySource(source, PAGE_SIZE, oldestTimestamp);
+      // Get the oldest log's timestamp (last in the array since we reverse)
+      const oldestTimestamp =
+        loadedLogs.length > 0 ? loadedLogs[loadedLogs.length - 1]?.timestamp : undefined;
+      const data = await logService.getLogsBySource(source, FETCH_SIZE, oldestTimestamp);
 
       if (data.logs && data.logs.length > 0) {
-        setLoadedLogs((prev) => [...data.logs, ...prev]);
-        setHasMore(data.logs.length === PAGE_SIZE);
+        // Reverse and append to the end (older logs)
+        setLoadedLogs((prev) => [...prev, ...[...data.logs].reverse()]);
+        setHasMore(data.logs.length === FETCH_SIZE);
       } else {
         setHasMore(false);
       }

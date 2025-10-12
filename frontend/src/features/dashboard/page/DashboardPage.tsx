@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { useUsers } from '@/features/auth';
 import { Users, Database, HardDrive } from 'lucide-react';
@@ -14,6 +14,7 @@ interface McpUsageRecord {
 
 export default function DashboardPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { metadata, auth, tables, storage, isLoading } = useMetadata();
   const { totalUsers } = useUsers();
   const { records } = useMcpUsage();
@@ -41,6 +42,12 @@ export default function DashboardPage() {
       ),
     },
   ];
+
+  const handleViewMoreClick = () => {
+    localStorage.setItem('selectedLogSource', 'MCP');
+    const isCloudRoute = location.pathname.startsWith('/cloud');
+    void navigate(isCloudRoute ? '/cloud/logs' : '/dashboard/logs');
+  };
 
   return (
     <main className="h-full bg-white dark:bg-neutral-800 overflow-y-auto">
@@ -89,7 +96,12 @@ export default function DashboardPage() {
           <p className="text-xl font-semibold text-gray-900 dark:text-white tracking-[-0.1px]">
             MCP Call Records
           </p>
-          {/* <button className="text-sm text-gray-500 dark:text-gray-400">View More</button> */}
+          <button
+            onClick={handleViewMoreClick}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-white font-medium hover:bg-neutral-700 rounded-lg transition-colors"
+          >
+            View More
+          </button>
         </div>
 
         {/* MCP Call Record Table */}

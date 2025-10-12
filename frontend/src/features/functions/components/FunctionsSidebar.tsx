@@ -22,7 +22,7 @@ export function FunctionsSidebar({ selectedSection, onSectionSelect }: Functions
   return (
     <div className="w-60 px-3 py-4 flex flex-col h-full bg-white dark:bg-neutral-800 border-r border-border-gray dark:border-neutral-700">
       <div className="mb-4 w-full">
-        <p className="text-base text-zinc-950 dark:text-neutral-400">Edge Functions</p>
+        <p className="text-base font-bold text-zinc-950 dark:text-white">Edge Functions</p>
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-2">

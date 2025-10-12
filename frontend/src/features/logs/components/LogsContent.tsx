@@ -60,8 +60,6 @@ export function LogsContent({ source }: LogsContentProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMcpLogs = source === 'MCP';
   const [mcpSearchQuery, setMcpSearchQuery] = useState('');
-  // Default sort by time descending (latest first)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // MCP logs data
   const { records: mcpLogs, isLoading: mcpLoading, error: mcpError } = useMcpUsage();
@@ -99,12 +97,7 @@ export function LogsContent({ source }: LogsContentProps) {
     [isMcpLogs, hasMore, isLoadingMore, loadMoreLogs]
   );
 
-  // Handle sorting (only for time column)
-  const handleSort = useCallback(() => {
-    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-  }, []);
-
-  // Filtered and sorted MCP logs
+  // Filtered MCP logs
   const filteredMcpRecords = useMemo(() => {
     let filtered = mcpLogs;
 
@@ -115,24 +108,8 @@ export function LogsContent({ source }: LogsContentProps) {
       );
     }
 
-    // Apply sorting by time (created_at)
-    filtered = [...filtered].sort((a, b) => {
-      const aTime = new Date(a.created_at).getTime();
-      const bTime = new Date(b.created_at).getTime();
-      return sortDirection === 'desc' ? bTime - aTime : aTime - bTime;
-    });
-
     return filtered;
-  }, [mcpLogs, mcpSearchQuery, sortDirection]);
-
-  // Sorted logs
-  const sortedLogs = useMemo(() => {
-    return [...paginatedLogs].sort((a, b) => {
-      const aTime = new Date(a.timestamp).getTime();
-      const bTime = new Date(b.timestamp).getTime();
-      return sortDirection === 'desc' ? bTime - aTime : aTime - bTime;
-    });
-  }, [paginatedLogs, sortDirection]);
+  }, [mcpLogs, mcpSearchQuery]);
 
   // MCP columns
   const mcpColumns = useMemo(
@@ -140,26 +117,11 @@ export function LogsContent({ source }: LogsContentProps) {
       {
         key: 'tool_name',
         label: 'MCP Call',
-        sortable: false,
-      },
-      {
-        key: 'success',
-        label: 'Status',
-        width: '150px',
-        sortable: false,
-        render: (record) => (
-          <span
-            className={`text-sm font-normal leading-6 ${record.success ? 'text-green-500' : 'text-red-500'}`}
-          >
-            {record.success ? 'Success' : 'Failed'}
-          </span>
-        ),
       },
       {
         key: 'created_at',
         label: 'Time',
         width: '250px',
-        sortable: true,
         render: (record) => (
           <p className="text-sm text-white font-normal leading-6">
             {formatTime(record.created_at)}
@@ -197,21 +159,18 @@ export function LogsContent({ source }: LogsContentProps) {
       {
         key: 'event_message',
         label: 'Logs',
-        sortable: false,
         render: renderLogMessage,
       },
       {
         key: 'severity',
         label: 'Severity',
         width: '200px',
-        sortable: false,
         render: renderSeverity,
       },
       {
         key: 'timestamp',
         label: 'Time',
         width: '250px',
-        sortable: true,
         render: renderTime,
       },
     ],
@@ -283,8 +242,6 @@ export function LogsContent({ source }: LogsContentProps) {
               columns={mcpColumns}
               data={filteredMcpRecords}
               isLoading={mcpLoading}
-              sortDirection={sortDirection}
-              onSort={handleSort}
               emptyMessage={mcpSearchQuery ? 'No MCP logs match your search' : 'No MCP logs found'}
             />
           )
@@ -296,10 +253,8 @@ export function LogsContent({ source }: LogsContentProps) {
           <>
             <LogsTable<LogSchema>
               columns={logsColumns}
-              data={sortedLogs}
+              data={paginatedLogs}
               isLoading={logsLoading}
-              sortDirection={sortDirection}
-              onSort={handleSort}
               emptyMessage={
                 filteredLogs.length === 0 ? 'No logs match your search criteria' : 'No logs found'
               }
