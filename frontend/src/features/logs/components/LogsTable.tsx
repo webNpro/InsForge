@@ -1,199 +1,117 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/radix/Button';
-import { PaginationControls } from '@/components/PaginationControls';
-import type { AuditLogSchema } from '@insforge/shared-schemas';
+import { SortDesc, SortAsc } from 'lucide-react';
+import { ReactNode } from 'react';
 
-interface LogsTableProps {
-  logs: AuditLogSchema[];
-  schema?: Record<string, unknown>;
-  loading?: boolean;
-  searchQuery?: string;
-  onRefresh?: () => void;
-  onConfirm?: (options: {
-    title: string;
-    description: string;
-    confirmText?: string;
-    destructive?: boolean;
-  }) => Promise<boolean>;
-  currentPage?: number;
-  totalRecords?: number;
-  pageSize?: number;
-  onPageChange?: (page: number) => void;
+export interface LogsTableColumn<T = Record<string, unknown>> {
+  key: string;
+  label: string;
+  width?: string;
+  sortable?: boolean;
+  render?: (row: T) => ReactNode;
 }
 
-export function LogsTable({
-  logs,
-  loading,
-  searchQuery = '',
-  currentPage = 1,
-  totalRecords = 0,
-  pageSize = 50,
-  onPageChange,
-}: LogsTableProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+export interface LogsTableProps<T = Record<string, unknown>> {
+  columns: LogsTableColumn<T>[];
+  data: T[];
+  sortColumn?: string;
+  sortDirection?: 'asc' | 'desc';
+  onSort?: (columnKey: string) => void;
+  isLoading?: boolean;
+  emptyMessage?: string;
+}
 
-  // Filter logs based on search (client-side filtering on current page)
-  const filteredLogs = useMemo(() => {
-    if (!searchQuery || !logs) {
-      return logs || [];
-    }
-
-    const lowerQuery = searchQuery.toLowerCase();
-    return logs.filter(
-      (log) =>
-        log.action?.toLowerCase().includes(lowerQuery) ||
-        log.actor?.toLowerCase().includes(lowerQuery) ||
-        log.module?.toLowerCase().includes(lowerQuery) ||
-        (log.details && JSON.stringify(log.details).toLowerCase().includes(lowerQuery))
-    );
-  }, [logs, searchQuery]);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(totalRecords / pageSize);
-
-  const toggleRowExpansion = (id: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
-
-  // Logs are audit records and should not be individually deletable
-  // They can only be cleared in bulk by admins if needed
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-neutral-400">Loading logs...</div>
-      </div>
-    );
-  }
-
+export function LogsTable<T = Record<string, unknown>>({
+  columns,
+  data,
+  sortDirection = 'desc',
+  onSort,
+  isLoading,
+  emptyMessage = 'No data available',
+}: LogsTableProps<T>) {
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-auto relative">
-        <table className="w-full bg-white dark:bg-neutral-900">
-          <thead className="sticky top-0 z-20">
-            <tr className="h-12.5 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700">
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-45">
-                Time
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
-                Actor
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-25">
-                Action
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
-                Module
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-37.5">
-                Details
-              </th>
-              <th className="px-4 text-left text-[13px] font-semibold text-gray-600 dark:text-neutral-400 min-w-30">
-                IP Address
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredLogs.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-12 text-center text-gray-500 dark:text-neutral-400"
+    <div className="flex flex-col h-full rounded overflow-hidden">
+      {/* Scrollable container */}
+      <div className="flex-1 overflow-auto">
+        {/* Header - sticky inside scroll container */}
+        <div className="bg-neutral-900 flex items-center sticky top-0 z-10">
+          {columns.map((column, index) => (
+            <div
+              key={column.key}
+              className={`
+                flex items-center gap-1 px-3 py-1.5
+                ${index < columns.length - 1 ? 'border-r border-neutral-700' : ''}
+              `}
+              style={{
+                width: column.width,
+                minWidth: column.width,
+                maxWidth: column.width,
+                flex: column.width ? '0 0 auto' : '1 1 0',
+              }}
+            >
+              <p className="text-sm text-neutral-400 font-normal leading-6 whitespace-nowrap">
+                {column.label}
+              </p>
+              {column.sortable && (
+                <button
+                  onClick={() => onSort?.(column.key)}
+                  className="p-1 rounded hover:bg-neutral-800 transition-colors"
+                  aria-label={`Sort by ${column.label}`}
                 >
-                  {searchQuery ? 'No logs found matching your search' : 'No audit logs yet'}
-                </td>
-              </tr>
-            ) : (
-              filteredLogs.map((log) => {
-                const isExpanded = expandedRows.has(String(log.id));
-                const details = log.details;
+                  {sortDirection === 'asc' ? (
+                    <SortAsc className="h-4 w-4 text-neutral-400" />
+                  ) : (
+                    <SortDesc className="h-4 w-4 text-neutral-400" />
+                  )}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
 
-                return (
-                  <React.Fragment key={log.id}>
-                    <tr className="h-14 border-b border-gray-100 dark:border-neutral-800 transition-colors hover:bg-gray-50/50 dark:hover:bg-neutral-800/50">
-                      <td className="px-4 text-[13px] text-gray-600 dark:text-neutral-400">
-                        {formatDate(log.createdAt)}
-                      </td>
-                      <td className="px-4 text-sm font-medium text-gray-800 dark:text-neutral-200">
-                        {log.actor}
-                      </td>
-                      <td className="px-4 text-gray-700 dark:text-neutral-300">{log.action}</td>
-                      <td className="px-4 text-sm text-gray-700 dark:text-neutral-300">
-                        {log.module}
-                      </td>
-                      <td className="px-4">
-                        {details && typeof details === 'object' ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleRowExpansion(String(log.id))}
-                            className="h-8 px-3 text-[13px] text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-700"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-3.5 w-3.5 mr-1 text-gray-600 dark:text-neutral-400" />
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5 mr-1 text-gray-600 dark:text-neutral-400" />
-                            )}
-                            View Details
-                          </Button>
-                        ) : (
-                          <span className="text-[13px] text-gray-500 dark:text-neutral-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-4">
-                        <span className="font-mono text-[12px] text-gray-500 dark:text-neutral-500">
-                          {log.ipAddress || '-'}
-                        </span>
-                      </td>
-                    </tr>
-                    {isExpanded && details && typeof details === 'object' && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-4 py-3 bg-gray-50 dark:bg-neutral-800 border-b border-gray-100 dark:border-neutral-700"
-                        >
-                          <pre className="text-xs text-gray-700 dark:text-neutral-300 whitespace-pre-wrap font-mono bg-white dark:bg-neutral-900 p-3 rounded border border-border-gray dark:border-neutral-700">
-                            {JSON.stringify(details, null, 2)}
-                          </pre>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+        {/* Body */}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4" />
+              <p className="text-sm text-neutral-400">Loading...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
+            <p className="text-sm text-neutral-400">{emptyMessage}</p>
+          </div>
+        ) : (
+          data.map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              className="bg-neutral-800 border-b border-neutral-700 flex items-stretch hover:bg-neutral-750 transition-colors"
+            >
+              {columns.map((column, colIndex) => (
+                <div
+                  key={column.key}
+                  className={`
+                    flex items-center px-3 py-1.5
+                    ${colIndex < columns.length - 1 ? 'border-r border-neutral-700' : ''}
+                  `}
+                  style={{
+                    width: column.width,
+                    minWidth: column.width,
+                    maxWidth: column.width,
+                    flex: column.width ? '0 0 auto' : '1 1 0',
+                  }}
+                >
+                  {column.render ? (
+                    column.render(row)
+                  ) : (
+                    <p className="text-sm text-white font-normal leading-6 break-all">
+                      {String((row as Record<string, unknown>)[column.key] ?? '')}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </div>
-
-      {/* Pagination */}
-      {!loading && totalRecords > pageSize && (
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalRecords={totalRecords}
-          pageSize={pageSize}
-          onPageChange={onPageChange}
-          recordLabel="logs"
-        />
-      )}
     </div>
   );
 }

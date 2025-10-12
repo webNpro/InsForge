@@ -3,15 +3,44 @@ import { useMetadata } from '@/features/metadata/hooks/useMetadata';
 import { useUsers } from '@/features/auth';
 import { Users, Database, HardDrive } from 'lucide-react';
 import { ConnectionSuccessBanner, StatsCard } from '../components';
-import { McpUsageTable } from '@/features/dashboard/components';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
+import { LogsTable, LogsTableColumn } from '@/features/logs/components/LogsTable';
+import { format } from 'date-fns';
+
+interface McpUsageRecord {
+  tool_name: string;
+  created_at: string;
+}
 
 export default function DashboardPage() {
   const location = useLocation();
   const { metadata, auth, tables, storage, isLoading } = useMetadata();
   const { totalUsers } = useUsers();
+  const { records } = useMcpUsage();
 
   const authCount = auth?.oauths.length || 0;
   const showBanner = location.state?.showSuccessBanner === true;
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, 'MMM dd, yyyy h:mm a');
+  };
+
+  const mcpColumns: LogsTableColumn<McpUsageRecord>[] = [
+    {
+      key: 'tool_name',
+      label: 'MCP Call',
+      render: (row) => <p className="text-sm text-white font-normal leading-6">{row.tool_name}</p>,
+    },
+    {
+      key: 'created_at',
+      label: 'Time',
+      width: '216px',
+      render: (row) => (
+        <p className="text-sm text-white font-normal leading-6">{formatTime(row.created_at)}</p>
+      ),
+    },
+  ];
 
   return (
     <main className="h-full bg-white dark:bg-neutral-800 overflow-y-auto">
@@ -64,8 +93,12 @@ export default function DashboardPage() {
         </div>
 
         {/* MCP Call Record Table */}
-        <div className="w-full">
-          <McpUsageTable />
+        <div className="w-full rounded-[8px] overflow-hidden shadow-sm">
+          <LogsTable
+            columns={mcpColumns}
+            data={records.slice(0, 5)}
+            emptyMessage="No MCP call records found"
+          />
         </div>
 
         <div className="h-8 flex-shrink-0" />

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocket, ServerEvents } from '@/lib/contexts/SocketContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { usageService, McpUsageRecord } from '@/features/usage/services/usage.service';
+import { usageService, McpUsageRecord } from '@/features/logs/services/usage.service';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 // ============================================================================
