@@ -58,13 +58,13 @@ function formatTime(timestamp: string): string {
 
 export function LogsContent({ source }: LogsContentProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isMcpRecords = source === 'MCP records';
+  const isMcpLogs = source === 'MCP';
   const [mcpSearchQuery, setMcpSearchQuery] = useState('');
   // Default sort by time descending (latest first)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // MCP records data
-  const { records: mcpRecords, isLoading: mcpLoading, error: mcpError } = useMcpUsage();
+  // MCP logs data
+  const { records: mcpLogs, isLoading: mcpLoading, error: mcpError } = useMcpUsage();
 
   // Regular logs data
   const {
@@ -83,12 +83,12 @@ export function LogsContent({ source }: LogsContentProps) {
     error: logsError,
     loadMoreLogs,
     getSeverity,
-  } = useLogs(isMcpRecords ? '' : source);
+  } = useLogs(isMcpLogs ? '' : source);
 
   // Handle scroll to load more (only for regular logs)
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      if (isMcpRecords) {
+      if (isMcpLogs) {
         return;
       }
       const { scrollTop } = e.currentTarget;
@@ -96,7 +96,7 @@ export function LogsContent({ source }: LogsContentProps) {
         void loadMoreLogs();
       }
     },
-    [isMcpRecords, hasMore, isLoadingMore, loadMoreLogs]
+    [isMcpLogs, hasMore, isLoadingMore, loadMoreLogs]
   );
 
   // Handle sorting (only for time column)
@@ -104,9 +104,9 @@ export function LogsContent({ source }: LogsContentProps) {
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   }, []);
 
-  // Filtered and sorted MCP records
+  // Filtered and sorted MCP logs
   const filteredMcpRecords = useMemo(() => {
-    let filtered = mcpRecords;
+    let filtered = mcpLogs;
 
     // Apply search filter
     if (mcpSearchQuery) {
@@ -123,7 +123,7 @@ export function LogsContent({ source }: LogsContentProps) {
     });
 
     return filtered;
-  }, [mcpRecords, mcpSearchQuery, sortDirection]);
+  }, [mcpLogs, mcpSearchQuery, sortDirection]);
 
   // Sorted logs
   const sortedLogs = useMemo(() => {
@@ -225,13 +225,13 @@ export function LogsContent({ source }: LogsContentProps) {
         <p className="text-xl text-zinc-950 dark:text-white mb-4">{source}</p>
         <div className="flex items-center gap-4">
           <SearchInput
-            value={isMcpRecords ? mcpSearchQuery : logsSearchQuery}
-            onChange={isMcpRecords ? setMcpSearchQuery : setLogsSearchQuery}
-            placeholder={isMcpRecords ? 'Search MCP calls' : 'Search logs'}
+            value={isMcpLogs ? mcpSearchQuery : logsSearchQuery}
+            onChange={isMcpLogs ? setMcpSearchQuery : setLogsSearchQuery}
+            placeholder={isMcpLogs ? 'Search MCP logs' : 'Search logs'}
             className="flex-1 max-w-80 dark:bg-neutral-800 dark:text-zinc-300 dark:border-neutral-700"
             debounceTime={300}
           />
-          {!isMcpRecords && (
+          {!isMcpLogs && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -273,10 +273,10 @@ export function LogsContent({ source }: LogsContentProps) {
 
       {/* Table */}
       <div className="flex-1 overflow-auto px-4" ref={scrollRef} onScroll={handleScroll}>
-        {isMcpRecords ? (
+        {isMcpLogs ? (
           mcpError ? (
             <div className="flex items-center justify-center h-full">
-              <EmptyState title="Error loading MCP records" description={String(mcpError)} />
+              <EmptyState title="Error loading MCP logs" description={String(mcpError)} />
             </div>
           ) : (
             <LogsTable<McpUsageRecord>
@@ -285,9 +285,7 @@ export function LogsContent({ source }: LogsContentProps) {
               isLoading={mcpLoading}
               sortDirection={sortDirection}
               onSort={handleSort}
-              emptyMessage={
-                mcpSearchQuery ? 'No MCP records match your search' : 'No MCP records found'
-              }
+              emptyMessage={mcpSearchQuery ? 'No MCP logs match your search' : 'No MCP logs found'}
             />
           )
         ) : logsError ? (
@@ -316,7 +314,7 @@ export function LogsContent({ source }: LogsContentProps) {
       </div>
 
       {/* Footer with Pagination - only for regular logs */}
-      {!isMcpRecords && !logsLoading && filteredLogs.length > 0 && (
+      {!isMcpLogs && !logsLoading && filteredLogs.length > 0 && (
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}

@@ -16,32 +16,3 @@ export interface AuditLogQuery {
   limit?: number;
   offset?: number;
 }
-
-// Types for system logs (CloudWatch)
-export interface LogSource {
-  id: number;
-  name: string;
-  token: string;
-}
-
-export interface LogRecord {
-  id: string;
-  event_message: string;
-  timestamp: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  body: Record<string, any>;
-}
-
-export interface LogsResponse {
-  source: string;
-  logs: LogRecord[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface LogSourceStats {
-  source: string;
-  count: number;
-  lastActivity: string;
-}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { logService } from '../services/log.service';
-import type { LogSource } from '@insforge/shared-schemas';
+import type { LogSourceSchema } from '@insforge/shared-schemas';
 
 export function useLogSources() {
   const [selectedSource, setSelectedSource] = useState<string | null>(() => {
@@ -47,10 +47,10 @@ export function useLogSources() {
   // Auto-select first source or validate current selection
   useEffect(() => {
     if (!isLoading && sources && sources.length > 0) {
-      // If no source selected or selected source doesn't exist (except 'MCP records'), select first one
+      // If no source selected or selected source doesn't exist (except 'MCP logs'), select first one
       if (
         !selectedSource ||
-        (selectedSource !== 'MCP records' && !sources.some((s) => s.name === selectedSource))
+        (selectedSource !== 'MCP' && !sources.some((s) => s.name === selectedSource))
       ) {
         setSelectedSource(sources[0].name);
       }
@@ -69,7 +69,7 @@ export function useLogSources() {
 
   // Get source by name
   const getSourceByName = useCallback(
-    (name: string): LogSource | undefined => {
+    (name: string): LogSourceSchema | undefined => {
       return sources?.find((s) => s.name === name);
     },
     [sources]

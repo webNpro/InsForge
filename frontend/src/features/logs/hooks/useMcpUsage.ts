@@ -22,7 +22,7 @@ export interface McpConnectedPayload {
  * Hook to manage MCP usage data and real-time updates
  *
  * Features:
- * - Fetches initial MCP records from backend
+ * - Fetches initial MCP logs from backend
  * - Listens to real-time socket updates for new MCP calls
  * - Invalidates queries on WebSocket events to refetch latest data
  * - Provides helper functions for data access
@@ -37,7 +37,7 @@ export function useMcpUsage() {
   // Refs
   const hasNotifiedInitialStatus = useRef(false);
 
-  // Query to fetch all MCP records
+  // Query to fetch all MCP loss
   const {
     data: records = [],
     isLoading,
