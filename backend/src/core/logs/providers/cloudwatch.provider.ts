@@ -59,11 +59,7 @@ export class CloudWatchProvider extends BaseLogProvider {
 
   async getLogSources(): Promise<LogSourceSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new AppError(
-        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
-        500,
-        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
-      );
+      return [];
     }
     const logGroup = this.cwLogGroup;
     const client = this.cwClient;
@@ -96,11 +92,7 @@ export class CloudWatchProvider extends BaseLogProvider {
     tableName: string;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new AppError(
-        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
-        500,
-        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
-      );
+      return { logs: [], total: 0, tableName: sourceName };
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -288,11 +280,7 @@ export class CloudWatchProvider extends BaseLogProvider {
 
   async getLogSourceStats(): Promise<LogStatsSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new AppError(
-        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
-        500,
-        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
-      );
+      return [];
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -432,11 +420,7 @@ export class CloudWatchProvider extends BaseLogProvider {
     total: number;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      throw new AppError(
-        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
-        500,
-        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
-      );
+      return { logs: [], total: 0 };
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
