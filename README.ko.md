@@ -58,7 +58,7 @@ docker compose up
 
 ### 2. AI Agent 연결
 
-InsForge Dashboard (기본 주소: http://localhost:7131)에 접속 후 로그인하고, "Connect" 가이드를 따라 MCP를 설정하세요.
+InsForge Dashboard (기본 주소: http://localhost:7131) 에 접속 후 로그인하고, "Connect" 가이드를 따라 MCP를 설정하세요.
 
 <div align="center">
   <table>
