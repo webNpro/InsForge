@@ -31,14 +31,20 @@ export default function DashboardPage() {
     {
       key: 'tool_name',
       label: 'MCP Call',
-      render: (row) => <p className="text-sm text-white font-normal leading-6">{row.tool_name}</p>,
+      render: (row) => (
+        <p className="text-sm text-gray-900 dark:text-white font-normal leading-6">
+          {row.tool_name}
+        </p>
+      ),
     },
     {
       key: 'created_at',
       label: 'Time',
       width: '216px',
       render: (row) => (
-        <p className="text-sm text-white font-normal leading-6">{formatTime(row.created_at)}</p>
+        <p className="text-sm text-gray-900 dark:text-white font-normal leading-6">
+          {formatTime(row.created_at)}
+        </p>
       ),
     },
   ];

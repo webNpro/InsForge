@@ -39,7 +39,9 @@ function SeverityBadge({ severity }: { severity: string }) {
   return (
     <div className="flex items-center gap-2 pr-1">
       <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: config.color }} />
-      <span className="text-sm text-white font-normal leading-6">{config.label}</span>
+      <span className="text-sm text-gray-900 dark:text-white font-normal leading-6">
+        {config.label}
+      </span>
     </div>
   );
 }
@@ -123,7 +125,7 @@ export function LogsContent({ source }: LogsContentProps) {
         label: 'Time',
         width: '250px',
         render: (record) => (
-          <p className="text-sm text-white font-normal leading-6">
+          <p className="text-sm text-gray-900 dark:text-white font-normal leading-6">
             {formatTime(record.created_at)}
           </p>
         ),
@@ -135,7 +137,7 @@ export function LogsContent({ source }: LogsContentProps) {
   // Regular logs columns
   const renderLogMessage = useCallback(
     (log: (typeof paginatedLogs)[number]) => (
-      <p className="text-sm text-white font-normal leading-6 break-all w-full">
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 break-all w-full">
         {log.eventMessage}
       </p>
     ),
@@ -149,7 +151,9 @@ export function LogsContent({ source }: LogsContentProps) {
 
   const renderTime = useCallback(
     (log: (typeof paginatedLogs)[number]) => (
-      <p className="text-sm text-white font-normal leading-6 flex-1">{formatTime(log.timestamp)}</p>
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 flex-1">
+        {formatTime(log.timestamp)}
+      </p>
     ),
     []
   );
