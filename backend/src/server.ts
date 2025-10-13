@@ -120,9 +120,9 @@ export async function createApp() {
         userAgent: req.headers['user-agent'],
         timestamp: new Date().toISOString(),
       };
-      
+
       logger.info('HTTP Request', logData);
-      
+
       // Write to file-based logs if enabled
       logWriter.writeInsforgeLog(`${req.method} ${req.path}`, logData).catch(() => {
         // Silently fail if log writing fails

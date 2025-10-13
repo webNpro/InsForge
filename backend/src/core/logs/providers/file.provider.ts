@@ -1,5 +1,4 @@
-import { promises as fs } from 'fs';
-import { createReadStream } from 'fs';
+import { promises as fs, createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import path from 'path';
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
@@ -80,7 +79,9 @@ export class FileProvider extends BaseAnalyticsProvider {
     const rl = createInterface({ input: fileStream, crlfDelay: Infinity });
 
     for await (const line of rl) {
-      if (!line.trim()) continue;
+      if (!line.trim()) {
+        continue;
+      }
 
       try {
         const log = JSON.parse(line);
@@ -144,7 +145,9 @@ export class FileProvider extends BaseAnalyticsProvider {
       : Object.entries(this.logFiles).map(([name, filename]) => ({ name, filename }));
 
     for (const { name, filename } of filesToSearch) {
-      if (!filename) continue;
+      if (!filename) {
+        continue;
+      }
 
       const filePath = path.join(this.logsDir, filename);
       const logs = await this.readLogsFromFile(filePath, 10000);

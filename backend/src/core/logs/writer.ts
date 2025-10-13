@@ -23,8 +23,10 @@ export class LogWriter {
     logger.info(`LogWriter initialized at: ${this.logsDir}`);
   }
 
-  async writeInsforgeLog(message: string, metadata: Record<string, any>): Promise<void> {
-    if (!this.initialized) return;
+  async writeInsforgeLog(message: string, metadata: Record<string, unknown>): Promise<void> {
+    if (!this.initialized) {
+      return;
+    }
 
     const logEntry = {
       id: `${Date.now()}-${Math.random()}`,
@@ -37,8 +39,10 @@ export class LogWriter {
     await this.appendToFile('insforge.logs.jsonl', logEntry);
   }
 
-  async writeFunctionLog(message: string, metadata: Record<string, any>): Promise<void> {
-    if (!this.initialized) return;
+  async writeFunctionLog(message: string, metadata: Record<string, unknown>): Promise<void> {
+    if (!this.initialized) {
+      return;
+    }
 
     const logEntry = {
       id: `${Date.now()}-${Math.random()}`,
@@ -51,7 +55,7 @@ export class LogWriter {
     await this.appendToFile('function.logs.jsonl', logEntry);
   }
 
-  private async appendToFile(filename: string, logEntry: any): Promise<void> {
+  private async appendToFile(filename: string, logEntry: Record<string, unknown>): Promise<void> {
     try {
       const filePath = path.join(this.logsDir, filename);
       const logLine = JSON.stringify(logEntry) + '\n';
