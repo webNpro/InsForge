@@ -93,7 +93,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
 
         {/* Discord Badge */}
         <a
-          href="https://discord.gg/mqPxArVZ26"
+          href="https://discord.com/invite/MPxwj5xVvW"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-[#5765F2] hover:bg-[#3E4CD7] rounded-full transition-all duration-200"
