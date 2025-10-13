@@ -91,9 +91,8 @@ export class FileProvider extends BaseAnalyticsProvider {
           logs.push({
             id: log.id || `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
-            message: log.message,
-            level: log.level || 'info',
-            metadata: log.metadata || {},
+            event_message: log.message || '',
+            body: log.metadata || {},
           });
         }
       } catch {
@@ -117,8 +116,7 @@ export class FileProvider extends BaseAnalyticsProvider {
         stats.push({
           source: name,
           count: logs.length,
-          size: fileStats.size,
-          lastUpdated: fileStats.mtime.toISOString(),
+          lastActivity: fileStats.mtime.toISOString(),
         });
       } catch {
         // File doesn't exist
@@ -153,8 +151,8 @@ export class FileProvider extends BaseAnalyticsProvider {
       const logs = await this.readLogsFromFile(filePath, 10000);
 
       for (const log of logs) {
-        const messageMatch = log.message.toLowerCase().includes(searchLower);
-        const metadataMatch = JSON.stringify(log.metadata).toLowerCase().includes(searchLower);
+        const messageMatch = log.event_message.toLowerCase().includes(searchLower);
+        const metadataMatch = JSON.stringify(log.body).toLowerCase().includes(searchLower);
 
         if (messageMatch || metadataMatch) {
           results.push({ ...log, source: name });
