@@ -111,7 +111,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 **Contributing**: 기여에 관심이 있으신가요? [CONTRIBUTING.md](CONTRIBUTING.md) 가이드를 확인해주세요. Pull Request는 언제나 환영이며 어떤 형태의 도움도 감사히 받습니다!
 
-**Support**: 도움이 필요하거나 지원이 필요하시다면, 저희 [Discord 채널](https://discord.gg/MPxwj5xVvW)에서 신속하게 응답해 드리고 있으며, [info@insforge.dev](mailto:info@insforge.dev)로 이메일을 보내주셔도 좋습니다!
+**Support**: 도움이 필요하거나 지원이 필요하시다면, InsForge [Discord 채널](https://discord.gg/MPxwj5xVvW)에서 신속하게 응답해 드리고 있으며, [info@insforge.dev](mailto:info@insforge.dev)로 이메일을 보내주셔도 좋습니다!
 
 ## 문서 및 지원
 
