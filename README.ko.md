@@ -17,7 +17,7 @@
 
 # InsForge
 
-**InsForge는 에이전트 네이티브(Agent-Native) Supabase 대안입니다**. 저희는 Supabase의 기능을 **AI Native 방식** 으로 구축하고 있으며, **AI Agent**가 자연스럽게 Full-stack Application을 구축하고 관리할 수 있도록 지원합니다.
+**InsForge는 에이전트 네이티브(Agent-Native) Supabase 대안입니다**. InsForge는 Supabase의 기능을 **AI Native 방식** 으로 구축하고 있으며, **AI Agent**가 자연스럽게 Full-stack Application을 구축하고 관리할 수 있도록 지원합니다.
 
 ## 핵심 기능 및 사용 사례
 
@@ -26,13 +26,13 @@
 - **Authentication** - 완전한 사용자 관리 시스템
 - **Database** - 유연한 데이터 저장 및 검색
 - **Storage** - 파일 관리 및 구성
-- **Serverless Functions** - 확장 가능한 컴퓨팅 성능
+- **Serverless Functions** - 확장 가능한 컴퓨팅 환경
 - **Site Deployment** _(출시예정)_ - 간편한 애플리케이션 배포
 
 ### 사용 사례: 자연어를 이용한 풀스택 애플리케이션 구축
 
 - **AI 에이전트를 InsForge에 연결** - Claude, GPT 등 다양한 AI 에이전트가 백엔드를 관리할 수 있도록 지원
-- **Lovable이나 Bolt 스타일의 생성형 프로젝트에 백엔드 통합하기** - AI가 생성한 프론트엔드에 즉시 연결되는 백엔드 제공
+- **Lovable또는 Bolt 스타일의 생성형 프로젝트에 백엔드 통합하기** - AI가 생성한 프론트엔드에 즉시 연결되는 백엔드 제공
 
 ## 프롬프트 예시:
 
@@ -79,7 +79,7 @@ InsForge Dashboard (기본 주소: http://localhost:7131)에 접속 후 로그�
 
 ### 3. 연결 테스트
 
-에이전트에게 다음 메세지를 전송하세요:
+에이전트에게 다음 메시지를 전송하세요:
 
 ```
 InsForge is my backend platform, what is my current backend structure?
@@ -117,7 +117,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ### 문서
 
-- **[공식문서](https://docs.insforge.dev/introduction)** - 포괄적인 가이드 및 API 레퍼런스
+- **[공식 문서](https://docs.insforge.dev/introduction)** - 포괄적인 가이드 및 API 레퍼런스
 
 ### 커뮤니티
 
@@ -130,7 +130,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ## 라이선스
 
-본 프로젝트는 Apache License 2.0 하에 라이선스가 부여됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하십시오.
+이 프로젝트는 Apache License 2.0 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하십시오.
 
 ---
 
