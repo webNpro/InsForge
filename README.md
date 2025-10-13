@@ -7,11 +7,11 @@
 <p align="center">
    <a href="#quickstart-tldr">Get Started</a> · 
    <a href="https://docs.insforge.dev/introduction">Documentation</a> · 
-   <a href="https://discord.gg/MPxwj5xVvW">Discord</a>
+   <a href="https://discord.com/invite/MPxwj5xVvW">Discord</a>
 </p>
 <p align="center">
    <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
-   <a href="https://discord.gg/MPxwj5xVvW"><img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord"></a>
+   <a href="https://discord.com/invite/MPxwj5xVvW"><img src="https://img.shields.io/badge/Discord-Join%20Community-7289DA?logo=discord&logoColor=white" alt="Discord"></a>
    <a href="https://github.com/InsForge/insforge/stargazers"><img src="https://img.shields.io/github/stars/InsForge/insforge?style=social" alt="GitHub Stars"></a>
 </p>
 
@@ -110,7 +110,7 @@ Start building your project in a new directory! Build your next todo app, Instag
 
 **Contributing**: If you're interested in contributing, you can check our guide here [CONTRIBUTING.md](CONTRIBUTING.md). We truly appreciate pull requests, all types of help are appreciated!
 
-**Support**: If you need any help or support, we're responsive on our [Discord channel](https://discord.gg/MPxwj5xVvW), and also feel free to email us [info@insforge.dev](mailto:info@insforge.dev) too!
+**Support**: If you need any help or support, we're responsive on our [Discord channel](https://discord.com/invite/MPxwj5xVvW), and also feel free to email us [info@insforge.dev](mailto:info@insforge.dev) too!
 
 
 ## Documentation & Support
@@ -119,7 +119,7 @@ Start building your project in a new directory! Build your next todo app, Instag
 - **[Official Docs](https://docs.insforge.dev/introduction)** - Comprehensive guides and API references
 
 ### Community
-- **[Discord](https://discord.gg/D3Vf8zD2ZS)** - Join our vibrant community
+- **[Discord](https://discord.com/invite/MPxwj5xVvW)** - Join our vibrant community
 - **[Twitter](https://x.com/InsForge_dev)** - Follow for updates and tips
 
 ### Contact
