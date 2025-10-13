@@ -135,6 +135,7 @@ export function createStorageColumns(
     columns.push({
       key: 'actions',
       name: '',
+      minWidth: 120,
       maxWidth: 120,
       resizable: false,
       sortable: false,
