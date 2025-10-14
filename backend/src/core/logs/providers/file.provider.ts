@@ -9,14 +9,15 @@ export class FileProvider extends BaseAnalyticsProvider {
   private logsDir: string = '';
   private logFiles: Record<string, string> = {
     'insforge.logs': 'insforge.logs.jsonl',
-    'function.logs': 'function.logs.jsonl',
-    'postgREST.logs': 'postgREST.logs.jsonl',
-    'postgres.logs': 'postgres.logs.jsonl',
   };
 
   async initialize(): Promise<void> {
     this.logsDir = path.resolve(process.cwd(), 'logs');
-    await fs.mkdir(this.logsDir, { recursive: true });
+    try {
+      await fs.mkdir(this.logsDir, { recursive: true });
+    } catch {
+      // Directory already exists
+    }
     logger.info(`File-based analytics initialized at: ${this.logsDir}`);
   }
 
@@ -88,11 +89,20 @@ export class FileProvider extends BaseAnalyticsProvider {
         const logTime = new Date(log.timestamp).getTime();
 
         if (logTime < beforeMs) {
+          // Transform to match CloudWatch/Vector format
+          const metadata = log.metadata || {};
+          const body: Record<string, unknown> = {
+            ...metadata,
+            // Transform to snake_case to match Vector output
+            user_agent: metadata.userAgent,
+            status_code: metadata.status,
+          };
+
           logs.push({
             id: log.id || `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
             event_message: log.message || '',
-            body: log.metadata || {},
+            body,
           });
         }
       } catch {
