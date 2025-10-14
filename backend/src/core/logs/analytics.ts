@@ -1,6 +1,6 @@
 import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
 import logger from '@/utils/logger.js';
-import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
+import { CloudWatchAnalyticsProvider } from './providers/cloudwatch-analytics.provider.js';
 import { FileProvider } from './providers/file.provider.js';
 import { AnalyticsProvider } from './providers/base.provider.js';
 
@@ -23,7 +23,7 @@ export class AnalyticsManager {
 
     if (hasAwsCredentials) {
       logger.info('Using analytics provider: CloudWatch');
-      this.provider = new CloudWatchProvider();
+      this.provider = new CloudWatchAnalyticsProvider();
     } else {
       logger.info('Using analytics provider: File-based (no AWS credentials required)');
       this.provider = new FileProvider();

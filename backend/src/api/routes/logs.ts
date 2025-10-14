@@ -74,9 +74,6 @@ router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFuncti
     const analyticsManager = AnalyticsManager.getInstance();
     const sources = await analyticsManager.getLogSources();
 
-    // Sources already have id as string, no transformation needed
-    const transformedSources = sources;
-
     successResponse(res, sources);
   } catch (error) {
     next(error);
