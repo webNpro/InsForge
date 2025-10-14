@@ -9,10 +9,13 @@ export class FileProvider extends BaseAnalyticsProvider {
   private logsDir: string = '';
   private logFiles: Record<string, string> = {
     'insforge.logs': 'insforge.logs.jsonl',
+    'postgres.logs': 'postgres.logs.jsonl',
+    'postgREST.logs': 'postgrest.logs.jsonl',
+    'function.logs': 'function.logs.jsonl',
   };
 
   async initialize(): Promise<void> {
-    this.logsDir = path.resolve(process.cwd(), 'logs');
+    this.logsDir = process.env.LOGS_DIR || path.resolve(process.cwd(), 'insforge-logs');
     try {
       await fs.mkdir(this.logsDir, { recursive: true });
     } catch {
@@ -86,29 +89,23 @@ export class FileProvider extends BaseAnalyticsProvider {
 
       try {
         const log = JSON.parse(line);
+        
+        // Only process Vector-transformed logs (have appname field)
+        if (!log.appname) {
+          continue;
+        }
+        
         const logTime = new Date(log.timestamp).getTime();
 
         if (logTime < beforeMs) {
-          // Transform to match CloudWatch/Vector format
-          const metadata = log.metadata || {};
-          const body: Record<string, unknown> = {
-            ...metadata,
-            // Transform to snake_case to match Vector output
-            user_agent: metadata.userAgent,
-            status_code: metadata.status,
-          };
-
-          // Format event_message like Vector does for HTTP requests
-          let eventMessage = log.message || '';
-          if (log.message === 'HTTP Request' && metadata.method && metadata.path) {
-            eventMessage = `${metadata.method} ${metadata.path} ${metadata.status} ${metadata.size} ${metadata.duration} - ${metadata.ip} - ${metadata.userAgent}`;
-          }
-
+          // Build body from all fields except the ones we use at top level
+          const { appname, event_message, timestamp, project, ...body } = log;
+          
           logs.push({
-            id: log.id || `${logTime}-${Math.random()}`,
+            id: `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
-            event_message: eventMessage,
-            body,
+            event_message: log.event_message || '',
+            body: body,
           });
         }
       } catch {
