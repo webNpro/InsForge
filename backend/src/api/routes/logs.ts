@@ -1,9 +1,9 @@
 import { Router, Response, NextFunction } from 'express';
-import { LogService } from '@/core/logs/logs.js';
+import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
-import { GetLogsResponse } from '@insforge/shared-schemas';
+import { AnalyticsLogResponse } from '@/types/logs.js';
 
 const router = Router();
 
@@ -68,14 +68,21 @@ router.delete('/audits', async (req: AuthRequest, res: Response, next: NextFunct
   }
 });
 
-// System logs routes
+// System logs routes (using AnalyticsManager)
 // GET /logs/sources - List all log sources
 router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const logService = LogService.getInstance();
-    const sources = await logService.getLogSources();
+    const analyticsManager = AnalyticsManager.getInstance();
+    const sources = await analyticsManager.getLogSources();
 
-    successResponse(res, sources);
+    // Transform to match frontend schema (id as string)
+    const transformedSources = sources.map(s => ({
+      id: s.id.toString(),
+      name: s.name,
+      token: s.token,
+    }));
+
+    successResponse(res, transformedSources);
   } catch (error) {
     next(error);
   }
@@ -84,8 +91,8 @@ router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFuncti
 // GET /logs/stats - Get statistics for all log sources
 router.get('/stats', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const logService = LogService.getInstance();
-    const stats = await logService.getLogSourceStats();
+    const analyticsManager = AnalyticsManager.getInstance();
+    const stats = await analyticsManager.getLogSourceStats();
 
     successResponse(res, stats);
   } catch (error) {
@@ -106,15 +113,24 @@ router.get('/search', async (req: AuthRequest, res: Response, next: NextFunction
       });
     }
 
-    const logService = LogService.getInstance();
-    const result = await logService.searchLogs(
+    const analyticsManager = AnalyticsManager.getInstance();
+    const result = await analyticsManager.searchLogs(
       q,
       source as string | undefined,
       Number(limit),
       Number(offset)
     );
 
-    paginatedResponse(res, result.logs, result.total, Number(offset));
+    // Transform to match frontend schema (camelCase)
+    const transformedLogs = result.logs.map(log => ({
+      id: log.id,
+      timestamp: log.timestamp,
+      eventMessage: log.event_message,
+      body: log.body,
+      source: log.source,
+    }));
+
+    paginatedResponse(res, transformedLogs, result.total, Number(offset));
   } catch (error) {
     next(error);
   }
@@ -126,15 +142,24 @@ router.get('/:source', async (req: AuthRequest, res: Response, next: NextFunctio
     const { source } = req.params;
     const { limit = 100, before_timestamp } = req.query;
 
-    const logService = LogService.getInstance();
-    const result = await logService.getLogsBySource(
+    const analyticsManager = AnalyticsManager.getInstance();
+    const result = await analyticsManager.getLogsBySource(
       source,
       Number(limit),
       before_timestamp as string | undefined
     );
 
-    const response: GetLogsResponse = {
-      logs: result.logs,
+    // Transform to match frontend schema (camelCase)
+    const transformedLogs = result.logs.map(log => ({
+      id: log.id,
+      timestamp: log.timestamp,
+      eventMessage: log.event_message,
+      body: log.body,
+      source: log.source,
+    }));
+
+    const response = {
+      logs: transformedLogs,
       total: result.total,
     };
 

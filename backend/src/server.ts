@@ -22,7 +22,7 @@ import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch, { HeadersInit } from 'node-fetch';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { LogService } from '@/core/logs/logs.js';
+import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
@@ -53,9 +53,9 @@ export async function createApp() {
 
   // Metadata is now handled by individual modules on-demand
 
-  // Initialize logs service
-  const logService = LogService.getInstance();
-  await logService.initialize(); // connect to CloudWatch
+  // Initialize analytics service
+  const analyticsManager = AnalyticsManager.getInstance();
+  await analyticsManager.initialize();
 
   const app = express();
 
@@ -122,11 +122,6 @@ export async function createApp() {
       };
 
       logger.info('HTTP Request', logData);
-
-      // Write to file-based logs if enabled
-      logWriter.writeInsforgeLog(`${req.method} ${req.path}`, logData).catch(() => {
-        // Silently fail if log writing fails
-      });
     });
     next();
   });

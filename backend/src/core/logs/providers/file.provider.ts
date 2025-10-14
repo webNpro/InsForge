@@ -98,10 +98,16 @@ export class FileProvider extends BaseAnalyticsProvider {
             status_code: metadata.status,
           };
 
+          // Format event_message like Vector does for HTTP requests
+          let eventMessage = log.message || '';
+          if (log.message === 'HTTP Request' && metadata.method && metadata.path) {
+            eventMessage = `${metadata.method} ${metadata.path} ${metadata.status} ${metadata.size} ${metadata.duration} - ${metadata.ip} - ${metadata.userAgent}`;
+          }
+
           logs.push({
             id: log.id || `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
-            event_message: log.message || '',
+            event_message: eventMessage,
             body,
           });
         }
