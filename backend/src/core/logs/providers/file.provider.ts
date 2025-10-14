@@ -99,7 +99,13 @@ export class FileProvider extends BaseAnalyticsProvider {
 
         if (logTime < beforeMs) {
           // Build body from all fields except the ones we use at top level
-          const { appname: _appname, event_message: _event_message, timestamp: _timestamp, project: _project, ...body } = log;
+          const {
+            appname: _appname,
+            event_message: _event_message,
+            timestamp: _timestamp,
+            project: _project,
+            ...body
+          } = log;
 
           logs.push({
             id: `${logTime}-${Math.random()}`,
