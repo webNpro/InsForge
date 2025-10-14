@@ -19,7 +19,7 @@ export interface AuditLogQuery {
 
 // Analytics log types (matching shared-schemas)
 export interface LogSource {
-  id: number;
+  id: string;
   name: string;
   token: string;
 }

@@ -74,14 +74,10 @@ router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFuncti
     const analyticsManager = AnalyticsManager.getInstance();
     const sources = await analyticsManager.getLogSources();
 
-    // Transform to match frontend schema (id as string)
-    const transformedSources = sources.map((s) => ({
-      id: s.id.toString(),
-      name: s.name,
-      token: s.token,
-    }));
+    // Sources already have id as string, no transformation needed
+    const transformedSources = sources;
 
-    successResponse(res, transformedSources);
+    successResponse(res, sources);
   } catch (error) {
     next(error);
   }

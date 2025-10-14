@@ -29,7 +29,7 @@ export class FileProvider extends BaseAnalyticsProvider {
       const filePath = path.join(this.logsDir, filename);
       try {
         await fs.access(filePath);
-        sources.push({ id: id++, name, token: filename });
+        sources.push({ id: String(id++), name, token: filename });
       } catch {
         // File doesn't exist, skip
       }
