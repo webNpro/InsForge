@@ -89,18 +89,18 @@ export class FileProvider extends BaseAnalyticsProvider {
 
       try {
         const log = JSON.parse(line);
-        
+
         // Only process Vector-transformed logs (have appname field)
         if (!log.appname) {
           continue;
         }
-        
+
         const logTime = new Date(log.timestamp).getTime();
 
         if (logTime < beforeMs) {
           // Build body from all fields except the ones we use at top level
-          const { appname, event_message, timestamp, project, ...body } = log;
-          
+          const { appname: _appname, event_message: _event_message, timestamp: _timestamp, project: _project, ...body } = log;
+
           logs.push({
             id: `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
