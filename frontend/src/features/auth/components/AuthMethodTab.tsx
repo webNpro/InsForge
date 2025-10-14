@@ -3,6 +3,7 @@ import { Button } from '@/components/radix/Button';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import Github from '@/assets/logos/github.svg?react';
 import Google from '@/assets/logos/google.svg?react';
+import Discord from '@/assets/logos/discord.svg?react';
 import LinkedIn from '@/assets/logos/linkedin.svg?react';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
@@ -33,6 +34,13 @@ const providers: OAuthProviderInfo[] = [
     setupUrl: 'https://github.com/settings/developers',
   },
   {
+    id: 'discord',
+    name: 'Discord OAuth',
+    icon: <Discord className="w-6 h-6" />,
+    description: 'Configure Discord authentication for your users',
+    setupUrl: 'https://discord.com/developers/applications',
+  },
+  {
     id: 'linkedin',
     name: 'LinkedIn OAuth',
     icon: <LinkedIn className="w-6 h-6 text-[#0A66C2] dark:text-[#0A66C2]" />,
@@ -42,7 +50,7 @@ const providers: OAuthProviderInfo[] = [
 ];
 
 export interface OAuthProviderInfo {
-  id: 'google' | 'github' | 'linkedin';
+  id: 'google' | 'github' | 'discord' | 'linkedin';
   name: string;
   icon: ReactElement;
   description: string;
@@ -69,7 +77,7 @@ export function AuthMethodTab() {
   };
 
   const deleteOAuthConfig = async (
-    providerId: 'google' | 'github' | 'linkedin',
+    providerId: 'google' | 'github' | 'linkedin' | 'discord',
     providerName: string
   ) => {
     const shouldDelete = await confirm({
@@ -106,6 +114,7 @@ export function AuthMethodTab() {
     return {
       google: isProviderConfigured('google'),
       github: isProviderConfigured('github'),
+      discord: isProviderConfigured('discord'),
       linkedin: isProviderConfigured('linkedin'),
     };
   }, [isProviderConfigured]);
@@ -115,7 +124,7 @@ export function AuthMethodTab() {
     return providers.every((provider) => enabledProviders[provider.id]);
   }, [enabledProviders]);
 
-  const handleConfirmSelected = (selectedId: 'google' | 'github' | 'linkedin') => {
+  const handleConfirmSelected = (selectedId: 'google' | 'github' | 'discord' | 'linkedin') => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);
     if (!selectedProvider) {
