@@ -130,7 +130,7 @@ spec:
                     default: postgres
                     expose: true
                 JWT_SECRET:
-                    default: ${JWT_SECRET}
+                    default: ${PASSWORD}
                 JWT_EXP:
                     default: "3600"
             configs:
@@ -313,7 +313,7 @@ spec:
                 PGRST_DB_ANON_ROLE:
                     default: anon
                 PGRST_JWT_SECRET:
-                    default: ${JWT_SECRET}
+                    default: ${PASSWORD}
                     expose: true
                     readonly: true
                 PGRST_DB_CHANNEL_ENABLED:
