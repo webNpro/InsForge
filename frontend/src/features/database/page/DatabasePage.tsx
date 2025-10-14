@@ -432,11 +432,13 @@ function DatabasePageContent() {
                             itemType="record"
                             onClear={() => setSelectedRows(new Set())}
                           />
-                          <DeleteActionButton
-                            selectedCount={selectedRows.size}
-                            itemType="record"
-                            onDelete={() => void handleBulkDelete(Array.from(selectedRows))}
-                          />
+                          {selectedTable !== 'users' && (
+                            <DeleteActionButton
+                              selectedCount={selectedRows.size}
+                              itemType="record"
+                              onDelete={() => void handleBulkDelete(Array.from(selectedRows))}
+                            />
+                          )}
                         </div>
                       ) : (
                         <SearchInput
