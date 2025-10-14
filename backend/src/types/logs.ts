@@ -16,32 +16,3 @@ export interface AuditLogQuery {
   limit?: number;
   offset?: number;
 }
-
-// Types for Logflare analytics logs
-export interface LogSource {
-  id: number;
-  name: string;
-  token: string;
-}
-
-export interface AnalyticsLogRecord {
-  id: string;
-  event_message: string;
-  timestamp: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  body: Record<string, any>;
-}
-
-export interface AnalyticsLogResponse {
-  source: string;
-  logs: AnalyticsLogRecord[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface LogSourceStats {
-  source: string;
-  count: number;
-  lastActivity: string;
-}

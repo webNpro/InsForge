@@ -2,4 +2,5 @@
 export { LogsTable } from './components/LogsTable';
 
 // Services
-export { logsService } from './services/log.service';
+export { auditService } from './services/audit.service';
+export { logService } from './services/log.service';

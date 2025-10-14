@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { logsService } from '../services/log.service';
+import { auditService } from '../services/audit.service';
 import { GetAuditLogsRequest } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 
 export const useAuditLogs = (filters?: Partial<GetAuditLogsRequest>) => {
   return useQuery({
     queryKey: ['audit-logs', filters],
-    queryFn: () => logsService.getAuditLogs({ limit: 100, offset: 0, ...filters }),
+    queryFn: () => auditService.getAuditLogs({ limit: 100, offset: 0, ...filters }),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -15,7 +15,7 @@ export const useAuditLogs = (filters?: Partial<GetAuditLogsRequest>) => {
 export const useAuditLogStats = (days = 7) => {
   return useQuery({
     queryKey: ['audit-log-stats', days],
-    queryFn: () => logsService.getAuditLogStats(days),
+    queryFn: () => auditService.getAuditLogStats(days),
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -26,7 +26,7 @@ export const useClearAuditLogs = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (daysToKeep?: number) => logsService.clearAuditLogs(daysToKeep),
+    mutationFn: (daysToKeep?: number) => auditService.clearAuditLogs(daysToKeep),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       void queryClient.invalidateQueries({ queryKey: ['audit-log-stats'] });

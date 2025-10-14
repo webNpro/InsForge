@@ -2,7 +2,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LockIcon } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 
 export default function CloudLoginPage() {
   const navigate = useNavigate();

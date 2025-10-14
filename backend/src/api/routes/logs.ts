@@ -1,9 +1,9 @@
 import { Router, Response, NextFunction } from 'express';
-import { AnalyticsManager } from '@/core/logs/analytics.js';
+import { LogService } from '@/core/logs/logs.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
-import { AnalyticsLogResponse } from '@/types/logs.js';
+import { GetLogsResponse } from '@insforge/shared-schemas';
 
 const router = Router();
 
@@ -68,12 +68,12 @@ router.delete('/audits', async (req: AuthRequest, res: Response, next: NextFunct
   }
 });
 
-// Analytics logs routes
-// GET /logs/analytics/sources - List all log sources
-router.get('/analytics/sources', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+// System logs routes
+// GET /logs/sources - List all log sources
+router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const analyticsManager = AnalyticsManager.getInstance();
-    const sources = await analyticsManager.getLogSources();
+    const logService = LogService.getInstance();
+    const sources = await logService.getLogSources();
 
     successResponse(res, sources);
   } catch (error) {
@@ -81,11 +81,11 @@ router.get('/analytics/sources', async (_req: AuthRequest, res: Response, next: 
   }
 });
 
-// GET /logs/analytics/stats - Get statistics for all log sources
-router.get('/analytics/stats', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /logs/stats - Get statistics for all log sources
+router.get('/stats', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const analyticsManager = AnalyticsManager.getInstance();
-    const stats = await analyticsManager.getLogSourceStats();
+    const logService = LogService.getInstance();
+    const stats = await logService.getLogSourceStats();
 
     successResponse(res, stats);
   } catch (error) {
@@ -93,8 +93,8 @@ router.get('/analytics/stats', async (_req: AuthRequest, res: Response, next: Ne
   }
 });
 
-// GET /logs/analytics/search - Search across all logs or specific source
-router.get('/analytics/search', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /logs/search - Search across all logs or specific source
+router.get('/search', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { q, source, limit = 100, offset = 0 } = req.query;
 
@@ -106,8 +106,8 @@ router.get('/analytics/search', async (req: AuthRequest, res: Response, next: Ne
       });
     }
 
-    const analyticsManager = AnalyticsManager.getInstance();
-    const result = await analyticsManager.searchLogs(
+    const logService = LogService.getInstance();
+    const result = await logService.searchLogs(
       q,
       source as string | undefined,
       Number(limit),
@@ -120,25 +120,22 @@ router.get('/analytics/search', async (req: AuthRequest, res: Response, next: Ne
   }
 });
 
-// GET /logs/analytics/:source - Get logs from specific source
-router.get('/analytics/:source', async (req: AuthRequest, res: Response, next: NextFunction) => {
+// GET /logs/:source - Get logs from specific source
+router.get('/:source', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { source } = req.params;
     const { limit = 100, before_timestamp } = req.query;
 
-    const analyticsManager = AnalyticsManager.getInstance();
-    const result = await analyticsManager.getLogsBySource(
+    const logService = LogService.getInstance();
+    const result = await logService.getLogsBySource(
       source,
       Number(limit),
       before_timestamp as string | undefined
     );
 
-    const response: AnalyticsLogResponse = {
-      source,
+    const response: GetLogsResponse = {
       logs: result.logs,
       total: result.total,
-      page: 1, // Not applicable for timestamp-based pagination
-      pageSize: Number(limit),
     };
 
     successResponse(res, response);

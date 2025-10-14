@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 import { isInsForgeCloudProject } from '@/lib/utils/utils';
 
 interface ConnectCTAProps {
