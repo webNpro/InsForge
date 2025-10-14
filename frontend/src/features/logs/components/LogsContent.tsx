@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/Checkbox';
 import { LogsTable, LogsTableColumn } from './LogsTable';
 import { LogSchema } from '@insforge/shared-schemas';
 import { McpUsageRecord } from '../services/usage.service';
+import { format } from 'date-fns';
 
 interface LogsContentProps {
   source: string;
@@ -48,14 +49,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  return format(date, 'MMM dd, yyyy, hh:mm a');
 }
 
 export function LogsContent({ source }: LogsContentProps) {
@@ -168,13 +162,13 @@ export function LogsContent({ source }: LogsContentProps) {
       {
         key: 'severity',
         label: 'Severity',
-        width: '200px',
+        width: '120px',
         render: renderSeverity,
       },
       {
         key: 'timestamp',
         label: 'Time',
-        width: '250px',
+        width: '180px',
         render: renderTime,
       },
     ],
