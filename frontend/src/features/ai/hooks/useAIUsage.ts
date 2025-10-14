@@ -70,8 +70,6 @@ export function useAIRemainingCredits(enabled = true) {
     queryKey: ['ai-remaining-credits'],
     queryFn: () => aiService.getRemainingCredits(),
     enabled: enabled,
-    staleTime: 30 * 1000, // Cache for 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
     retry: false,
   });
 }

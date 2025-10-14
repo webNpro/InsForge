@@ -47,6 +47,7 @@ export class AIClientService {
   private openRouterClient: OpenAI | null = null;
   private currentApiKey: string | undefined;
   private renewalPromise: Promise<string> | null = null;
+  private fetchPromise: Promise<string> | null = null;
 
   private constructor() {}
 
@@ -191,48 +192,66 @@ export class AIClientService {
 
   /**
    * Fetch API key from cloud service
+   * Uses promise memoization to prevent duplicate fetch requests
    */
   private async fetchCloudApiKey(): Promise<string> {
-    try {
-      const projectId = process.env.PROJECT_ID;
-      if (!projectId) {
-        throw new Error('PROJECT_ID not found in environment variables');
-      }
-
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        throw new Error('JWT_SECRET not found in environment variables');
-      }
-
-      // Sign a token for authentication
-      const token = jwt.sign({ projectId }, jwtSecret, { expiresIn: '1h' });
-
-      // Fetch API key from cloud service with sign token as query parameter
-      const response = await fetch(
-        `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}?sign=${token}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch cloud API key: ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as CloudCredentialsResponse;
-
-      // Extract API key from the openrouter object in response
-      if (!data.openrouter?.api_key) {
-        throw new Error('Invalid response: missing openrouter API Key');
-      }
-
-      // Store credentials with metadata
-      this.cloudCredentials = {
-        apiKey: data.openrouter.api_key,
-        limitRemaining: data.openrouter.limit_remaining,
-      };
-      return data.openrouter.api_key;
-    } catch (error) {
-      console.error('Failed to fetch cloud API key:', error);
-      throw error;
+    // If fetch is already in progress, wait for it
+    if (this.fetchPromise) {
+      logger.info('Fetch already in progress, waiting for completion...');
+      return this.fetchPromise;
     }
+
+    // Start new fetch and store the promise
+    this.fetchPromise = (async () => {
+      try {
+        const projectId = process.env.PROJECT_ID;
+        if (!projectId) {
+          throw new Error('PROJECT_ID not found in environment variables');
+        }
+
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET not found in environment variables');
+        }
+
+        // Sign a token for authentication
+        const token = jwt.sign({ projectId }, jwtSecret, { expiresIn: '1h' });
+
+        // Fetch API key from cloud service with sign token as query parameter
+        const response = await fetch(
+          `${process.env.CLOUD_API_HOST || 'https://api.insforge.dev'}/ai/v1/credentials/${projectId}?sign=${token}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cloud API key: ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as CloudCredentialsResponse;
+
+        // Extract API key from the openrouter object in response
+        if (!data.openrouter?.api_key) {
+          throw new Error('Invalid response: missing openrouter API Key');
+        }
+
+        // Store credentials with metadata
+        this.cloudCredentials = {
+          apiKey: data.openrouter.api_key,
+          limitRemaining: data.openrouter.limit_remaining,
+        };
+
+        logger.info('Successfully fetched cloud API key');
+
+        return data.openrouter.api_key;
+      } catch (error) {
+        console.error('Failed to fetch cloud API key:', error);
+        throw error;
+      } finally {
+        // Clear the promise after completion (success or failure)
+        this.fetchPromise = null;
+      }
+    })();
+
+    return this.fetchPromise;
   }
 
   /**
