@@ -19,7 +19,13 @@ import type {
   AuthMetadataSchema,
 } from '@insforge/shared-schemas';
 import { OAuthConfigService } from './oauth';
-import { GitHubEmailInfo, GitHubUserInfo, GoogleUserInfo, LinkedInUserInfo, UserRecord } from '@/types/auth';
+import {
+  GitHubEmailInfo,
+  GitHubUserInfo,
+  GoogleUserInfo,
+  LinkedInUserInfo,
+  UserRecord,
+} from '@/types/auth';
 import { ADMIN_ID } from '@/utils/constants';
 import { getApiBaseUrl } from '@/utils/environment';
 
@@ -911,7 +917,9 @@ export class AuthService {
   /**
    * Find or create LinkedIn user
    */
-  async findOrCreateLinkedInUser(linkedinUserInfo: LinkedInUserInfo): Promise<CreateSessionResponse> {
+  async findOrCreateLinkedInUser(
+    linkedinUserInfo: LinkedInUserInfo
+  ): Promise<CreateSessionResponse> {
     const userName = linkedinUserInfo.name || linkedinUserInfo.email.split('@')[0];
     return this.findOrCreateThirdPartyUser(
       'linkedin',
