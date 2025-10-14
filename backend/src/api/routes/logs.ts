@@ -3,7 +3,6 @@ import { AnalyticsManager } from '@/core/logs/analytics.js';
 import { AuditService } from '@/core/logs/audit.js';
 import { AuthRequest, verifyAdmin } from '@/api/middleware/auth.js';
 import { successResponse, paginatedResponse } from '@/utils/response.js';
-import { AnalyticsLogResponse } from '@/types/logs.js';
 
 const router = Router();
 
@@ -76,7 +75,7 @@ router.get('/sources', async (_req: AuthRequest, res: Response, next: NextFuncti
     const sources = await analyticsManager.getLogSources();
 
     // Transform to match frontend schema (id as string)
-    const transformedSources = sources.map(s => ({
+    const transformedSources = sources.map((s) => ({
       id: s.id.toString(),
       name: s.name,
       token: s.token,
@@ -122,7 +121,7 @@ router.get('/search', async (req: AuthRequest, res: Response, next: NextFunction
     );
 
     // Transform to match frontend schema (camelCase)
-    const transformedLogs = result.logs.map(log => ({
+    const transformedLogs = result.logs.map((log) => ({
       id: log.id,
       timestamp: log.timestamp,
       eventMessage: log.event_message,
@@ -150,7 +149,7 @@ router.get('/:source', async (req: AuthRequest, res: Response, next: NextFunctio
     );
 
     // Transform to match frontend schema (camelCase)
-    const transformedLogs = result.logs.map(log => ({
+    const transformedLogs = result.logs.map((log) => ({
       id: log.id,
       timestamp: log.timestamp,
       eventMessage: log.event_message,
