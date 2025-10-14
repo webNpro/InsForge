@@ -18,6 +18,8 @@ import {
   ModelOption,
 } from '../helpers';
 import { cn } from '@/lib/utils/utils';
+import { ModalitySchema } from '@insforge/shared-schemas';
+import { useMemo } from 'react';
 
 interface AIModelCardProps {
   config: ModelOption;
@@ -45,6 +47,21 @@ export function AIModelCard({
       onSelect();
     }
   };
+
+  // Sort modalities
+  const sortByModalityOrder = (modalities: ModalitySchema[]) => {
+    const order = ['text', 'image', 'audio', 'video', 'file'];
+    return [...modalities].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  };
+
+  const sortedInputModality = useMemo(
+    () => sortByModalityOrder(config.inputModality),
+    [config.inputModality]
+  );
+  const sortedOutputModality = useMemo(
+    () => sortByModalityOrder(config.outputModality),
+    [config.outputModality]
+  );
 
   return (
     <TooltipProvider>
@@ -138,7 +155,7 @@ export function AIModelCard({
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Input</span>
             <div className="flex items-center gap-2">
-              {config.inputModality.map((modality) => {
+              {sortedInputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
@@ -157,7 +174,7 @@ export function AIModelCard({
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Output</span>
             <div className="flex items-center gap-2">
-              {config.outputModality.map((modality) => {
+              {sortedOutputModality.map((modality) => {
                 const IconComponent = getModalityIcon(modality);
                 return (
                   <Tooltip key={modality}>
