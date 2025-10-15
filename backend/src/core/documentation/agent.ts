@@ -3,6 +3,7 @@ import logger from '@/utils/logger.js';
 import { StorageService } from '../storage/storage';
 import { DatabaseTableService } from '../database/table';
 import { DatabaseManager } from '../database/manager';
+import { getApiBaseUrl } from '@/utils/environment';
 
 export class AgentAPIDocService {
   private static instance: AgentAPIDocService;
@@ -91,7 +92,7 @@ export class AgentAPIDocService {
       const document = {
         '<critical>': 'Re-read this documentation at the start of each conversation',
         version: process.env.npm_package_version || '1.0.0',
-        baseUrl: process.env.API_BASE_URL || 'http://localhost:7130',
+        baseUrl: getApiBaseUrl(),
         securitySchemes: {
           method: 'bearerToken',
           bearerHeader: 'Authorization',

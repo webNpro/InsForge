@@ -33,3 +33,11 @@ export function isDevelopment(): boolean {
 export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
+
+/**
+ * Get the API base URL from environment variable or default to localhost
+ * @returns The API base URL
+ */
+export function getApiBaseUrl(): string {
+  return process.env.API_BASE_URL || 'http://localhost:7130';
+}
