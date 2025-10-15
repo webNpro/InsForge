@@ -158,7 +158,7 @@ transforms:
       }
 
 sinks:
-  # File sinks - JSONL format for FileProvider (no compression)
+  # File sinks - JSONL format for FileProvider (always enabled)
   file_insforge:
     type: 'file'
     inputs:
@@ -187,3 +187,41 @@ sinks:
     path: '/insforge-logs/postgres.logs.jsonl'
     encoding:
       codec: 'json'
+
+  # CloudWatch sinks (only work if AWS credentials are set)
+  cw_insforge:
+    type: aws_cloudwatch_logs
+    inputs:
+      - insforge_logs
+    region: ${AWS_REGION:-us-east-2}
+    group_name: /insforge/local
+    stream_name: ${HOSTNAME_OVERRIDE:-local}-insforge-vector
+    encoding:
+      codec: json
+  cw_rest:
+    type: aws_cloudwatch_logs
+    inputs:
+      - rest_logs
+    region: ${AWS_REGION:-us-east-2}
+    group_name: /insforge/local
+    stream_name: ${HOSTNAME_OVERRIDE:-local}-postgrest-vector
+    encoding:
+      codec: json
+  cw_deno:
+    type: aws_cloudwatch_logs
+    inputs:
+      - deno_logs
+    region: ${AWS_REGION:-us-east-2}
+    group_name: /insforge/local
+    stream_name: ${HOSTNAME_OVERRIDE:-local}-function-vector
+    encoding:
+      codec: json
+  cw_db:
+    type: aws_cloudwatch_logs
+    inputs:
+      - db_logs
+    region: ${AWS_REGION:-us-east-2}
+    group_name: /insforge/local
+    stream_name: ${HOSTNAME_OVERRIDE:-local}-postgres-vector
+    encoding:
+      codec: json

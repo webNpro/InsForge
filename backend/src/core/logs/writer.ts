@@ -17,7 +17,7 @@ export class LogWriter {
   }
 
   async initialize(): Promise<void> {
-    this.logsDir = path.resolve(process.cwd(), 'logs');
+    this.logsDir = process.env.LOGS_DIR || path.resolve(process.cwd(), 'insforge-logs');
     await fs.mkdir(this.logsDir, { recursive: true });
     this.initialized = true;
     logger.info(`LogWriter initialized at: ${this.logsDir}`);

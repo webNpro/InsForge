@@ -165,7 +165,6 @@ services:
         condition: service_healthy
     volumes:
       - ./docker-init/logs/vector.yml:/etc/vector/vector.yml:ro
-      - ./docker-init/logs/vector-cloudwatch.yml:/etc/vector/vector-cloudwatch.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - shared-logs:/insforge-logs
     healthcheck:
@@ -179,16 +178,7 @@ services:
       - AWS_REGION=${AWS_REGION:-us-east-2}
       - PROJECT_ID=${PROJECT_ID:-}
       - HOSTNAME_OVERRIDE=${HOSTNAME_OVERRIDE:-local}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        if [ -n "$$AWS_ACCESS_KEY_ID" ] && [ -n "$$AWS_SECRET_ACCESS_KEY" ]; then
-          echo 'AWS credentials found - Using CloudWatch + File sinks'
-          /usr/local/bin/vector --config /etc/vector/vector-cloudwatch.yml
-        else
-          echo 'No AWS credentials - Using File sinks only'
-          /usr/local/bin/vector --config /etc/vector/vector.yml
-        fi
+    command: ["--config", "/etc/vector/vector.yml"]
     networks:
       - insforge-network
 

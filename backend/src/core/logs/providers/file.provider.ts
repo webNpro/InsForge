@@ -25,7 +25,7 @@ export class FileProvider extends BaseLogProvider {
   }
 
   async getLogSources(): Promise<LogSourceSchema[]> {
-    const sources: LogSource[] = [];
+    const sources: LogSourceSchema[] = [];
     let id = 1;
 
     for (const [name, filename] of Object.entries(this.logFiles)) {
