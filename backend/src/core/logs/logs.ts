@@ -1,6 +1,6 @@
 import logger from '@/utils/logger.js';
 import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
-import { FileProvider } from './providers/file.provider.js';
+import { LocalFileProvider } from './providers/file.provider.js';
 import { LogProvider } from './providers/base.provider.js';
 import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
@@ -26,7 +26,7 @@ export class LogService {
       this.provider = new CloudWatchProvider();
     } else {
       logger.info('Using log provider: File-based (no AWS credentials required)');
-      this.provider = new FileProvider();
+      this.provider = new LocalFileProvider();
     }
 
     await this.provider.initialize();

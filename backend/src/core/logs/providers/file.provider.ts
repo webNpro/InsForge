@@ -5,7 +5,7 @@ import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-sch
 import { BaseLogProvider } from './base.provider.js';
 import logger from '@/utils/logger.js';
 
-export class FileProvider extends BaseLogProvider {
+export class LocalFileProvider extends BaseLogProvider {
   private logsDir: string = '';
   private logFiles: Record<string, string> = {
     'insforge.logs': 'insforge.logs.jsonl',
