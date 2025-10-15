@@ -5,8 +5,8 @@
   
 </div>
 <p align="center">
-   <a href="#quickstart-tldr">Get Started</a> · 
-   <a href="https://docs.insforge.dev/introduction">Documentation</a> · 
+   <a href="#快速入门">开始</a> · 
+   <a href="https://docs.insforge.dev/introduction">文档</a> · 
    <a href="https://discord.com/invite/MPxwj5xVvW">Discord</a>
 </p>
 <p align="center">
