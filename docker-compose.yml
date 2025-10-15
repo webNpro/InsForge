@@ -175,9 +175,9 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_REGION=${AWS_REGION:-us-east-2}
+      - AWS_REGION=${AWS_REGION:-}
       - PROJECT_ID=${PROJECT_ID:-}
-      - HOSTNAME_OVERRIDE=${HOSTNAME_OVERRIDE:-local}
+      - HOSTNAME_OVERRIDE=${HOSTNAME_OVERRIDE:-}
     command: ["--config", "/etc/vector/vector.yml"]
     networks:
       - insforge-network
