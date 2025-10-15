@@ -24,7 +24,7 @@ export class FileProvider extends BaseLogProvider {
     logger.info(`File-based analytics initialized at: ${this.logsDir}`);
   }
 
-  async getLogSources(): Promise<LogSourceSchema[]> {
+  getLogSources(): Promise<LogSourceSchema[]> {
     const sources: LogSourceSchema[] = [];
     let id = 1;
 
@@ -32,7 +32,7 @@ export class FileProvider extends BaseLogProvider {
       sources.push({ id: String(id++), name, token: filename });
     }
 
-    return sources;
+    return Promise.resolve(sources);
   }
 
   async getLogsBySource(
