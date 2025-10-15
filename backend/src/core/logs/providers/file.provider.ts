@@ -1,11 +1,11 @@
 import { promises as fs, createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import path from 'path';
-import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
-import { BaseAnalyticsProvider } from './base.provider.js';
+import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
+import { BaseLogProvider } from './base.provider.js';
 import logger from '@/utils/logger.js';
 
-export class FileProvider extends BaseAnalyticsProvider {
+export class FileProvider extends BaseLogProvider {
   private logsDir: string = '';
   private logFiles: Record<string, string> = {
     'insforge.logs': 'insforge.logs.jsonl',
@@ -24,7 +24,7 @@ export class FileProvider extends BaseAnalyticsProvider {
     logger.info(`File-based analytics initialized at: ${this.logsDir}`);
   }
 
-  async getLogSources(): Promise<LogSource[]> {
+  async getLogSources(): Promise<LogSourceSchema[]> {
     const sources: LogSource[] = [];
     let id = 1;
 
@@ -46,7 +46,7 @@ export class FileProvider extends BaseAnalyticsProvider {
     limit: number = 100,
     beforeTimestamp?: string
   ): Promise<{
-    logs: AnalyticsLogRecord[];
+    logs: LogSchema[];
     total: number;
     tableName: string;
   }> {
@@ -69,14 +69,14 @@ export class FileProvider extends BaseAnalyticsProvider {
     filePath: string,
     limit: number,
     beforeTimestamp?: string
-  ): Promise<AnalyticsLogRecord[]> {
+  ): Promise<LogSchema[]> {
     try {
       await fs.access(filePath);
     } catch {
       return [];
     }
 
-    const logs: AnalyticsLogRecord[] = [];
+    const logs: LogSchema[] = [];
     const beforeMs = beforeTimestamp ? Date.parse(beforeTimestamp) : Date.now();
 
     const fileStream = createReadStream(filePath);
@@ -110,7 +110,7 @@ export class FileProvider extends BaseAnalyticsProvider {
           logs.push({
             id: `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
-            event_message: log.event_message || '',
+            eventMessage: log.event_message || '',
             body: body,
           });
         }
@@ -123,8 +123,8 @@ export class FileProvider extends BaseAnalyticsProvider {
     return logs.slice(-limit);
   }
 
-  async getLogSourceStats(): Promise<LogSourceStats[]> {
-    const stats: LogSourceStats[] = [];
+  async getLogSourceStats(): Promise<LogStatsSchema[]> {
+    const stats: LogStatsSchema[] = [];
 
     for (const [name, filename] of Object.entries(this.logFiles)) {
       const filePath = path.join(this.logsDir, filename);
@@ -151,10 +151,10 @@ export class FileProvider extends BaseAnalyticsProvider {
     limit: number = 100,
     offset: number = 0
   ): Promise<{
-    logs: (AnalyticsLogRecord & { source: string })[];
+    logs: (LogSchema & { source: string })[];
     total: number;
   }> {
-    const results: (AnalyticsLogRecord & { source: string })[] = [];
+    const results: (LogSchema & { source: string })[] = [];
     const searchLower = query.toLowerCase();
 
     const filesToSearch = sourceName
@@ -170,7 +170,7 @@ export class FileProvider extends BaseAnalyticsProvider {
       const logs = await this.readLogsFromFile(filePath, 10000);
 
       for (const log of logs) {
-        const messageMatch = log.event_message.toLowerCase().includes(searchLower);
+        const messageMatch = log.eventMessage.toLowerCase().includes(searchLower);
         const metadataMatch = JSON.stringify(log.body).toLowerCase().includes(searchLower);
 
         if (messageMatch || metadataMatch) {

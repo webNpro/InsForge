@@ -22,7 +22,7 @@ import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch, { HeadersInit } from 'node-fetch';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { AnalyticsManager } from '@/core/logs/analytics.js';
+import { LogService } from '@/core/logs/logs.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
@@ -53,9 +53,9 @@ export async function createApp() {
 
   // Metadata is now handled by individual modules on-demand
 
-  // Initialize analytics service
-  const analyticsManager = AnalyticsManager.getInstance();
-  await analyticsManager.initialize();
+  // Initialize logs service
+  const logService = LogService.getInstance();
+  await logService.initialize(); // connect to CloudWatch
 
   const app = express();
 
@@ -110,7 +110,7 @@ export async function createApp() {
       }
 
       const duration = Date.now() - startTime;
-      const logData = {
+      logger.info('HTTP Request', {
         method: req.method,
         path: req.path,
         status: res.statusCode,
@@ -119,9 +119,7 @@ export async function createApp() {
         ip: req.ip || req.socket.remoteAddress,
         userAgent: req.headers['user-agent'],
         timestamp: new Date().toISOString(),
-      };
-
-      logger.info('HTTP Request', logData);
+      });
     });
     next();
   });

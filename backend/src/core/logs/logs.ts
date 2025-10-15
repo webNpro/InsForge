@@ -1,5 +1,6 @@
 import logger from '@/utils/logger.js';
 import { CloudWatchProvider } from './providers/cloudwatch.provider.js';
+import { FileProvider } from './providers/file.provider.js';
 import { LogProvider } from './providers/base.provider.js';
 import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
@@ -17,9 +18,17 @@ export class LogService {
   }
 
   async initialize(): Promise<void> {
-    // Always use CloudWatch provider for system logs
-    logger.info('Using log provider: CloudWatch');
-    this.provider = new CloudWatchProvider();
+    // Use CloudWatch if AWS credentials are available, otherwise use file-based logging
+    const hasAwsCredentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
+
+    if (hasAwsCredentials) {
+      logger.info('Using log provider: CloudWatch');
+      this.provider = new CloudWatchProvider();
+    } else {
+      logger.info('Using log provider: File-based (no AWS credentials required)');
+      this.provider = new FileProvider();
+    }
+
     await this.provider.initialize();
   }
 

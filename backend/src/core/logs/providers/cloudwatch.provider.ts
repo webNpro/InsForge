@@ -9,6 +9,8 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs';
 import logger from '@/utils/logger.js';
 import { BaseLogProvider } from './base.provider.js';
+import { AppError } from '@/api/middleware/error.js';
+import { ERROR_CODES } from '@/types/error-constants.js';
 import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
 export class CloudWatchProvider extends BaseLogProvider {
@@ -57,7 +59,11 @@ export class CloudWatchProvider extends BaseLogProvider {
 
   async getLogSources(): Promise<LogSourceSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      return [];
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const logGroup = this.cwLogGroup;
     const client = this.cwClient;
@@ -90,7 +96,11 @@ export class CloudWatchProvider extends BaseLogProvider {
     tableName: string;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      return { logs: [], total: 0, tableName: sourceName };
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -278,7 +288,11 @@ export class CloudWatchProvider extends BaseLogProvider {
 
   async getLogSourceStats(): Promise<LogStatsSchema[]> {
     if (!this.cwLogGroup || !this.cwClient) {
-      return [];
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
@@ -418,7 +432,11 @@ export class CloudWatchProvider extends BaseLogProvider {
     total: number;
   }> {
     if (!this.cwLogGroup || !this.cwClient) {
-      return { logs: [], total: 0 };
+      throw new AppError(
+        'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not found in environment variables',
+        500,
+        ERROR_CODES.LOGS_AWS_NOT_CONFIGURED
+      );
     }
     const client = this.cwClient;
     const logGroup = this.cwLogGroup;
