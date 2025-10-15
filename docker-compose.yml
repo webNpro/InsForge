@@ -163,6 +163,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgrest:
+        condition: service_started
+      insforge:
+        condition: service_started
+      deno:
+        condition: service_started
     volumes:
       - ./docker-init/logs/vector.yml:/etc/vector/vector.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro

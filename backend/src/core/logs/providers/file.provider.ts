@@ -29,13 +29,7 @@ export class FileProvider extends BaseLogProvider {
     let id = 1;
 
     for (const [name, filename] of Object.entries(this.logFiles)) {
-      const filePath = path.join(this.logsDir, filename);
-      try {
-        await fs.access(filePath);
-        sources.push({ id: String(id++), name, token: filename });
-      } catch {
-        // File doesn't exist, skip
-      }
+      sources.push({ id: String(id++), name, token: filename });
     }
 
     return sources;
@@ -98,20 +92,20 @@ export class FileProvider extends BaseLogProvider {
         const logTime = new Date(log.timestamp).getTime();
 
         if (logTime < beforeMs) {
-          // Build body from all fields except the ones we use at top level
-          const {
-            appname: _appname,
-            event_message: _event_message,
-            timestamp: _timestamp,
-            project: _project,
-            ...body
-          } = log;
+          // For error logs, include error and stack in eventMessage to match CloudWatch display
+          let eventMessage = log.event_message || '';
+          if (log.level === 'error' && log.error) {
+            eventMessage = `${eventMessage}\n\nError: ${log.error}`;
+            if (log.stack) {
+              eventMessage += `\n\nStack Trace:\n${log.stack}`;
+            }
+          }
 
           logs.push({
             id: `${logTime}-${Math.random()}`,
             timestamp: log.timestamp,
-            eventMessage: log.event_message || '',
-            body: body,
+            eventMessage,
+            body: log,
           });
         }
       } catch {
