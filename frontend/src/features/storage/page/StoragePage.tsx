@@ -236,7 +236,7 @@ export default function StoragePage() {
     if (shouldDelete) {
       try {
         await deleteBucket(bucketName);
-
+        await refetchBuckets();
         // If the deleted bucket was selected, select the first available bucket
         if (selectedBucket === bucketName) {
           const updatedBuckets =
