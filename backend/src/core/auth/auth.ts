@@ -21,6 +21,7 @@ import type {
 import { OAuthConfigService } from './oauth';
 import { GitHubEmailInfo, GitHubUserInfo, GoogleUserInfo, UserRecord } from '@/types/auth';
 import { ADMIN_ID } from '@/utils/constants';
+import { getApiBaseUrl } from '@/utils/environment';
 
 const JWT_SECRET = () => process.env.JWT_SECRET ?? '';
 const JWT_EXPIRES_IN = '7d';
@@ -434,7 +435,7 @@ export class AuthService {
       throw new Error('Google OAuth not configured');
     }
 
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
 
     if (config?.useSharedKey) {
       if (!state) {
@@ -495,7 +496,7 @@ export class AuthService {
       throw new Error('GitHub OAuth not configured');
     }
 
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
 
     if (config?.useSharedKey) {
       if (!state) {
@@ -572,7 +573,7 @@ export class AuthService {
       });
 
       const clientSecret = await oauthConfigService.getClientSecretByProvider('google');
-      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+      const selfBaseUrl = getApiBaseUrl();
       const response = await axios.post('https://oauth2.googleapis.com/token', {
         code,
         client_id: config.clientId,
@@ -690,7 +691,7 @@ export class AuthService {
     }
 
     const clientSecret = await oauthConfigService.getClientSecretByProvider('github');
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
     const response = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
