@@ -54,7 +54,18 @@ export const userSchema = z.object({
  * OAuth state for redirect handling
  */
 
-export const oAuthProvidersSchema = z.enum(['google', 'github']);
+export const oAuthProvidersSchema = z.enum([
+  'google',
+  'github',
+  'discord',
+  'linkedin',
+  'facebook',
+  'instagram',
+  'tiktok',
+  'apple',
+  'x',
+  'spotify',
+]);
 
 export const oAuthStateSchema = z.object({
   provider: oAuthProvidersSchema,
@@ -92,3 +103,4 @@ export type RoleSchema = z.infer<typeof roleSchema>;
 export type UserSchema = z.infer<typeof userSchema>;
 export type TokenPayloadSchema = z.infer<typeof tokenPayloadSchema>;
 export type OAuthConfigSchema = z.infer<typeof oAuthConfigSchema>;
+export type OAuthProvidersSchema = z.infer<typeof oAuthProvidersSchema>;
