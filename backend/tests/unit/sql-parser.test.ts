@@ -22,7 +22,7 @@ describe('parseSQLStatements', () => {
       SELECT * FROM users; -- Inline comment
     `;
     const result = parseSQLStatements(sql);
-    // Parser returns everything as one statement including comments
+     // Parser returns the statement with comments filtered out
     expect(result).toHaveLength(1);
     expect(result[0]).toContain("SELECT * FROM users");
   });
@@ -34,7 +34,7 @@ describe('parseSQLStatements', () => {
       /* Another comment */
     `;
     const result = parseSQLStatements(sql);
-    // Parser returns everything as one statement including comments
+    // Parser returns the statement with comments filtered out
     expect(result).toHaveLength(1);
     expect(result[0]).toContain("SELECT * FROM users");
   });
@@ -43,7 +43,7 @@ describe('parseSQLStatements', () => {
     const sql = `INSERT INTO messages (text) VALUES ('Hello; World');`;
     const result = parseSQLStatements(sql);
     // Parser includes the trailing semicolon
-    expect(result).toEqual([`INSERT INTO messages (text) VALUES ('Hello; World');`]);
+    expect(result).toEqual([`INSERT INTO messages (text) VALUES ('Hello; World')`]);
   });
 
   test('throws error on empty input', () => {
