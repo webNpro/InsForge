@@ -254,7 +254,9 @@ export function LogsContent({ source }: LogsContentProps) {
               data={paginatedLogs}
               isLoading={logsLoading}
               emptyMessage={
-                filteredLogs.length === 0 ? 'No logs match your search criteria' : 'No logs found'
+                logsSearchQuery || severityFilter.length < 3
+                  ? 'No logs match your search criteria'
+                  : 'No logs found'
               }
             />
             {isLoadingMore && (

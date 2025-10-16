@@ -8,6 +8,7 @@ import { TableSchema, ColumnSchema, ColumnType } from '@insforge/shared-schemas'
 import logger from '@/utils/logger.js';
 import { DatabaseTableService } from '../database/table';
 import { DatabaseManager } from '../database/manager';
+import { getApiBaseUrl } from '@/utils/environment';
 
 // Extend Zod with OpenAPI functionality
 extendZodWithOpenApi(z);
@@ -837,7 +838,7 @@ export class OpenAPIService {
         },
         servers: [
           {
-            url: process.env.API_BASE_URL || 'http://localhost:7130',
+            url: getApiBaseUrl(),
             description: 'API server',
           },
         ],
