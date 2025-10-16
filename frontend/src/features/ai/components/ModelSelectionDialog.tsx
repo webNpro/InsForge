@@ -20,7 +20,7 @@ interface ModelSelectionDialogProps {
 }
 
 export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSelectionDialogProps) {
-  const { allConfiguredModels, configurations, getFilteredModels } = useAIConfigs();
+  const { allConfiguredModels, configuredModelIds, getFilteredModels } = useAIConfigs();
   const { showToast } = useToast();
 
   const [selectedInputModalities, setSelectedInputModalities] = useState<ModalitySchema[]>([]);
@@ -50,11 +50,6 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
       }
     }
   }, [selectedInputModalities, selectedOutputModalities, filteredModels, selectedModelId]);
-
-  // Get list of already configured model IDs
-  const configuredModelIds = useMemo(() => {
-    return configurations?.map((config) => config.modelId) || [];
-  }, [configurations]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();

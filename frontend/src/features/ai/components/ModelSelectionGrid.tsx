@@ -29,19 +29,9 @@ export function ModelSelectionGrid({
     );
   }
 
-  const sortedModels = [...models].sort((a, b) => {
-    const aConfigured = configuredModelIds.includes(a.value);
-    const bConfigured = configuredModelIds.includes(b.value);
-
-    if (aConfigured === bConfigured) {
-      return 0;
-    }
-    return aConfigured ? 1 : -1;
-  });
-
   return (
     <div className="flex-1 grid grid-cols-3 gap-5 auto-rows-fr mr-6">
-      {sortedModels.map((model) => {
+      {models.map((model) => {
         const isConfigured = configuredModelIds.includes(model.value);
         const isSelected = selectedModelId === model.value;
 

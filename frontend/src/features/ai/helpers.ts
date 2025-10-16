@@ -1,4 +1,8 @@
-import { OpenRouterModel, ModalitySchema } from '@insforge/shared-schemas';
+import {
+  OpenRouterModel,
+  ModalitySchema,
+  AIConfigurationWithUsageSchema,
+} from '@insforge/shared-schemas';
 
 // Type for pricing information from OpenRouter model
 type ModelPricing = {
@@ -25,6 +29,7 @@ export interface ModelOption {
   usageStats?: {
     totalRequests: number;
   };
+  systemPrompt?: string | null;
 }
 
 import { Type, Image } from 'lucide-react';
@@ -152,4 +157,78 @@ export const getFriendlyModelName = (modelId: string): string => {
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+};
+
+// Sort modalities by predefined order
+export const sortModalitiesByOrder = (modalities: ModalitySchema[]): ModalitySchema[] => {
+  const order = ['text', 'image', 'audio', 'video', 'file'];
+  return [...modalities].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+};
+
+// Convert OpenRouterModel to ModelOption (for selectable models)
+export const convertOpenRouterModelToOption = (model: OpenRouterModel): ModelOption => {
+  const companyId = model.id.split('/')[0];
+  const priceLevel = calculatePriceLevel(model.pricing);
+  const supportedModalities: ModalitySchema[] = ['text', 'image'];
+
+  return {
+    id: model.id,
+    value: model.id,
+    companyId,
+    modelName: model.name.split(':')[1],
+    providerName: getProviderDisplayName(companyId),
+    logo: getProviderLogo(companyId),
+    inputModality: sortModalitiesByOrder(
+      (model.architecture?.inputModalities || ['text']).filter((m): m is ModalitySchema =>
+        supportedModalities.includes(m as ModalitySchema)
+      )
+    ),
+    outputModality: sortModalitiesByOrder(
+      (model.architecture?.outputModalities || ['text']).filter((m): m is ModalitySchema =>
+        supportedModalities.includes(m as ModalitySchema)
+      )
+    ),
+    priceLevel,
+    usageStats: undefined,
+    systemPrompt: undefined,
+  };
+};
+
+// Convert AIConfigurationWithUsageSchema to ModelOption (for configured models)
+export const convertConfigurationToOption = (
+  config: AIConfigurationWithUsageSchema
+): ModelOption => {
+  const companyId = config.modelId.split('/')[0];
+
+  return {
+    id: config.id,
+    value: config.modelId,
+    companyId,
+    modelName: getFriendlyModelName(config.modelId),
+    providerName: getProviderDisplayName(companyId),
+    logo: getProviderLogo(companyId),
+    inputModality: sortModalitiesByOrder(config.inputModality),
+    outputModality: sortModalitiesByOrder(config.outputModality),
+    priceLevel: 0,
+    usageStats: {
+      totalRequests: config.usageStats?.totalRequests || 0,
+    },
+    systemPrompt: config.systemPrompt,
+  };
+};
+
+// Sort models with configured ones at the end
+export const sortModelsByConfigurationStatus = (
+  models: ModelOption[],
+  configuredModelIds: string[]
+): ModelOption[] => {
+  return [...models].sort((a, b) => {
+    const aConfigured = configuredModelIds.includes(a.value);
+    const bConfigured = configuredModelIds.includes(b.value);
+
+    if (aConfigured === bConfigured) {
+      return 0;
+    }
+    return aConfigured ? 1 : -1;
+  });
 };

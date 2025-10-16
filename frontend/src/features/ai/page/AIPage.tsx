@@ -5,7 +5,6 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAIConfigs } from '../hooks/useAIConfigs';
 import { useAIRemainingCredits } from '../hooks/useAIUsage';
 import {
-  AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
 } from '@insforge/shared-schemas';
@@ -15,16 +14,10 @@ import { ModelSelectionDialog } from '@/features/ai/components/ModelSelectionDia
 import { SystemPromptDialog } from '@/features/ai/components/SystemPromptDialog';
 import { AIModelCard } from '@/features/ai/components/AIConfigCard';
 import AIEmptyState from '@/features/ai/components/AIEmptyState';
-import {
-  getFriendlyModelName,
-  getProviderDisplayName,
-  getProviderLogo,
-  ModelOption,
-} from '../helpers';
 
 export default function AIPage() {
   const {
-    configurations,
+    configurationOptions,
     isLoadingConfigurations,
     createConfiguration,
     updateConfiguration,
@@ -55,12 +48,14 @@ export default function AIPage() {
 
   const [modelSelectionOpen, setModelSelectionOpen] = useState(false);
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<AIConfigurationWithUsageSchema | undefined>();
+  const [editingConfigId, setEditingConfigId] = useState<string | undefined>();
+  const [editingSystemPrompt, setEditingSystemPrompt] = useState<string | null | undefined>();
 
   const handleEdit = (id: string) => {
-    const config = configurations.find((c) => c.id === id);
+    const config = configurationOptions.find((c) => c.id === id);
     if (config) {
-      setEditingConfig(config);
+      setEditingConfigId(config.id);
+      setEditingSystemPrompt(config.systemPrompt);
       setSystemPromptOpen(true);
     }
   };
@@ -94,9 +89,9 @@ export default function AIPage() {
   };
 
   const handleSystemPromptSuccess = (configData: UpdateAIConfigurationRequest) => {
-    if (editingConfig) {
+    if (editingConfigId) {
       updateConfiguration({
-        id: editingConfig.id,
+        id: editingConfigId,
         data: {
           systemPrompt: configData.systemPrompt || null,
         },
@@ -137,37 +132,17 @@ export default function AIPage() {
             <div className="flex-1 flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
-          ) : configurations.length > 0 ? (
+          ) : configurationOptions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {configurations.map((config) => {
-                const companyId = config.modelId.split('/')[0];
-
-                // Convert configuration to ModelOption format
-                const modelOption: ModelOption = {
-                  id: config.id,
-                  value: config.modelId,
-                  companyId,
-                  modelName: getFriendlyModelName(config.modelId),
-                  providerName: getProviderDisplayName(companyId),
-                  logo: getProviderLogo(companyId),
-                  inputModality: config.inputModality,
-                  outputModality: config.outputModality,
-                  priceLevel: 0, // configured models don't show price level
-                  usageStats: {
-                    totalRequests: config.usageStats?.totalRequests || 0,
-                  },
-                };
-
-                return (
-                  <AIModelCard
-                    key={config.id}
-                    config={modelOption}
-                    mode="configured"
-                    onEdit={handleEdit}
-                    onDelete={() => void handleDelete(config.id)}
-                  />
-                );
-              })}
+              {configurationOptions.map((modelOption) => (
+                <AIModelCard
+                  key={modelOption.id}
+                  config={modelOption}
+                  mode="configured"
+                  onEdit={handleEdit}
+                  onDelete={() => void handleDelete(modelOption.id)}
+                />
+              ))}
             </div>
           ) : (
             <AIEmptyState />
@@ -186,7 +161,7 @@ export default function AIPage() {
       <SystemPromptDialog
         open={systemPromptOpen}
         onOpenChange={setSystemPromptOpen}
-        initialSystemPrompt={editingConfig?.systemPrompt}
+        initialSystemPrompt={editingSystemPrompt}
         onSuccess={handleSystemPromptSuccess}
       />
 
