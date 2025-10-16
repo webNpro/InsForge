@@ -564,6 +564,62 @@ export class AuthService {
       const authUrl = await fetch(
         `${cloudBaseUrl}/auth/v1/shared/discord?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (!authUrl.ok) {
+        logger.error('Failed to fetch Discord auth URL:', {
+          status: authUrl.status,
+          statusText: authUrl.statusText,
+        });
+        throw new Error(`Failed to fetch Discord auth URL: ${authUrl.statusText}`);
+      }
+      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
+      return responseData.auth_url || responseData.url || '';
+    }
+
+    logger.debug('Discord OAuth Config (fresh from DB):', {
+      clientId: config.clientId ? 'SET' : 'NOT SET',
+    });
+
+    const authUrl = new URL('https://discord.com/api/oauth2/authorize');
+    authUrl.searchParams.set('client_id', config.clientId ?? '');
+    authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/discord/callback`);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', config.scopes ? config.scopes.join(' ') : 'identify email');
+    if (state) {
+      authUrl.searchParams.set('state', state);
+    }
+
+    return authUrl.toString();
+  }
+
+  /**
+   * Generate Discord OAuth authorization URL
+   */
+  async generateDiscordAuthUrl(state?: string): Promise<string> {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('discord');
+
+    if (!config) {
+      throw new Error('Discord OAuth not configured');
+    }
+
+    const selfBaseUrl = getApiBaseUrl();
+
+    if (config?.useSharedKey) {
+      if (!state) {
+        logger.warn('Shared Discord OAuth called without state parameter');
+        throw new Error('State parameter is required for shared Discord OAuth');
+      }
+      // Use shared keys if configured
+      const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
+      const authUrl = await fetch(
+        `${cloudBaseUrl}/auth/v1/shared/discord?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
