@@ -55,7 +55,15 @@ self.onmessage = async (e) => {
      * We inject our mockDeno as the 'Deno' parameter, so when the user's code
      * calls Deno.env.get('MY_SECRET'), it's actually calling mockDeno.env.get('MY_SECRET')
      */
-    const wrapper = new Function('exports', 'module', 'createClient', 'Deno', 'encodeBase64', 'decodeBase64', code);
+    const wrapper = new Function(
+      'exports',
+      'module',
+      'createClient',
+      'Deno',
+      'encodeBase64',
+      'decodeBase64',
+      code
+    );
     const exports = {};
     const module = { exports };
 
