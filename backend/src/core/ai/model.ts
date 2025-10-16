@@ -1,7 +1,7 @@
 import { isCloudEnvironment } from '@/utils/environment';
 import { AIClientService } from './client';
 import type { RawOpenRouterModel } from '@/types/ai';
-import type { AIModel } from '@insforge/shared-schemas';
+import type { AIModelSchema } from '@insforge/shared-schemas';
 import { calculatePriceLevel, filterAndSortModalities, getProviderOrder } from './helper';
 
 export class AIModelService {
@@ -9,7 +9,7 @@ export class AIModelService {
    * Get all available AI models
    * Fetches from cloud API if in cloud environment, otherwise from OpenRouter directly
    */
-  static async getModels(): Promise<AIModel[]> {
+  static async getModels(): Promise<AIModelSchema[]> {
     const credentialsService = AIClientService.getInstance();
     const configured = credentialsService.isConfigured();
 
@@ -39,7 +39,7 @@ export class AIModelService {
     const data = (await response.json()) as { data: RawOpenRouterModel[] };
     const rawModels = data.data || [];
 
-    const models: AIModel[] = rawModels
+    const models: AIModelSchema[] = rawModels
       .map((rawModel) => ({
         id: rawModel.id, // OpenRouter provided model ID
         modelId: rawModel.id,
