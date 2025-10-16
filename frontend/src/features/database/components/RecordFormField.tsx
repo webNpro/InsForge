@@ -311,13 +311,13 @@ function FieldWithLink({ field, control, children }: FieldWithLinkProps) {
                 <div className="relative">
                   {modifiedChildren}
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
-                    {hasLinkedValue && (
+                    {(hasLinkedValue || hasLinkedValue === 0) && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => formField.onChange('')}
-                        className="h-7 w-7 p-1 flex-shrink-0 text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:text-neutral-400 dark:hover:text-red-400 dark:hover:bg-red-950/20"
+                        className="h-7 w-7 p-1 flex-shrink-0 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-neutral-400 dark:hover:text-red-400 dark:hover:bg-red-800/30"
                         title="Clear linked record"
                       >
                         <X className="h-4 w-4" />
