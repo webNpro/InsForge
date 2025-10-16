@@ -1,7 +1,7 @@
 import { logger } from '../../src/utils/logger';
 
 describe('Logger', () => {
-  test('should have default log level "info" if LOG_LEVEL not set', () => {
+  test('should initialize with correct log level from environment or default', () => {
     expect(logger.level).toBe(process.env.LOG_LEVEL || 'info');
   });
 
@@ -11,7 +11,7 @@ describe('Logger', () => {
     expect(() => logger.error('Test error message')).not.toThrow();
   });
 
-  test('should include timestamp and stack when logging errors', () => {
+  test('should call logger.error when logging errors', () => {
   const error = new Error('Test error');
   const logSpy = jest.spyOn(logger, 'error').mockImplementation((infoObject: object) => logger);
   logger.error(error);

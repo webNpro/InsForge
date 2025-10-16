@@ -67,7 +67,7 @@ describe('parseSQLStatements', () => {
       INSERT INTO users (id) VALUES (1);
     `;
     const result = parseSQLStatements(sql);
-    // Parser doesn't split by semicolons, so adjust expectation
+   
     expect(result.length).toBeGreaterThan(0);
     expect(result[0]).toContain('SELECT * FROM users');
     expect(result[result.length - 1] || result[0]).toContain('INSERT INTO users');
