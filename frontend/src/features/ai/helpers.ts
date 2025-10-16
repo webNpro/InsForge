@@ -1,8 +1,8 @@
 import { ModalitySchema, AIModel } from '@insforge/shared-schemas';
 export interface ModelOption {
   id: string;
-  value: string;
   companyId: string;
+  modelId: string;
   modelName: string;
   providerName: string;
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
@@ -119,7 +119,6 @@ export function toModelOption(model: AIModel): ModelOption {
   return {
     ...model,
     priceLevel: model.priceLevel || 0,
-    value: model.modelId,
     companyId,
     modelName: getFriendlyModelName(model.modelId),
     providerName: getProviderDisplayName(companyId),
@@ -133,8 +132,8 @@ export const sortModelsByConfigurationStatus = (
   configuredModelIds: string[]
 ): ModelOption[] => {
   return [...models].sort((a, b) => {
-    const aConfigured = configuredModelIds.includes(a.value);
-    const bConfigured = configuredModelIds.includes(b.value);
+    const aConfigured = configuredModelIds.includes(a.modelId);
+    const bConfigured = configuredModelIds.includes(b.modelId);
 
     if (aConfigured === bConfigured) {
       return 0;

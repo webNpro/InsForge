@@ -25,7 +25,7 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
 
   const [selectedInputModalities, setSelectedInputModalities] = useState<ModalitySchema[]>([]);
   const [selectedOutputModalities, setSelectedOutputModalities] = useState<ModalitySchema[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [selectedModelId, setSelectedModelId] = useState<string>(''); // This is the modelId of the selected model
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -44,7 +44,7 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
   // Reset model selection when modalities change
   useEffect(() => {
     if (selectedModelId) {
-      const stillAvailable = filteredModels.some((model) => model.value === selectedModelId);
+      const stillAvailable = filteredModels.some((model) => model.modelId === selectedModelId);
       if (!stillAvailable) {
         setSelectedModelId('');
       }
@@ -54,7 +54,7 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedModel = allAvailableModels.find((model) => model.id === selectedModelId);
+    const selectedModel = allAvailableModels.find((model) => model.modelId === selectedModelId);
 
     if (!selectedModel) {
       showToast('Selected model not found', 'error');
@@ -62,8 +62,8 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
     }
 
     const createData: CreateAIConfigurationRequest = {
-      provider: 'openrouter',
-      modelId: selectedModelId,
+      provider: selectedModel.provider,
+      modelId: selectedModel.modelId,
       inputModality: selectedModel.inputModality,
       outputModality: selectedModel.outputModality,
     };

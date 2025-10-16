@@ -41,7 +41,7 @@ export class AIModelService {
 
     const models: AIModel[] = rawModels
       .map((rawModel) => ({
-        id: rawModel.id,
+        id: rawModel.id, // OpenRouter provided model ID
         modelId: rawModel.id,
         provider: 'openrouter',
         inputModality: filterAndSortModalities(rawModel.architecture?.input_modalities || []),

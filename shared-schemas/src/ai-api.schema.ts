@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { aiConfigurationSchema, aiUsageRecordSchema } from './ai.schema';
+import { aiConfigurationSchema, aiUsageRecordSchema, modalitySchema } from './ai.schema';
 
 // ============= Chat Completion Schemas =============
 
@@ -109,8 +109,23 @@ export const openRouterModelSchema = z.object({
   }),
 });
 
-export const aiModelSchema = aiConfigurationSchema.extend({
+export const aiModelSchema = z.object({
+  id: z.string(),
+  inputModality: z.array(modalitySchema).min(1),
+  outputModality: z.array(modalitySchema).min(1),
+  provider: z.string(),
+  modelId: z.string(),
   priceLevel: z.number().min(0).max(3).optional(),
+  systemPrompt: z.string().optional(),
+  usageStats: z
+    .object({
+      totalInputTokens: z.number(),
+      totalOutputTokens: z.number(),
+      totalTokens: z.number(),
+      totalImageCount: z.number(),
+      totalRequests: z.number(),
+    })
+    .optional(),
 });
 
 export const createAIConfigurationRequestSchema = aiConfigurationSchema.omit({
