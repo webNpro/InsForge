@@ -49,15 +49,10 @@ export default function AIPage() {
   const [modelSelectionOpen, setModelSelectionOpen] = useState(false);
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const [editingConfigId, setEditingConfigId] = useState<string | undefined>();
-  const [editingSystemPrompt, setEditingSystemPrompt] = useState<string | null | undefined>();
 
   const handleEdit = (id: string) => {
-    const config = configurationOptions.find((c) => c.id === id);
-    if (config) {
-      setEditingConfigId(config.id);
-      setEditingSystemPrompt(config.systemPrompt);
-      setSystemPromptOpen(true);
-    }
+    setEditingConfigId(id);
+    setSystemPromptOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -87,6 +82,9 @@ export default function AIPage() {
       systemPrompt: configData.systemPrompt,
     });
   };
+
+  // Derive the editing config from the ID
+  const editingConfig = configurationOptions.find((c) => c.id === editingConfigId);
 
   const handleSystemPromptSuccess = (configData: UpdateAIConfigurationRequest) => {
     if (editingConfigId) {
@@ -161,7 +159,7 @@ export default function AIPage() {
       <SystemPromptDialog
         open={systemPromptOpen}
         onOpenChange={setSystemPromptOpen}
-        initialSystemPrompt={editingSystemPrompt}
+        initialSystemPrompt={editingConfig?.systemPrompt}
         onSuccess={handleSystemPromptSuccess}
       />
 
