@@ -177,7 +177,7 @@ export function AIModelCard({
             <div className="flex items-center justify-between">
               <span className="text-black dark:text-white">Credit Usage</span>
               <div className="flex items-center">
-                {config.priceLevel > 0 ? (
+                {typeof config.priceLevel === 'number' && config.priceLevel > 0 ? (
                   Array.from({ length: config.priceLevel }).map((_, i) => (
                     <div key={i} className="w-5 h-5 flex items-center justify-center">
                       <DollarSign className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />

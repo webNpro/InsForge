@@ -5,7 +5,8 @@ import {
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
   ModalitySchema,
-  AIModel,
+  AIModelSchema,
+  AIConfigurationWithUsageSchema,
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 import {
@@ -29,7 +30,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     data: modelsData,
     isLoading: isLoadingModels,
     error: modelsError,
-  } = useQuery<AIModel[]>({
+  } = useQuery<AIModelSchema[]>({
     queryKey: ['ai-models'],
     queryFn: () => aiService.getModels(),
     enabled: enabled,
@@ -41,7 +42,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     data: configurations,
     isLoading: isLoadingConfigurations,
     error: configurationsError,
-  } = useQuery<AIModel[]>({
+  } = useQuery<AIConfigurationWithUsageSchema[]>({
     queryKey: ['ai-configurations'],
     queryFn: () => aiService.listConfigurations(),
     enabled: enabled,

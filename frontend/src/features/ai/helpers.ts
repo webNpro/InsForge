@@ -1,4 +1,8 @@
-import { ModalitySchema, AIModel } from '@insforge/shared-schemas';
+import {
+  ModalitySchema,
+  AIModelSchema,
+  AIConfigurationWithUsageSchema,
+} from '@insforge/shared-schemas';
 export interface ModelOption {
   id: string;
   companyId: string;
@@ -8,7 +12,7 @@ export interface ModelOption {
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
   inputModality: ModalitySchema[];
   outputModality: ModalitySchema[];
-  priceLevel: number;
+  priceLevel?: number;
   usageStats?: {
     totalRequests: number;
   };
@@ -83,10 +87,10 @@ export const getProviderLogo = (
 
 // Helper function to filter AI models based on selected modalities
 export const filterModelsByModalities = (
-  models: AIModel[],
+  models: AIModelSchema[],
   selectedInputModalities: ModalitySchema[],
   selectedOutputModalities: ModalitySchema[]
-): AIModel[] => {
+): AIModelSchema[] => {
   if (!models?.length) {
     return [];
   }
@@ -113,12 +117,11 @@ export const getFriendlyModelName = (modelId: string): string => {
     .join(' ');
 };
 
-export function toModelOption(model: AIModel): ModelOption {
+export function toModelOption(model: AIModelSchema | AIConfigurationWithUsageSchema): ModelOption {
   const companyId = model.modelId.split('/')[0];
 
   return {
     ...model,
-    priceLevel: model.priceLevel || 0,
     companyId,
     modelName: getFriendlyModelName(model.modelId),
     providerName: getProviderDisplayName(companyId),

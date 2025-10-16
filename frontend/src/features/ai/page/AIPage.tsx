@@ -79,7 +79,6 @@ export default function AIPage() {
       outputModality: configData.outputModality,
       provider: configData.provider,
       modelId: configData.modelId,
-      systemPrompt: configData.systemPrompt,
     });
   };
 

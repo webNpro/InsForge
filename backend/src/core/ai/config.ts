@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { DatabaseManager } from '@/core/database/manager.js';
 import logger from '@/utils/logger.js';
-import { AIConfigurationSchema, AIModel } from '@insforge/shared-schemas';
+import { AIConfigurationSchema, AIConfigurationWithUsageSchema } from '@insforge/shared-schemas';
 
 export class AIConfigService {
   private pool: Pool | null = null;
@@ -39,7 +39,7 @@ export class AIConfigService {
     }
   }
 
-  async findAll(): Promise<AIModel[]> {
+  async findAll(): Promise<AIConfigurationWithUsageSchema[]> {
     const client = await this.getPool().connect();
     try {
       // Use a single query with aggregation to get configs with usage stats
