@@ -65,6 +65,7 @@ export const oAuthProvidersSchema = z.enum([
   'apple',
   'x',
   'spotify',
+  'microsoft',
 ]);
 
 export const oAuthStateSchema = z.object({
