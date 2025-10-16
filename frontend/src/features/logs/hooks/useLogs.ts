@@ -47,10 +47,10 @@ export function useLogs(source: string) {
     }
   }, [initialLogsData]);
 
-  // Reset page when search or severity filter changes
+  // Reset page when search, severity filter, or source changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, severityFilter]);
+  }, [searchQuery, severityFilter, source]);
 
   // Load more older logs
   const loadMoreLogs = useCallback(async () => {
