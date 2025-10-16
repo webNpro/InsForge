@@ -109,21 +109,8 @@ export const openRouterModelSchema = z.object({
   }),
 });
 
-export const listModelsResponseSchema = z.object({
-  text: z.array(
-    z.object({
-      provider: z.string(),
-      configured: z.boolean(),
-      models: z.array(openRouterModelSchema),
-    })
-  ),
-  image: z.array(
-    z.object({
-      provider: z.string(),
-      configured: z.boolean(),
-      models: z.array(openRouterModelSchema),
-    })
-  ),
+export const aiModelSchema = aiConfigurationSchema.extend({
+  priceLevel: z.number().min(0).max(3).optional(),
 });
 
 export const createAIConfigurationRequestSchema = aiConfigurationSchema.omit({
@@ -159,7 +146,7 @@ export type ChatCompletionResponse = z.infer<typeof chatCompletionResponseSchema
 export type ImageGenerationRequest = z.infer<typeof imageGenerationRequestSchema>;
 export type ImageGenerationResponse = z.infer<typeof imageGenerationResponseSchema>;
 export type OpenRouterModel = z.infer<typeof openRouterModelSchema>;
-export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
+export type AIModel = z.infer<typeof aiModelSchema>;
 export type CreateAIConfigurationRequest = z.infer<typeof createAIConfigurationRequestSchema>;
 export type UpdateAIConfigurationRequest = z.infer<typeof updateAIConfigurationRequestSchema>;
 export type ListAIUsageResponse = z.infer<typeof listAIUsageResponseSchema>;

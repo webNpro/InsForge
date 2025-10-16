@@ -1,8 +1,7 @@
 import { apiClient } from '@/lib/api/client';
 import {
-  ListModelsResponse,
+  AIModel,
   AIConfigurationSchema,
-  AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
   AIUsageSummarySchema,
@@ -11,7 +10,7 @@ import {
 } from '@insforge/shared-schemas';
 
 export class AIService {
-  getModels(): Promise<ListModelsResponse> {
+  getModels(): Promise<AIModel[]> {
     return apiClient.request('/ai/models', {
       headers: apiClient.withAccessToken(),
     });
@@ -28,7 +27,7 @@ export class AIService {
     });
   }
 
-  async listConfigurations(): Promise<AIConfigurationWithUsageSchema[]> {
+  async listConfigurations(): Promise<AIModel[]> {
     return apiClient.request('/ai/configurations', {
       headers: apiClient.withAccessToken(),
     });

@@ -20,7 +20,7 @@ interface ModelSelectionDialogProps {
 }
 
 export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSelectionDialogProps) {
-  const { allConfiguredModels, configuredModelIds, getFilteredModels } = useAIConfigs();
+  const { allAvailableModels, configuredModelIds, getFilteredModels } = useAIConfigs();
   const { showToast } = useToast();
 
   const [selectedInputModalities, setSelectedInputModalities] = useState<ModalitySchema[]>([]);
@@ -54,31 +54,18 @@ export function ModelSelectionDialog({ open, onOpenChange, onSuccess }: ModelSel
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedModel = allConfiguredModels.find((model) => model.id === selectedModelId);
+    const selectedModel = allAvailableModels.find((model) => model.id === selectedModelId);
 
     if (!selectedModel) {
       showToast('Selected model not found', 'error');
       return;
     }
 
-    // Filter to only supported modalities (text and image)
-    const supportedModalities: ModalitySchema[] = ['text', 'image'];
-    const rawInputModality = selectedModel.architecture?.inputModalities || ['text'];
-    const rawOutputModality = selectedModel.architecture?.outputModalities || ['text'];
-
-    const filteredInputModality = rawInputModality.filter((modality): modality is ModalitySchema =>
-      supportedModalities.includes(modality as ModalitySchema)
-    );
-    const filteredOutputModality = rawOutputModality.filter(
-      (modality): modality is ModalitySchema =>
-        supportedModalities.includes(modality as ModalitySchema)
-    );
-
     const createData: CreateAIConfigurationRequest = {
       provider: 'openrouter',
       modelId: selectedModelId,
-      inputModality: filteredInputModality,
-      outputModality: filteredOutputModality,
+      inputModality: selectedModel.inputModality,
+      outputModality: selectedModel.outputModality,
     };
 
     onSuccess(createData);

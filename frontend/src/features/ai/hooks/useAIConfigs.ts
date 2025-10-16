@@ -2,20 +2,17 @@ import { useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
 import {
-  ListModelsResponse,
-  AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
   ModalitySchema,
-  type OpenRouterModel,
+  AIModel,
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 import {
   filterModelsByModalities,
-  convertOpenRouterModelToOption,
-  convertConfigurationToOption,
   sortModelsByConfigurationStatus,
   type ModelOption,
+  toModelOption,
 } from '../helpers';
 
 interface UseAIConfigsOptions {
@@ -32,7 +29,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     data: modelsData,
     isLoading: isLoadingModels,
     error: modelsError,
-  } = useQuery<ListModelsResponse>({
+  } = useQuery<AIModel[]>({
     queryKey: ['ai-models'],
     queryFn: () => aiService.getModels(),
     enabled: enabled,
@@ -44,7 +41,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     data: configurations,
     isLoading: isLoadingConfigurations,
     error: configurationsError,
-  } = useQuery<AIConfigurationWithUsageSchema[]>({
+  } = useQuery<AIModel[]>({
     queryKey: ['ai-configurations'],
     queryFn: () => aiService.listConfigurations(),
     enabled: enabled,
@@ -88,19 +85,9 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     },
   });
 
-  // Extract configured providers (memoized to maintain referential stability)
-  const configuredTextProviders = useMemo(
-    () => modelsData?.text?.filter((p) => p.configured) || [],
-    [modelsData?.text]
-  );
-  const configuredImageProviders = useMemo(
-    () => modelsData?.image?.filter((p) => p.configured) || [],
-    [modelsData?.image]
-  );
-
-  // Convert configurations to ModelOptions (memoized)
+  // Convert configurations to ModelOptions
   const configurationOptions = useMemo(
-    () => (configurations || []).map(convertConfigurationToOption),
+    () => (configurations || []).map(toModelOption),
     [configurations]
   );
 
@@ -110,20 +97,8 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     [configurations]
   );
 
-  // All configured models from all providers (flattened with deduplication)
-  const allConfiguredModels = useMemo(() => {
-    const uniqueModels = new Map<string, OpenRouterModel>();
-
-    [...configuredTextProviders, ...configuredImageProviders].forEach((provider) => {
-      provider.models.forEach((model) => {
-        if (!uniqueModels.has(model.id)) {
-          uniqueModels.set(model.id, model);
-        }
-      });
-    });
-
-    return Array.from(uniqueModels.values());
-  }, [configuredTextProviders, configuredImageProviders]);
+  // All available models from all providers
+  const allAvailableModels = useMemo(() => modelsData || [], [modelsData]);
 
   // Helper function to get filtered and processed models
   const getFilteredModels = useCallback(
@@ -132,16 +107,16 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
       const shouldFilter = inputModality.length > 0 || outputModality.length > 0;
 
       const filteredRawModels = shouldFilter
-        ? filterModelsByModalities(allConfiguredModels, inputModality, outputModality)
-        : allConfiguredModels;
+        ? filterModelsByModalities(allAvailableModels, inputModality, outputModality)
+        : allAvailableModels;
 
       // Convert to ModelOption using centralized converter
-      const modelOptions = filteredRawModels.map(convertOpenRouterModelToOption);
+      const modelOptions = filteredRawModels.map(toModelOption);
 
       // Sort with configured models at the end
       return sortModelsByConfigurationStatus(modelOptions, configuredModelIds);
     },
-    [allConfiguredModels, configuredModelIds]
+    [allAvailableModels, configuredModelIds]
   );
 
   return {
@@ -150,7 +125,7 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     modelsError,
 
     // Configured providers
-    allConfiguredModels,
+    allAvailableModels,
 
     // Configurations data
     isLoadingConfigurations,
