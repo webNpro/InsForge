@@ -1,36 +1,60 @@
 ﻿import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { LockIcon } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 
 export default function CloudLoginPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { loginWithAuthorizationCode, isAuthenticated } = useAuth();
   const { hasCompletedOnboarding, isLoading: isMcpUsageLoading } = useMcpUsage();
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Handle authorization token exchange
+  // Handle authorization code from postMessage
   useEffect(() => {
-    const authorizationCode = searchParams.get('authorizationCode');
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin - allow insforge.dev and *.insforge.dev domains
+      const isInsforgeOrigin =
+        event.origin.endsWith('.insforge.dev') || event.origin === 'https://insforge.dev';
 
-    if (authorizationCode) {
-      setAuthError(null);
-      // Exchange the authorization code for an access token
-      loginWithAuthorizationCode(authorizationCode)
-        .then((success) => {
-          if (success) {
-            // Notify parent of success
-            if (window.parent !== window) {
-              window.parent.postMessage(
-                {
-                  type: 'AUTH_SUCCESS',
-                },
-                '*'
-              );
+      if (!isInsforgeOrigin) {
+        console.warn('Received message from unauthorized origin:', event.origin);
+        return;
+      }
+
+      // Check if this is an authorization code message
+      if (event.data?.type === 'AUTHORIZATION_CODE' && event.data?.code) {
+        const authorizationCode = event.data.code;
+
+        setAuthError(null);
+        // Exchange the authorization code for an access token
+        loginWithAuthorizationCode(authorizationCode)
+          .then((success) => {
+            if (success) {
+              // Notify parent of success
+              if (window.parent !== window) {
+                window.parent.postMessage(
+                  {
+                    type: 'AUTH_SUCCESS',
+                  },
+                  event.origin
+                );
+              }
+            } else {
+              setAuthError('The authorization code may have expired or already been used.');
+              if (window.parent !== window) {
+                window.parent.postMessage(
+                  {
+                    type: 'AUTH_ERROR',
+                    message: 'Authorization code validation failed',
+                  },
+                  event.origin
+                );
+              }
             }
-          } else {
+          })
+          .catch((error) => {
+            console.error('Authorization code exchange failed:', error);
             setAuthError('The authorization code may have expired or already been used.');
             if (window.parent !== window) {
               window.parent.postMessage(
@@ -38,28 +62,19 @@ export default function CloudLoginPage() {
                   type: 'AUTH_ERROR',
                   message: 'Authorization code validation failed',
                 },
-                '*'
+                event.origin
               );
             }
-          }
-        })
-        .catch((error) => {
-          console.error('Authorization code exchange failed:', error);
-          setAuthError('The authorization code may have expired or already been used.');
-          if (window.parent !== window) {
-            window.parent.postMessage(
-              {
-                type: 'AUTH_ERROR',
-                message: 'Authorization code validation failed',
-              },
-              '*'
-            );
-          }
-        });
-    } else {
-      setAuthError('No authorization code provided.');
-    }
-  }, [loginWithAuthorizationCode, searchParams]);
+          });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [loginWithAuthorizationCode]);
 
   useEffect(() => {
     if (isAuthenticated && !isMcpUsageLoading) {
