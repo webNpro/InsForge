@@ -237,7 +237,7 @@ export function TableForm({
     onError: (err) => {
       const errorMessage = err.message || 'Failed to create table';
       setError(errorMessage);
-      showToast('Failed to create table', 'error');
+      showToast(errorMessage, 'error');
     },
   });
 
@@ -377,7 +377,7 @@ export function TableForm({
 
       const errorMessage = err.message || 'Failed to update table';
       setError(errorMessage);
-      showToast('Failed to update table', 'error');
+      showToast(errorMessage, 'error');
     },
   });
 
