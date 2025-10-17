@@ -235,7 +235,7 @@ export function TableForm({
       onSuccess?.(data.tableName);
     },
     onError: (err) => {
-      const errorMessage = err.message || `Failed to create table ${err}`;
+      const errorMessage = err.message || 'Failed to create table';
       setError(errorMessage);
       showToast('Failed to create table', 'error');
     },
