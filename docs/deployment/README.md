@@ -52,7 +52,7 @@ All deployment methods require:
 
 ## 🔧 Architecture Overview
 
-InsForge consists of 5 main services:
+InsForge consists of 6 main services:
 
 1. **PostgreSQL** - Database (port 5432)
 2. **PostgREST** - Auto-generated REST API (port 5430)
