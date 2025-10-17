@@ -110,10 +110,13 @@ export async function createApp() {
     };
 
     // Override json method
-    res.json = function (data: Record<string, unknown> | unknown[] | null) {
+    res.json = function (
+      data: Record<string, unknown> | unknown[] | string | number | boolean | null
+    ) {
       if (data !== undefined && data !== null) {
         try {
-          responseSize = Buffer.byteLength(JSON.stringify(data));
+          const jsonString = typeof data === 'string' ? data : JSON.stringify(data);
+          responseSize = Buffer.byteLength(jsonString);
         } catch {
           // Handle circular references or unstringifiable objects
           responseSize = 0;
