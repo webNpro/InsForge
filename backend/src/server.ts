@@ -87,12 +87,16 @@ export async function createApp() {
     let responseSize = 0;
 
     // Override send method
-    res.send = function (data: string | Buffer | Record<string, unknown> | unknown[]) {
+    res.send = function (
+      data: string | Buffer | Record<string, unknown> | unknown[] | number | boolean
+    ) {
       if (data !== undefined && data !== null) {
         if (typeof data === 'string') {
           responseSize = Buffer.byteLength(data);
         } else if (Buffer.isBuffer(data)) {
           responseSize = data.length;
+        } else if (typeof data === 'number' || typeof data === 'boolean') {
+          responseSize = Buffer.byteLength(String(data));
         } else {
           try {
             responseSize = Buffer.byteLength(JSON.stringify(data));
