@@ -7,6 +7,7 @@ import {
   AIUsageSummarySchema,
   AIUsageRecordSchema,
   ListAIUsageResponse,
+  AIConfigurationWithUsageSchema,
 } from '@insforge/shared-schemas';
 
 export class AIService {
@@ -27,7 +28,7 @@ export class AIService {
     });
   }
 
-  async listConfigurations(): Promise<AIModelSchema[]> {
+  async listConfigurations(): Promise<AIConfigurationWithUsageSchema[]> {
     return apiClient.request('/ai/configurations', {
       headers: apiClient.withAccessToken(),
     });
