@@ -161,7 +161,10 @@ export function OAuthConfigDialog({
     return !clientId || !clientSecret;
   };
 
-  const isSharedKeysAvailable = isInsForgeCloudProject();
+  // Our Cloud only support shared keys of these OAuth Providers for now
+  const isSharedKeysAvailable =
+    isInsForgeCloudProject() &&
+    ['google', 'discord', 'discord', 'linkedin', 'facebook'].includes(provider?.id ?? '');
 
   return (
     <Dialog open={isOpen && !!provider} onOpenChange={(open) => !open && onClose()}>
