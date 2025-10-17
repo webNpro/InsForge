@@ -287,12 +287,6 @@ function DatabasePageContent() {
           return;
         }
         const updates = { [columnKey]: conversionResult.value };
-        const updatedAtColumn = tableData?.schema.columns.find(
-          (col) => col.columnName === 'updated_at'
-        );
-        if (updatedAtColumn) {
-          updates[updatedAtColumn.columnName] = new Date().toISOString();
-        }
         await recordsHook.updateRecord({ id: rowId, data: updates });
         await refetchTableData();
       }
