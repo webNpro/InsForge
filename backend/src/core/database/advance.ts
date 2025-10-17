@@ -13,7 +13,7 @@ import { parseSQLStatements } from '@/utils/sql-parser.js';
 import { validateTableName } from '@/utils/validations.js';
 import format from 'pg-format';
 import { parse } from 'csv-parse/sync';
-import type { PoolClient } from 'pg';
+import { DatabaseError, type PoolClient } from 'pg';
 
 export class DatabaseAdvanceService {
   private dbManager = DatabaseManager.getInstance();
@@ -137,15 +137,11 @@ export class DatabaseAdvanceService {
     const client = await pool.connect();
 
     try {
-      // Execute query with timeout
-      const result = (await Promise.race([
-        client.query(query, params),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 30000)),
-      ])) as {
-        rows: Record<string, unknown>[];
-        rowCount: number;
-        fields?: { name: string; dataTypeID: number }[];
-      };
+      // Set statement timeout at the database level (30 seconds)
+      await client.query('SET LOCAL statement_timeout = 30000');
+
+      // Execute query - database will enforce the timeout
+      const result = await client.query(query, params);
 
       // Refresh schema cache if it was a DDL operation
       if (/CREATE|ALTER|DROP/i.test(query)) {
@@ -163,6 +159,13 @@ export class DatabaseAdvanceService {
       };
 
       return response;
+    } catch (error) {
+      // Handle timeout errors specifically for better error messages
+      if (error instanceof DatabaseError && error.code === '57014') {
+        throw new Error('Query timeout: The query took longer than 30 seconds to execute');
+      }
+      // Re-throw other errors as-is
+      throw error;
     } finally {
       client.release();
     }
