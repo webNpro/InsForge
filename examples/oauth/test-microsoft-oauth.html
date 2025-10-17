@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Test Microsoft OAuth</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f5f5; margin:0; padding:20px;}
+    .container { max-width: 720px; margin: 0 auto; background:#fff; border-radius:8px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+    h1 { margin:0 0 12px; font-size:22px; }
+    .box { border:1px solid #e5e7eb; border-radius:8px; padding:16px; background:#fafafa; margin:16px 0; }
+    .row { display:flex; gap:8px; align-items:center; margin:8px 0; }
+    .label { width:140px; color:#555; font-size:13px; }
+    input.readonly { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; background:#f7f7f7; font-size:13px; }
+    .btn { background:#2f2f2f; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+    .btn:hover { background:#1f1f1f; }
+    .btn:disabled { background:#bbb; cursor:not-allowed; }
+    .status { margin-top:12px; padding:12px; border-radius:6px; font-size:14px; }
+    .status.info { background:#e8f4fd; color:#0b5cab; border:1px solid #cfe7fb; }
+    .status.success { background:#e7f7ef; color:#0b6b34; border:1px solid #cdeedb; }
+    .status.error { background:#fde8e8; color:#7a1f1f; border:1px solid #f7c6c7; }
+    .user { background:#f8f9fa; border-left:4px solid #2f2f2f; padding:12px; border-radius:6px; margin-top:12px; }
+    .actions { display:flex; gap:10px; margin-top:12px; }
+    code { background:#f1f5f9; padding:2px 6px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>InsForge Microsoft OAuth Test</h1>
+
+    <div class="box">
+      <div class="row">
+        <div class="label">Callback URL</div>
+        <input id="callbackUrl" class="readonly" type="text" readonly />
+      </div>
+      <div class="row">
+        <div class="label">Redirect URL</div>
+        <input id="redirectUrl" class="readonly" type="text" readonly />
+      </div>
+      <div class="actions">
+        <button id="msLoginBtn" class="btn" onclick="initiateMicrosoftLogin()">
+          <span>Sign in with Microsoft</span>
+        </button>
+        <button class="btn" style="background:#d33" onclick="logout()">Sign out</button>
+      </div>
+      <div id="status" class="status info" style="display:none;"></div>
+    </div>
+
+    <div id="user" class="user" style="display:none;"></div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:7130/api';
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.value ? el.value = text : el.textContent = text;
+    }
+
+    function showStatus(msg, type='info') {
+      const el = document.getElementById('status');
+      el.className = 'status ' + type;
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function showUser(user) {
+      const el = document.getElementById('user');
+      el.innerHTML = `
+        <div><strong>ID:</strong> ${user.id || ''}</div>
+        <div><strong>Email:</strong> ${user.email || ''}</div>
+        <div><strong>Name:</strong> ${user.name || ''}</div>
+        <div style="margin-top:8px;"><strong>JWT (localStorage):</strong> <code>${(localStorage.getItem('auth_token')||'').slice(0,24)}...</code></div>
+      `;
+      el.style.display = 'block';
+    }
+
+    async function initiateMicrosoftLogin() {
+  const btn = document.getElementById('msLoginBtn');
+  const original = btn.textContent;
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Getting authorization link...';
+
+    // FIX: Use the current page URL on port 7131
+    const redirect = "http://localhost/"; // This will be http://localhost:7131/...
+    setText('redirectUrl', redirect);
+
+    showStatus('Requesting Microsoft authorization URL...', 'info');
+    
+    // Call backend API on 7130
+    const res = await fetch(`${API_BASE}/auth/oauth/microsoft?redirect_uri=${encodeURIComponent(redirect)}`);
+    const data = await res.json();
+    console.log('Microsoft OAuth response:', data);
+    if (data.authUrl) {
+      showStatus('Redirecting to Microsoft...', 'info');
+      window.location.href = data.authUrl;
+    } else {
+      throw new Error(data?.error?.message || 'Failed to get authorization link');
+    }
+  } catch (e) {
+    showStatus(`Error: ${e.message}`, 'error');
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+    function handleOAuthCallback() {
+      const p = new URLSearchParams(window.location.search);
+      // Backend appends access_token, user_id, email, name
+      const token = p.get('access_token') || p.get('token'); // be tolerant
+      const userId = p.get('user_id');
+      const email = p.get('email');
+      const name = p.get('name');
+
+      // Clean URL
+      if ([...p.keys()].length) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // Fill UI
+      setText('redirectUrl', window.location.origin + window.location.pathname);
+      setText('callbackUrl', `${API_BASE}/auth/oauth/microsoft/callback`);
+
+      if (token && userId) {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user_id', userId);
+        localStorage.setItem('user_email', email || '');
+        localStorage.setItem('user_name', name || '');
+        showStatus('Login successful!', 'success');
+        showUser({ id: userId, email, name });
+        document.getElementById('msLoginBtn').disabled = true;
+      } else {
+        // If already logged in (from prior run)
+        const t = localStorage.getItem('auth_token');
+        const uid = localStorage.getItem('user_id');
+        const em = localStorage.getItem('user_email');
+        const nm = localStorage.getItem('user_name');
+        if (t && uid) {
+          showStatus('Already signed in.', 'info');
+          showUser({ id: uid, email: em, name: nm });
+          document.getElementById('msLoginBtn').disabled = true;
+        } else {
+          showStatus('Ready. Click “Sign in with Microsoft”.', 'info');
+        }
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('user_name');
+      document.getElementById('user').style.display = 'none';
+      document.getElementById('msLoginBtn').disabled = false;
+      showStatus('Signed out.', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setText('callbackUrl', `${API_BASE}/auth/oauth/microsoft/callback`);
+      setText('redirectUrl', window.location.origin + window.location.pathname);
+      handleOAuthCallback();
+    });
+  </script>
+</body>
+</html>

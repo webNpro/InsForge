@@ -804,7 +804,7 @@ async exchangeCodeToTokenByMicrosoft(
   }
   const clientSecret = await oauthConfigService.getClientSecretByProvider('microsoft');
   const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
-
+  
   const body = new URLSearchParams({
     client_id: config.clientId ?? '',
     client_secret: clientSecret ?? '',
@@ -844,10 +844,10 @@ async getMicrosoftUserInfo(accessToken: string) {
     mail?: string | null;
   };
 
-  const email = data.mail || data.userPrincipalName || `${data.id}@users.noreply.microsoft.com`;
+  const email = data.userPrincipalName || data.mail || `${data.id}@users.noreply.microsoft.com`;
   return {
     id: data.id,
-    displayName: data.displayName || '',
+    displayName: data.displayName || '', 
     userPrincipalName: data.userPrincipalName || '',
     email,
   };
