@@ -113,10 +113,9 @@ export async function createApp() {
     res.json = function (
       data: Record<string, unknown> | unknown[] | string | number | boolean | null
     ) {
-      if (data !== undefined && data !== null) {
+      if (data !== undefined) {
         try {
-          const jsonString = typeof data === 'string' ? data : JSON.stringify(data);
-          responseSize = Buffer.byteLength(jsonString);
+          responseSize = Buffer.byteLength(JSON.stringify(data));
         } catch {
           // Handle circular references or unstringifiable objects
           responseSize = 0;
