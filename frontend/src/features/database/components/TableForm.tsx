@@ -235,7 +235,7 @@ export function TableForm({
       onSuccess?.(data.tableName);
     },
     onError: (err) => {
-      const errorMessage = err.message || 'Failed to create table';
+      const errorMessage = err.message || `Failed to create table ${err}`;
       setError(errorMessage);
       showToast('Failed to create table', 'error');
     },
@@ -382,6 +382,16 @@ export function TableForm({
   });
 
   const handleSubmit = form.handleSubmit((data) => {
+    const userColumns = data.columns.filter((col) => !col.isSystemColumn);
+    if (userColumns.length === 0) {
+      const msg =
+        mode === 'create'
+          ? 'Please add at least one user-defined column to create a table.'
+          : 'Please ensure the table has at least one user-defined column.';
+      setError(msg);
+      showToast(msg, 'error');
+      return;
+    }
     if (mode === 'edit') {
       updateTableMutation.mutate(data);
     } else {
