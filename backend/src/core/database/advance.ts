@@ -137,8 +137,8 @@ export class DatabaseAdvanceService {
     const client = await pool.connect();
 
     try {
-      // Set statement timeout at the database level (30 seconds)
-      await client.query('SET LOCAL statement_timeout = 30000');
+      // Set statement timeout at session level (30 seconds)
+      await client.query('SET statement_timeout = 30000');
 
       // Execute query - database will enforce the timeout
       const result = await client.query(query, params);
@@ -167,6 +167,8 @@ export class DatabaseAdvanceService {
       // Re-throw other errors as-is
       throw error;
     } finally {
+      // Reset timeout to default before releasing client back to pool
+      await client.query('SET statement_timeout = 0');
       client.release();
     }
   }
