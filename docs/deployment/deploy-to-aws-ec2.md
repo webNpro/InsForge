@@ -240,7 +240,7 @@ Expected response:
 #### 5.2 Access Dashboard
 
 Open your browser and navigate to:
-```
+```text
 http://your-ec2-ip:7131
 ```
 
@@ -255,7 +255,7 @@ http://your-ec2-ip:7131
 #### 6.1 Update DNS Records
 
 Add DNS A records pointing to your EC2 Elastic IP:
-```
+```text
 api.yourdomain.com    → your-ec2-ip
 app.yourdomain.com    → your-ec2-ip
 ```
@@ -454,8 +454,10 @@ sudo netstat -tulpn | grep :7130
 ### Out of Memory
 
 Consider upgrading to a larger instance type:
-- Current: `t3.medium` (4 GB RAM)
-- Upgrade to: `t3.large` (8 GB RAM)
+```text
+- Current: t3.medium (4 GB RAM)
+- Upgrade to: t3.large (8 GB RAM)
+```
 
 ### SSL Certificate Issues
 
@@ -480,7 +482,7 @@ sudo certbot renew --dry-run
 
 ### Database Optimization
 
-```bash
+```conf
 # Increase PostgreSQL shared_buffers (edit postgresql.conf in docker-init/db/)
 # Recommended: 25% of available RAM
 shared_buffers = 1GB
