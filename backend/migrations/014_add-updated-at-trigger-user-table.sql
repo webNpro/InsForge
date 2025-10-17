@@ -3,17 +3,6 @@
 
 DO $$
 BEGIN
-    -- Ensure the update_updated_at_column function exists (created in 000_create-base-tables.sql)
-    IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'update_updated_at_column') THEN
-        CREATE OR REPLACE FUNCTION update_updated_at_column()
-        RETURNS TRIGGER AS $func$
-        BEGIN
-            NEW.updated_at = NOW();
-            RETURN NEW;
-        END;
-        $func$ LANGUAGE plpgsql;
-    END IF;
-
     -- Add updated_at trigger to users table if not exists
     IF NOT EXISTS (
         SELECT 1 FROM pg_trigger 
