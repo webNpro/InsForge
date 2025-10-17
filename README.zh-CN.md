@@ -5,7 +5,7 @@
   
 </div>
 <p align="center">
-   <a href="#快速入门">开始</a> · 
+   <a href="#快速开始">开始</a> · 
    <a href="https://docs.insforge.dev/introduction">文档</a> · 
    <a href="https://discord.com/invite/MPxwj5xVvW">Discord</a>
 </p>
@@ -17,7 +17,7 @@
 
 # InsForge
 
-**InsForge 是面向智能体（Agent-Native）的 Supabase 替代方案。** 我们正在以一种 AI 原生的方法构建 Supabase 的功能，使 AI 代理能够自主构建和管理全栈应用程序。
+**InsForge 是专为 AI 代理构建的（Agent-Native） Supabase 替代方案。** 我们以专为 AI 设计的架构实现 Supabase 的功能，使 AI 代理能够自主构建和管理全栈应用程序。
 ## 主要功能与用例
 
 ### 核心功能:
@@ -28,7 +28,7 @@
 - **站点部署** *(即将推出)* - 轻松部署应用程序
 
 ### 用例: 使用自然语言部署全栈应用程序
-- **将 AI 智能体接入 InsForge** - 启用 Claude、GPT或其他 AI 智能体管理您的后端
+- **将 AI 编程代理接入 InsForge** - 启用 Claude、GPT或其他 AI 编程代理管理您的后端
 - **为 Lovable 或 Bolt 风格的“氛围编程”项目添加后端** - 为 AI 生成的前端提供即时后端支持
 
 ## 提示词示例:
@@ -38,7 +38,7 @@
   <br>
 </td>
 
-## 快速入门
+## 快速开始
 
 ### 1. 安装并运行 InsForge
 
@@ -53,9 +53,9 @@ cp .env.example .env
 docker compose up
 ```
 
-### 2. 接入 AI 智能体
+### 2. 接入 AI 编程助手
 
-访问 InsForge 仪表盘 (默认: http://localhost:7131)，登录，并按照"connect"指南设置您的 MCP。
+访问 InsForge 仪表盘 (默认: http://localhost:7131)，登录，并按照"Connect"指南设置您的 MCP。
 
 <div align="center">
   <table>
@@ -76,7 +76,7 @@ docker compose up
 
 ### 3. 测试连接
 
-在您的智能体中，发送：
+在您的编程助手中，发送：
 ```
 InsForge is my backend platform, what is my current backend structure?
 ```
@@ -84,7 +84,7 @@ InsForge is my backend platform, what is my current backend structure?
 <div align="center">
   <img src="assets/sampleResponse.png" alt="Successful Connection Response" width="600">
   <br>
-  <em>调用 insforge MCP tools 的成功响应示例</em>
+  <em>调用 insforge MCP 工具的成功响应示例</em>
 </div>
 
 ### 4. 开始使用 InsForge
@@ -107,7 +107,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ## 贡献
 
-**贡献**：如果您有兴趣贡献代码，可以查看我们的指南 [CONTRIBUTING.md](CONTRIBUTING.md)。我们非常感谢您的 pull 请求，欢迎各种形式的帮助！
+**贡献**：如果您有兴趣贡献代码，可以查看我们的指南 [CONTRIBUTING.md](CONTRIBUTING.md)。我们非常感谢您的 pull requests（PR），欢迎各种形式的帮助！
 
 **支持**：如果您需要任何帮助或支持，我们会在 [Discord channel](https://discord.com/invite/MPxwj5xVvW) 回复您，也可以随时给我们发送电子邮件至 [info@insforge.dev](mailto:info@insforge.dev) ！
 
