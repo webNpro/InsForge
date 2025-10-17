@@ -895,7 +895,7 @@ export class AuthService {
     try {
       const { createRemoteJWKSet, jwtVerify } = await import('jose');
       const JWKS = createRemoteJWKSet(new URL('https://www.linkedin.com/oauth/openid/jwks'));
-      
+
       const { payload } = await jwtVerify(idToken, JWKS, {
         issuer: 'https://www.linkedin.com',
         audience: config.clientId,
