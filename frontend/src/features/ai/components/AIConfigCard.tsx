@@ -110,7 +110,7 @@ export function AIModelCard({
                     <config.logo className="w-10 h-10 dark:text-white" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
-                      {config.companyId.charAt(0).toUpperCase()}
+                      {config.providerName.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>

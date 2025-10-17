@@ -5,7 +5,6 @@ import {
 } from '@insforge/shared-schemas';
 export interface ModelOption {
   id: string;
-  companyId: string;
   modelId: string;
   modelName: string;
   providerName: string;
@@ -106,26 +105,22 @@ export const filterModelsByModalities = (
 };
 
 // Helper function to get friendly model name from model ID
-export const getFriendlyModelName = (modelId: string): string => {
-  // Extract the model name part (after the last slash)
-  const modelName = modelId.split('/').pop() || modelId;
-
+export const getFriendlyModelName = (rawModelName: string): string => {
   // Convert kebab-case to Title Case
-  return modelName
+  return rawModelName
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
 
 export function toModelOption(model: AIModelSchema | AIConfigurationWithUsageSchema): ModelOption {
-  const companyId = model.modelId.split('/')[0];
+  const [rawProviderId, rawModelName] = model.modelId.split('/');
 
   return {
     ...model,
-    companyId,
-    modelName: getFriendlyModelName(model.modelId),
-    providerName: getProviderDisplayName(companyId),
-    logo: getProviderLogo(companyId),
+    modelName: getFriendlyModelName(rawModelName),
+    providerName: getProviderDisplayName(rawProviderId),
+    logo: getProviderLogo(rawProviderId),
   };
 }
 

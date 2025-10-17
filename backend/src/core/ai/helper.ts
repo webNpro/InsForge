@@ -1,5 +1,3 @@
-// backend/src/core/ai/transformers.ts
-
 import type { RawOpenRouterModel } from '@/types/ai';
 import type { ModalitySchema } from '@insforge/shared-schemas';
 
