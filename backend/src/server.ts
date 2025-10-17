@@ -88,18 +88,36 @@ export async function createApp() {
 
     // Override send method
     res.send = function (data: string | Buffer | Record<string, unknown> | unknown[]) {
-      if (data) {
-        responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
+      if (data !== undefined && data !== null) {
+        if (typeof data === 'string') {
+          responseSize = Buffer.byteLength(data);
+        } else if (Buffer.isBuffer(data)) {
+          responseSize = data.length;
+        } else {
+          try {
+            responseSize = Buffer.byteLength(JSON.stringify(data));
+          } catch {
+            // Handle circular references or unstringifiable objects
+            responseSize = 0;
+          }
+        }
       }
       return originalSend.call(this, data);
     };
+
     // Override json method
     res.json = function (data: Record<string, unknown> | unknown[] | null) {
-      if (data) {
-        responseSize = Buffer.byteLength(JSON.stringify(data));
+      if (data !== undefined && data !== null) {
+        try {
+          responseSize = Buffer.byteLength(JSON.stringify(data));
+        } catch {
+          // Handle circular references or unstringifiable objects
+          responseSize = 0;
+        }
       }
       return originalJson.call(this, data);
     };
+
     // Log after response is finished
     res.on('finish', () => {
       // Skip logging for logs endpoints to avoid infinite loops
@@ -119,6 +137,7 @@ export async function createApp() {
         timestamp: new Date().toISOString(),
       });
     });
+
     next();
   });
 
