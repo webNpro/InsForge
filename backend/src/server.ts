@@ -87,16 +87,14 @@ export async function createApp() {
     let responseSize = 0;
 
     // Override send method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.send = function (data: any) {
+    res.send = function (data: string | Buffer | Record<string, unknown> | unknown[]) {
       if (data) {
         responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
       }
       return originalSend.call(this, data);
     };
     // Override json method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.json = function (data: any) {
+    res.json = function (data: Record<string, unknown> | unknown[] | null) {
       if (data) {
         responseSize = Buffer.byteLength(JSON.stringify(data));
       }

@@ -13,6 +13,7 @@ import { parseSQLStatements } from '@/utils/sql-parser.js';
 import { validateTableName } from '@/utils/validations.js';
 import format from 'pg-format';
 import { parse } from 'csv-parse/sync';
+import type { PoolClient } from 'pg';
 
 export class DatabaseAdvanceService {
   private dbManager = DatabaseManager.getInstance();
@@ -22,7 +23,7 @@ export class DatabaseAdvanceService {
    * More reliable than streaming for moderate datasets
    */
   private async getTableData(
-    client: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    client: PoolClient,
     table: string,
     rowLimit: number | undefined
   ): Promise<{ rows: Record<string, unknown>[]; totalRows: number; wasTruncated: boolean }> {
@@ -140,7 +141,11 @@ export class DatabaseAdvanceService {
       const result = (await Promise.race([
         client.query(query, params),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 30000)),
-      ])) as { rows: unknown[]; rowCount: number; fields?: { name: string; dataTypeID: number }[] };
+      ])) as {
+        rows: Record<string, unknown>[];
+        rowCount: number;
+        fields?: { name: string; dataTypeID: number }[];
+      };
 
       // Refresh schema cache if it was a DDL operation
       if (/CREATE|ALTER|DROP/i.test(query)) {
@@ -163,8 +168,7 @@ export class DatabaseAdvanceService {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async exportTableSchemaBySQL(client: any, table: string): Promise<string> {
+  private async exportTableSchemaBySQL(client: PoolClient, table: string): Promise<string> {
     let sqlExport = '';
     // Always export table schema with defaults
     const schemaResult = await client.query(
@@ -653,7 +657,7 @@ export class DatabaseAdvanceService {
           );
 
           // Get data if requested - using streaming to avoid memory issues
-          const rows: unknown[] = [];
+          const rows: Record<string, unknown>[] = [];
           let truncated = false;
           let totalRowCount: number | undefined;
 
