@@ -63,7 +63,7 @@ export class AIConfigService {
       );
 
       return result.rows.map((row) => ({
-        id: row.id,
+        id: row.id, // UUID
         inputModality: row.inputModality,
         outputModality: row.outputModality,
         provider: row.provider,

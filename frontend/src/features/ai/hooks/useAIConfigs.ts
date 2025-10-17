@@ -1,22 +1,19 @@
 import { useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiService } from '@/features/ai/services/ai.service';
-import { useAnonToken } from '@/features/auth/hooks/useAnonToken';
 import {
-  ListModelsResponse,
-  AIConfigurationWithUsageSchema,
   CreateAIConfigurationRequest,
   UpdateAIConfigurationRequest,
   ModalitySchema,
-  type OpenRouterModel,
+  AIModelSchema,
+  AIConfigurationWithUsageSchema,
 } from '@insforge/shared-schemas';
 import { useToast } from '@/lib/hooks/useToast';
 import {
-  getProviderLogo,
-  calculatePriceLevel,
-  getProviderDisplayName,
   filterModelsByModalities,
+  sortModelsByConfigurationStatus,
   type ModelOption,
+  toModelOption,
 } from '../helpers';
 
 interface UseAIConfigsOptions {
@@ -27,15 +24,13 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
   const { enabled = true } = options;
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const { accessToken: anonKey, isLoading: isLoadingAnonToken } = useAnonToken({ enabled });
 
   // Fetch AI models configuration
   const {
     data: modelsData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<ListModelsResponse>({
+    isLoading: isLoadingModels,
+    error: modelsError,
+  } = useQuery<AIModelSchema[]>({
     queryKey: ['ai-models'],
     queryFn: () => aiService.getModels(),
     enabled: enabled,
@@ -47,7 +42,6 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     data: configurations,
     isLoading: isLoadingConfigurations,
     error: configurationsError,
-    refetch: refetchConfigurations,
   } = useQuery<AIConfigurationWithUsageSchema[]>({
     queryKey: ['ai-configurations'],
     queryFn: () => aiService.listConfigurations(),
@@ -92,39 +86,20 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
     },
   });
 
-  // Extract configured providers (memoized to maintain referential stability)
-  const configuredTextProviders = useMemo(
-    () => modelsData?.text?.filter((p) => p.configured) || [],
-    [modelsData?.text]
-  );
-  const configuredImageProviders = useMemo(
-    () => modelsData?.image?.filter((p) => p.configured) || [],
-    [modelsData?.image]
+  // Convert configurations to ModelOptions
+  const configurationOptions = useMemo(
+    () => (configurations || []).map(toModelOption),
+    [configurations]
   );
 
-  // Extract unconfigured providers
-  const unconfiguredTextProviders = modelsData?.text?.filter((p) => !p.configured) || [];
-  const unconfiguredImageProviders = modelsData?.image?.filter((p) => !p.configured) || [];
+  // Get configured model IDs for filtering
+  const configuredModelIds = useMemo(
+    () => configurations?.map((config) => config.modelId) || [],
+    [configurations]
+  );
 
-  // Get all available models (flat list)
-  const allTextModels = modelsData?.text?.flatMap((p) => p.models) || [];
-  const allImageModels = modelsData?.image?.flatMap((p) => p.models) || [];
-
-  // All configured models from all providers (flattened with deduplication)
-  const allConfiguredModels = useMemo(() => {
-    const uniqueModels = new Map<string, OpenRouterModel>();
-
-    [...configuredTextProviders, ...configuredImageProviders].forEach((provider) => {
-      provider.models.forEach((model) => {
-        // Only add if we haven't seen this model.id before
-        if (!uniqueModels.has(model.id)) {
-          uniqueModels.set(model.id, model);
-        }
-      });
-    });
-
-    return Array.from(uniqueModels.values());
-  }, [configuredTextProviders, configuredImageProviders]);
+  // All available models from all providers
+  const allAvailableModels = useMemo(() => modelsData || [], [modelsData]);
 
   // Helper function to get filtered and processed models
   const getFilteredModels = useCallback(
@@ -133,92 +108,40 @@ export function useAIConfigs(options: UseAIConfigsOptions = {}) {
       const shouldFilter = inputModality.length > 0 || outputModality.length > 0;
 
       const filteredRawModels = shouldFilter
-        ? filterModelsByModalities(allConfiguredModels, inputModality, outputModality)
-        : allConfiguredModels;
+        ? filterModelsByModalities(allAvailableModels, inputModality, outputModality)
+        : allAvailableModels;
 
-      return filteredRawModels.map((model) => {
-        const companyId = model.id.split('/')[0];
-        const priceLevel = calculatePriceLevel(model.pricing);
-        const supportedModalities: ModalitySchema[] = ['text', 'image'];
+      // Convert to ModelOption using centralized converter
+      const modelOptions = filteredRawModels.map(toModelOption);
 
-        return {
-          id: model.id,
-          value: model.id,
-          companyId,
-          modelName: model.name.split(':')[1],
-          providerName: getProviderDisplayName(companyId),
-          logo: getProviderLogo(companyId),
-          inputModality: (model.architecture?.inputModalities || ['text']).filter(
-            (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
-          ),
-          outputModality: (model.architecture?.outputModalities || ['text']).filter(
-            (m): m is ModalitySchema => supportedModalities.includes(m as ModalitySchema)
-          ),
-          priceLevel,
-          usageStats: undefined, // selectable models don't have usage stats
-        };
-      });
+      // Sort with configured models at the end
+      return sortModelsByConfigurationStatus(modelOptions, configuredModelIds);
     },
-    [allConfiguredModels]
+    [allAvailableModels, configuredModelIds]
   );
 
-  // Check if any providers are configured
-  const hasConfiguredTextProviders = configuredTextProviders.length > 0;
-  const hasConfiguredImageProviders = configuredImageProviders.length > 0;
-  const hasAnyConfiguration = hasConfiguredTextProviders || hasConfiguredImageProviders;
-
   return {
-    // Raw data
-    modelsData,
-    isLoading,
-    error,
-
-    // Providers by type
-    textProviders: modelsData?.text || [],
-    imageProviders: modelsData?.image || [],
+    // Models data
+    isLoadingModels,
+    modelsError,
 
     // Configured providers
-    configuredTextProviders,
-    configuredImageProviders,
-    allConfiguredModels,
-
-    // Unconfigured providers
-    unconfiguredTextProviders,
-    unconfiguredImageProviders,
-
-    // Models lists
-    allTextModels,
-    allImageModels,
-
-    // Status checks
-    hasConfiguredTextProviders,
-    hasConfiguredImageProviders,
-    hasAnyConfiguration,
+    allAvailableModels,
 
     // Configurations data
-    configurations: configurations || [],
     isLoadingConfigurations,
     configurationsError,
-
-    // Anonymous token data
-    anonKey,
-    isLoadingAnonToken,
 
     // Configuration mutations
     createConfiguration: createConfigurationMutation.mutate,
     updateConfiguration: updateConfigurationMutation.mutate,
     deleteConfiguration: deleteConfigurationMutation.mutate,
 
-    // Mutation states
-    isCreating: createConfigurationMutation.isPending,
-    isUpdating: updateConfigurationMutation.isPending,
-    isDeleting: deleteConfigurationMutation.isPending,
-
-    // Operations
-    refetch,
-    refetchConfigurations,
-
     // Helper functions
     getFilteredModels,
+
+    // Return converted configurations instead of raw data
+    configurationOptions,
+    configuredModelIds,
   };
 }
