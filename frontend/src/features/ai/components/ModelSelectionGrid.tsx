@@ -29,30 +29,20 @@ export function ModelSelectionGrid({
     );
   }
 
-  const sortedModels = [...models].sort((a, b) => {
-    const aConfigured = configuredModelIds.includes(a.value);
-    const bConfigured = configuredModelIds.includes(b.value);
-
-    if (aConfigured === bConfigured) {
-      return 0;
-    }
-    return aConfigured ? 1 : -1;
-  });
-
   return (
     <div className="flex-1 grid grid-cols-3 gap-5 auto-rows-fr mr-6">
-      {sortedModels.map((model) => {
-        const isConfigured = configuredModelIds.includes(model.value);
-        const isSelected = selectedModelId === model.value;
+      {models.map((model) => {
+        const isConfigured = configuredModelIds.includes(model.modelId);
+        const isSelected = selectedModelId === model.modelId;
 
         return (
           <AIModelCard
-            key={model.value}
+            key={model.id}
             config={model}
             mode="selectable"
             isSelected={isSelected}
             isDisabled={isConfigured}
-            onSelect={() => !isConfigured && onSelectModel(model.value)}
+            onSelect={() => !isConfigured && onSelectModel(model.modelId)}
           />
         );
       })}

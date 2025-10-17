@@ -132,3 +132,14 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ---
 
 [![Star History Chart](https://api.star-history.com/svg?repos=InsForge/insforge&type=Date)](https://www.star-history.com/#InsForge/insforge&Date)
+
+## Translations
+
+- [Arabic | العربية](/i18n/README.ar.md)
+- [Spanish | Español](/i18n/README.es.md)
+- [French | Français](/i18n/README.fr.md)
+- [Hindi | हिंदी](/i18n/README.hi.md)
+- [Japanese | 日本語](/i18n/README.ja.md)
+- [Korean | 한국어](/i18n/README.ko.md)
+- [Portuguese (Brazilian) / Português Brasileiro](/i18n/README.pt-BR.md)
+- [Russian | Русский](/i18n/README.ru.md)
