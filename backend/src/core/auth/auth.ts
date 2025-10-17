@@ -893,24 +893,27 @@ export class AuthService {
     }
 
     try {
-      const decoded = jwt.decode(idToken) as LinkedInUserInfo;
-      if (!decoded) {
-        throw new Error('Invalid LinkedIn token payload');
-      }
+      const { createRemoteJWKSet, jwtVerify } = await import('jose');
+      const JWKS = createRemoteJWKSet(new URL('https://www.linkedin.com/oauth/openid/jwks'));
+      
+      const { payload } = await jwtVerify(idToken, JWKS, {
+        issuer: 'https://www.linkedin.com',
+        audience: config.clientId,
+      });
 
       return {
-        sub: decoded.sub,
-        email: decoded.email || '',
-        email_verified: decoded.email_verified || false,
-        name: decoded.name || '',
-        picture: decoded.picture || '',
-        given_name: decoded.given_name || '',
-        family_name: decoded.family_name || '',
-        locale: decoded.locale || '',
+        sub: String(payload.sub),
+        email: (payload.email as string) || '',
+        email_verified: Boolean(payload.email_verified),
+        name: (payload.name as string) || '',
+        picture: (payload.picture as string) || '',
+        given_name: (payload.given_name as string) || '',
+        family_name: (payload.family_name as string) || '',
+        locale: (payload.locale as string) || '',
       };
     } catch (error) {
       logger.error('LinkedIn token verification failed:', error);
-      throw new Error(`LinkedIn token verification failed: ${error}`);
+      throw new Error('LinkedIn token verification failed');
     }
   }
 
