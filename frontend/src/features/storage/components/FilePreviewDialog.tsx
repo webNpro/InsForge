@@ -29,6 +29,8 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
       return;
     }
 
+    let currentUrl: string | null = null;
+
     const loadPreview = async () => {
       if (!file) {
         return;
@@ -42,6 +44,7 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
         // Fetch file with authentication and create blob URL
         const blob = await downloadObject(fileBucket, file.key);
         const url = URL.createObjectURL(blob);
+        currentUrl = url;
         setPreviewUrl(url);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load preview';
@@ -55,8 +58,8 @@ export function FilePreviewDialog({ open, onOpenChange, file, bucket }: FilePrev
 
     // Cleanup: Revoke blob URL when component unmounts or file changes
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
       }
     };
   }, [file, open, bucket, downloadObject]);
