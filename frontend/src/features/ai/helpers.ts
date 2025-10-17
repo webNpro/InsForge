@@ -1,30 +1,21 @@
-import { OpenRouterModel, ModalitySchema } from '@insforge/shared-schemas';
-
-// Type for pricing information from OpenRouter model
-type ModelPricing = {
-  prompt: string;
-  completion: string;
-  image?: string;
-  request?: string;
-  webSearch?: string;
-  internalReasoning?: string;
-  inputCacheRead?: string;
-  inputCacheWrite?: string;
-};
-
+import {
+  ModalitySchema,
+  AIModelSchema,
+  AIConfigurationWithUsageSchema,
+} from '@insforge/shared-schemas';
 export interface ModelOption {
   id: string;
-  value: string;
-  companyId: string;
+  modelId: string;
   modelName: string;
   providerName: string;
   logo: React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined;
   inputModality: ModalitySchema[];
   outputModality: ModalitySchema[];
-  priceLevel: number;
+  priceLevel?: number;
   usageStats?: {
     totalRequests: number;
   };
+  systemPrompt?: string | null;
 }
 
 import { Type, Image } from 'lucide-react';
@@ -93,48 +84,19 @@ export const getProviderLogo = (
   return logoMap[providerId];
 };
 
-// Calculate price level based on pricing data
-export const calculatePriceLevel = (pricing: ModelPricing | undefined | null): number => {
-  if (!pricing) {
-    return 0;
-  }
-
-  // Check if it's free
-  if (pricing.prompt === '0' && pricing.completion === '0') {
-    return 0;
-  }
-
-  // Calculate average cost per 1M tokens (prompt + completion)
-  // Convert from per-token to per-1M-tokens
-  const promptCostPerToken = parseFloat(pricing.prompt) || 0;
-  const completionCostPerToken = parseFloat(pricing.completion) || 0;
-  const promptCostPer1M = promptCostPerToken * 1000000;
-  const completionCostPer1M = completionCostPerToken * 1000000;
-  const avgCostPer1M = (promptCostPer1M + completionCostPer1M) / 2;
-
-  // Adjusted thresholds based on actual pricing data and user feedback
-  if (avgCostPer1M <= 3) {
-    return 1;
-  } // ≤$3/1M tokens (Haiku, Gemini Flash, etc.)
-  if (avgCostPer1M <= 15) {
-    return 2;
-  } // ≤$15/1M tokens (GPT-4o, Claude Sonnet, etc.)
-  return 3; // >$15/1M tokens (Claude Opus, etc.)
-};
-
 // Helper function to filter AI models based on selected modalities
 export const filterModelsByModalities = (
-  models: OpenRouterModel[],
+  models: AIModelSchema[],
   selectedInputModalities: ModalitySchema[],
   selectedOutputModalities: ModalitySchema[]
-): OpenRouterModel[] => {
+): AIModelSchema[] => {
   if (!models?.length) {
     return [];
   }
 
   return models.filter((model) => {
-    const inputModalities = new Set(model.architecture?.inputModalities || []);
-    const outputModalities = new Set(model.architecture?.outputModalities || []);
+    const inputModalities = new Set(model.inputModality);
+    const outputModalities = new Set(model.outputModality);
     return (
       selectedInputModalities.every((m) => inputModalities.has(m)) &&
       selectedOutputModalities.every((m) => outputModalities.has(m))
@@ -143,13 +105,37 @@ export const filterModelsByModalities = (
 };
 
 // Helper function to get friendly model name from model ID
-export const getFriendlyModelName = (modelId: string): string => {
-  // Extract the model name part (after the last slash)
-  const modelName = modelId.split('/').pop() || modelId;
-
+export const getFriendlyModelName = (rawModelName: string): string => {
   // Convert kebab-case to Title Case
-  return modelName
+  return rawModelName
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+};
+
+export function toModelOption(model: AIModelSchema | AIConfigurationWithUsageSchema): ModelOption {
+  const [rawProviderId, rawModelName] = model.modelId.split('/');
+
+  return {
+    ...model,
+    modelName: getFriendlyModelName(rawModelName),
+    providerName: getProviderDisplayName(rawProviderId),
+    logo: getProviderLogo(rawProviderId),
+  };
+}
+
+// Sort models with configured ones at the end
+export const sortModelsByConfigurationStatus = (
+  models: ModelOption[],
+  configuredModelIds: string[]
+): ModelOption[] => {
+  return [...models].sort((a, b) => {
+    const aConfigured = configuredModelIds.includes(a.modelId);
+    const bConfigured = configuredModelIds.includes(b.modelId);
+
+    if (aConfigured === bConfigured) {
+      return 0;
+    }
+    return aConfigured ? 1 : -1;
+  });
 };

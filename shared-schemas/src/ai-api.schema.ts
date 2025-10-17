@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { aiConfigurationSchema, aiUsageRecordSchema } from './ai.schema';
+import { aiConfigurationSchema, aiUsageRecordSchema, modalitySchema } from './ai.schema';
 
 // ============= Chat Completion Schemas =============
 
@@ -76,54 +76,13 @@ export const imageGenerationResponseSchema = z.object({
     .optional(),
 });
 
-// OpenRouter-specific model schema
-export const openRouterModelSchema = z.object({
+export const aiModelSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  created: z.number(),
-  description: z.string().optional(),
-  architecture: z
-    .object({
-      inputModalities: z.array(z.string()),
-      outputModalities: z.array(z.string()),
-      tokenizer: z.string(),
-      instructType: z.string(),
-    })
-    .optional(),
-  topProvider: z
-    .object({
-      isModerated: z.boolean(),
-      contextLength: z.number(),
-      maxCompletionTokens: z.number(),
-    })
-    .optional(),
-  pricing: z.object({
-    prompt: z.string(),
-    completion: z.string(),
-    image: z.string().optional(),
-    request: z.string().optional(),
-    webSearch: z.string().optional(),
-    internalReasoning: z.string().optional(),
-    inputCacheRead: z.string().optional(),
-    inputCacheWrite: z.string().optional(),
-  }),
-});
-
-export const listModelsResponseSchema = z.object({
-  text: z.array(
-    z.object({
-      provider: z.string(),
-      configured: z.boolean(),
-      models: z.array(openRouterModelSchema),
-    })
-  ),
-  image: z.array(
-    z.object({
-      provider: z.string(),
-      configured: z.boolean(),
-      models: z.array(openRouterModelSchema),
-    })
-  ),
+  inputModality: z.array(modalitySchema).min(1),
+  outputModality: z.array(modalitySchema).min(1),
+  provider: z.string(),
+  modelId: z.string(),
+  priceLevel: z.number().min(0).max(3).optional(),
 });
 
 export const createAIConfigurationRequestSchema = aiConfigurationSchema.omit({
@@ -158,8 +117,7 @@ export type ChatCompletionRequest = z.infer<typeof chatCompletionRequestSchema>;
 export type ChatCompletionResponse = z.infer<typeof chatCompletionResponseSchema>;
 export type ImageGenerationRequest = z.infer<typeof imageGenerationRequestSchema>;
 export type ImageGenerationResponse = z.infer<typeof imageGenerationResponseSchema>;
-export type OpenRouterModel = z.infer<typeof openRouterModelSchema>;
-export type ListModelsResponse = z.infer<typeof listModelsResponseSchema>;
+export type AIModelSchema = z.infer<typeof aiModelSchema>;
 export type CreateAIConfigurationRequest = z.infer<typeof createAIConfigurationRequestSchema>;
 export type UpdateAIConfigurationRequest = z.infer<typeof updateAIConfigurationRequestSchema>;
 export type ListAIUsageResponse = z.infer<typeof listAIUsageResponseSchema>;
