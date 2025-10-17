@@ -3,7 +3,7 @@ import { Button } from '@/components/radix/Button';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import Github from '@/assets/logos/github.svg?react';
 import Google from '@/assets/logos/google.svg?react';
-import Linkedin from '@/assets/logos/linkedin.svg?react';
+import LinkedIn from '@/assets/logos/linkedin.svg?react';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
 import { AddOAuthDialog } from './AddOAuthDialog';
@@ -35,7 +35,7 @@ const providers: OAuthProviderInfo[] = [
   {
     id: 'linkedin',
     name: 'LinkedIn OAuth',
-    icon: <Linkedin className="w-6 h-6 text-[#0A66C2] dark:text-[#0A66C2]" />,
+    icon: <LinkedIn className="w-6 h-6 text-[#0A66C2] dark:text-[#0A66C2]" />,
     description: 'Configure LinkedIn authentication for your users',
     setupUrl: 'https://www.linkedin.com/developers/apps',
   },
