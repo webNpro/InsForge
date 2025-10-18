@@ -188,10 +188,10 @@ openssl rand -base64 24
 
 ```bash
 # Pull Docker images and start services
-docker compose up -d
+suo docker compose up -d
 
 # View logs to ensure everything started correctly
-docker compose logs -f
+sudo docker compose logs -f
 ```
 
 Press `Ctrl+C` to exit log view.
@@ -200,7 +200,7 @@ Press `Ctrl+C` to exit log view.
 
 ```bash
 # Check running containers
-docker compose ps
+sudo docker compose ps
 
 # You should see 5 running services:
 # - insforge-postgres
