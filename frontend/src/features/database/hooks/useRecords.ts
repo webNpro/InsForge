@@ -91,7 +91,7 @@ export function useRecords(tableName: string) {
 
   // Mutation to delete a record
   const deleteRecordMutation = useMutation({
-    mutationFn: (id: string[]) => recordService.deleteRecords(tableName, id),
+    mutationFn: (ids: string[]) => recordService.deleteRecords(tableName, ids),
     onSuccess: (_data, ids) => {
       void queryClient.invalidateQueries({ queryKey: ['records', tableName] });
       void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
