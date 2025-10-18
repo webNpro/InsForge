@@ -66,7 +66,7 @@ export function OAuthConfigDialog({
   // Our Cloud only support shared keys of these OAuth Providers for now
   const isSharedKeysAvailable =
     isInsForgeCloudProject() &&
-    ['google', 'discord', 'linkedin', 'facebook'].includes(provider?.id ?? '');
+    ['google', 'github', 'discord', 'linkedin', 'facebook'].includes(provider?.id ?? '');
 
   // Use useFormState hook for better reactivity
   const { isDirty } = useFormState({
