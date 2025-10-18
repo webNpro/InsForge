@@ -18,7 +18,7 @@ This guide will walk you through deploying InsForge on an AWS EC2 instance using
 2. **Click "Launch Instance"**
 3. **Configure Instance:**
    - **Name**: `insforge-server` (or your preferred name)
-   - **AMI**: Ubuntu Server 22.04 LTS (HVM), SSD Volume Type
+   - **AMI**: Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
    - **Instance Type**: `t3.medium` or larger (minimum 2 vCPU, 4 GB RAM)
      - For production: `t3.large` (2 vCPU, 8 GB RAM) recommended
      - For testing: `t3.small` (2 vCPU, 2 GB RAM) minimum
@@ -188,7 +188,7 @@ openssl rand -base64 24
 
 ```bash
 # Pull Docker images and start services
-suo docker compose up -d
+sudo docker compose up -d
 
 # View logs to ensure everything started correctly
 sudo docker compose logs -f
