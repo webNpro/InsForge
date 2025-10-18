@@ -68,20 +68,9 @@ sudo apt update && sudo apt upgrade -y
 
 #### 3.2 Install Docker
 
-```bash
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Add your user to docker group
-sudo usermod -aG docker $USER
-
-# Install Docker Compose
-sudo apt install docker-compose-plugin -y
-
-# Verify installation
-docker --version
-docker compose version
+```text
+Follow the instructions of the link below to install and verify docker on your new ubuntu ec2 instance:
+https://docs.docker.com/engine/install/ubuntu/
 ```
 
 #### 3.3 Install Git
