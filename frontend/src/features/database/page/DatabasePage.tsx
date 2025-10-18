@@ -311,7 +311,7 @@ function DatabasePageContent() {
 
     if (shouldDelete) {
       try {
-        await Promise.all(ids.map((id) => recordsHook.deleteRecord(id)));
+        await recordsHook.deleteRecords(ids);
         await Promise.all([
           refetchTableData(),
           refetchTables(), // Also refresh tables to update sidebar record counts
