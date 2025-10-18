@@ -107,7 +107,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ## 贡献
 
-**贡献**：如果您有兴趣参与贡献，可以查看我们的贡献指南 [CONTRIBUTING.md](CONTRIBUTING.md)。我们非常欢迎 pull requests（PR），衷心感谢任何形式的帮助！
+**贡献**：如果您有兴趣参与贡献，可以查看我们的贡献指南 [CONTRIBUTING.md](../CONTRIBUTING.md)。我们非常欢迎 pull requests（PR），衷心感谢任何形式的帮助！
 
 **支持**：如果您需要任何帮助，欢迎通过我们的 [Discord channel](https://discord.com/invite/MPxwj5xVvW) 联系我们，我们会及时回复；也欢迎随时给我们发送邮件至 [info@insforge.dev](mailto:info@insforge.dev) ！
 
@@ -126,7 +126,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ## 许可证
 
-该项目使用 Apache License 2.0 许可证 - 完整细节见 [LICENSE](LICENSE) 文件.
+该项目使用 Apache License 2.0 许可证 - 完整细节见 [LICENSE](../LICENSE) 文件.
 
 ---
 
