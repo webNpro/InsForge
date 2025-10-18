@@ -310,16 +310,12 @@ function DatabasePageContent() {
     });
 
     if (shouldDelete) {
-      try {
-        await Promise.all(ids.map((id) => recordsHook.deleteRecord(id)));
-        await Promise.all([
-          refetchTableData(),
-          refetchTables(), // Also refresh tables to update sidebar record counts
-        ]);
-        setSelectedRows(new Set());
-      } catch {
-        showToast('Failed to delete some records', 'error');
-      }
+      await recordsHook.deleteRecords(ids);
+      await Promise.all([
+        refetchTableData(),
+        refetchTables(), // Also refresh tables to update sidebar record counts
+      ]);
+      setSelectedRows(new Set());
     }
   };
 
