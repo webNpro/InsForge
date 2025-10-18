@@ -591,13 +591,11 @@ components:
       properties:
         inputModality:
           type: array
-          nullable: true
           items:
             type: string
             enum: [text, image]
         outputModality:
           type: array
-          nullable: true
           items:
             type: string
             enum: [text, image]
