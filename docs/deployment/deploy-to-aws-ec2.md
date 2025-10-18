@@ -56,8 +56,6 @@ chmod 400 your-key-pair.pem
 
 # Connect via SSH
 ssh -i your-key-pair.pem ubuntu@your-ec2-public-ip
-# or
-sudo ssh -i your-key-pair.pem ubuntu@your-ec2-public-ip
 ```
 
 ### 3. Install Dependencies
@@ -75,7 +73,30 @@ Follow the instructions of the link below to install and verify docker on your n
 https://docs.docker.com/engine/install/ubuntu/
 ```
 
-#### 3.3 Install Git
+#### 3.3 Add Your User to Docker Group
+
+After installing Docker, you need to add your user to the `docker` group to run Docker commands without `sudo`:
+
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Apply the group changes
+newgrp docker
+```
+
+**Verify it works:**
+
+```bash
+# This should now work without sudo
+docker ps
+```
+
+> 💡 **Note**: If `docker ps` doesn't work immediately, log out and log back in via SSH, then try again.
+
+> ⚠️ **Security Note**: Adding a user to the `docker` group grants them root-equivalent privileges on the system. This is acceptable for single-user environments like your EC2 instance, but be cautious on shared systems.
+
+#### 3.4 Install Git
 
 ```bash
 sudo apt install git -y
@@ -188,10 +209,10 @@ openssl rand -base64 24
 
 ```bash
 # Pull Docker images and start services
-sudo docker compose up -d
+docker compose up -d
 
 # View logs to ensure everything started correctly
-sudo docker compose logs -f
+docker compose logs -f
 ```
 
 Press `Ctrl+C` to exit log view.
@@ -200,7 +221,7 @@ Press `Ctrl+C` to exit log view.
 
 ```bash
 # Check running containers
-sudo docker compose ps
+docker compose ps
 
 # You should see 5 running services:
 # - insforge-postgres
@@ -516,4 +537,3 @@ effective_cache_size = 3GB
 **Congratulations! 🎉** Your InsForge instance is now running on AWS EC2. You can start building applications by connecting AI agents to your backend platform.
 
 For other production deployment strategies, check out our [deployment guides](./README.md).
-
