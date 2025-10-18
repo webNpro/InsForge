@@ -89,6 +89,13 @@ export interface GitHubEmailInfo {
   visibility?: string;
 }
 
+export interface DiscordUserInfo {
+  id: string;
+  username: string;
+  email?: string;
+  avatar?: string;
+}
+
 export interface LinkedInUserInfo {
   sub: string;
   email: string;
