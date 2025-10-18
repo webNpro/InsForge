@@ -126,7 +126,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 ## 许可证
 
-该项目使用 the Apache License 2.0 许可证 - 完整细节见 [LICENSE](LICENSE) 文件.
+该项目使用 Apache License 2.0 许可证 - 完整细节见 [LICENSE](LICENSE) 文件.
 
 ---
 
