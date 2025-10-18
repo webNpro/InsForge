@@ -24,7 +24,7 @@ import { DatabaseDataGrid } from '@/features/database/components/DatabaseDataGri
 import { SearchInput, SelectionClearButton, DeleteActionButton } from '@/components';
 import { ConnectCTA } from '@/components/ConnectCTA';
 import { SortColumn } from 'react-data-grid';
-import { convertValueForColumn, isInsForgeCloudProject } from '@/lib/utils/utils';
+import { convertValueForColumn, isIframe } from '@/lib/utils/utils';
 import {
   DataUpdatePayload,
   DataUpdateResourceType,
@@ -397,7 +397,7 @@ function DatabasePageContent() {
                               <p>Edit Table</p>
                             </TooltipContent>
                           </Tooltip>
-                          {!isInsForgeCloudProject() && (
+                          {!isIframe() && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
