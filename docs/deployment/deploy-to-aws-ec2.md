@@ -56,6 +56,8 @@ chmod 400 your-key-pair.pem
 
 # Connect via SSH
 ssh -i your-key-pair.pem ubuntu@your-ec2-public-ip
+# or
+sudo ssh -i your-key-pair.pem ubuntu@your-ec2-public-ip
 ```
 
 ### 3. Install Dependencies
