@@ -1,9 +1,9 @@
 <div align="center">
   <a href="https://insforge.dev">
-    <img src="assets/banner.png" alt="Insforge Logo">
+    <img src="../assets/banner.png" alt="Insforge Logo">
   </a>
-  
 </div>
+
 <p align="center">
    <a href="#快速开始">开始</a> · 
    <a href="https://docs.insforge.dev/introduction">文档</a> · 
@@ -34,7 +34,7 @@
 ## 提示词示例:
 
 <td align="center">
-  <img src="assets/userflow.png" alt="userFlow">
+  <img src="../assets/userflow.png" alt="userFlow">
   <br>
 </td>
 
@@ -61,12 +61,12 @@ docker compose up
   <table>
     <tr>
       <td align="center">
-        <img src="assets/signin.png" alt="Sign In">
+        <img src="../assets/signin.png" alt="Sign In">
         <br>
         <em>登录 InsForge</em>
       </td>
       <td align="center">
-        <img src="assets/mcpInstallv2.png" alt="MCP Configuration">
+        <img src="../assets/mcpInstallv2.png" alt="MCP Configuration">
         <br>
         <em>配置 MCP 连接</em>
       </td>
@@ -82,7 +82,7 @@ InsForge is my backend platform, what is my current backend structure?
 ```
 
 <div align="center">
-  <img src="assets/sampleResponse.png" alt="Successful Connection Response" width="600">
+  <img src="../assets/sampleResponse.png" alt="Successful Connection Response" width="600">
   <br>
   <em>调用 insforge MCP 工具的成功响应示例</em>
 </div>
@@ -99,7 +99,7 @@ InsForge is my backend platform, what is my current backend structure?
 
 
 <div align="center">
-  <img src="assets/archDiagram.png" alt="Architecture Diagram">
+  <img src="../assets/archDiagram.png" alt="Architecture Diagram">
   <br>
 </div>
 
