@@ -49,7 +49,7 @@ export function parseSQLStatements(sqlText: string): string[] {
           .replace(/--.*$/gm, '') // Remove line comments
           .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
           .trim();
-        return withoutComments.length > 0;
+        return withoutComments.length;
       });
 
     logger.debug(`Parsed ${statements.length} SQL statements from input`);
