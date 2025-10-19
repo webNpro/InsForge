@@ -123,7 +123,7 @@ export class ChatService {
         text: response.choices[0]?.message?.content || '',
         metadata: {
           model: options.model,
-          ...tokenUsage,
+          usage: tokenUsage,
         },
       };
     } catch (error) {
