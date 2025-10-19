@@ -1113,7 +1113,7 @@ export class AuthService {
       clientId: config.clientId ? 'SET' : 'NOT SET',
     });
 
-    const authUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
+    const authUrl = new URL('https://www.facebook.com/v21.0/dialog/oauth');
     authUrl.searchParams.set('client_id', config.clientId ?? '');
     authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/facebook/callback`);
     authUrl.searchParams.set('response_type', 'code');
@@ -1140,8 +1140,8 @@ export class AuthService {
     }
 
     const clientSecret = await oauthConfigService.getClientSecretByProvider('facebook');
-    const selfBaseUrl = getApiBaseUrl();
-    const response = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    const selfBaseUrl = 'https://8d54458e5d6e.ngrok-free.app';
+    const response = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
       params: {
         client_id: config.clientId,
         client_secret: clientSecret,
@@ -1161,7 +1161,7 @@ export class AuthService {
    * Get Facebook user info
    */
   async getFacebookUserInfo(accessToken: string): Promise<FacebookUserInfo> {
-    const response = await axios.get('https://graph.facebook.com/v18.0/me', {
+    const response = await axios.get('https://graph.facebook.com/v21.0/me', {
       params: {
         fields: 'id,email,name,first_name,last_name,picture',
         access_token: accessToken,
@@ -1177,13 +1177,14 @@ export class AuthService {
   async findOrCreateFacebookUser(
     facebookUserInfo: FacebookUserInfo
   ): Promise<CreateSessionResponse> {
-    const userName = facebookUserInfo.name || facebookUserInfo.email.split('@')[0];
+    const email = facebookUserInfo.email || '';
+    const userName = facebookUserInfo.name || facebookUserInfo.first_name || `User${facebookUserInfo.id.substring(0, 6)}`;
     const avatarUrl = facebookUserInfo.picture?.data?.url || '';
 
     return this.findOrCreateThirdPartyUser(
       'facebook',
       facebookUserInfo.id,
-      facebookUserInfo.email,
+      email,
       userName,
       avatarUrl,
       facebookUserInfo

@@ -267,6 +267,15 @@ router.get('/shared/callback/:state', async (req: Request, res: Response, next: 
         picture: payloadData.avatar || '',
       };
       result = await authService.findOrCreateLinkedInUser(linkedinUserInfo);
+    } else if (provider === 'facebook') {
+      // Handle Facebook OAuth payload
+      const facebookUserInfo = {
+        id: payloadData.providerId,
+        email: payloadData.email,
+        name: payloadData.name || '',
+        picture: payloadData.picture || { data: { url: payloadData.avatar || '' } },
+      };
+      result = await authService.findOrCreateFacebookUser(facebookUserInfo);
     }
 
     const finalredirectUri = new URL(redirectUri);
