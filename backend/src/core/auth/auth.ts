@@ -845,11 +845,20 @@ async getMicrosoftUserInfo(accessToken: string) {
   };
 
   const email = data.userPrincipalName || data.mail || `${data.id}@users.noreply.microsoft.com`;
+
+  const response = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  });
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  logger.info('Microsoft user avatar URL', { url});
+
   return {
     id: data.id,
     displayName: data.displayName || '', 
     userPrincipalName: data.userPrincipalName || '',
     email,
+    avatar_url: url,
   };
 }
 
@@ -859,6 +868,7 @@ async findOrCreateMicrosoftUser(msUserInfo: {
   displayName?: string;
   userPrincipalName?: string;
   email: string;
+  avatar_url?: string;
 }): Promise<CreateSessionResponse> {
   const userName = msUserInfo.displayName || (msUserInfo.email.split('@')[0] || 'user');
   return this.findOrCreateThirdPartyUser(
@@ -866,7 +876,7 @@ async findOrCreateMicrosoftUser(msUserInfo: {
     msUserInfo.id,
     msUserInfo.email,
     userName,
-    '',
+    msUserInfo.avatar_url || '',
     msUserInfo
   );
 }
