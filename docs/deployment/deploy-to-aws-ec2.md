@@ -123,23 +123,29 @@ nano .env
 Add the following configuration (customize the values):
 
 ```env
+
+# ============================================
+# Server Configuration
+# ============================================
+PORT=7130
+
 # ============================================
 # Database Configuration
 # ============================================
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_secure_postgres_password_here
+POSTGRES_PASSWORD=postgres
 POSTGRES_DB=insforge
 
 # ============================================
 # Security & Authentication
 # ============================================
 # IMPORTANT: Generate a strong random secret for production
-JWT_SECRET=your_jwt_secret_here_min_32_chars
-ENCRYPTION_KEY=your_encryption_key_here_32_chars
+JWT_SECRET=your-secret-key-here-must-be-32-char-or-above
+ENCRYPTION_KEY=
 
 # Admin Account (used for initial setup)
-ADMIN_EMAIL=admin@yourdomain.com
-ADMIN_PASSWORD=your_secure_admin_password
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-this-password
 
 # ============================================
 # API Configuration
@@ -163,15 +169,10 @@ GITHUB_CLIENT_SECRET=
 # AWS Storage Configuration (Optional)
 # ============================================
 # For S3 file storage
+AAWS_S3_BUCKET=
+AWS_REGION=
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
-AWS_REGION=us-east-1
-AWS_S3_BUCKET=
-
-# CloudFront CDN (Optional)
-AWS_CLOUDFRONT_URL=
-AWS_CLOUDFRONT_KEY_PAIR_ID=
-AWS_CLOUDFRONT_PRIVATE_KEY=
 
 # ============================================
 # AI/LLM Configuration (Optional)
