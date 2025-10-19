@@ -2,7 +2,7 @@
   "name": "insforge-official-marketplace",
   "owner": {
     "name": "InsForge Team",
-    "email": "team@insforge.com"
+    "email": "tony.chang@insforge.dev"
   },
   "plugins": [
     {
