@@ -1,21 +1,21 @@
-import { LogSource, AnalyticsLogRecord, LogSourceStats } from '@/types/logs.js';
+import { LogSchema, LogSourceSchema, LogStatsSchema } from '@insforge/shared-schemas';
 
-export interface AnalyticsProvider {
+export interface LogProvider {
   initialize(): Promise<void>;
 
-  getLogSources(): Promise<LogSource[]>;
+  getLogSources(): Promise<LogSourceSchema[]>;
 
   getLogsBySource(
     sourceName: string,
     limit?: number,
     beforeTimestamp?: string
   ): Promise<{
-    logs: AnalyticsLogRecord[];
+    logs: LogSchema[];
     total: number;
     tableName: string;
   }>;
 
-  getLogSourceStats(): Promise<LogSourceStats[]>;
+  getLogSourceStats(): Promise<LogStatsSchema[]>;
 
   searchLogs(
     query: string,
@@ -23,7 +23,7 @@ export interface AnalyticsProvider {
     limit?: number,
     offset?: number
   ): Promise<{
-    logs: (AnalyticsLogRecord & { source: string })[];
+    logs: (LogSchema & { source: string })[];
     total: number;
   }>;
 
@@ -31,7 +31,7 @@ export interface AnalyticsProvider {
 }
 
 // Base class with common functionality
-export abstract class BaseAnalyticsProvider implements AnalyticsProvider {
+export abstract class BaseLogProvider implements LogProvider {
   // Source name mapping for user-friendly display
   protected sourceNameMap: Record<string, string> = {
     'cloudflare.logs.prod': 'insforge.logs',
@@ -59,24 +59,24 @@ export abstract class BaseAnalyticsProvider implements AnalyticsProvider {
   }
 
   abstract initialize(): Promise<void>;
-  abstract getLogSources(): Promise<LogSource[]>;
+  abstract getLogSources(): Promise<LogSourceSchema[]>;
   abstract getLogsBySource(
     sourceName: string,
     limit?: number,
     beforeTimestamp?: string
   ): Promise<{
-    logs: AnalyticsLogRecord[];
+    logs: LogSchema[];
     total: number;
     tableName: string;
   }>;
-  abstract getLogSourceStats(): Promise<LogSourceStats[]>;
+  abstract getLogSourceStats(): Promise<LogStatsSchema[]>;
   abstract searchLogs(
     query: string,
     sourceName?: string,
     limit?: number,
     offset?: number
   ): Promise<{
-    logs: (AnalyticsLogRecord & { source: string })[];
+    logs: (LogSchema & { source: string })[];
     total: number;
   }>;
   abstract close(): Promise<void>;

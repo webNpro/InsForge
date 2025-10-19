@@ -11,7 +11,7 @@ import {
   RotateCw,
   Sparkles,
   Code2,
-  Activity,
+  ChartLine,
   Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/utils';
@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
-import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 
 interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
   onLogout: () => void;
@@ -45,7 +45,7 @@ const navigation: NavigationProps[] = [
   { name: 'Functions', href: '/dashboard/functions', icon: Code2 },
   { name: 'AI', href: '/dashboard/ai', icon: Sparkles },
   // { name: 'Audit', href: '/dashboard/logs', icon: Logs },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
+  { name: 'Logs', href: '/dashboard/logs', icon: ChartLine },
 ];
 
 const bottomNavigation = [

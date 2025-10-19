@@ -22,7 +22,7 @@ import { aiRouter } from '@/api/routes/ai.js';
 import { errorMiddleware } from '@/api/middleware/error.js';
 import fetch, { HeadersInit } from 'node-fetch';
 import { DatabaseManager } from '@/core/database/manager.js';
-import { AnalyticsManager } from '@/core/logs/analytics.js';
+import { LogService } from '@/core/logs/logs.js';
 import { StorageService } from '@/core/storage/storage.js';
 import { SocketService } from '@/core/socket/socket.js';
 import { seedBackend } from '@/utils/seed.js';
@@ -53,9 +53,9 @@ export async function createApp() {
 
   // Metadata is now handled by individual modules on-demand
 
-  // Initialize analytics service
-  const analyticsManager = AnalyticsManager.getInstance();
-  await analyticsManager.initialize(); // connect to _insforge database
+  // Initialize logs service
+  const logService = LogService.getInstance();
+  await logService.initialize(); // connect to CloudWatch
 
   const app = express();
 
@@ -87,25 +87,47 @@ export async function createApp() {
     let responseSize = 0;
 
     // Override send method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.send = function (data: any) {
-      if (data) {
-        responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
+    res.send = function (
+      data: string | Buffer | Record<string, unknown> | unknown[] | number | boolean
+    ) {
+      if (data !== undefined && data !== null) {
+        if (typeof data === 'string') {
+          responseSize = Buffer.byteLength(data);
+        } else if (Buffer.isBuffer(data)) {
+          responseSize = data.length;
+        } else if (typeof data === 'number' || typeof data === 'boolean') {
+          responseSize = Buffer.byteLength(String(data));
+        } else {
+          try {
+            responseSize = Buffer.byteLength(JSON.stringify(data));
+          } catch {
+            // Handle circular references or unstringifiable objects
+            responseSize = 0;
+          }
+        }
       }
       return originalSend.call(this, data);
     };
+
     // Override json method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.json = function (data: any) {
-      if (data) {
-        responseSize = Buffer.byteLength(JSON.stringify(data));
+    res.json = function (
+      data: Record<string, unknown> | unknown[] | string | number | boolean | null
+    ) {
+      if (data !== undefined) {
+        try {
+          responseSize = Buffer.byteLength(JSON.stringify(data));
+        } catch {
+          // Handle circular references or unstringifiable objects
+          responseSize = 0;
+        }
       }
       return originalJson.call(this, data);
     };
+
     // Log after response is finished
     res.on('finish', () => {
-      // Skip logging for analytics endpoints to avoid infinite loops
-      if (req.path.includes('/analytics/')) {
+      // Skip logging for logs endpoints to avoid infinite loops
+      if (req.path.includes('/logs/')) {
         return;
       }
 
@@ -121,6 +143,7 @@ export async function createApp() {
         timestamp: new Date().toISOString(),
       });
     });
+
     next();
   });
 

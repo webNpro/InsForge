@@ -110,7 +110,7 @@ export function AIModelCard({
                     <config.logo className="w-10 h-10 dark:text-white" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-500 rounded flex items-center justify-center text-white text-sm font-bold">
-                      {config.companyId.charAt(0).toUpperCase()}
+                      {config.providerName.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
@@ -133,7 +133,7 @@ export function AIModelCard({
 
         <div className="h-px bg-neutral-200 dark:bg-neutral-700 my-3" />
 
-        {/* Modality indicators */}
+        {/* Modality indicators - use config modalities directly */}
         <div className="flex flex-col gap-3 items-stretch">
           <div className="flex items-center justify-between">
             <span className="text-black dark:text-white">Input</span>
@@ -177,7 +177,7 @@ export function AIModelCard({
             <div className="flex items-center justify-between">
               <span className="text-black dark:text-white">Credit Usage</span>
               <div className="flex items-center">
-                {config.priceLevel > 0 ? (
+                {typeof config.priceLevel === 'number' && config.priceLevel > 0 ? (
                   Array.from({ length: config.priceLevel }).map((_, i) => (
                     <div key={i} className="w-5 h-5 flex items-center justify-center">
                       <DollarSign className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />

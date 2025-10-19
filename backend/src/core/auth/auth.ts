@@ -24,9 +24,12 @@ import {
   GitHubUserInfo,
   GoogleUserInfo,
   MicrosoftUserInfo,
+  LinkedInUserInfo,
+  DiscordUserInfo,
   UserRecord,
 } from '@/types/auth';
 import { ADMIN_ID } from '@/utils/constants';
+import { getApiBaseUrl } from '@/utils/environment';
 
 const JWT_SECRET = () => process.env.JWT_SECRET ?? '';
 const JWT_EXPIRES_IN = '7d';
@@ -281,7 +284,13 @@ export class AuthService {
     email: string,
     userName: string,
     avatarUrl: string,
-    identityData: GoogleUserInfo | GitHubUserInfo | MicrosoftUserInfo | Record<string, unknown>
+    identityData:
+      | GoogleUserInfo
+      | GitHubUserInfo
+      | DiscordUserInfo
+      | LinkedInUserInfo
+      | MicrosoftUserInfo
+      | Record<string, unknown>
   ): Promise<CreateSessionResponse> {
     // First, try to find existing user by provider ID in _account_providers table
     const account = await this.db
@@ -360,7 +369,13 @@ export class AuthService {
     userName: string,
     email: string,
     providerId: string,
-    identityData: GoogleUserInfo | GitHubUserInfo | MicrosoftUserInfo | Record<string, unknown>,
+    identityData:
+      | GoogleUserInfo
+      | GitHubUserInfo
+      | DiscordUserInfo
+      | LinkedInUserInfo
+      | MicrosoftUserInfo
+      | Record<string, unknown>,
     avatarUrl: string
   ): Promise<CreateSessionResponse> {
     const userId = crypto.randomUUID();
@@ -440,7 +455,7 @@ export class AuthService {
       throw new Error('Google OAuth not configured');
     }
 
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
 
     if (config?.useSharedKey) {
       if (!state) {
@@ -450,24 +465,15 @@ export class AuthService {
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
-      const authUrl = await fetch(
+      const response = await axios.get(
         `${cloudBaseUrl}/auth/v1/shared/google?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
-          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         }
       );
-      if (!authUrl.ok) {
-        logger.error('Failed to fetch Google auth URL:', {
-          status: authUrl.status,
-          statusText: authUrl.statusText,
-        });
-        throw new Error(`Failed to fetch Google auth URL: ${authUrl.statusText}`);
-      }
-      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
-      return responseData.auth_url || responseData.url || '';
+      return response.data.auth_url || response.data.url || '';
     }
 
     logger.debug('Google OAuth Config (fresh from DB):', {
@@ -501,7 +507,7 @@ export class AuthService {
       throw new Error('GitHub OAuth not configured');
     }
 
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
 
     if (config?.useSharedKey) {
       if (!state) {
@@ -511,24 +517,15 @@ export class AuthService {
       // Use shared keys if configured
       const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
       const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
-      const authUrl = await fetch(
+      const response = await axios.get(
         `${cloudBaseUrl}/auth/v1/shared/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
-          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         }
       );
-      if (!authUrl.ok) {
-        logger.error('Failed to fetch GitHub auth URL:', {
-          status: authUrl.status,
-          statusText: authUrl.statusText,
-        });
-        throw new Error(`Failed to fetch GitHub auth URL: ${authUrl.statusText}`);
-      }
-      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
-      return responseData.auth_url || responseData.url || '';
+      return response.data.auth_url || response.data.url || '';
     }
 
     logger.debug('GitHub OAuth Config (fresh from DB):', {
@@ -539,6 +536,63 @@ export class AuthService {
     authUrl.searchParams.set('client_id', config.clientId ?? '');
     authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/github/callback`);
     authUrl.searchParams.set('scope', config.scopes ? config.scopes.join(' ') : 'user:email');
+    if (state) {
+      authUrl.searchParams.set('state', state);
+    }
+
+    return authUrl.toString();
+  }
+
+  /**
+   * Generate Discord OAuth authorization URL
+   */
+  async generateDiscordAuthUrl(state?: string): Promise<string> {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('discord');
+
+    if (!config) {
+      throw new Error('Discord OAuth not configured');
+    }
+
+    const selfBaseUrl = getApiBaseUrl();
+
+    if (config?.useSharedKey) {
+      if (!state) {
+        logger.warn('Shared Discord OAuth called without state parameter');
+        throw new Error('State parameter is required for shared Discord OAuth');
+      }
+      // Use shared keys if configured
+      const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
+      const authUrl = await fetch(
+        `${cloudBaseUrl}/auth/v1/shared/discord?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (!authUrl.ok) {
+        logger.error('Failed to fetch Discord auth URL:', {
+          status: authUrl.status,
+          statusText: authUrl.statusText,
+        });
+        throw new Error(`Failed to fetch Discord auth URL: ${authUrl.statusText}`);
+      }
+      const responseData = (await authUrl.json()) as { auth_url?: string; url?: string };
+      return responseData.auth_url || responseData.url || '';
+    }
+
+    logger.debug('Discord OAuth Config (fresh from DB):', {
+      clientId: config.clientId ? 'SET' : 'NOT SET',
+    });
+
+    const authUrl = new URL('https://discord.com/api/oauth2/authorize');
+    authUrl.searchParams.set('client_id', config.clientId ?? '');
+    authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/discord/callback`);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', config.scopes ? config.scopes.join(' ') : 'identify email');
     if (state) {
       authUrl.searchParams.set('state', state);
     }
@@ -578,7 +632,7 @@ export class AuthService {
       });
 
       const clientSecret = await oauthConfigService.getClientSecretByProvider('google');
-      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+      const selfBaseUrl = getApiBaseUrl();
       const response = await axios.post('https://oauth2.googleapis.com/token', {
         code,
         client_id: config.clientId,
@@ -696,7 +750,7 @@ export class AuthService {
     }
 
     const clientSecret = await oauthConfigService.getClientSecretByProvider('github');
-    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const selfBaseUrl = getApiBaseUrl();
     const response = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
@@ -880,6 +934,261 @@ async findOrCreateMicrosoftUser(msUserInfo: {
     msUserInfo
   );
 }
+
+  /**
+   * Exchange Discord code for access token
+   */
+  async exchangeDiscordCodeForToken(code: string): Promise<string> {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('discord');
+
+    if (!config) {
+      throw new Error('Discord OAuth not configured');
+    }
+
+    const clientSecret = await oauthConfigService.getClientSecretByProvider('discord');
+    const selfBaseUrl = getApiBaseUrl();
+    const response = await axios.post(
+      'https://discord.com/api/oauth2/token',
+      new URLSearchParams({
+        client_id: config.clientId ?? '',
+        client_secret: clientSecret ?? '',
+        code,
+        redirect_uri: `${selfBaseUrl}/api/auth/oauth/discord/callback`,
+        grant_type: 'authorization_code',
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    if (!response.data.access_token) {
+      throw new Error('Failed to get access token from Discord');
+    }
+
+    return response.data.access_token;
+  }
+
+  /**
+   * Get Discord user info
+   */
+  async getDiscordUserInfo(accessToken: string) {
+    const response = await axios.get('https://discord.com/api/users/@me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return {
+      id: response.data.id,
+      username: response.data.global_name || response.data.username,
+      email: response.data.email,
+      avatar: response.data.avatar
+        ? `https://cdn.discordapp.com/avatars/${response.data.id}/${response.data.avatar}.png`
+        : '',
+    };
+  }
+
+  /**
+   * Find or create Discord user
+   */
+  async findOrCreateDiscordUser(discordUserInfo: DiscordUserInfo): Promise<CreateSessionResponse> {
+    const userName = discordUserInfo.username;
+    const email = discordUserInfo.email || `${discordUserInfo.id}@users.noreply.discord.local`;
+
+    return this.findOrCreateThirdPartyUser(
+      'discord',
+      discordUserInfo.id,
+      email,
+      userName,
+      discordUserInfo.avatar || '',
+      discordUserInfo
+    );
+  }
+
+  /**
+   * Generate LinkedIn OAuth authorization URL
+   */
+  async generateLinkedInAuthUrl(state?: string): Promise<string | undefined> {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('linkedin');
+
+    if (!config) {
+      throw new Error('LinkedIn OAuth not configured');
+    }
+
+    const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+
+    if (config?.useSharedKey) {
+      if (!state) {
+        logger.warn('Shared LinkedIn OAuth called without state parameter');
+        throw new Error('State parameter is required for shared LinkedIn OAuth');
+      }
+      const cloudBaseUrl = process.env.CLOUD_API_HOST || 'https://api.insforge.dev';
+      const redirectUri = `${selfBaseUrl}/api/auth/oauth/shared/callback/${state}`;
+      const response = await axios.get(
+        `${cloudBaseUrl}/auth/v1/shared/linkedin?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data.auth_url || response.data.url || '';
+    }
+
+    logger.debug('LinkedIn OAuth Config (fresh from DB):', {
+      clientId: config.clientId ? 'SET' : 'NOT SET',
+    });
+
+    const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
+    authUrl.searchParams.set('client_id', config.clientId ?? '');
+    authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/linkedin/callback`);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set(
+      'scope',
+      config.scopes ? config.scopes.join(' ') : 'openid profile email'
+    );
+    if (state) {
+      authUrl.searchParams.set('state', state);
+    }
+
+    return authUrl.toString();
+  }
+
+  /**
+   * Exchange LinkedIn code for tokens
+   */
+  async exchangeCodeToTokenByLinkedIn(
+    code: string
+  ): Promise<{ access_token: string; id_token: string }> {
+    if (this.processedCodes.has(code)) {
+      const cachedTokens = this.tokenCache.get(code);
+      if (cachedTokens) {
+        logger.debug('Returning cached tokens for already processed code.');
+        return cachedTokens;
+      }
+      throw new Error('Authorization code is currently being processed.');
+    }
+
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('linkedin');
+
+    if (!config) {
+      throw new Error('LinkedIn OAuth not configured');
+    }
+
+    try {
+      this.processedCodes.add(code);
+
+      logger.info('Exchanging LinkedIn code for tokens', {
+        hasCode: !!code,
+        clientId: config.clientId?.substring(0, 10) + '...',
+      });
+
+      const clientSecret = await oauthConfigService.getClientSecretByProvider('linkedin');
+      const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+      const response = await axios.post(
+        'https://www.linkedin.com/oauth/v2/accessToken',
+        new URLSearchParams({
+          code,
+          client_id: config.clientId ?? '',
+          client_secret: clientSecret ?? '',
+          redirect_uri: `${selfBaseUrl}/api/auth/oauth/linkedin/callback`,
+          grant_type: 'authorization_code',
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+
+      if (!response.data.access_token || !response.data.id_token) {
+        throw new Error('Failed to get tokens from LinkedIn');
+      }
+
+      const result = {
+        access_token: response.data.access_token,
+        id_token: response.data.id_token,
+      };
+
+      this.tokenCache.set(code, result);
+
+      setTimeout(() => {
+        this.processedCodes.delete(code);
+        this.tokenCache.delete(code);
+      }, 60000);
+
+      return result;
+    } catch (error) {
+      this.processedCodes.delete(code);
+
+      if (axios.isAxiosError(error) && error.response) {
+        logger.error('LinkedIn token exchange failed', {
+          status: error.response.status,
+          error: error.response.data,
+        });
+        throw new Error(`LinkedIn OAuth error: ${JSON.stringify(error.response.data)}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Verify LinkedIn ID token and get user info
+   */
+  async verifyLinkedInToken(idToken: string) {
+    const oauthConfigService = OAuthConfigService.getInstance();
+    const config = await oauthConfigService.getConfigByProvider('linkedin');
+
+    if (!config) {
+      throw new Error('LinkedIn OAuth not configured');
+    }
+
+    try {
+      const { createRemoteJWKSet, jwtVerify } = await import('jose');
+      const JWKS = createRemoteJWKSet(new URL('https://www.linkedin.com/oauth/openid/jwks'));
+
+      const { payload } = await jwtVerify(idToken, JWKS, {
+        issuer: 'https://www.linkedin.com',
+        audience: config.clientId,
+      });
+
+      return {
+        sub: String(payload.sub),
+        email: (payload.email as string) || '',
+        email_verified: Boolean(payload.email_verified),
+        name: (payload.name as string) || '',
+        picture: (payload.picture as string) || '',
+        given_name: (payload.given_name as string) || '',
+        family_name: (payload.family_name as string) || '',
+        locale: (payload.locale as string) || '',
+      };
+    } catch (error) {
+      logger.error('LinkedIn token verification failed:', error);
+      throw new Error('LinkedIn token verification failed');
+    }
+  }
+
+  /**
+   * Find or create LinkedIn user
+   */
+  async findOrCreateLinkedInUser(
+    linkedinUserInfo: LinkedInUserInfo
+  ): Promise<CreateSessionResponse> {
+    const userName = linkedinUserInfo.name || linkedinUserInfo.email.split('@')[0];
+    return this.findOrCreateThirdPartyUser(
+      'linkedin',
+      linkedinUserInfo.sub,
+      linkedinUserInfo.email,
+      userName,
+      linkedinUserInfo.picture || '',
+      linkedinUserInfo
+    );
+  }
 
   async getMetadata(): Promise<AuthMetadataSchema> {
     const oAuthConfigService = OAuthConfigService.getInstance();

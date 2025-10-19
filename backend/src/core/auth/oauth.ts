@@ -184,6 +184,10 @@ export class OAuthConfigService {
           scopes = ['user:email'];
         } else if (provider === 'microsoft') {
           scopes = ['User.Read'];
+        } else if (provider === 'discord') {
+          scopes = ['identify', 'email'];
+        } else if (provider === 'linkedin') {
+          scopes = ['openid', 'profile', 'email'];
         }
       }
 

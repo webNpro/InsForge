@@ -14,9 +14,10 @@ export class UsageService {
   /**
    * Get MCP usage records
    */
-  async getMcpUsage(success: boolean = true): Promise<McpUsageRecord[]> {
+  async getMcpUsage(success: boolean = true, limit: number = 500): Promise<McpUsageRecord[]> {
     const params = new URLSearchParams({
       success: success.toString(),
+      limit: limit.toString(),
     });
 
     const data = (await apiClient.request(`/usage/mcp?${params.toString()}`, {

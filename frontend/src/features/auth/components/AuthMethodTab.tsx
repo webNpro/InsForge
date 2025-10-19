@@ -4,6 +4,8 @@ import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import Github from '@/assets/logos/github.svg?react';
 import Google from '@/assets/logos/google.svg?react';
 import Microsoft from '@/assets/logos/microsoft.svg?react';
+import Discord from '@/assets/logos/discord.svg?react';
+import LinkedIn from '@/assets/logos/linkedin.svg?react';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
 import { AddOAuthDialog } from './AddOAuthDialog';
@@ -39,10 +41,24 @@ const providers: OAuthProviderInfo[] = [
     description: 'Configure Microsoft authentication for your users',
     setupUrl: 'https://portal.azure.com/',
   },
+  {
+    id: 'discord',
+    name: 'Discord OAuth',
+    icon: <Discord className="w-6 h-6" />,
+    description: 'Configure Discord authentication for your users',
+    setupUrl: 'https://discord.com/developers/applications',
+  },
+  {
+    id: 'linkedin',
+    name: 'LinkedIn OAuth',
+    icon: <LinkedIn className="w-6 h-6 text-[#0A66C2] dark:text-[#0A66C2]" />,
+    description: 'Configure LinkedIn authentication for your users',
+    setupUrl: 'https://www.linkedin.com/developers/apps',
+  },
 ];
 
 export interface OAuthProviderInfo {
-  id: 'google' | 'github' | 'microsoft';
+  id: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft';
   name: string;
   icon: ReactElement;
   description: string;
@@ -68,7 +84,10 @@ export function AuthMethodTab() {
     setIsDialogOpen(true);
   };
 
-  const deleteOAuthConfig = async (providerId: 'google' | 'github' | 'microsoft', providerName: string) => {
+  const deleteOAuthConfig = async (
+    providerId: 'google' | 'github' | 'linkedin' | 'discord', | 'microsoft'
+    providerName: string
+  ) => {
     const shouldDelete = await confirm({
       title: `Delete ${providerName} OAuth`,
       description: `Are you sure you want to delete the ${providerName} configuration? This action cannot be undone.`,
@@ -103,6 +122,8 @@ export function AuthMethodTab() {
     return {
       google: isProviderConfigured('google'),
       github: isProviderConfigured('github'),
+      discord: isProviderConfigured('discord'),
+      linkedin: isProviderConfigured('linkedin'),
       microsoft: isProviderConfigured('microsoft'),
     };
   }, [isProviderConfigured]);
@@ -112,7 +133,7 @@ export function AuthMethodTab() {
     return providers.every((provider) => enabledProviders[provider.id]);
   }, [enabledProviders]);
 
-  const handleConfirmSelected = (selectedId: 'google' | 'github' | 'microsoft') => {
+  const handleConfirmSelected = (selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft') => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);
     if (!selectedProvider) {

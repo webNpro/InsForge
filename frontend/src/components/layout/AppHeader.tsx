@@ -68,11 +68,13 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
     <div className="h-16 w-full bg-white dark:bg-neutral-800 border-b border-border-gray dark:border-neutral-700 z-50 flex items-center justify-between px-6">
       {/* Logo */}
       <div className="px-2 py-3">
-        <img
-          src={resolvedTheme === 'light' ? InsForgeLogoLight : InsForgeLogoDark}
-          alt="Insforge Logo"
-          className="h-8 w-auto"
-        />
+        <a href="https://insforge.dev" target="_blank" rel="noopener noreferrer">
+          <img
+            src={resolvedTheme === 'light' ? InsForgeLogoLight : InsForgeLogoDark}
+            alt="Insforge Logo"
+            className="h-8 w-auto"
+          />
+        </a>
       </div>
 
       {/* Social Links */}
@@ -93,7 +95,7 @@ export default function AppHeader({ currentUser, onLogout }: AppHeaderProps) {
 
         {/* Discord Badge */}
         <a
-          href="https://discord.gg/mqPxArVZ26"
+          href="https://discord.com/invite/MPxwj5xVvW"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 h-10 px-4 text-zinc-50 text-sm font-medium bg-[#5765F2] hover:bg-[#3E4CD7] rounded-full transition-all duration-200"

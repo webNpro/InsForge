@@ -23,7 +23,7 @@ import { Input } from '@/components/radix/Input';
 import { ButtonWithLoading } from '@/components/ButtonWithLoading';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 import { loginFormSchema, LoginFormData } from '@/lib/utils/validation-schemas';
 
 export default function LoginPage() {

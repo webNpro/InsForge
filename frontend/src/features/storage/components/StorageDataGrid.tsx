@@ -135,6 +135,7 @@ export function createStorageColumns(
     columns.push({
       key: 'actions',
       name: '',
+      minWidth: 120,
       maxWidth: 120,
       resizable: false,
       sortable: false,
@@ -178,7 +179,7 @@ export function createStorageColumns(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 hover:bg-red-50"
+                className="h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(row as StorageFileSchema);

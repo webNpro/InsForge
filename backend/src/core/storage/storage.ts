@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { DatabaseManager } from '@/core/database/manager.js';
 import { StorageRecord, BucketRecord } from '@/types/storage.js';
 import {
@@ -26,9 +25,7 @@ import { ADMIN_ID } from '@/utils/constants';
 import { AppError } from '@/api/middleware/error';
 import { ERROR_CODES } from '@/types/error-constants';
 import { escapeSqlLikePattern, escapeRegexPattern } from '@/utils/validations.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getApiBaseUrl } from '@/utils/environment';
 
 // Storage backend interface
 interface StorageBackend {
@@ -115,7 +112,7 @@ class LocalStorageBackend implements StorageBackend {
     _metadata: { contentType?: string; size?: number }
   ): Promise<UploadStrategyResponse> {
     // For local storage, return direct upload strategy with absolute URL
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const baseUrl = getApiBaseUrl();
     return Promise.resolve({
       method: 'direct',
       uploadUrl: `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
@@ -131,7 +128,7 @@ class LocalStorageBackend implements StorageBackend {
     _isPublic?: boolean
   ): Promise<DownloadStrategyResponse> {
     // For local storage, return direct download URL with absolute URL
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
+    const baseUrl = getApiBaseUrl();
     return Promise.resolve({
       method: 'direct',
       url: `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
@@ -450,7 +447,7 @@ export class StorageService {
       this.backend = new S3StorageBackend(s3Bucket, appKey, process.env.AWS_REGION || 'us-east-2');
     } else {
       // Use local filesystem backend
-      const baseDir = process.env.STORAGE_DIR || path.join(__dirname, '../../data/storage');
+      const baseDir = process.env.STORAGE_DIR || path.resolve(process.cwd(), 'insforge-storage');
       this.backend = new LocalStorageBackend(baseDir);
     }
   }
@@ -586,7 +583,7 @@ export class StorageService {
       size: file.size,
       mimeType: file.mimetype,
       uploadedAt: result.uploadedAt,
-      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(finalKey)}`,
+      url: `${getApiBaseUrl()}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(finalKey)}`,
     };
   }
 
@@ -620,7 +617,7 @@ export class StorageService {
         size: metadata.size,
         mimeType: metadata.mime_type,
         uploadedAt: metadata.uploaded_at,
-        url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+        url: `${getApiBaseUrl()}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
       },
     };
   }
@@ -707,7 +704,7 @@ export class StorageService {
         ...obj,
         mimeType: obj.mime_type,
         uploadedAt: obj.uploaded_at,
-        url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
+        url: `${getApiBaseUrl()}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(obj.key)}`,
       })),
       total,
     };
@@ -908,7 +905,7 @@ export class StorageService {
       size: metadata.size,
       mimeType: metadata.contentType,
       uploadedAt: result.uploadedAt,
-      url: `${process.env.API_BASE_URL || 'http://localhost:7130'}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
+      url: `${getApiBaseUrl()}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`,
     };
   }
 

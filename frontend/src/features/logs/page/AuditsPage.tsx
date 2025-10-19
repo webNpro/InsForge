@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Search, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/radix/Button';
 import { Input } from '@/components/radix/Input';
 import { Alert, AlertDescription } from '@/components/radix/Alert';
-import { LogsTable } from '@/features/logs/components/LogsTable';
+import { LogsTable, LogsTableColumn } from '@/features/logs/components/LogsTable';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useConfirm } from '@/lib/hooks/useConfirm';
 import {
@@ -13,7 +13,20 @@ import {
   TooltipTrigger,
 } from '@/components/radix/Tooltip';
 import { useAuditLogs, useClearAuditLogs } from '@/features/logs/hooks/useAuditLogs';
-import type { GetAuditLogsRequest } from '@insforge/shared-schemas';
+import type { GetAuditLogsRequest, AuditLogSchema } from '@insforge/shared-schemas';
+import { PaginationControls } from '@/components/PaginationControls';
+
+function formatTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
 
 export default function AuditsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +86,87 @@ export default function AuditsPage() {
   // Extract data from response
   const logsData = logsResponse?.data || [];
   const totalRecords = logsResponse?.pagination?.total || 0;
+
+  // Define columns for audit logs
+  const renderActor = useCallback(
+    (log: AuditLogSchema) => (
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 truncate">
+        {log.actor}
+      </p>
+    ),
+    []
+  );
+
+  const renderAction = useCallback(
+    (log: AuditLogSchema) => (
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 truncate">
+        {log.action}
+      </p>
+    ),
+    []
+  );
+
+  const renderModule = useCallback(
+    (log: AuditLogSchema) => (
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 truncate">
+        {log.module}
+      </p>
+    ),
+    []
+  );
+
+  const renderDetails = useCallback(
+    (log: AuditLogSchema) => (
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6 break-all">
+        {log.details ? JSON.stringify(log.details) : '-'}
+      </p>
+    ),
+    []
+  );
+
+  const renderTime = useCallback(
+    (log: AuditLogSchema) => (
+      <p className="text-sm text-gray-900 dark:text-white font-normal leading-6">
+        {formatTime(log.createdAt)}
+      </p>
+    ),
+    []
+  );
+
+  const columns = useMemo(
+    (): LogsTableColumn<AuditLogSchema>[] => [
+      {
+        key: 'actor',
+        label: 'Actor',
+        width: '200px',
+        render: renderActor,
+      },
+      {
+        key: 'action',
+        label: 'Action',
+        width: '200px',
+        render: renderAction,
+      },
+      {
+        key: 'module',
+        label: 'Module',
+        width: '150px',
+        render: renderModule,
+      },
+      {
+        key: 'details',
+        label: 'Details',
+        render: renderDetails,
+      },
+      {
+        key: 'createdAt',
+        label: 'Time',
+        width: '250px',
+        render: renderTime,
+      },
+    ],
+    [renderActor, renderAction, renderModule, renderDetails, renderTime]
+  );
   return (
     <div className="flex h-full bg-bg-gray dark:bg-neutral-800">
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -141,7 +235,7 @@ export default function AuditsPage() {
                 placeholder="Search logs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-11 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 rounded-full text-sm"
+                className="pl-9 h-11 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 rounded-full text-sm dark:text-white"
               />
             </div>
           </div>
@@ -155,33 +249,48 @@ export default function AuditsPage() {
             </Alert>
           )}
 
-          {logsData.length === 0 && !isLoading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-neutral-600 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No Audit Logs Available
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-neutral-400">
-                  {searchQuery
-                    ? 'No logs found matching your search criteria'
-                    : 'Audit logs will appear here once operations are performed'}
-                </p>
+          <div className="flex-1 flex flex-col overflow-hidden px-8">
+            {logsData.length === 0 && !isLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-neutral-600 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    No Audit Logs Available
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-neutral-400">
+                    {searchQuery
+                      ? 'No logs found matching your search criteria'
+                      : 'Audit logs will appear here once operations are performed'}
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <LogsTable
-              logs={logsData}
-              loading={isLoading}
-              searchQuery={searchQuery}
-              onRefresh={() => void refetch()}
-              onConfirm={confirm}
-              currentPage={currentPage}
-              totalRecords={totalRecords}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-            />
-          )}
+            ) : (
+              <>
+                <div className="flex-1 overflow-hidden">
+                  <LogsTable<AuditLogSchema>
+                    columns={columns}
+                    data={logsData}
+                    isLoading={isLoading}
+                    emptyMessage={
+                      searchQuery
+                        ? 'No audit logs match your search criteria'
+                        : 'No audit logs found'
+                    }
+                  />
+                </div>
+                {!isLoading && logsData.length > 0 && (
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(totalRecords / pageSize)}
+                    onPageChange={setCurrentPage}
+                    totalRecords={totalRecords}
+                    pageSize={pageSize}
+                    recordLabel="Audit Logs"
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 

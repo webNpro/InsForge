@@ -2,7 +2,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/lib/contexts/ThemeContext';
 import { cn } from '@/lib/utils/utils';
-import { useMcpUsage } from '@/features/usage/hooks/useMcpUsage';
+import { useMcpUsage } from '@/features/logs/hooks/useMcpUsage';
 
 interface CloudLayoutProps {
   children: React.ReactNode;
