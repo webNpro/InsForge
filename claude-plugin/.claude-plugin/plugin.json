@@ -2,7 +2,9 @@
   "name": "insforge",
   "version": "1.0.0",
   "description": "Official InsForge plugin for Claude Code with skills, templates, and commands for building full-stack applications with InsForge BaaS",
-  "author": "InsForge Team",
+  "author": {
+    "name": "InsForge Team"
+  },
   "repository": "https://github.com/InsForge/InsForge",
   "homepage": "https://insforge.com",
   "keywords": [
