@@ -25,9 +25,9 @@ export function AddOAuthDialog({
   onConfirm,
   enabledProviders,
 }: AddOAuthDialogProps) {
-  const [selectedId, setSelectedId] = useState<'google' | 'github' | 'discord' | 'linkedin' | 'microsoft' | null>(
-    null
-  );
+  const [selectedId, setSelectedId] = useState<
+  'google' | 'github' | 'discord' | 'linkedin' | 'microsoft' | null
+  >(null);
 
   // Reset selection when dialog opens
   useEffect(() => {

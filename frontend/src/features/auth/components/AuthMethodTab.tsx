@@ -133,7 +133,9 @@ export function AuthMethodTab() {
     return providers.every((provider) => enabledProviders[provider.id]);
   }, [enabledProviders]);
 
-  const handleConfirmSelected = (selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft') => {
+  const handleConfirmSelected = (
+    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft'
+  ) => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);
     if (!selectedProvider) {

@@ -353,8 +353,7 @@ router.get('/:provider/callback', async (req: Request, res: Response, _: NextFun
       const accessToken = await authService.exchangeCodeToTokenByMicrosoft(code as string);
       const microsoftUserInfo = await authService.getMicrosoftUserInfo(accessToken.access_token);
       result = await authService.findOrCreateMicrosoftUser(microsoftUserInfo);
-    }
-    else if (provider === 'discord') {
+    } else if (provider === 'discord') {
       if (!code) {
         throw new AppError('No authorization code provided', 400, ERROR_CODES.INVALID_INPUT);
       }
