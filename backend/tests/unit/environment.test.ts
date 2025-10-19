@@ -4,6 +4,7 @@ import {
   isDevelopment,
   isProduction,
 } from '../../src/utils/environment';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 
 describe('Environment utils', () => {
   const OLD_ENV = process.env;
@@ -16,17 +17,17 @@ describe('Environment utils', () => {
     process.env = OLD_ENV;
   });
 
-  test('isCloudEnvironment returns true if AWS_INSTANCE_PROFILE_NAME is set', () => {
+  it('isCloudEnvironment returns true if AWS_INSTANCE_PROFILE_NAME is set', () => {
     process.env.AWS_INSTANCE_PROFILE_NAME = 'my-profile';
     expect(isCloudEnvironment()).toBe(true);
   });
 
-  test('isCloudEnvironment returns false if AWS_INSTANCE_PROFILE_NAME is missing', () => {
+  it('isCloudEnvironment returns false if AWS_INSTANCE_PROFILE_NAME is missing', () => {
     delete process.env.AWS_INSTANCE_PROFILE_NAME;
     expect(isCloudEnvironment()).toBe(false);
   });
 
-  test('isOAuthSharedKeysAvailable returns same as isCloudEnvironment', () => {
+  it('isOAuthSharedKeysAvailable returns same as isCloudEnvironment', () => {
     process.env.AWS_INSTANCE_PROFILE_NAME = 'profile';
     expect(isOAuthSharedKeysAvailable()).toBe(true);
 
@@ -34,7 +35,7 @@ describe('Environment utils', () => {
     expect(isOAuthSharedKeysAvailable()).toBe(false);
   });
 
-  test('isDevelopment works correctly', () => {
+  it('isDevelopment works correctly', () => {
     process.env.NODE_ENV = 'development';
     expect(isDevelopment()).toBe(true);
 
@@ -45,7 +46,7 @@ describe('Environment utils', () => {
     expect(isDevelopment()).toBe(true);
   });
 
-  test('isProduction works correctly', () => {
+  it('isProduction works correctly', () => {
     process.env.NODE_ENV = 'production';
     expect(isProduction()).toBe(true);
 

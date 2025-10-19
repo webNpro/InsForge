@@ -1,18 +1,19 @@
 import { verifyCloudToken } from '../../src/utils/cloud-token';
 import { jwtVerify } from 'jose';
-import { AppError } from '../../src/api/middleware/error';
+import { AppError } from '../../src/api/middleware/error.ts';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 
 // Mock jose.jwtVerify
-jest.mock('jose', () => ({
-  jwtVerify: jest.fn(),
-  createRemoteJWKSet: jest.fn(() => 'mockedJwks'),
+vi.mock('jose', () => ({
+  jwtVerify: vi.fn(),
+  createRemoteJWKSet: vi.fn(() => 'mockedJwks'),
 }));
 
 describe('verifyCloudToken', () => {
   const oldEnv = process.env;
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     process.env = { ...oldEnv, PROJECT_ID: 'project_123', CLOUD_API_HOST: 'https://mock-api.dev' };
   });
 
@@ -20,8 +21,8 @@ describe('verifyCloudToken', () => {
     process.env = oldEnv;
   });
 
-  test('returns payload and projectId if valid', async () => {
-    (jwtVerify as jest.Mock).mockResolvedValue({
+  it('returns payload and projectId if valid', async () => {
+    (jwtVerify as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       payload: { projectId: 'project_123', user: 'testUser' },
     });
 
@@ -30,8 +31,8 @@ describe('verifyCloudToken', () => {
     expect(result.payload.user).toBe('testUser');
   });
 
-  test('throws AppError if project ID mismatch or missing', async () => {
-    (jwtVerify as jest.Mock).mockResolvedValue({
+  it('throws AppError if project ID mismatch or missing', async () => {
+   (jwtVerify as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       payload: {}, // missing projectId also counts as mismatch
     });
 

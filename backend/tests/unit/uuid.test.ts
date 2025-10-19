@@ -1,4 +1,4 @@
-// backend/tests/utils/generateUUID.test.ts
+import { describe, test, expect } from 'vitest';
 import { generateUUID } from '../../src/utils/uuid';
 
 describe('generateUUID', () => {

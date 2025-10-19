@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-
+import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
@@ -10,6 +10,11 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/', 'frontend/', 'tests/', '**/*.d.ts', '**/*.config.*'],
     },
+  
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    },
+  
     testTimeout: 10000,
     // Run tests sequentially to avoid database conflicts
     pool: 'forks',
