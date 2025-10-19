@@ -1178,7 +1178,10 @@ export class AuthService {
     facebookUserInfo: FacebookUserInfo
   ): Promise<CreateSessionResponse> {
     const email = facebookUserInfo.email || '';
-    const userName = facebookUserInfo.name || facebookUserInfo.first_name || `User${facebookUserInfo.id.substring(0, 6)}`;
+    const userName =
+      facebookUserInfo.name ||
+      facebookUserInfo.first_name ||
+      `User${facebookUserInfo.id.substring(0, 6)}`;
     const avatarUrl = facebookUserInfo.picture?.data?.url || '';
 
     return this.findOrCreateThirdPartyUser(
