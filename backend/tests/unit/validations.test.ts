@@ -7,7 +7,7 @@ import {
   escapeSqlLikePattern,
   escapeRegexPattern,
 } from '../../src/utils/validations';
-import { AppError } from '../../src/api/middleware/error.ts';
+import { AppError } from '../../src/api/middleware/error';
 import { describe, test, expect } from 'vitest';
 
 describe('Validations Utils', () => {

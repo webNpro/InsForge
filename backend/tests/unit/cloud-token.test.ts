@@ -1,6 +1,6 @@
 import { verifyCloudToken } from '../../src/utils/cloud-token';
 import { jwtVerify } from 'jose';
-import { AppError } from '../../src/api/middleware/error.ts';
+import { AppError } from '../../src/api/middleware/error';
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 
 // Mock jose.jwtVerify
