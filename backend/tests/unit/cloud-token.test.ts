@@ -32,7 +32,7 @@ describe('verifyCloudToken', () => {
   });
 
   it('throws AppError if project ID mismatch or missing', async () => {
-   (jwtVerify as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (jwtVerify as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       payload: {}, // missing projectId also counts as mismatch
     });
 

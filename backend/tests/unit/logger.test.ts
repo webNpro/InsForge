@@ -13,10 +13,10 @@ describe('Logger', () => {
   });
 
   it('should call logger.error when logging errors', () => {
-  const error = new Error('Test error');
-  const logSpy = vi.spyOn(logger, 'error').mockImplementation((infoObject: object) => logger);
-  logger.error(error);
-  expect(logSpy).toHaveBeenCalled();
-  logSpy.mockRestore();
-});
+    const error = new Error('Test error');
+    const logSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+    logger.error(error);
+    expect(logSpy).toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
 });

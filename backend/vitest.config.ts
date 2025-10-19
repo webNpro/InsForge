@@ -5,12 +5,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-
-    resolve: {
+  resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      '@insforge/shared-schemas': path.resolve(__dirname, '../shared-schemas/src'),
     },
-
   },
   test: {
     environment: 'node',
@@ -22,7 +21,6 @@ export default defineConfig({
       exclude: ['node_modules/', 'dist/', 'frontend/', 'tests/', '**/*.d.ts', '**/*.config.*'],
     },
 
-  
     testTimeout: 10000,
     // Run tests sequentially to avoid database conflicts
     pool: 'forks',

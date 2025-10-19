@@ -10,9 +10,9 @@ describe('parseSQLStatements', () => {
     `;
     const result = parseSQLStatements(sql);
     expect(result).toEqual([
-      "SELECT * FROM users",
+      'SELECT * FROM users',
       "INSERT INTO users (name) VALUES ('John')",
-      "DELETE FROM users WHERE id = 1"
+      'DELETE FROM users WHERE id = 1',
     ]);
   });
 
@@ -24,7 +24,7 @@ describe('parseSQLStatements', () => {
     const result = parseSQLStatements(sql);
     // Parser returns the statement with comments filtered out
     expect(result).toHaveLength(1);
-    expect(result[0]).toContain("SELECT * FROM users");
+    expect(result[0]).toContain('SELECT * FROM users');
   });
 
   it('ignores block comments', () => {
@@ -36,7 +36,7 @@ describe('parseSQLStatements', () => {
     const result = parseSQLStatements(sql);
     // Parser returns the statement with comments filtered out
     expect(result).toHaveLength(1);
-    expect(result[0]).toContain("SELECT * FROM users");
+    expect(result[0]).toContain('SELECT * FROM users');
   });
 
   it('handles semicolons inside string literals', () => {
