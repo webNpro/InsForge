@@ -1140,7 +1140,7 @@ export class AuthService {
     }
 
     const clientSecret = await oauthConfigService.getClientSecretByProvider('facebook');
-    const selfBaseUrl = 'https://8d54458e5d6e.ngrok-free.app';
+    const selfBaseUrl = getApiBaseUrl();
     const response = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
       params: {
         client_id: config.clientId,
