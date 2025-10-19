@@ -169,7 +169,7 @@ GITHUB_CLIENT_SECRET=
 # AWS Storage Configuration (Optional)
 # ============================================
 # For S3 file storage
-AAWS_S3_BUCKET=
+AWS_S3_BUCKET=
 AWS_REGION=
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
