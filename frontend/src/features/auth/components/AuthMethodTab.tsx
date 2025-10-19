@@ -85,7 +85,7 @@ export function AuthMethodTab() {
   };
 
   const deleteOAuthConfig = async (
-    providerId: 'google' | 'github' | 'linkedin' | 'discord', | 'microsoft'
+    providerId: 'google' | 'github' | 'linkedin' | 'discord' | 'microsoft',
     providerName: string
   ) => {
     const shouldDelete = await confirm({
