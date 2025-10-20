@@ -480,7 +480,7 @@ export function TableForm({
               {/* Columns Table */}
               <div className="px-3 overflow-x-auto">
                 {/* Table Headers */}
-                <div className="flex items-center gap-6 px-4 py-2 p-10 w-min xl:w-full bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-700 dark:text-white">
+                <div className="flex items-center gap-6 px-4 py-2 w-min xl:w-full bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-700 dark:text-white">
                   <div className="flex-1 min-w-[175px]">Name</div>
                   <div className="flex-1 min-w-[175px]">Type</div>
                   <div className="flex-1 min-w-[175px]">Default Value</div>
@@ -522,7 +522,7 @@ export function TableForm({
 
             {/* Foreign Keys Section */}
             <div className="bg-white pb-3 rounded-xl border border-zinc-200 overflow-hidden dark:bg-neutral-800 dark:border-transparent">
-              <div className="p-6 ">
+              <div className="p-6">
                 <h2 className="text-base font-semibold text-black dark:text-white">Foreign Keys</h2>
                 <p className="text-sm text-zinc-500 dark:text-neutral-400">
                   Create a relationship between this table and another table
