@@ -187,7 +187,7 @@ export class OAuthConfigService {
         } else if (provider === 'linkedin') {
           scopes = ['openid', 'profile', 'email'];
         } else if (provider === 'facebook') {
-          scopes = ['public_profile'];
+          scopes = ['email', 'public_profile'];
         }
       }
 
