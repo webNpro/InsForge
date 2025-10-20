@@ -147,10 +147,6 @@ ENCRYPTION_KEY=
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
 
-# Frontend Admin Credentials (must match above during development phase)
-VITE_ADMIN_EMAIL=admin@example.com
-VITE_ADMIN_PASSWORD=change-this-password
-
 # ============================================
 # API Configuration
 # ============================================
