@@ -26,22 +26,24 @@ function DatabaseTextCellEditor({
   onRowChange,
   onClose,
   onCellEdit,
+  primaryKeyColumn,
 }: RenderEditCellProps<DatabaseDataGridRow> & {
   onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>;
+  primaryKeyColumn: string;
 }) {
   const handleValueChange = React.useCallback(
     (newValue: string) => {
       const oldValue = row[column.key];
 
       if (onCellEdit && String(oldValue) !== String(newValue)) {
-        void onCellEdit(String(row.id || ''), column.key, newValue);
+        void onCellEdit(String(row[primaryKeyColumn] || ''), column.key, newValue);
       }
 
       const updatedRow = { ...row, [column.key]: newValue };
       onRowChange(updatedRow);
       onClose();
     },
-    [row, column.key, onCellEdit, onRowChange, onClose]
+    [row, column.key, onCellEdit, onRowChange, onClose, primaryKeyColumn]
   );
 
   return (
@@ -61,23 +63,25 @@ function DatabaseBooleanCellEditor({
   onClose,
   onCellEdit,
   columnSchema,
+  primaryKeyColumn,
 }: RenderEditCellProps<DatabaseDataGridRow> & {
   onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>;
   columnSchema: ColumnSchema;
+  primaryKeyColumn: string;
 }) {
   const handleValueChange = React.useCallback(
     (newValue: string) => {
       const value: boolean | null = newValue === 'null' ? null : newValue === 'true';
 
       if (onCellEdit && row[column.key] !== value) {
-        void onCellEdit(String(row.id || ''), column.key, newValue);
+        void onCellEdit(String(row[primaryKeyColumn] || ''), column.key, newValue);
       }
 
       const updatedRow = { ...row, [column.key]: value };
       onRowChange(updatedRow);
       onClose();
     },
-    [row, column.key, onRowChange, onClose, onCellEdit]
+    [row, column.key, onRowChange, onClose, onCellEdit, primaryKeyColumn]
   );
 
   return (
@@ -97,9 +101,11 @@ function DatabaseDateCellEditor({
   onClose,
   onCellEdit,
   columnSchema,
+  primaryKeyColumn,
 }: RenderEditCellProps<DatabaseDataGridRow> & {
   onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>;
   columnSchema: ColumnSchema;
+  primaryKeyColumn: string;
 }) {
   const handleValueChange = React.useCallback(
     (newValue: string | null) => {
@@ -107,14 +113,14 @@ function DatabaseDateCellEditor({
         onCellEdit &&
         new Date(row[column.key] as string).getTime() !== new Date(newValue ?? '').getTime()
       ) {
-        void onCellEdit(String(row.id || ''), column.key, newValue ?? '');
+        void onCellEdit(String(row[primaryKeyColumn] || ''), column.key, newValue ?? '');
       }
 
       const updatedRow = { ...row, [column.key]: newValue };
       onRowChange(updatedRow);
       onClose();
     },
-    [onCellEdit, row, column.key, onRowChange, onClose]
+    [onCellEdit, row, column.key, onRowChange, onClose, primaryKeyColumn]
   );
 
   return (
@@ -135,21 +141,23 @@ function DatabaseJsonCellEditor({
   onClose,
   onCellEdit,
   columnSchema,
+  primaryKeyColumn,
 }: RenderEditCellProps<DatabaseDataGridRow> & {
   onCellEdit?: (rowId: string, columnKey: string, newValue: string) => Promise<void>;
   columnSchema: ColumnSchema;
+  primaryKeyColumn: string;
 }) {
   const handleValueChange = React.useCallback(
     (newValue: string) => {
       if (onCellEdit && row[column.key] !== newValue) {
-        void onCellEdit(String(row.id || ''), column.key, newValue);
+        void onCellEdit(String(row[primaryKeyColumn] || ''), column.key, newValue);
       }
 
       const updatedRow = { ...row, [column.key]: newValue };
       onRowChange(updatedRow);
       onClose();
     },
-    [column.key, onCellEdit, row, onRowChange, onClose]
+    [column.key, onCellEdit, row, onRowChange, onClose, primaryKeyColumn]
   );
 
   return (
@@ -171,6 +179,8 @@ export function convertSchemaToColumns(
   if (!schema?.columns) {
     return [];
   }
+
+  const primaryKeyColumn = schema.columns.find((col) => col.isPrimaryKey)?.columnName || '';
 
   // Create typed cell renderers
   const cellRenderers = createDefaultCellRenderer<DatabaseDataGridRow>();
@@ -216,33 +226,57 @@ export function convertSchemaToColumns(
         />
       );
       // Note: editable is set in the column definition above
-    } else if (col.columnName === 'id') {
+    } else if (col.columnName === primaryKeyColumn) {
       column.renderCell = cellRenderers.id;
       // Note: editable is set in the column definition above
     } else if (col.type === ColumnType.BOOLEAN) {
       column.renderCell = cellRenderers.boolean;
       column.renderEditCell = (props: RenderEditCellProps<DatabaseDataGridRow>) => (
-        <DatabaseBooleanCellEditor {...props} columnSchema={col} onCellEdit={onCellEdit} />
+        <DatabaseBooleanCellEditor
+          {...props}
+          columnSchema={col}
+          onCellEdit={onCellEdit}
+          primaryKeyColumn={primaryKeyColumn}
+        />
       );
     } else if (col.type === ColumnType.DATE) {
       column.renderCell = cellRenderers.date;
       column.renderEditCell = (props: RenderEditCellProps<DatabaseDataGridRow>) => (
-        <DatabaseDateCellEditor {...props} columnSchema={col} onCellEdit={onCellEdit} />
+        <DatabaseDateCellEditor
+          {...props}
+          columnSchema={col}
+          onCellEdit={onCellEdit}
+          primaryKeyColumn={primaryKeyColumn}
+        />
       );
     } else if (col.type === ColumnType.DATETIME) {
       column.renderCell = cellRenderers.datetime;
       column.renderEditCell = (props: RenderEditCellProps<DatabaseDataGridRow>) => (
-        <DatabaseDateCellEditor {...props} columnSchema={col} onCellEdit={onCellEdit} />
+        <DatabaseDateCellEditor
+          {...props}
+          columnSchema={col}
+          onCellEdit={onCellEdit}
+          primaryKeyColumn={primaryKeyColumn}
+        />
       );
     } else if (col.type === ColumnType.JSON) {
       column.renderCell = cellRenderers.json;
       column.renderEditCell = (props: RenderEditCellProps<DatabaseDataGridRow>) => (
-        <DatabaseJsonCellEditor {...props} columnSchema={col} onCellEdit={onCellEdit} />
+        <DatabaseJsonCellEditor
+          {...props}
+          columnSchema={col}
+          onCellEdit={onCellEdit}
+          primaryKeyColumn={primaryKeyColumn}
+        />
       );
     } else {
       column.renderCell = cellRenderers.text;
       column.renderEditCell = (props: RenderEditCellProps<DatabaseDataGridRow>) => (
-        <DatabaseTextCellEditor {...props} onCellEdit={onCellEdit} />
+        <DatabaseTextCellEditor
+          {...props}
+          onCellEdit={onCellEdit}
+          primaryKeyColumn={primaryKeyColumn}
+        />
       );
     }
 

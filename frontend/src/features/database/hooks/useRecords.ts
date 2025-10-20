@@ -76,8 +76,15 @@ export function useRecords(tableName: string) {
 
   // Mutation to update a record
   const updateRecordMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { [key: string]: ConvertedValue } }) =>
-      recordService.updateRecord(tableName, id, data),
+    mutationFn: ({
+      pkColumn,
+      pkValue,
+      data,
+    }: {
+      pkColumn: string;
+      pkValue: string;
+      data: { [key: string]: ConvertedValue };
+    }) => recordService.updateRecord(tableName, pkColumn, pkValue, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['records', tableName] });
       void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
@@ -90,12 +97,13 @@ export function useRecords(tableName: string) {
   });
 
   // Mutation to delete a record
-  const deleteRecordMutation = useMutation({
-    mutationFn: (ids: string[]) => recordService.deleteRecords(tableName, ids),
-    onSuccess: (_data, ids) => {
+  const deleteRecordsMutation = useMutation({
+    mutationFn: (variables: { pkColumn: string; pkValues: string[] }) =>
+      recordService.deleteRecords(tableName, variables.pkColumn, variables.pkValues),
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['records', tableName] });
       void queryClient.invalidateQueries({ queryKey: ['table', tableName] });
-      const count = ids.length;
+      const count = variables.pkValues.length;
       if (count === 1) {
         showToast('Record deleted successfully', 'success');
       } else {
@@ -103,7 +111,7 @@ export function useRecords(tableName: string) {
       }
     },
     onError: (error: Error, variables) => {
-      const count = variables.length;
+      const count = variables.pkValues.length;
       const recordText = count === 1 ? 'record' : 'records';
       const errorMessage =
         error instanceof Error ? error.message : `Failed to delete ${recordText}`;
@@ -121,11 +129,11 @@ export function useRecords(tableName: string) {
     isCreating: createRecordMutation.isPending,
     isCreatingMultiple: createRecordsMutation.isPending,
     isUpdating: updateRecordMutation.isPending,
-    isDeleting: deleteRecordMutation.isPending,
+    isDeleting: deleteRecordsMutation.isPending,
 
     // Actions - all using mutateAsync for consistency
     createRecord: createRecordMutation.mutateAsync,
     updateRecord: updateRecordMutation.mutateAsync,
-    deleteRecords: deleteRecordMutation.mutateAsync,
+    deleteRecords: deleteRecordsMutation.mutateAsync,
   };
 }
