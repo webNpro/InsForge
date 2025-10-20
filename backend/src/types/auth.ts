@@ -90,7 +90,7 @@ export interface GitHubEmailInfo {
 }
 
 export interface MicrosoftUserInfo {
-  sub: string;
+  id: string;
   email: string;
   name: string;
   avatar_url?: string;
