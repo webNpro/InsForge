@@ -832,21 +832,24 @@ export class AuthService {
 
     const selfBaseUrl = getApiBaseUrl();
 
-  // Note: shared-keys path not implemented for Microsoft; configure local keys
+    // Note: shared-keys path not implemented for Microsoft; configure local keys
     const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
     authUrl.searchParams.set('client_id', config.clientId ?? '');
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('redirect_uri', `${selfBaseUrl}/api/auth/oauth/microsoft/callback`);
-    authUrl.searchParams.set('scope', (config.scopes && config.scopes.length > 0)
-      ? config.scopes.join(' ')
-      : 'openid email profile offline_access User.Read');
+    authUrl.searchParams.set(
+      'scope',
+      config.scopes && config.scopes.length > 0
+        ? config.scopes.join(' ')
+        : 'openid email profile offline_access User.Read'
+    );
     if (state) {
       authUrl.searchParams.set('state', state);
     }
     return authUrl.toString();
   }
 
-// NEW: Exchange Microsoft code for tokens
+  // NEW: Exchange Microsoft code for tokens
   async exchangeCodeToTokenByMicrosoft(
     code: string
   ): Promise<{ access_token: string; id_token?: string }> {
@@ -857,23 +860,24 @@ export class AuthService {
     }
     const clientSecret = await oauthConfigService.getClientSecretByProvider('microsoft');
     const selfBaseUrl = process.env.API_BASE_URL || 'http://localhost:7130';
-  
+
     const body = new URLSearchParams({
       client_id: config.clientId ?? '',
       client_secret: clientSecret ?? '',
       code,
       redirect_uri: `${selfBaseUrl}/api/auth/oauth/microsoft/callback`,
       grant_type: 'authorization_code',
-      scope: (config.scopes && config.scopes.length > 0)
-        ? config.scopes.join(' ')
-        : 'openid email profile offline_access User.Read',
+      scope:
+        config.scopes && config.scopes.length > 0
+          ? config.scopes.join(' ')
+          : 'openid email profile offline_access User.Read',
     });
 
     const response = await axios.post(
       'https://login.microsoftonline.com/common/oauth2/v2.0/token',
       body.toString(),
-      { 
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
     );
 
@@ -886,7 +890,7 @@ export class AuthService {
     };
   }
 
-// NEW: Get Microsoft user info via Graph API
+  // NEW: Get Microsoft user info via Graph API
   async getMicrosoftUserInfo(accessToken: string) {
     const userResp = await axios.get('https://graph.microsoft.com/v1.0/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -902,30 +906,30 @@ export class AuthService {
     const email = data.userPrincipalName || data.mail || `${data.id}@users.noreply.microsoft.com`;
 
     const response = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
-    logger.info('Microsoft user avatar URL', { url});
+    logger.info('Microsoft user avatar URL', { url });
 
     return {
       id: data.id,
-      displayName: data.displayName || '', 
+      displayName: data.displayName || '',
       userPrincipalName: data.userPrincipalName || '',
       email,
       avatar_url: url,
     };
   }
 
-// NEW: Find or create Microsoft user
+  // NEW: Find or create Microsoft user
   async findOrCreateMicrosoftUser(msUserInfo: {
     id: string;
     displayName?: string;
     userPrincipalName?: string;
     email: string;
-    avatar_url?: string; 
+    avatar_url?: string;
   }): Promise<CreateSessionResponse> {
-    const userName = msUserInfo.displayName || (msUserInfo.email.split('@')[0] || 'user');
+    const userName = msUserInfo.displayName || msUserInfo.email.split('@')[0] || 'user';
     return this.findOrCreateThirdPartyUser(
       'microsoft',
       msUserInfo.id,
