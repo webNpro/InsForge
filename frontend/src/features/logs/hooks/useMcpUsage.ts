@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSocket, ServerEvents } from '@/lib/contexts/SocketContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -15,6 +15,12 @@ export interface McpConnectedPayload {
 }
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+const PAGE_SIZE = 50;
+
+// ============================================================================
 // Main Hook
 // ============================================================================
 
@@ -27,6 +33,7 @@ export interface McpConnectedPayload {
  * - Invalidates queries on WebSocket events to refetch latest data
  * - Provides helper functions for data access
  * - Handles parent window communication for onboarding (if in iframe)
+ * - Supports search and pagination
  */
 export function useMcpUsage() {
   // Hooks
@@ -34,10 +41,14 @@ export function useMcpUsage() {
   const { socket, isConnected } = useSocket();
   const { isAuthenticated } = useAuth();
 
+  // State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Refs
   const hasNotifiedInitialStatus = useRef(false);
 
-  // Query to fetch all MCP loss
+  // Query to fetch all MCP logs
   const {
     data: records = [],
     isLoading,
@@ -51,6 +62,33 @@ export function useMcpUsage() {
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
+
+  // Filter records by search query
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery) {
+      return records;
+    }
+    return records.filter((record) =>
+      record.tool_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [records, searchQuery]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Calculate pagination
+  const totalPages = useMemo(
+    () => Math.ceil(filteredRecords.length / PAGE_SIZE),
+    [filteredRecords.length]
+  );
+  const startIndex = useMemo(() => (currentPage - 1) * PAGE_SIZE, [currentPage]);
+  const endIndex = useMemo(() => startIndex + PAGE_SIZE, [startIndex]);
+  const paginatedRecords = useMemo(
+    () => filteredRecords.slice(startIndex, endIndex),
+    [filteredRecords, startIndex, endIndex]
+  );
 
   // Notify parent window of initial onboarding status (ONLY ONCE)
   useEffect(() => {
@@ -119,10 +157,21 @@ export function useMcpUsage() {
 
   return {
     // Data
-    records,
+    records: paginatedRecords,
+    allRecords: records,
+    filteredRecords,
     hasCompletedOnboarding,
     latestRecord,
     recordsCount,
+
+    // Search
+    searchQuery,
+    setSearchQuery,
+
+    // Pagination
+    currentPage,
+    setCurrentPage,
+    totalPages,
 
     // Loading states
     isLoading,
