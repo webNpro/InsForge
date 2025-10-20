@@ -147,6 +147,10 @@ ENCRYPTION_KEY=
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
 
+# Frontend Admin Credentials (must match above during development phase)
+VITE_ADMIN_EMAIL=admin@example.com
+VITE_ADMIN_PASSWORD=change-this-password
+
 # ============================================
 # API Configuration
 # ============================================
@@ -257,11 +261,36 @@ Open your browser and navigate to:
 http://your-ec2-ip:7131
 ```
 
-**Default Login Credentials:**
-- Email: Value from `ADMIN_EMAIL` in `.env`
-- Password: Value from `ADMIN_PASSWORD` in `.env`
 
-> 🔒 **Security**: Change the admin password immediately after first login!
+#### 5.3 ⚠️ Important: Custom Admin Credentials Configuration
+
+> **🚧 Active Development Notice**: InsForge is currently in active development and testing. The credential management system is being developed. The following is a temporary workaround that will be replaced with a secure implementation in future releases.
+
+**If you customize admin credentials** in your `.env` file (which is recommended), you must **also update the frontend login page** to match. This is a temporary requirement during our development phase.
+
+**Step 1: Update `.env` file**
+
+```env
+# In your .env file
+ADMIN_EMAIL=your-custom-admin@example.com
+ADMIN_PASSWORD=your-secure-password-here
+
+```
+
+After updating your `.env` file, manually edit the login page:
+
+```bash
+nano ~/insforge/frontend/src/features/login/page/LoginPage.tsx
+```
+
+Find this section (around line 38-41):
+```typescript
+defaultValues: {
+  email: 'admin@example.com',
+  password: 'change-this-password',
+},
+```
+
 
 ### 6. Configure Domain (Optional but Recommended)
 
