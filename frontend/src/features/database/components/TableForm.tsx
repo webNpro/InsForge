@@ -656,12 +656,10 @@ export function TableForm({
           <Button
             onClick={() => void handleSubmit()}
             disabled={
-              (!form.formState.isValid ||
-                createTableMutation.isPending ||
-                updateTableMutation.isPending ||
-                !form.formState.isDirty) &&
-              !form.formState.isDirty &&
-              !foreignKeysDirty
+              !form.formState.isValid ||
+              createTableMutation.isPending ||
+              updateTableMutation.isPending ||
+              (!form.formState.isDirty && !foreignKeysDirty)
             }
             className="h-10 px-4 text-sm font-medium bg-zinc-950 text-neutral-50 shadow-sm disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
           >
