@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { logService } from '../services/log.service';
 import type { LogSchema } from '@insforge/shared-schemas';
 
-const PAGE_SIZE = 100;
-const FETCH_SIZE = 500;
+const PAGE_SIZE = 50;
+const FETCH_SIZE = 200;
 
 export function useLogs(source: string) {
   const [searchQuery, setSearchQuery] = useState('');
