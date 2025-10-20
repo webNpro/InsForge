@@ -278,7 +278,7 @@ export default function AuditsPage() {
                     }
                   />
                 </div>
-                {!isLoading && logsData.length && (
+                {!isLoading && (
                   <PaginationControls
                     currentPage={currentPage}
                     totalPages={Math.ceil(totalRecords / pageSize)}

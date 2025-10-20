@@ -530,7 +530,7 @@ export function TableForm({
               </div>
 
               {/* Existing foreign keys */}
-              {foreignKeys.length && (
+              {foreignKeys.length > 0 && (
                 <div className="px-6 pb-6 space-y-3">
                   {foreignKeys.map((fk) => (
                     <div
