@@ -56,7 +56,7 @@ export function LogsTable<T = Record<string, unknown>>({
             </div>
           </div>
         ) : !data.length ? (
-          <div className="flex items-center justify-center h-full min-h-[200px]">
+          <div className="flex flex-1 items-center justify-center min-h-[100px]">
             <p className="text-sm text-gray-600 dark:text-neutral-400">{emptyMessage}</p>
           </div>
         ) : (
