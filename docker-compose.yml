@@ -23,7 +23,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start-period: 30s
+      start_period: 30s
 
   postgrest:
     image: postgrest/postgrest:v12.2.12
