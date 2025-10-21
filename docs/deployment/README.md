@@ -6,6 +6,13 @@ This directory contains deployment guides for self-hosting InsForge on various p
 
 ### Cloud Platforms
 
+- **[Render](./deploy-to-render.md)** - Deploy InsForge on Render with managed services
+  - Managed PostgreSQL database
+  - Automatic deployments from Git
+  - Free SSL certificates
+  - Simple scaling and monitoring
+  - Blueprint (IaC) support
+
 - **[AWS EC2](./deploy-to-aws-ec2.md)** - Deploy InsForge on Amazon EC2 with Docker Compose
   - Instance setup and configuration
   - Docker Compose deployment
@@ -25,18 +32,22 @@ This directory contains deployment guides for self-hosting InsForge on various p
 ## 🎯 Choosing a Platform
 
 ### For Beginners
-- **Railway** (Coming Soon) - Easiest, one-click deployment
+- **Render** - Easiest managed deployment with auto-SSL and Git integration
+- **Railway** (Coming Soon) - One-click deployment
 - **AWS EC2** - Well-documented, widely used
 
 ### For Production
+- **Render** - Managed services, auto-scaling, simple operations
 - **AWS EC2** - Reliable, scalable, extensive features
 - **Kubernetes** (Coming Soon) - High availability, auto-scaling
 
 ### For Cost-Conscious
+- **Render** - Competitive pricing, free tier available (~$28/month for production)
 - **Hetzner** (Coming Soon) - Best price-to-performance ratio
 - **Digital Ocean** (Coming Soon) - Simple pricing, good performance
 
 ### For Global Distribution
+- **Render** - Multi-region deployment with automatic CDN
 - **Fly.io** (Coming Soon) - Edge deployment in multiple regions
 - **AWS with CloudFront** - Global CDN integration
 
