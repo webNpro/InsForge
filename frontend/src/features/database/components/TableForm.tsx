@@ -50,6 +50,7 @@ export function TableForm({
   const [showForeignKeyDialog, setShowForeignKeyDialog] = useState(false);
   const [editingForeignKey, setEditingForeignKey] = useState<string>();
   const [foreignKeys, setForeignKeys] = useState<TableFormForeignKeySchema[]>([]);
+  const [foreignKeysDirty, setForeignKeysDirty] = useState(false);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
@@ -232,6 +233,7 @@ export function TableForm({
       form.reset();
       setError(null);
       setForeignKeys([]);
+      setForeignKeysDirty(false);
       onSuccess?.(data.tableName);
     },
     onError: (err) => {
@@ -412,6 +414,7 @@ export function TableForm({
         )
       );
       setEditingForeignKey(undefined);
+      setForeignKeysDirty(true);
     } else {
       // Add new foreign key
       setForeignKeys([
@@ -421,10 +424,12 @@ export function TableForm({
         },
       ]);
     }
+    setForeignKeysDirty(true);
   };
 
   const handleRemoveForeignKey = (columnName?: string) => {
     setForeignKeys(foreignKeys.filter((fk) => fk.columnName !== columnName));
+    setForeignKeysDirty(true);
   };
 
   if (!open) {
@@ -653,7 +658,8 @@ export function TableForm({
             disabled={
               !form.formState.isValid ||
               createTableMutation.isPending ||
-              updateTableMutation.isPending
+              updateTableMutation.isPending ||
+              (!form.formState.isDirty && !foreignKeysDirty)
             }
             className="h-10 px-4 text-sm font-medium bg-zinc-950 text-neutral-50 shadow-sm disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
           >
