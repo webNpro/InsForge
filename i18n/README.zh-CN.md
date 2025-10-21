@@ -17,7 +17,7 @@
 
 # InsForge
 
-**InsForge 是专为 AI 代理构建的（Agent-Native） Supabase 替代方案。** 我们以专为 AI 设计的架构实现 Supabase 的功能，使 AI 代理能够自主构建和管理全栈应用程序。
+**InsForge 是专为 AI 编程环境构建的（Agent-Native） Supabase 替代方案。** 我们以专为 AI 设计的架构实现 Supabase 的功能，使 AI 编程环境能够自主构建和管理全栈应用程序。
 ## 主要功能与用例
 
 ### 核心功能:
@@ -28,7 +28,7 @@
 - **站点部署** *(即将推出)* - 轻松部署应用程序
 
 ### 用例: 使用自然语言部署全栈应用程序
-- **将 AI 编程代理接入 InsForge** - 启用 Claude、GPT或其他 AI 编程代理管理您的后端
+- **将 AI 编程环境接入 InsForge** - 启用 Claude、GPT或其他 AI 编程环境管理您的后端
 - **为 Lovable 或 Bolt 风格的“氛围编程”项目添加后端** - 为 AI 生成的前端提供即时后端支持
 
 ## 提示词示例:
