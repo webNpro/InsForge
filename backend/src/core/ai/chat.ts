@@ -32,7 +32,7 @@ export class ChatService {
     // Format conversation messages
     for (const msg of messages) {
       // Check if message has images
-      if (msg.images && msg.images.length > 0) {
+      if (msg.images && msg.images.length) {
         // Build multimodal content array
         const content = [
           { type: 'text', text: msg.content },
@@ -123,7 +123,7 @@ export class ChatService {
         text: response.choices[0]?.message?.content || '',
         metadata: {
           model: options.model,
-          ...tokenUsage,
+          usage: tokenUsage,
         },
       };
     } catch (error) {

@@ -50,6 +50,7 @@ export function TableForm({
   const [showForeignKeyDialog, setShowForeignKeyDialog] = useState(false);
   const [editingForeignKey, setEditingForeignKey] = useState<string>();
   const [foreignKeys, setForeignKeys] = useState<TableFormForeignKeySchema[]>([]);
+  const [foreignKeysDirty, setForeignKeysDirty] = useState(false);
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
@@ -232,6 +233,7 @@ export function TableForm({
       form.reset();
       setError(null);
       setForeignKeys([]);
+      setForeignKeysDirty(false);
       onSuccess?.(data.tableName);
     },
     onError: (err) => {
@@ -383,7 +385,7 @@ export function TableForm({
 
   const handleSubmit = form.handleSubmit((data) => {
     const userColumns = data.columns.filter((col) => !col.isSystemColumn);
-    if (userColumns.length === 0) {
+    if (!userColumns.length) {
       const msg =
         mode === 'create'
           ? 'Please add at least one user-defined column to create a table.'
@@ -412,6 +414,7 @@ export function TableForm({
         )
       );
       setEditingForeignKey(undefined);
+      setForeignKeysDirty(true);
     } else {
       // Add new foreign key
       setForeignKeys([
@@ -421,10 +424,12 @@ export function TableForm({
         },
       ]);
     }
+    setForeignKeysDirty(true);
   };
 
   const handleRemoveForeignKey = (columnName?: string) => {
     setForeignKeys(foreignKeys.filter((fk) => fk.columnName !== columnName));
+    setForeignKeysDirty(true);
   };
 
   if (!open) {
@@ -480,7 +485,7 @@ export function TableForm({
               {/* Columns Table */}
               <div className="px-3 overflow-x-auto">
                 {/* Table Headers */}
-                <div className="flex items-center gap-6 px-4 py-2 bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-700 dark:text-white">
+                <div className="flex items-center gap-6 px-4 py-2 w-min xl:w-full bg-slate-50 rounded-t text-sm font-medium text-zinc-950 dark:bg-neutral-700 dark:text-white">
                   <div className="flex-1 min-w-[175px]">Name</div>
                   <div className="flex-1 min-w-[175px]">Type</div>
                   <div className="flex-1 min-w-[175px]">Default Value</div>
@@ -521,7 +526,7 @@ export function TableForm({
             </div>
 
             {/* Foreign Keys Section */}
-            <div className="bg-white pb-3 rounded-xl border border-zinc-200 dark:bg-neutral-800 dark:border-transparent">
+            <div className="bg-white pb-3 rounded-xl border border-zinc-200 overflow-hidden dark:bg-neutral-800 dark:border-transparent">
               <div className="p-6">
                 <h2 className="text-base font-semibold text-black dark:text-white">Foreign Keys</h2>
                 <p className="text-sm text-zinc-500 dark:text-neutral-400">
@@ -531,11 +536,11 @@ export function TableForm({
 
               {/* Existing foreign keys */}
               {foreignKeys.length > 0 && (
-                <div className="px-6 pb-6 space-y-3">
+                <div className="px-6 pb-6 space-y-3 overflow-x-auto">
                   {foreignKeys.map((fk) => (
                     <div
                       key={fk.columnName}
-                      className="group flex items-center gap-6 2xl:gap-8 pl-4 pr-2 py-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150 dark:bg-neutral-700 dark:border-transparent dark:hover:bg-neutral-600"
+                      className="group flex items-center gap-6 2xl:gap-8 pl-4 pr-2 py-2 w-min xl:w-full rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 transition-colors duration-150 dark:bg-neutral-700 dark:border-transparent dark:hover:bg-neutral-600"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-[188px] overflow-hidden">
                         <Link className="flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-neutral-400" />
@@ -653,7 +658,8 @@ export function TableForm({
             disabled={
               !form.formState.isValid ||
               createTableMutation.isPending ||
-              updateTableMutation.isPending
+              updateTableMutation.isPending ||
+              (!form.formState.isDirty && !foreignKeysDirty)
             }
             className="h-10 px-4 text-sm font-medium bg-zinc-950 text-neutral-50 shadow-sm disabled:opacity-40 dark:bg-emerald-300 dark:text-zinc-950 dark:hover:bg-emerald-400"
           >

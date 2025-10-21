@@ -6,6 +6,7 @@ import Google from '@/assets/logos/google.svg?react';
 import Microsoft from '@/assets/logos/microsoft.svg?react';
 import Discord from '@/assets/logos/discord.svg?react';
 import LinkedIn from '@/assets/logos/linkedin.svg?react';
+import Facebook from '@/assets/logos/facebook.svg?react';
 import { OAuthEmptyState } from './OAuthEmptyState';
 import { OAuthConfigDialog } from './OAuthConfigDialog';
 import { AddOAuthDialog } from './AddOAuthDialog';
@@ -55,10 +56,17 @@ const providers: OAuthProviderInfo[] = [
     description: 'Configure LinkedIn authentication for your users',
     setupUrl: 'https://www.linkedin.com/developers/apps',
   },
+  {
+    id: 'facebook',
+    name: 'Facebook OAuth',
+    icon: <Facebook className="w-6 h-6" />,
+    description: 'Configure Facebook authentication for your users',
+    setupUrl: 'https://developers.facebook.com/apps',
+  },
 ];
 
 export interface OAuthProviderInfo {
-  id: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft';
+  id: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft';
   name: string;
   icon: ReactElement;
   description: string;
@@ -85,7 +93,7 @@ export function AuthMethodTab() {
   };
 
   const deleteOAuthConfig = async (
-    providerId: 'google' | 'github' | 'linkedin' | 'discord' | 'microsoft',
+    providerId: 'google' | 'github' | 'linkedin' | 'discord' | 'facebook' | 'microsoft',
     providerName: string
   ) => {
     const shouldDelete = await confirm({
@@ -111,7 +119,7 @@ export function AuthMethodTab() {
   };
 
   const hasAuthMethods = useMemo(() => {
-    return configs.length > 0;
+    return !!configs.length;
   }, [configs]);
 
   const openSelectDialog = () => {
@@ -125,6 +133,7 @@ export function AuthMethodTab() {
       discord: isProviderConfigured('discord'),
       linkedin: isProviderConfigured('linkedin'),
       microsoft: isProviderConfigured('microsoft'),
+      facebook: isProviderConfigured('facebook'),
     };
   }, [isProviderConfigured]);
 
@@ -134,7 +143,7 @@ export function AuthMethodTab() {
   }, [enabledProviders]);
 
   const handleConfirmSelected = (
-    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'microsoft'
+    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft'
   ) => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);

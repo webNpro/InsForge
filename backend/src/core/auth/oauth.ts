@@ -92,7 +92,7 @@ export class OAuthConfigService {
         [provider]
       );
 
-      if (result.rows.length === 0) {
+      if (!result.rows.length) {
         return null;
       }
 
@@ -120,7 +120,7 @@ export class OAuthConfigService {
         [provider]
       );
 
-      if (result.rows.length === 0) {
+      if (!result.rows.length) {
         return null;
       }
 
@@ -154,7 +154,7 @@ export class OAuthConfigService {
         [input.provider]
       );
 
-      if (existingConfig.rows.length > 0) {
+      if (existingConfig.rows.length) {
         throw new AppError(
           `OAuth configuration for ${input.provider} already exists`,
           409,
@@ -188,6 +188,8 @@ export class OAuthConfigService {
           scopes = ['identify', 'email'];
         } else if (provider === 'linkedin') {
           scopes = ['openid', 'profile', 'email'];
+        } else if (provider === 'facebook') {
+          scopes = ['email', 'public_profile'];
         }
       }
 
@@ -241,7 +243,7 @@ export class OAuthConfigService {
         [provider]
       );
 
-      if (existingResult.rows.length === 0) {
+      if (!existingResult.rows.length) {
         throw new AppError('OAuth configuration not found', 404, ERROR_CODES.NOT_FOUND);
       }
 
@@ -293,7 +295,7 @@ export class OAuthConfigService {
         values.push(input.useSharedKey);
       }
 
-      if (updates.length === 0 && input.clientSecret === undefined) {
+      if (!updates.length && input.clientSecret === undefined) {
         await client.query('COMMIT');
         // Return the config in the correct format
         const config = await this.getConfigByProvider(provider);
@@ -303,7 +305,7 @@ export class OAuthConfigService {
         return config;
       }
 
-      if (updates.length > 0) {
+      if (updates.length) {
         updates.push('updated_at = NOW()');
         values.push(provider.toLowerCase());
 
@@ -362,7 +364,7 @@ export class OAuthConfigService {
         [provider]
       );
 
-      if (existingResult.rows.length === 0) {
+      if (!existingResult.rows.length) {
         await client.query('ROLLBACK');
         return false;
       }

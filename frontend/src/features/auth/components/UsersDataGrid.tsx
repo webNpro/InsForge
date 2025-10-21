@@ -45,6 +45,12 @@ const ProviderIcon = ({ provider }: { provider: string }) => {
           color:
             'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-500',
         };
+      case 'facebook':
+        return {
+          label: 'Facebook',
+          color:
+            'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-600',
+        };
       case 'email':
         return {
           label: 'Email',
@@ -75,7 +81,7 @@ const ProviderIcon = ({ provider }: { provider: string }) => {
 const IdentitiesCellRenderer = ({ row }: RenderCellProps<UserDataGridRow>) => {
   const identities = row.identities;
 
-  if (!identities || !Array.isArray(identities) || identities.length === 0) {
+  if (!identities || !Array.isArray(identities) || !identities.length) {
     return <span className="text-sm text-black dark:text-zinc-300">null</span>;
   }
 

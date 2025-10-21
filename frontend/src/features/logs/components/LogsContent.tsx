@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useLogs } from '../hooks/useLogs';
 import { useMcpUsage } from '../hooks/useMcpUsage';
@@ -53,12 +53,20 @@ function formatTime(timestamp: string): string {
 }
 
 export function LogsContent({ source }: LogsContentProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const isMcpLogs = source === 'MCP';
-  const [mcpSearchQuery, setMcpSearchQuery] = useState('');
 
   // MCP logs data
-  const { records: mcpLogs, isLoading: mcpLoading, error: mcpError } = useMcpUsage();
+  const {
+    records: mcpLogs,
+    filteredRecords: filteredMcpRecords,
+    searchQuery: mcpSearchQuery,
+    setSearchQuery: setMcpSearchQuery,
+    currentPage: mcpCurrentPage,
+    setCurrentPage: setMcpCurrentPage,
+    totalPages: mcpTotalPages,
+    isLoading: mcpLoading,
+    error: mcpError,
+  } = useMcpUsage();
 
   // Regular logs data
   const {
@@ -72,40 +80,9 @@ export function LogsContent({ source }: LogsContentProps) {
     setCurrentPage,
     totalPages,
     isLoading: logsLoading,
-    isLoadingMore,
-    hasMore,
     error: logsError,
-    loadMoreLogs,
     getSeverity,
   } = useLogs(isMcpLogs ? '' : source);
-
-  // Handle scroll to load more (only for regular logs)
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      if (isMcpLogs) {
-        return;
-      }
-      const { scrollTop } = e.currentTarget;
-      if (scrollTop <= 100 && hasMore && !isLoadingMore) {
-        void loadMoreLogs();
-      }
-    },
-    [isMcpLogs, hasMore, isLoadingMore, loadMoreLogs]
-  );
-
-  // Filtered MCP logs
-  const filteredMcpRecords = useMemo(() => {
-    let filtered = mcpLogs;
-
-    // Apply search filter
-    if (mcpSearchQuery) {
-      filtered = filtered.filter((record) =>
-        record.tool_name.toLowerCase().includes(mcpSearchQuery.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [mcpLogs, mcpSearchQuery]);
 
   // MCP columns
   const mcpColumns = useMemo(
@@ -229,7 +206,7 @@ export function LogsContent({ source }: LogsContentProps) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto px-4" ref={scrollRef} onScroll={handleScroll}>
+      <div className="flex-1 overflow-auto px-4">
         {isMcpLogs ? (
           mcpError ? (
             <div className="flex items-center justify-center h-full">
@@ -238,7 +215,7 @@ export function LogsContent({ source }: LogsContentProps) {
           ) : (
             <LogsTable<McpUsageRecord>
               columns={mcpColumns}
-              data={filteredMcpRecords}
+              data={mcpLogs}
               isLoading={mcpLoading}
               emptyMessage={mcpSearchQuery ? 'No MCP logs match your search' : 'No MCP logs found'}
             />
@@ -248,37 +225,41 @@ export function LogsContent({ source }: LogsContentProps) {
             <EmptyState title="Error loading logs" description={String(logsError)} />
           </div>
         ) : (
-          <>
-            <LogsTable<LogSchema>
-              columns={logsColumns}
-              data={paginatedLogs}
-              isLoading={logsLoading}
-              emptyMessage={
-                logsSearchQuery || severityFilter.length < 3
-                  ? 'No logs match your search criteria'
-                  : 'No logs found'
-              }
-            />
-            {isLoadingMore && (
-              <div className="py-4 text-center bg-neutral-800">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto" />
-              </div>
-            )}
-          </>
+          <LogsTable<LogSchema>
+            columns={logsColumns}
+            data={paginatedLogs}
+            isLoading={logsLoading}
+            emptyMessage={
+              logsSearchQuery || severityFilter.length < 3
+                ? 'No logs match your search criteria'
+                : 'No logs found'
+            }
+          />
         )}
       </div>
 
-      {/* Footer with Pagination - only for regular logs */}
-      {!isMcpLogs && !logsLoading && filteredLogs.length > 0 && (
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRecords={filteredLogs.length}
-          pageSize={100}
-          recordLabel="Logs"
-        />
-      )}
+      {/* Footer with Pagination */}
+      {isMcpLogs
+        ? !mcpLoading && (
+            <PaginationControls
+              currentPage={mcpCurrentPage}
+              totalPages={mcpTotalPages}
+              onPageChange={setMcpCurrentPage}
+              totalRecords={filteredMcpRecords.length}
+              pageSize={50}
+              recordLabel="logs"
+            />
+          )
+        : !logsLoading && (
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalRecords={filteredLogs.length}
+              pageSize={50}
+              recordLabel="logs"
+            />
+          )}
     </div>
   );
 }

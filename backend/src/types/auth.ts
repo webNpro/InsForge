@@ -112,3 +112,16 @@ export interface LinkedInUserInfo {
   family_name?: string;
   locale?: string;
 }
+
+export interface FacebookUserInfo {
+  id: string;
+  email: string;
+  name?: string;
+  picture?: {
+    data?: {
+      url?: string;
+    };
+  };
+  first_name?: string;
+  last_name?: string;
+}

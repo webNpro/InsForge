@@ -25,7 +25,7 @@ export const TableFormColumn = memo(function TableFormColumn({
 }: TableFormColumnProps) {
   return (
     <div
-      className={`flex items-center gap-6 px-4 py-2 ${
+      className={`flex items-center gap-6 px-4 py-2 w-min xl:w-full ${
         isNewColumn ? 'bg-slate-50 dark:bg-neutral-800' : 'bg-white dark:bg-[#2D2D2D]'
       }`}
     >

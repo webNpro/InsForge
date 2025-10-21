@@ -38,7 +38,7 @@ export class RecordService {
         })
         .map((col: ColumnSchema) => col.columnName);
 
-      if (textColumns.length > 0) {
+      if (textColumns.length) {
         // Create PostgREST OR filter for text columns
         const orFilters = textColumns
           .map((column: string) => `${column}.ilike.*${searchValue}*`)
@@ -48,7 +48,7 @@ export class RecordService {
     }
 
     // Add sorting if provided - PostgREST uses "order" parameter
-    if (sortColumns && sortColumns.length > 0) {
+    if (sortColumns && sortColumns.length) {
       const orderParam = sortColumns
         .map((col) => `${col.columnKey}.${col.direction.toLowerCase()}`)
         .join(',');
@@ -84,7 +84,7 @@ export class RecordService {
     const response = await this.getRecords(tableName, queryParams);
 
     // Return the first record if found, or null if not found
-    if (response.records && response.records.length > 0) {
+    if (response.records && response.records.length) {
       return response.records[0];
     }
     return null;
@@ -143,8 +143,13 @@ export class RecordService {
     return this.createRecords(table, [data]);
   }
 
-  updateRecord(table: string, id: string, data: { [key: string]: ConvertedValue }) {
-    return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
+  updateRecord(
+    table: string,
+    pkColumn: string,
+    pkValue: string,
+    data: { [key: string]: ConvertedValue }
+  ) {
+    return apiClient.request(`/database/records/${table}?${pkColumn}=eq.${pkValue}`, {
       method: 'PATCH',
       headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
@@ -154,12 +159,12 @@ export class RecordService {
   }
 
   // PostgREST supports bulk deletes via in.() filter
-  deleteRecords(table: string, ids: string[]) {
-    if (ids.length === 0) {
+  deleteRecords(table: string, pkColumn: string, pkValues: string[]) {
+    if (!pkValues.length) {
       return Promise.resolve();
     }
-    const idFilter = `in.(${ids.join(',')})`;
-    return apiClient.request(`/database/records/${table}?id=${idFilter}`, {
+    const pkFilter = `in.(${pkValues.join(',')})`;
+    return apiClient.request(`/database/records/${table}?${pkColumn}=${pkFilter}`, {
       method: 'DELETE',
       headers: apiClient.withAccessToken(),
     });
