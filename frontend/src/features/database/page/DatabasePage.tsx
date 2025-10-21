@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import PencilIcon from '@/assets/icons/pencil.svg?react';
@@ -103,6 +103,10 @@ function DatabasePageContent() {
 
   // Fetch schema for editing table
   const { data: editingTableSchema } = useTableSchema(editingTable || '', !!editingTable);
+
+  const primaryKeyColumn = useMemo(() => {
+    return schemaData?.columns.find((col) => col.isPrimaryKey)?.columnName;
+  }, [schemaData]);
 
   // Fetch table records using the hook
   const offset = (currentPage - 1) * PAGE_SIZE;
@@ -287,7 +291,11 @@ function DatabasePageContent() {
           return;
         }
         const updates = { [columnKey]: conversionResult.value };
-        await recordsHook.updateRecord({ id: rowId, data: updates });
+        await recordsHook.updateRecord({
+          pkColumn: primaryKeyColumn || 'id',
+          pkValue: rowId,
+          data: updates,
+        });
         await refetchTableData();
       }
     } catch (error) {
@@ -310,7 +318,7 @@ function DatabasePageContent() {
     });
 
     if (shouldDelete) {
-      await recordsHook.deleteRecords(ids);
+      await recordsHook.deleteRecords({ pkColumn: primaryKeyColumn || 'id', pkValues: ids });
       await Promise.all([
         refetchTableData(),
         refetchTables(), // Also refresh tables to update sidebar record counts
@@ -487,6 +495,7 @@ function DatabasePageContent() {
                   loading={isLoadingTable && !tableData}
                   isSorting={isSorting}
                   isRefreshing={isRefreshing}
+                  rowKeyGetter={(row) => String(row[primaryKeyColumn || 'id'])}
                   selectedRows={selectedRows}
                   onSelectedRowsChange={setSelectedRows}
                   sortColumns={sortColumns}

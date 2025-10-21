@@ -143,8 +143,13 @@ export class RecordService {
     return this.createRecords(table, [data]);
   }
 
-  updateRecord(table: string, id: string, data: { [key: string]: ConvertedValue }) {
-    return apiClient.request(`/database/records/${table}?id=eq.${id}`, {
+  updateRecord(
+    table: string,
+    pkColumn: string,
+    pkValue: string,
+    data: { [key: string]: ConvertedValue }
+  ) {
+    return apiClient.request(`/database/records/${table}?${pkColumn}=eq.${pkValue}`, {
       method: 'PATCH',
       headers: apiClient.withAccessToken({
         'Content-Type': 'application/json',
@@ -154,12 +159,12 @@ export class RecordService {
   }
 
   // PostgREST supports bulk deletes via in.() filter
-  deleteRecords(table: string, ids: string[]) {
-    if (!ids.length) {
+  deleteRecords(table: string, pkColumn: string, pkValues: string[]) {
+    if (!pkValues.length) {
       return Promise.resolve();
     }
-    const idFilter = `in.(${ids.join(',')})`;
-    return apiClient.request(`/database/records/${table}?id=${idFilter}`, {
+    const pkFilter = `in.(${pkValues.join(',')})`;
+    return apiClient.request(`/database/records/${table}?${pkColumn}=${pkFilter}`, {
       method: 'DELETE',
       headers: apiClient.withAccessToken(),
     });

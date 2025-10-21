@@ -66,6 +66,9 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
   showTypeBadge = true,
 }: DataGridProps<TRow>) {
   const { resolvedTheme } = useTheme();
+
+  const defaultRowKeyGetter = useCallback((row: TRow) => row.id || Math.random().toString(), []);
+  const keyGetter = rowKeyGetter || defaultRowKeyGetter;
   // Convert columns to react-data-grid format
   const gridColumns = useMemo(() => {
     const cols: Column<TRow>[] = [];
@@ -82,13 +85,13 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
         resizable: false,
         renderCell: ({ row, tabIndex }) => (
           <Checkbox
-            checked={selectedRows.has(String(row.id))}
+            checked={selectedRows.has(keyGetter(row))}
             onChange={(checked) => {
               const newSelectedRows = new Set(selectedRows);
               if (checked) {
-                newSelectedRows.add(String(row.id));
+                newSelectedRows.add(String(keyGetter(row)));
               } else {
-                newSelectedRows.delete(String(row.id));
+                newSelectedRows.delete(String(keyGetter(row)));
               }
               onSelectedRowsChange(newSelectedRows);
             }}
@@ -176,11 +179,8 @@ export default function DataGrid<TRow extends DataGridRowType = DataGridRow>({
     sortColumns,
     showSelection,
     showTypeBadge,
+    keyGetter,
   ]);
-
-  // Default row key getter
-  const defaultRowKeyGetter = useCallback((row: TRow) => row.id || Math.random().toString(), []);
-  const keyGetter = rowKeyGetter || defaultRowKeyGetter;
 
   // Loading state - only show full loading screen if not sorting
   if (loading && !isSorting) {
