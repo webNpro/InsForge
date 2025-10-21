@@ -3,6 +3,7 @@ import { Button } from '@/components/radix/Button';
 import { MoreHorizontal, Plus, Trash2, Pencil } from 'lucide-react';
 import Github from '@/assets/logos/github.svg?react';
 import Google from '@/assets/logos/google.svg?react';
+import Microsoft from '@/assets/logos/microsoft.svg?react';
 import Discord from '@/assets/logos/discord.svg?react';
 import LinkedIn from '@/assets/logos/linkedin.svg?react';
 import Facebook from '@/assets/logos/facebook.svg?react';
@@ -35,6 +36,13 @@ const providers: OAuthProviderInfo[] = [
     setupUrl: 'https://github.com/settings/developers',
   },
   {
+    id: 'microsoft',
+    name: 'Microsoft OAuth',
+    icon: <Microsoft className="w-6 h-6 dark:text-white" />,
+    description: 'Configure Microsoft authentication for your users',
+    setupUrl: 'https://portal.azure.com/',
+  },
+  {
     id: 'discord',
     name: 'Discord OAuth',
     icon: <Discord className="w-6 h-6" />,
@@ -58,7 +66,7 @@ const providers: OAuthProviderInfo[] = [
 ];
 
 export interface OAuthProviderInfo {
-  id: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook';
+  id: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft';
   name: string;
   icon: ReactElement;
   description: string;
@@ -85,7 +93,7 @@ export function AuthMethodTab() {
   };
 
   const deleteOAuthConfig = async (
-    providerId: 'google' | 'github' | 'linkedin' | 'discord' | 'facebook',
+    providerId: 'google' | 'github' | 'linkedin' | 'discord' | 'facebook' | 'microsoft',
     providerName: string
   ) => {
     const shouldDelete = await confirm({
@@ -124,6 +132,7 @@ export function AuthMethodTab() {
       github: isProviderConfigured('github'),
       discord: isProviderConfigured('discord'),
       linkedin: isProviderConfigured('linkedin'),
+      microsoft: isProviderConfigured('microsoft'),
       facebook: isProviderConfigured('facebook'),
     };
   }, [isProviderConfigured]);
@@ -134,7 +143,7 @@ export function AuthMethodTab() {
   }, [enabledProviders]);
 
   const handleConfirmSelected = (
-    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook'
+    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft'
   ) => {
     // Find the selected provider
     const selectedProvider = providers.find((p) => p.id === selectedId);

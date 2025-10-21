@@ -14,8 +14,13 @@ interface AddOAuthDialogProps {
   providers: OAuthProviderInfo[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook') => void;
-  enabledProviders: Record<'google' | 'github' | 'discord' | 'linkedin' | 'facebook', boolean>;
+  onConfirm: (
+    selectedId: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft'
+  ) => void;
+  enabledProviders: Record<
+    'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft',
+    boolean
+  >;
 }
 
 export function AddOAuthDialog({
@@ -26,7 +31,7 @@ export function AddOAuthDialog({
   enabledProviders,
 }: AddOAuthDialogProps) {
   const [selectedId, setSelectedId] = useState<
-    'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | null
+    'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft' | null
   >(null);
 
   // Reset selection when dialog opens
@@ -41,7 +46,9 @@ export function AddOAuthDialog({
   // Filter out already enabled providers
   const availableProviders = providers.filter((provider) => !enabledProviders[provider.id]);
 
-  const selectProvider = (id: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook') => {
+  const selectProvider = (
+    id: 'google' | 'github' | 'discord' | 'linkedin' | 'facebook' | 'microsoft'
+  ) => {
     setSelectedId(id);
   };
 
